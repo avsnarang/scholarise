@@ -18,10 +18,10 @@ const Home: PageWithLayout = () => {
     if (!isLoading) {
       if (isAuthenticated) {
         // If user is logged in, redirect to dashboard
-        router.push('/dashboard');
+        void router.push('/dashboard');
       } else {
         // If user is not logged in, redirect to sign-in
-        router.push('/sign-in');
+        void router.push('/sign-in');
       }
     }
   }, [isAuthenticated, isLoading, router]);

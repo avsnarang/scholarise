@@ -1,7 +1,7 @@
 /**
  * Converts an array of objects to a CSV string
  */
-export function objectsToCSV<T extends Record<string, any>>(
+export function objectsToCSV<T extends Record<string, unknown>>(
   data: T[],
   headers: { key: string; label: string }[]
 ): string {
@@ -57,7 +57,7 @@ export function downloadString(content: string, filename: string, mimeType: stri
 /**
  * Exports data to CSV and triggers download
  */
-export function exportToCSV<T extends Record<string, any>>(
+export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
   headers: { key: string; label: string }[],
   filename: string

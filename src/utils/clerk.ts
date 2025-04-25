@@ -84,7 +84,18 @@ export async function createParentUser({
 }: CreateParentUserParams) {
   try {
     // Create user in Clerk
-    const createParams: any = {
+    const createParams: {
+      firstName: string;
+      lastName: string;
+      username: string;
+      password: string;
+      emailAddress?: string[];
+      publicMetadata: {
+        role: string;
+        roles: string[];
+        branchId: string;
+      };
+    } = {
       firstName,
       lastName,
       username,
@@ -108,4 +119,4 @@ export async function createParentUser({
     console.error('Error creating parent user in Clerk:', error);
     throw error;
   }
-} 
+}

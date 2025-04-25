@@ -2,30 +2,22 @@
 
 // Type definitions
 export type IndiaLocationData = {
-  states: {
-    [stateCode: string]: {
+  states: Record<string, {
+    name: string;
+    districts: Record<string, {
       name: string;
-      districts: {
-        [districtCode: string]: {
-          name: string;
-          cities: {
-            [cityCode: string]: {
-              name: string;
-              pinCodes: string[];
-            }
-          }
-        }
-      }
-    }
-  };
+      cities: Record<string, {
+        name: string;
+        pinCodes: string[];
+      }>
+    }>
+  }>;
   // Mapping PIN codes to location
-  pinCodeMap: {
-    [pinCode: string]: {
-      stateCode: string;
-      districtCode: string;
-      cityCode: string;
-    }
-  }
+  pinCodeMap: Record<string, {
+    stateCode: string;
+    districtCode: string;
+    cityCode: string;
+  }>
 };
 
 // Main data structure
@@ -286,50 +278,50 @@ export const indiaLocationData: IndiaLocationData = {
     "171002": { stateCode: "HP", districtCode: "SML", cityCode: "SML" }, // Shimla
     "173211": { stateCode: "HP", districtCode: "SLN", cityCode: "SLN" }, // Solan
     "173205": { stateCode: "HP", districtCode: "SLN", cityCode: "BD" }, // Baddi
-    
+
     // Uttarakhand
     "248001": { stateCode: "UK", districtCode: "DDN", cityCode: "DDN" }, // Dehradun
     "248002": { stateCode: "UK", districtCode: "DDN", cityCode: "DDN" }, // Dehradun
     "248179": { stateCode: "UK", districtCode: "DDN", cityCode: "MSR" }, // Mussoorie
     "249401": { stateCode: "UK", districtCode: "HDW", cityCode: "HDW" }, // Haridwar
     "247667": { stateCode: "UK", districtCode: "HDW", cityCode: "RKE" }, // Roorkee
-    
+
     // Delhi
     "110001": { stateCode: "DL", districtCode: "NDL", cityCode: "NDL" }, // New Delhi
     "110002": { stateCode: "DL", districtCode: "NDL", cityCode: "NDL" }, // New Delhi
     "110016": { stateCode: "DL", districtCode: "SDH", cityCode: "HKS" }, // Hauz Khas
     "110017": { stateCode: "DL", districtCode: "SDH", cityCode: "SKT" }, // Saket
-    
+
     // Punjab
     "143001": { stateCode: "PB", districtCode: "ASR", cityCode: "ASR" }, // Amritsar
     "143002": { stateCode: "PB", districtCode: "ASR", cityCode: "ASR" }, // Amritsar
     "141001": { stateCode: "PB", districtCode: "LDH", cityCode: "LDH" }, // Ludhiana
     "141002": { stateCode: "PB", districtCode: "LDH", cityCode: "LDH" }, // Ludhiana
-    
+
     // Haryana
     "122001": { stateCode: "HR", districtCode: "GGN", cityCode: "GGN" }, // Gurugram
     "122002": { stateCode: "HR", districtCode: "GGN", cityCode: "GGN" }, // Gurugram
     "121001": { stateCode: "HR", districtCode: "FBD", cityCode: "FBD" }, // Faridabad
     "121002": { stateCode: "HR", districtCode: "FBD", cityCode: "FBD" }, // Faridabad
-    
+
     // Uttar Pradesh
     "201001": { stateCode: "UP", districtCode: "GBD", cityCode: "GBD" }, // Ghaziabad
     "201002": { stateCode: "UP", districtCode: "GBD", cityCode: "GBD" }, // Ghaziabad
     "201301": { stateCode: "UP", districtCode: "NDA", cityCode: "NDA" }, // Noida
     "201302": { stateCode: "UP", districtCode: "NDA", cityCode: "NDA" }, // Noida
-    
+
     // Maharashtra
     "400001": { stateCode: "MH", districtCode: "MUM", cityCode: "MUM" }, // Mumbai
     "400002": { stateCode: "MH", districtCode: "MUM", cityCode: "MUM" }, // Mumbai
     "411001": { stateCode: "MH", districtCode: "PNE", cityCode: "PNE" }, // Pune
     "411002": { stateCode: "MH", districtCode: "PNE", cityCode: "PNE" }, // Pune
-    
+
     // Karnataka
     "560001": { stateCode: "KA", districtCode: "BLR", cityCode: "BLR" }, // Bangalore
     "560002": { stateCode: "KA", districtCode: "BLR", cityCode: "BLR" }, // Bangalore
     "570001": { stateCode: "KA", districtCode: "MYS", cityCode: "MYS" }, // Mysore
     "570002": { stateCode: "KA", districtCode: "MYS", cityCode: "MYS" }, // Mysore
-    
+
     // Tamil Nadu
     "600001": { stateCode: "TN", districtCode: "CHN", cityCode: "CHN" }, // Chennai
     "600002": { stateCode: "TN", districtCode: "CHN", cityCode: "CHN" }, // Chennai
@@ -354,9 +346,9 @@ export function getCityByCode(stateCode: string, districtCode: string, cityCode:
 export function getLocationByPinCode(pinCode: string) {
   const location = indiaLocationData.pinCodeMap[pinCode];
   if (!location) return null;
-  
+
   const { stateCode, districtCode, cityCode } = location;
-  
+
   return {
     state: getStateByCode(stateCode),
     district: getDistrictByCode(stateCode, districtCode),
@@ -378,7 +370,7 @@ export function getStateOptions() {
 export function getDistrictOptions(stateCode: string) {
   const state = indiaLocationData.states[stateCode];
   if (!state) return [];
-  
+
   return Object.entries(state.districts).map(([code, district]) => ({
     value: code,
     label: district.name
@@ -388,9 +380,9 @@ export function getDistrictOptions(stateCode: string) {
 export function getCityOptions(stateCode: string, districtCode: string) {
   const district = indiaLocationData.states[stateCode]?.districts[districtCode];
   if (!district) return [];
-  
+
   return Object.entries(district.cities).map(([code, city]) => ({
     value: code,
     label: city.name
   }));
-} 
+}

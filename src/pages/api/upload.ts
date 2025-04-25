@@ -1,7 +1,7 @@
 import { type NextApiRequest, type NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { createClient } from '@supabase/supabase-js';
-// @ts-ignore - Ignore formidable type issues 
+// @ts-expect-error - Formidable types are incompatible with Next.js API routes
 import formidable from "formidable";
 import fs from "fs";
 
@@ -34,16 +34,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const form = new formidable.IncomingForm();
 
     // Parse the request
-    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
-      form.parse(req, (err: any, fields: any, files: any) => {
+    const [fields, files] = await new Promise<[Record<string, unknown>, Record<string, unknown>]>((resolve, reject) => {
+      // @ts-expect-error - Formidable callback types are not properly defined
+      form.parse(req, (err: unknown, fields: unknown, files: unknown) => {
         if (err) reject(err);
-        resolve([fields, files]);
+        resolve([fields as Record<string, unknown>, files as Record<string, unknown>]);
       });
     });
 
     // Get the file and bucket from the form
-    const file = files.file as any;
-    const bucket = (fields.bucket as string) || 'avatars'; // Default to avatars bucket
+    const file = files.file as { filepath: string; originalFilename?: string; mimetype?: string };
+    const bucket = (fields.bucket as string) ?? 'avatars'; // Default to avatars bucket
 
     if (!file) {
       return res.status(400).json({ error: "No file provided" });
@@ -53,13 +54,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileBuffer = fs.readFileSync(file.filepath);
 
     // Generate a unique path for the file
-    const filePath = `${userId}/${Date.now()}-${file.originalFilename || 'file'}`;
+    const filePath = `${userId}/${Date.now()}-${file.originalFilename ?? 'file'}`;
 
     // Upload the file to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, fileBuffer, {
-        contentType: file.mimetype || 'application/octet-stream',
+        contentType: file.mimetype ?? 'application/octet-stream',
         cacheControl: '3600',
         upsert: true
       });

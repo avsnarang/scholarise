@@ -1,6 +1,6 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { useRouter } from "next/router";
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,13 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, User, Mail, Key } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { toast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { clerkClient } from "@clerk/nextjs/server";
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -46,11 +45,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const ProfilePage: NextPage = () => {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const { user, isLoaded: isUserLoaded } = useUser();
   const isLoading = !isUserLoaded;
@@ -77,9 +74,9 @@ const ProfilePage: NextPage = () => {
   useEffect(() => {
     if (user) {
       profileForm.reset({
-        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-        email: user.primaryEmailAddress?.emailAddress || "",
-        image: user.imageUrl || "",
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+        email: user.primaryEmailAddress?.emailAddress ?? "",
+        image: user.imageUrl ?? "",
       });
 
       setAvatarUrl(user.imageUrl);
@@ -88,7 +85,7 @@ const ProfilePage: NextPage = () => {
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
-    
+
     setIsSubmitting(true);
     try {
       // Update user profile in Clerk
@@ -101,10 +98,11 @@ const ProfilePage: NextPage = () => {
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile";
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -114,7 +112,7 @@ const ProfilePage: NextPage = () => {
 
   const onPasswordSubmit = async (data: PasswordFormValues) => {
     if (!user) return;
-    
+
     setIsPasswordSubmitting(true);
 
     try {
@@ -134,10 +132,11 @@ const ProfilePage: NextPage = () => {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update password";
       toast({
         title: "Error",
-        description: error.message || "Failed to update password",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -146,7 +145,7 @@ const ProfilePage: NextPage = () => {
   };
 
   const handleAvatarUpload = async (avatarUrl: string) => {
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       if (!user) {
         toast({
@@ -154,7 +153,7 @@ const ProfilePage: NextPage = () => {
           description: "No user found",
           variant: "destructive",
         });
-        setLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -175,7 +174,7 @@ const ProfilePage: NextPage = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 

@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 }
 
 class QueryCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private defaultTTL = 30 * 1000; // 30 seconds default TTL
 
   /**
@@ -20,17 +20,17 @@ class QueryCache {
    */
   get<T>(key: string): T | undefined {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return undefined;
     }
-    
+
     // Check if entry has expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return undefined;
     }
-    
+
     return entry.data as T;
   }
 
@@ -43,7 +43,7 @@ class QueryCache {
   set<T>(key: string, data: T, ttl = this.defaultTTL): void {
     const timestamp = Date.now();
     const expiresAt = timestamp + ttl;
-    
+
     this.cache.set(key, {
       data,
       timestamp,
@@ -58,17 +58,17 @@ class QueryCache {
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return false;
     }
-    
+
     // Check if entry has expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -112,11 +112,11 @@ class QueryCache {
     ttl = this.defaultTTL
   ): Promise<T> {
     const cachedData = this.get<T>(key);
-    
+
     if (cachedData !== undefined) {
       return cachedData;
     }
-    
+
     const data = await fetchFn();
     this.set(key, data, ttl);
     return data;

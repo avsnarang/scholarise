@@ -76,9 +76,10 @@ const SignInPage: NextPage = () => {
           // This should not happen with email/password auth
           setError("Something went wrong. Please try again.");
         }
-      } catch (clerkError: any) {
+      } catch (clerkError) {
         // Handle specific Clerk errors
-        if (clerkError.errors?.[0]?.message?.includes("already signed in")) {
+        const error = clerkError as { errors?: Array<{ message?: string }> };
+        if (error.errors?.[0]?.message?.includes("already signed in")) {
           // User is already signed in, redirect to dashboard
           void router.push("/dashboard");
           return;
@@ -87,9 +88,10 @@ const SignInPage: NextPage = () => {
         // Re-throw for general error handling
         throw clerkError;
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Sign in error:", err);
-      setError(err.errors?.[0]?.message || "Invalid email or password");
+      const error = err as { errors?: Array<{ message?: string }> };
+      setError(error.errors?.[0]?.message ?? "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -281,13 +283,14 @@ const SignInPage: NextPage = () => {
                           redirectUrl: "/sso-callback",
                           redirectUrlComplete: "/dashboard",
                         });
-                      } catch (error: any) {
+                      } catch (err) {
                         // If error contains "already signed in", redirect to dashboard
+                        const error = err as { errors?: Array<{ message?: string }> };
                         if (error.errors?.[0]?.message?.includes("already signed in")) {
                           void router.push("/dashboard");
                         } else {
                           console.error("Google sign-in error:", error);
-                          setError(error.errors?.[0]?.message || "Error signing in with Google");
+                          setError(error.errors?.[0]?.message ?? "Error signing in with Google");
                         }
                       }
                     }

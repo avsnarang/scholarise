@@ -1,10 +1,7 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-import { db } from "@/server/db";
 import { env } from "@/env";
 
 /**
@@ -67,7 +64,7 @@ export const authOptions = {
         return {
           id: data.user.id,
           email: data.user.email,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
+          name: data.user.user_metadata?.name ?? data.user.email?.split('@')[0],
           role: "User", // Default role since we can't get from DB
           branchId: null,
         };
@@ -80,18 +77,21 @@ export const authOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async signIn({ user, account }: { user: any; account: any }) {
+    async signIn(_params: { user: unknown; account: unknown }) {
       // Since the User model no longer exists, allow all signins
       // You may want to implement a different auth strategy
       return true;
     },
-    session: ({ session, user }: { session: any; user: any }) => ({
+    session: ({ session, user }: {
+      session: { user?: Record<string, unknown> };
+      user: { id: string; role?: string; branchId?: string | null }
+    }) => ({
       ...session,
       user: {
-        ...session.user,
+        ...(session.user ?? {}),
         id: user.id,
-        role: user.role || "User",
-        branchId: user.branchId || null,
+        role: user.role ?? "User",
+        branchId: user.branchId ?? null,
       },
     }),
   },

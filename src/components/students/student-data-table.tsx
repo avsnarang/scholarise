@@ -56,21 +56,21 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
   const { toast } = useToast()
   const deleteConfirm = useDeleteConfirm()
   const statusChangeConfirm = useStatusChangeConfirm()
-  
+
   // API mutations
-  const utils = api.useContext()
-  
+  const trpc = api.useUtils()
+
   const deleteStudentMutation = api.student.delete.useMutation({
     onSuccess: () => {
-      void utils.student.getAll.invalidate()
-      void utils.student.getStats.invalidate()
+      void trpc.student.getAll.invalidate()
+      void trpc.student.getStats.invalidate()
     },
   })
-  
+
   const toggleStatusMutation = api.student.toggleStatus.useMutation({
     onSuccess: () => {
-      void utils.student.getAll.invalidate()
-      void utils.student.getStats.invalidate()
+      void trpc.student.getAll.invalidate()
+      void trpc.student.getStats.invalidate()
     },
   })
 
@@ -184,7 +184,7 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
         const student = row.original
         return (
           <div className="font-medium">
-            {student.class?.name || "-"} 
+            {student.class?.name || "-"}
             {student.class?.section ? `${student.class.section}` : ""}
           </div>
         )
@@ -252,7 +252,7 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
                     </a>
                   </div>
                 )}
-                
+
                 {student.parent.motherName && (
                   <div className="flex gap-1 items-center mt-1">
                     <span className="text-xs text-gray-500 min-w-[15px]">M:</span>
@@ -274,7 +274,7 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
                     </a>
                   </div>
                 )}
-                
+
                 {student.parent.guardianName && (
                   <div className="flex gap-1 items-center mt-1">
                     <span className="text-xs text-gray-500 min-w-[15px]">G:</span>
@@ -304,8 +304,8 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
       cell: ({ row }) => {
         const isActive = row.original.isActive
         return (
-          <Badge variant={isActive ? "outline" : "secondary"} className={isActive 
-            ? "bg-green-50 text-green-700 hover:bg-green-50 dark:bg-[#7aad8c]/10 dark:text-[#7aad8c] dark:border-[#7aad8c]/30 dark:hover:bg-[#7aad8c]/20" 
+          <Badge variant={isActive ? "outline" : "secondary"} className={isActive
+            ? "bg-green-50 text-green-700 hover:bg-green-50 dark:bg-[#7aad8c]/10 dark:text-[#7aad8c] dark:border-[#7aad8c]/30 dark:hover:bg-[#7aad8c]/20"
             : "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040] dark:hover:bg-[#353535]"}>
             {isActive ? "Active" : "Inactive"}
           </Badge>
@@ -411,9 +411,9 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
   ]
 
   return (
-    <DataTable 
-      columns={columns} 
-      data={data} 
+    <DataTable
+      columns={columns}
+      data={data}
       searchKey="firstName"
       searchPlaceholder="Search students..."
       pageSize={50} // Increase page size to show more students

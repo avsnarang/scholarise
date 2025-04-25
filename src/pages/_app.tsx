@@ -1,15 +1,9 @@
-import { type Session } from "next-auth";
-import { SessionProvider } from "next-auth/react";
-import { type AppType } from "next/app";
 import { type NextPage } from "next";
 import { Montserrat, Lilita_One } from "next/font/google";
 import Head from "next/head";
 import { api } from "@/utils/api";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
 import { PopupProvider } from "@/components/ui/custom-popup";
-import { createPagesBrowserClient } from "@supabase/auth-helpers-nextjs";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
-import { useState } from "react";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 import "@/styles/globals.css";

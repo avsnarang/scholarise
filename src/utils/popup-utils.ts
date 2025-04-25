@@ -6,7 +6,7 @@ import { usePopup } from "@/components/ui/custom-popup";
 // Replace window.alert with our custom popup
 export function useCustomAlert() {
   const { alert } = usePopup();
-  
+
   return (message: string, callback?: () => void) => {
     alert("Alert", message, callback);
   };
@@ -15,7 +15,7 @@ export function useCustomAlert() {
 // Replace window.confirm with our custom popup
 export function useCustomConfirm() {
   const { confirm } = usePopup();
-  
+
   return (message: string, onConfirm?: () => void, onCancel?: () => void) => {
     confirm("Confirm", message, onConfirm, onCancel);
   };
@@ -24,10 +24,10 @@ export function useCustomConfirm() {
 // Specialized confirm for delete operations
 export function useDeleteConfirm() {
   const { confirm } = usePopup();
-  
+
   return (entityName: string, onConfirm?: () => void, onCancel?: () => void) => {
     confirm(
-      "Delete Confirmation", 
+      "Delete Confirmation",
       `Are you sure you want to delete this ${entityName}? This action cannot be undone.`,
       onConfirm,
       onCancel
@@ -38,10 +38,10 @@ export function useDeleteConfirm() {
 // Specialized confirm for bulk delete operations
 export function useBulkDeleteConfirm() {
   const { confirm } = usePopup();
-  
+
   return (entityName: string, count: number, onConfirm?: () => void, onCancel?: () => void) => {
     confirm(
-      "Delete Confirmation", 
+      "Delete Confirmation",
       `Are you sure you want to delete ${count} ${entityName}${count > 1 ? 's' : ''}? This action cannot be undone.`,
       onConfirm,
       onCancel
@@ -52,12 +52,12 @@ export function useBulkDeleteConfirm() {
 // Specialized confirm for status change operations
 export function useStatusChangeConfirm() {
   const { confirm } = usePopup();
-  
-  return (entityName: string, newStatus: boolean, count: number = 1, onConfirm?: () => void, onCancel?: () => void) => {
+
+  return (entityName: string, newStatus: boolean, count = 1, onConfirm?: () => void, onCancel?: () => void) => {
     const action = newStatus ? "activate" : "deactivate";
-    
+
     confirm(
-      "Status Change Confirmation", 
+      "Status Change Confirmation",
       `Are you sure you want to ${action} ${count} ${entityName}${count > 1 ? 's' : ''}?`,
       onConfirm,
       onCancel

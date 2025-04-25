@@ -47,9 +47,10 @@ const ForgotPasswordPage: NextPage = () => {
       });
 
       setSuccess(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Reset password error:", err);
-      setError(err.errors?.[0]?.message || "Something went wrong. Please try again.");
+      const error = err as { errors?: Array<{ message?: string }> };
+      setError(error.errors?.[0]?.message ?? "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,23 +70,23 @@ const ForgotPasswordPage: NextPage = () => {
         <div className="absolute inset-0 z-0 overflow-hidden">
           {/* Large circle - dark green */}
           <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#00501B]/10"></div>
-          
+
           {/* Medium triangle - rust/amber */}
           <div className="absolute bottom-0 left-0 h-0 w-0 border-b-[300px] border-l-[300px] border-r-[300px] border-b-[#A65A20]/10 border-l-transparent border-r-transparent"></div>
-          
+
           {/* Small square - dark green */}
           <div className="absolute bottom-20 right-20 h-40 w-40 rotate-45 transform bg-[#00501B]/5"></div>
-          
+
           {/* Small circle - rust/amber */}
           <div className="absolute left-20 top-20 h-32 w-32 rounded-full bg-[#A65A20]/5"></div>
-          
+
           {/* Diagonal line - dark green */}
           <div className="absolute left-1/4 top-0 h-screen w-1 rotate-45 transform bg-[#00501B]/10"></div>
-          
+
           {/* Diagonal line - rust/amber */}
           <div className="absolute right-1/4 top-0 h-screen w-1 -rotate-45 transform bg-[#A65A20]/10"></div>
         </div>
-        
+
         {/* Card container */}
         <div className="z-10 w-full max-w-md px-4">
           {/* Logo and title */}
@@ -96,12 +97,12 @@ const ForgotPasswordPage: NextPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">ScholaRise</h1>
             <p className="mt-1 text-[#00501B]">Reset your password</p>
           </div>
-          
+
           {/* Card with material design */}
           <div className="overflow-hidden rounded-xl bg-white shadow-xl">
             {/* Card header with accent color */}
             <div className="h-2 bg-gradient-to-r from-[#00501B] to-[#A65A20]"></div>
-            
+
             {/* Card content */}
             <div className="p-8">
               {success ? (
@@ -117,7 +118,7 @@ const ForgotPasswordPage: NextPage = () => {
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.push("/sign-in")}
+                    onClick={() => void router.push("/sign-in")}
                     className="mt-6 inline-flex items-center rounded-md bg-[#00501B] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#00501B]/90 focus:outline-none focus:ring-2 focus:ring-[#00501B] focus:ring-offset-2"
                   >
                     Return to sign in
@@ -132,12 +133,12 @@ const ForgotPasswordPage: NextPage = () => {
                       <p>{error}</p>
                     </div>
                   )}
-                  
+
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <p className="text-sm text-gray-600">
                       Enter your email address and we'll send you a link to reset your password.
                     </p>
-                    
+
                     {/* Email field */}
                     <div className="space-y-2">
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -183,7 +184,7 @@ const ForgotPasswordPage: NextPage = () => {
                     {/* Back to sign in */}
                     <button
                       type="button"
-                      onClick={() => router.push("/sign-in")}
+                      onClick={() => void router.push("/sign-in")}
                       className="flex w-full items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
                     >
                       <ArrowLeft className="h-4 w-4" />
@@ -193,7 +194,7 @@ const ForgotPasswordPage: NextPage = () => {
                 </>
               )}
             </div>
-            
+
             {/* Card footer */}
             <div className="border-t border-gray-100 bg-gray-50 p-4 text-center text-xs text-gray-500">
               © {new Date().getFullYear()} ScholaRise. All rights reserved.
