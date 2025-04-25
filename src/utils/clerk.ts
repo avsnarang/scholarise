@@ -1,7 +1,7 @@
 import { Clerk } from '@clerk/clerk-sdk-node';
 
 // Initialize Clerk client
-const clerk = new Clerk({ apiKey: process.env.CLERK_SECRET_KEY });
+const clerk = Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
 
 interface CreateStudentUserParams {
   firstName: string;

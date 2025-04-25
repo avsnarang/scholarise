@@ -18,7 +18,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/utils/api";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -46,7 +45,7 @@ const EditTeacherPage: NextPage = () => {
   );
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -145,8 +144,8 @@ const EditTeacherPage: NextPage = () => {
           </div>
 
           <div className="rounded-md border p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Form form={form}>
+              <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
                     control={form.control}

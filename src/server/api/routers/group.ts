@@ -2,6 +2,13 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
+// NOTICE: This router is currently inactive because the required models (group, userGroup, groupRole)
+// no longer exist in the Prisma schema. Keep this file for reference or delete it if not needed.
+
+// Either delete this file or uncomment and update the router when the models are added to the schema
+export const groupRouter = createTRPCRouter({});
+
+/* Original router code removed due to missing models in schema
 export const groupRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.group.findMany({
@@ -15,11 +22,6 @@ export const groupRouter = createTRPCRouter({
       const group = await ctx.db.group.findUnique({
         where: { id: input.id },
         include: {
-          users: {
-            include: {
-              user: true,
-            },
-          },
           roles: {
             include: {
               role: true,
@@ -226,3 +228,4 @@ export const groupRouter = createTRPCRouter({
       });
     }),
 });
+*/

@@ -45,15 +45,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     refetchOnMount: true,
     refetchOnReconnect: true,
     retry: 3,
-    retryDelay: 1000,
-    onError: (error) => {
-      console.error('Error fetching branches:', error);
-      // Attempt to refetch after a delay
-      setTimeout(() => {
-        console.log('Retrying branch fetch...');
-        void refetchBranches();
-      }, 2000);
-    }
+    retryDelay: 1000
   });
 
   const {
@@ -69,15 +61,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       retryDelay: 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: true,
-      refetchOnReconnect: true,
-      onError: (error) => {
-        console.error(`Error fetching branch with ID ${currentBranchId}:`, error);
-        // Attempt to refetch after a delay
-        setTimeout(() => {
-          console.log('Retrying current branch fetch...');
-          void refetchCurrentBranch();
-        }, 2000);
-      }
+      refetchOnReconnect: true
     }
   );
 

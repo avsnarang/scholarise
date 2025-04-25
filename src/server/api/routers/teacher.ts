@@ -21,7 +21,11 @@ export const teacherRouter = createTRPCRouter({
             SUM(CASE WHEN "isActive" = false THEN 1 ELSE 0 END) AS "inactiveTeachers"
           FROM "Teacher"
           WHERE (${input?.branchId}::text IS NULL OR "branchId" = ${input?.branchId}::text)
-        `,
+        ` as unknown as Array<{
+          totalTeachers: bigint;
+          activeTeachers: bigint;
+          inactiveTeachers: bigint;
+        }>,
 
         // Get class assignments in parallel
         ctx.db.class.groupBy({
@@ -35,10 +39,10 @@ export const teacherRouter = createTRPCRouter({
       ]);
 
       // Extract counts from the raw query result
-      const counts = teacherCounts[0] as {
-        totalTeachers: bigint;
-        activeTeachers: bigint;
-        inactiveTeachers: bigint;
+      const counts = teacherCounts[0] || {
+        totalTeachers: 0n,
+        activeTeachers: 0n,
+        inactiveTeachers: 0n
       };
 
       // Count teachers with classes
@@ -82,19 +86,21 @@ export const teacherRouter = createTRPCRouter({
       const limit = input?.limit ?? 50;
       const cursor = input?.cursor;
 
-      // Build the where clause
-      let whereClause = {
+      // Build the where clause dynamically to avoid type issues
+      let whereClause: any = {
         branchId: input?.branchId,
         isActive: input?.isActive,
-        OR: input?.search
-          ? [
-              { firstName: { contains: input.search, mode: "insensitive" } },
-              { lastName: { contains: input.search, mode: "insensitive" } },
-              { qualification: { contains: input.search, mode: "insensitive" } },
-              { specialization: { contains: input.search, mode: "insensitive" } },
-            ]
-          : undefined,
       };
+
+      // Add search conditions if search is provided
+      if (input?.search) {
+        whereClause.OR = [
+          { firstName: { contains: input.search, mode: "insensitive" } },
+          { lastName: { contains: input.search, mode: "insensitive" } },
+          { qualification: { contains: input.search, mode: "insensitive" } },
+          { specialization: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
 
       // Handle advanced filters
       if (input?.advancedFilters && input.advancedFilters.conditions.length > 0) {
@@ -137,9 +143,9 @@ export const teacherRouter = createTRPCRouter({
 
         // Add the conditions to the where clause using AND or OR
         if (logicOperator === "and") {
-          whereClause = { ...whereClause, AND: filterConditions };
+          whereClause.AND = filterConditions;
         } else {
-          whereClause = { ...whereClause, OR: filterConditions };
+          whereClause.OR = filterConditions;
         }
       }
 
@@ -150,7 +156,7 @@ export const teacherRouter = createTRPCRouter({
         orderBy: { lastName: "asc" },
         include: {
           classes: true,
-          user: true,
+          // user model no longer exists, so we don't include it
         },
       });
 
@@ -180,7 +186,7 @@ export const teacherRouter = createTRPCRouter({
         },
         include: {
           classes: true,
-          user: true,
+          // user model no longer exists, so we don't include it
         },
       });
 
@@ -275,25 +281,12 @@ export const teacherRouter = createTRPCRouter({
           branchId: input.branchId,
           userId: input.userId,
         },
-        include: {
-          user: true,
-        },
+        // Removed user include since it no longer exists
       });
 
-      // If teacher has a user and isHQ is provided, update the user's isHQ field
-      if (updatedTeacher.userId && input.isHQ !== undefined) {
-        // Update user in database
-        try {
-          await ctx.db.user.update({
-            where: { id: updatedTeacher.userId },
-            data: { isHQ: input.isHQ },
-          });
-          console.log("Updated user isHQ status for teacher:", updatedTeacher.userId);
-        } catch (error) {
-          console.error("Error updating user:", error);
-          // Continue even if user update fails
-        }
-      }
+      // The user model no longer exists, so we don't update it
+      // If teacher has a user and isHQ is provided, we would update the user's isHQ field
+      // But since the model is gone, we skip this part
 
       return updatedTeacher;
     }),

@@ -32,7 +32,7 @@ export function FileUpload({
         throw new Error("You must select a file to upload.");
       }
 
-      const file = event.target.files[0];
+      const file = event.target.files[0]!;
 
       // Check file size
       if (file.size > maxSize * 1024 * 1024) {

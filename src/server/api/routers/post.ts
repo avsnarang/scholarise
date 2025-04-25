@@ -6,6 +6,11 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 
+// NOTICE: This router is currently inactive because the required 'post' model
+// no longer exists in the Prisma schema and ctx.session is not available.
+// Keep this file for reference or delete it if not needed.
+
+// Either delete this file or uncomment and update the router when the models are added to the schema
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
     .input(z.object({ text: z.string() }))
@@ -15,6 +20,8 @@ export const postRouter = createTRPCRouter({
       };
     }),
 
+  // Other procedures commented out due to missing models
+  /*
   create: protectedProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
@@ -34,6 +41,7 @@ export const postRouter = createTRPCRouter({
 
     return post ?? null;
   }),
+  */
 
   getSecretMessage: protectedProcedure.query(() => {
     return "you can now see this secret message!";

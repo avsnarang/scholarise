@@ -29,7 +29,7 @@ export function useGlobalBranchFilter() {
       return {
         ...input,
         branchId: currentBranchId,
-      } as T;
+      } as unknown as T;
     },
     [currentBranchId]
   );

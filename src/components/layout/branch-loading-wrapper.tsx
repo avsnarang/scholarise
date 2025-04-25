@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useBranchChangeLoading } from "@/hooks/useBranchChangeLoading";
 import { BranchLoadingOverlay } from "@/components/ui/branch-loading-overlay";
 

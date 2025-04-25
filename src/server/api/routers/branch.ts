@@ -226,18 +226,13 @@ export const branchRouter = createTRPCRouter({
           where: { branchId: input.id },
         });
 
-        const relatedUsers = await ctx.db.user.count({
-          where: { branchId: input.id },
-        });
-
         // If there are related records, throw a user-friendly error
-        if (relatedStudents > 0 || relatedTeachers > 0 || relatedEmployees > 0 || relatedClasses > 0 || relatedUsers > 0) {
+        if (relatedStudents > 0 || relatedTeachers > 0 || relatedEmployees > 0 || relatedClasses > 0) {
           const relatedEntities = [];
           if (relatedStudents > 0) relatedEntities.push(`${relatedStudents} student${relatedStudents !== 1 ? 's' : ''}`);
           if (relatedTeachers > 0) relatedEntities.push(`${relatedTeachers} teacher${relatedTeachers !== 1 ? 's' : ''}`);
           if (relatedEmployees > 0) relatedEntities.push(`${relatedEmployees} employee${relatedEmployees !== 1 ? 's' : ''}`);
           if (relatedClasses > 0) relatedEntities.push(`${relatedClasses} class${relatedClasses !== 1 ? 'es' : ''}`);
-          if (relatedUsers > 0) relatedEntities.push(`${relatedUsers} user${relatedUsers !== 1 ? 's' : ''}`);
 
           const errorMessage = `Cannot delete this branch because it has ${relatedEntities.join(', ')} associated with it. Please reassign or delete these entities first.`;
 

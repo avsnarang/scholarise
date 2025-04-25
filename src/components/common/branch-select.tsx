@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/popover";
 import { api } from "@/utils/api";
 
+interface Branch {
+  id: string;
+  name: string;
+  code: string;
+}
+
 interface BranchSelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -41,19 +47,11 @@ export function BranchSelect({
     refetch
   } = api.branch.getAll.useQuery(undefined, {
     retry: 3,
-    retryDelay: 1000,
-    onError: (err) => {
-      console.error('Error fetching branches in BranchSelect:', err);
-      // Attempt to refetch after a delay
-      setTimeout(() => {
-        console.log('Retrying branch fetch in BranchSelect...');
-        void refetch();
-      }, 2000);
-    }
+    retryDelay: 1000
   });
 
   // Find the selected branch name
-  const selectedBranch = branches?.find((branch) => branch.id === value);
+  const selectedBranch = branches?.find((branch: Branch) => branch.id === value);
 
   // Update the value if the selected branch is no longer available
   useEffect(() => {
@@ -136,7 +134,7 @@ export function BranchSelect({
           )}
           {!isLoading && !error && (
             <CommandGroup className="max-h-[300px] overflow-y-auto">
-              {branches?.map((branch) => (
+              {branches?.map((branch: Branch) => (
                 <CommandItem
                   key={branch.id}
                   value={branch.id}

@@ -14,9 +14,7 @@ const SSOCallbackPage: NextPage = () => {
     void handleRedirectCallback({
       // Note: Multiple sessions are controlled by Clerk Dashboard settings
       // under Session settings > Session token configuration
-      afterCallback: () => {
-        void router.push("/dashboard");
-      },
+      redirectUrl: "/dashboard"
     });
   }, [router, handleRedirectCallback]);
 

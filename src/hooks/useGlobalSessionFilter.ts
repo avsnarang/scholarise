@@ -6,7 +6,7 @@ import { useCallback } from "react";
  * This hook ensures that all data fetching operations use the selected session as a filter.
  */
 export function useGlobalSessionFilter() {
-  const { currentSessionId, currentSession, isLoading } = useAcademicSessionContext();
+  const { currentSessionId, isLoading } = useAcademicSessionContext();
 
   /**
    * Returns the current session ID for use in API queries
@@ -29,7 +29,7 @@ export function useGlobalSessionFilter() {
       return {
         ...input,
         sessionId: currentSessionId,
-      } as T;
+      } as unknown as T;
     },
     [currentSessionId]
   );
@@ -63,7 +63,6 @@ export function useGlobalSessionFilter() {
 
   return {
     sessionId: currentSessionId,
-    session: currentSession,
     isLoading,
     getSessionFilterParam,
     withSessionFilter,

@@ -34,6 +34,19 @@ interface BranchFormValues {
   updatedAt?: Date;
 }
 
+// Define the Branch type to fix the type error
+type Branch = {
+  id: string;
+  name: string;
+  code: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  email?: string | null;
+};
+
 export function BranchList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,7 +60,7 @@ export function BranchList() {
   const { data: branches, isLoading } = api.branch.getAll.useQuery();
 
   // Filter branches based on search query
-  const filteredBranches = branches?.filter((branch) => {
+  const filteredBranches = branches?.filter((branch: Branch) => {
     const query = searchQuery.toLowerCase();
     return (
       branch.name.toLowerCase().includes(query) ||
@@ -185,7 +198,7 @@ export function BranchList() {
                     </td>
                   </tr>
                 ) : (
-                  filteredBranches.map((branch) => (
+                  filteredBranches.map((branch: Branch) => (
                     <tr key={branch.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="font-medium text-[#00501B]">{branch.name}</div>

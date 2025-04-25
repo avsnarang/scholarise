@@ -17,16 +17,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/utils/api";
 import { Loader2, User, Mail, Key } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -51,13 +50,10 @@ const ProfilePage: NextPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const { user, isLoaded } = useUser();
-
-  const { data: userProfile, isLoading, refetch } = api.user.getProfile.useQuery(
-    undefined,
-    { enabled: !!user }
-  );
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const isLoading = !isUserLoaded;
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -79,51 +75,26 @@ const ProfilePage: NextPage = () => {
 
   // Update form values when user data is loaded
   useEffect(() => {
-    if (userProfile) {
+    if (user) {
       profileForm.reset({
-        name: userProfile.name || "",
-        email: userProfile.email || "",
-        image: userProfile.image || "",
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        email: user.primaryEmailAddress?.emailAddress || "",
+        image: user.imageUrl || "",
       });
 
-      if (userProfile.image) {
-        setAvatarUrl(userProfile.image);
-      }
+      setAvatarUrl(user.imageUrl);
     }
-  }, [userProfile, profileForm]);
-
-  const updateProfileMutation = api.user.updateProfile.useMutation({
-    onSuccess: () => {
-      setIsSubmitting(false);
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-      void refetch();
-    },
-    onError: (error) => {
-      setIsSubmitting(false);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  }, [user, profileForm]);
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
+    if (!user) return;
+    
     setIsSubmitting(true);
     try {
       // Update user profile in Clerk
-      await user?.update({
+      await user.update({
         firstName: data.name.split(' ')[0],
         lastName: data.name.split(' ').slice(1).join(' '),
-      });
-
-      // Update user profile in database
-      await updateProfileMutation.mutateAsync({
-        name: data.name,
-        image: avatarUrl,
       });
 
       toast({
@@ -136,16 +107,19 @@ const ProfilePage: NextPage = () => {
         description: error.message || "Failed to update profile",
         variant: "destructive",
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   const onPasswordSubmit = async (data: PasswordFormValues) => {
+    if (!user) return;
+    
     setIsPasswordSubmitting(true);
 
     try {
       // Update password using Clerk
-      await user?.updatePassword({
+      await user.updatePassword({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
@@ -171,26 +145,37 @@ const ProfilePage: NextPage = () => {
     }
   };
 
-  const handleAvatarUpload = async (url: string) => {
-    setAvatarUrl(url);
-
+  const handleAvatarUpload = async (avatarUrl: string) => {
+    setLoading(true);
     try {
-      // Update the user's profile in the database
-      await updateProfileMutation.mutateAsync({
-        name: profileForm.getValues().name,
-        image: url,
-      });
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No user found",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (avatarUrl) {
+        await user.setProfileImage({ file: avatarUrl });
+      }
 
       toast({
-        title: "Avatar updated",
-        description: "Your avatar has been updated successfully.",
+        title: "Success",
+        description: "Avatar updated successfully",
       });
-    } catch (error: any) {
+      window.location.reload();
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update avatar in database",
+        description: "Failed to update avatar",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,12 +222,12 @@ const ProfilePage: NextPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...profileForm}>
+                  <Form form={profileForm}>
                     <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
                       <div className="flex flex-col items-center space-y-4">
                         <Avatar className="h-24 w-24">
-                          <AvatarImage src={avatarUrl || ""} alt={userProfile?.name || "User"} />
-                          <AvatarFallback>{userProfile?.name?.charAt(0) || "U"}</AvatarFallback>
+                          <AvatarImage src={avatarUrl || ""} alt={user?.firstName || "User"} />
+                          <AvatarFallback>{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
                         </Avatar>
 
                         <div className="flex items-center gap-2">
@@ -326,7 +311,7 @@ const ProfilePage: NextPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...passwordForm}>
+                  <Form form={passwordForm}>
                     <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-6">
                       <div className="grid gap-4">
                         <FormField

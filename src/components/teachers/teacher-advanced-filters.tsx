@@ -145,11 +145,19 @@ export function TeacherAdvancedFilters({ filters, onFilterChange }: TeacherAdvan
     setLocalFilters(filters);
   }, [filters]);
 
+  // Get the field object by ID
+  const getFieldById = (id: string) => {
+    return FILTER_FIELDS.find((field) => field.id === id) || FILTER_FIELDS[0];
+  };
+
   // Add a new filter condition
   const addCondition = () => {
+    const defaultField = FILTER_FIELDS[0];
+    if (!defaultField) return; // Guard clause if FILTER_FIELDS is empty
+    
     const newCondition: FilterCondition = {
       id: generateId(),
-      field: FILTER_FIELDS[0].id,
+      field: defaultField.id,
       operator: "equals",
       value: "",
     };
@@ -209,15 +217,10 @@ export function TeacherAdvancedFilters({ filters, onFilterChange }: TeacherAdvan
     onFilterChange(defaultFilters);
   };
 
-  // Get the field object by ID
-  const getFieldById = (id: string) => {
-    return FILTER_FIELDS.find((field) => field.id === id) || FILTER_FIELDS[0];
-  };
-
   // Get operators for a field
   const getOperatorsForField = (fieldId: string) => {
     const field = getFieldById(fieldId);
-    return OPERATORS_BY_TYPE[field.type];
+    return OPERATORS_BY_TYPE[field?.type || "text"];
   };
 
   // Check if a value input should be shown for the operator
@@ -228,6 +231,7 @@ export function TeacherAdvancedFilters({ filters, onFilterChange }: TeacherAdvan
   // Render the value input based on field type
   const renderValueInput = (condition: FilterCondition) => {
     const field = getFieldById(condition.field);
+    if (!field) return null;
 
     if (!shouldShowValueInput(condition.operator)) {
       return null;
@@ -403,7 +407,11 @@ export function TeacherAdvancedFilters({ filters, onFilterChange }: TeacherAdvan
                           value={condition.field}
                           onValueChange={(value) => {
                             const newField = getFieldById(value);
-                            const newOperator = OPERATORS_BY_TYPE[newField.type][0].id;
+                            if (!newField) return;
+                            
+                            const newOperators = OPERATORS_BY_TYPE[newField.type] || [];
+                            const newOperator = newOperators[0]?.id || "equals";
+                            
                             updateCondition(condition.id, {
                               field: value,
                               operator: newOperator,

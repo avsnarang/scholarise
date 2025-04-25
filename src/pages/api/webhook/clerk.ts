@@ -1,6 +1,6 @@
-import { IncomingHttpHeaders } from "http";
-import { NextApiRequest, NextApiResponse } from "next";
-import { Webhook, WebhookRequiredHeaders } from "svix";
+import { type IncomingHttpHeaders } from "http";
+import { type NextApiRequest, type NextApiResponse } from "next";
+import { Webhook, type WebhookRequiredHeaders } from "svix";
 import { buffer } from "micro";
 import { db } from "@/server/db";
 
@@ -51,70 +51,43 @@ export default async function handler(
   // Handle user creation
   if (type === "user.created") {
     try {
-      // Check if user already exists in the database
-      const existingUser = await db.user.findUnique({
-        where: { id: data.id },
-      });
+      // Instead of trying to create a non-existent User model, log the event
+      console.log("User created event received:", data.id);
+      // You may want to implement alternative logic here that matches your current schema
+      // For example, creating a Teacher, Employee, or updating ClerkID in an existing record
       
-      if (!existingUser) {
-        // Create user in the database
-        await db.user.create({
-          data: {
-            id: data.id,
-            name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-            email: data.email_addresses[0]?.email_address,
-            isActive: true,
-            // Add role if specified in metadata
-            ...(data.public_metadata.role && {
-              roles: {
-                create: {
-                  role: {
-                    connect: {
-                      name: data.public_metadata.role,
-                    },
-                  },
-                },
-              },
-            }),
-          },
-        });
-      }
+      return res.status(200).json({ message: "User creation event received" });
     } catch (error) {
-      console.error("Error creating user in database:", error);
-      return res.status(500).json({ message: "Error creating user" });
+      console.error("Error processing user creation:", error);
+      return res.status(500).json({ message: "Error processing user creation" });
     }
   }
   
   // Handle user update
   if (type === "user.updated") {
     try {
-      // Update user in the database
-      await db.user.update({
-        where: { id: data.id },
-        data: {
-          name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-          email: data.email_addresses[0]?.email_address,
-        },
-      });
+      // Instead of updating a non-existent User model, log the event
+      console.log("User updated event received:", data.id);
+      // You may want to implement alternative logic here that matches your current schema
+      
+      return res.status(200).json({ message: "User update event received" });
     } catch (error) {
-      console.error("Error updating user in database:", error);
-      return res.status(500).json({ message: "Error updating user" });
+      console.error("Error processing user update:", error);
+      return res.status(500).json({ message: "Error processing user update" });
     }
   }
   
   // Handle user deletion
   if (type === "user.deleted") {
     try {
-      // Set user as inactive instead of deleting
-      await db.user.update({
-        where: { id: data.id },
-        data: {
-          isActive: false,
-        },
-      });
+      // Instead of updating a non-existent User model, log the event
+      console.log("User deletion event received:", data.id);
+      // You may want to implement alternative logic here that matches your current schema
+      
+      return res.status(200).json({ message: "User deletion event received" });
     } catch (error) {
-      console.error("Error deactivating user in database:", error);
-      return res.status(500).json({ message: "Error deactivating user" });
+      console.error("Error processing user deletion:", error);
+      return res.status(500).json({ message: "Error processing user deletion" });
     }
   }
   

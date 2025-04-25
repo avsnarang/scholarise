@@ -35,9 +35,6 @@ export const employeeRouter = createTRPCRouter({
         where: whereClause,
         cursor: cursor ? { id: cursor } : undefined,
         orderBy: { lastName: "asc" },
-        include: {
-          user: true,
-        },
       });
 
       let nextCursor: string | undefined = undefined;

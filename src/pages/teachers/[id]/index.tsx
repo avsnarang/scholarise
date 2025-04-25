@@ -231,9 +231,9 @@ const TeacherDetailPage: NextPage = () => {
                 <BookOpen className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {teacher.classes && teacher.classes.length > 0 ? (
+                {(teacher as any).classes && (teacher as any).classes.length > 0 ? (
                   <ul className="space-y-2">
-                    {teacher.classes.map((cls) => (
+                    {(teacher as any).classes?.map((cls: {id: string, name: string, section: string, capacity: number}) => (
                       <li key={cls.id} className="rounded-md border p-2">
                         <div className="flex items-center justify-between">
                           <div>

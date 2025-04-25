@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useFormContext, Controller, FieldValues, FieldPath } from "react-hook-form"
+import { useFormContext, Controller, type FieldValues, type FieldPath } from "react-hook-form"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
@@ -101,7 +101,7 @@ const FormField = <
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  render: ({ field }: any) => React.ReactNode
+  render: ({ field }: any) => React.ReactElement
 }) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>

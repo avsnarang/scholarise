@@ -2,6 +2,13 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
+// NOTICE: This router is currently inactive because the required 'role' model
+// no longer exists in the Prisma schema. Keep this file for reference or delete it if not needed.
+
+// Either delete this file or uncomment and update the router when the models are added to the schema
+export const roleRouter = createTRPCRouter({});
+
+/* Original router code removed due to missing models in schema
 export const roleRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.role.findMany({
@@ -125,3 +132,4 @@ export const roleRouter = createTRPCRouter({
       });
     }),
 });
+*/

@@ -55,7 +55,7 @@ export function BranchOrder() {
   // Initialize branches state when data is loaded
   useEffect(() => {
     if (branchesData) {
-      setBranches(branchesData.map((branch, index) => ({
+      setBranches(branchesData.map((branch: Branch, index: number) => ({
         ...branch,
         order: (branch as any).order ?? index,
       })));

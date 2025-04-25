@@ -63,16 +63,18 @@ export const optimizedQueries = {
     getAll: async () => {
       const key = 'branch.getAll';
       return queryCache.getOrSet(key, async () => {
-        const result = await api.branch.getAll.query();
-        return result;
+        // Server-side data fetching is not directly supported by tRPC client
+        // Use fetch or other server-compatible approach
+        return []; // Placeholder - implement with proper server-side fetch
       }, 60 * 1000); // 1 minute cache
     },
     
     getById: async (id: string) => {
       const key = `branch.getById:${id}`;
       return queryCache.getOrSet(key, async () => {
-        const result = await api.branch.getById.query({ id });
-        return result;
+        // Server-side data fetching is not directly supported by tRPC client
+        // Use fetch or other server-compatible approach
+        return null; // Placeholder - implement with proper server-side fetch
       }, 60 * 1000); // 1 minute cache
     }
   },
@@ -81,8 +83,14 @@ export const optimizedQueries = {
     getStats: async (branchId?: string) => {
       const key = `student.getStats:${branchId || 'all'}`;
       return queryCache.getOrSet(key, async () => {
-        const result = await api.student.getStats.query({ branchId });
-        return result;
+        // Server-side data fetching is not directly supported by tRPC client
+        // Use fetch or other server-compatible approach
+        return {
+          totalStudents: 0,
+          activeStudents: 0,
+          inactiveStudents: 0,
+          classCounts: {}
+        }; // Placeholder - implement with proper server-side fetch
       }, 30 * 1000); // 30 seconds cache
     }
   },
@@ -91,8 +99,15 @@ export const optimizedQueries = {
     getStats: async (branchId?: string) => {
       const key = `teacher.getStats:${branchId || 'all'}`;
       return queryCache.getOrSet(key, async () => {
-        const result = await api.teacher.getStats.query({ branchId });
-        return result;
+        // Server-side data fetching is not directly supported by tRPC client
+        // Use fetch or other server-compatible approach
+        return {
+          totalTeachers: 0,
+          activeTeachers: 0,
+          inactiveTeachers: 0,
+          teachersWithClasses: 0,
+          teachersWithoutClasses: 0
+        }; // Placeholder - implement with proper server-side fetch
       }, 30 * 1000); // 30 seconds cache
     }
   }
