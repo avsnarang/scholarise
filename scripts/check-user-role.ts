@@ -9,7 +9,7 @@ dotenv.config();
 // Initialize Clerk client
 const clerk = Clerk({ apiKey: process.env.CLERK_SECRET_KEY });
 
-async function checkUserRole(userId) {
+async function checkUserRole(userId: string) {
   try {
     if (!userId) {
       console.error('Error: User ID is required');
@@ -37,5 +37,5 @@ async function checkUserRole(userId) {
 }
 
 // Get the user ID from command line arguments
-const userId = process.argv[2];
+const userId = process.argv[2] || '';
 checkUserRole(userId);
