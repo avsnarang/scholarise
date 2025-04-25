@@ -9,12 +9,12 @@
 
 import { initTRPC, TRPCError } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { type Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { getAuth } from "@clerk/nextjs/server";
 
-import { auth } from "@/server/auth";
 import { db } from "@/server/db";
+import { withBranchFilter } from "@/utils/branch-filter";
 
 /**
  * 1. CONTEXT
@@ -25,7 +25,8 @@ import { db } from "@/server/db";
  */
 
 interface CreateContextOptions {
-  session: Session | null;
+  userId: string | null;
+  auth: ReturnType<typeof getAuth>;
 }
 
 /**
@@ -40,7 +41,8 @@ interface CreateContextOptions {
  */
 const createInnerTRPCContext = (opts: CreateContextOptions) => {
   return {
-    session: opts.session,
+    userId: opts.userId,
+    auth: opts.auth,
     db,
   };
 };
@@ -52,13 +54,14 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
-  const { req, res } = opts;
+  const { req } = opts;
 
-  // Get the session from the server using the getServerSession wrapper function
-  const session = await auth(req, res);
+  // Get the auth information from Clerk
+  const auth = getAuth(req);
 
   return createInnerTRPCContext({
-    session,
+    userId: auth.userId,
+    auth,
   });
 };
 
@@ -129,13 +132,44 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 /**
+ * Middleware for automatically adding branch filtering to procedures
+ *
+ * This middleware extracts the branchId from the input if available and ensures
+ * that it's properly applied to database queries.
+ */
+const branchFilterMiddleware = t.middleware(async ({ ctx, next, input, path }) => {
+  // Extract branchId from input if it exists
+  const inputObj = input as Record<string, unknown>;
+  const branchId = inputObj?.branchId as string | undefined;
+
+  // Determine the model name from the path
+  // Format is typically: router.procedure, e.g., academicSession.getAll
+  const modelName = path.split('.')[0];
+
+  // Pass the branchId to the context for use in procedures
+  return next({
+    ctx: {
+      ...ctx,
+      branchFilter: {
+        branchId,
+        // Helper function to add branch filter to where clauses
+        addBranchFilter: <T extends Record<string, unknown>>(whereClause?: T) =>
+          withBranchFilter(branchId, whereClause, modelName),
+      },
+    },
+  });
+});
+
+/**
  * Public (unauthenticated) procedure
  *
  * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+export const publicProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(branchFilterMiddleware); // Apply branch filtering to all procedures
 
 /**
  * Protected (authenticated) procedure
@@ -147,14 +181,15 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
+  .use(branchFilterMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
+    if (!ctx.userId) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({
       ctx: {
-        // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
+        ...ctx,
+        userId: ctx.userId,
       },
     });
   });

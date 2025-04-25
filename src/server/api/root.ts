@@ -1,4 +1,16 @@
 import { postRouter } from "@/server/api/routers/post";
+import { branchRouter } from "@/server/api/routers/branch";
+import { userRouter } from "@/server/api/routers/user";
+import { roleRouter } from "@/server/api/routers/role";
+import { groupRouter } from "@/server/api/routers/group";
+import { permissionRouter } from "@/server/api/routers/permission";
+import { studentRouter } from "@/server/api/routers/student";
+import { parentRouter } from "@/server/api/routers/parent";
+import { classRouter } from "@/server/api/routers/class";
+import { teacherRouter } from "@/server/api/routers/teacher";
+import { employeeRouter } from "@/server/api/routers/employee";
+import { authRouter } from "@/server/api/routers/auth";
+import { academicSessionRouter } from "@/server/api/routers/academicSession";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -8,6 +20,18 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   post: postRouter,
+  branch: branchRouter,
+  user: userRouter,
+  role: roleRouter,
+  group: groupRouter,
+  permission: permissionRouter,
+  student: studentRouter,
+  parent: parentRouter,
+  class: classRouter,
+  teacher: teacherRouter,
+  employee: employeeRouter,
+  auth: authRouter,
+  academicSession: academicSessionRouter,
 });
 
 // export type definition of API

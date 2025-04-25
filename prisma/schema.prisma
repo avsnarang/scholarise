@@ -1,74 +1,261 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
+model Branch {
+  id        String        @id @default(cuid())
+  name      String
+  code      String        @unique
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  phone     String?
+  email     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  order     Int           @default(0)
+  classes   Class[]
+  employees Employee[]
+  students  Student[]
+  teachers  Teacher[]
+  routes    TransportRoute[]
 }
 
-// Necessary for Next auth
-model Account {
-    id                       String  @id @default(cuid())
-    userId                   String
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String? // @db.Text
-    session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    refresh_token_expires_in Int?
-
-    @@unique([provider, providerAccountId])
+model Student {
+  id                   String                @id @default(cuid())
+  admissionNumber      String                @unique
+  firstName            String
+  lastName             String
+  dateOfBirth          DateTime
+  gender               String
+  address              String?
+  phone                String?
+  email                String?
+  personalEmail        String?
+  bloodGroup           String?
+  religion             String?
+  nationality          String?
+  caste                String?
+  aadharNumber         String?
+  udiseId              String?
+  joinDate             DateTime              @default(now())
+  dateOfAdmission      DateTime?
+  rollNumber           String?
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  branchId             String
+  parentId             String?
+  classId              String?
+  username             String?
+  password             String?
+  clerkId              String?               // Clerk auth user ID
+  // Address fields
+  permanentAddress     String?
+  permanentCity        String?
+  permanentState       String?
+  permanentCountry     String?
+  permanentZipCode     String?
+  correspondenceAddress String?
+  correspondenceCity   String?
+  correspondenceState  String?
+  correspondenceCountry String?
+  correspondenceZipCode String?
+  // Previous school information
+  previousSchool       String?
+  lastClassAttended    String?
+  mediumOfInstruction  String?
+  recognisedByStateBoard Boolean?
+  schoolCity           String?
+  schoolState          String?
+  reasonForLeaving     String?
+  academicRecords      AcademicRecord[]
+  branch               Branch                @relation(fields: [branchId], references: [id])
+  class                Class?                @relation(fields: [classId], references: [id])
+  parent               Parent?               @relation(fields: [parentId], references: [id])
+  transferCertificates TransferCertificate[]
+  transportAssignments TransportAssignment[]
+  // Sibling relationships
+  siblings             StudentSibling[]      @relation("StudentToSibling")
+  siblingOf            StudentSibling[]      @relation("SiblingToStudent")
 }
 
-model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Parent {
+  id                String    @id @default(cuid())
+  // Father information
+  fatherName        String?
+  fatherDob         DateTime?
+  fatherEducation   String?
+  fatherOccupation  String?
+  fatherMobile      String?
+  fatherEmail       String?
+  // Mother information
+  motherName        String?
+  motherDob         DateTime?
+  motherEducation   String?
+  motherOccupation  String?
+  motherMobile      String?
+  motherEmail       String?
+  // Guardian information
+  guardianName        String?
+  guardianDob         DateTime?
+  guardianEducation   String?
+  guardianOccupation  String?
+  guardianMobile      String?
+  guardianEmail       String?
+  // Additional information
+  parentAnniversary DateTime?
+  monthlyIncome     String?
+  clerkId           String?   // Clerk auth user ID
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  students          Student[]
 }
 
-model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
+model Teacher {
+  id             String   @id @default(cuid())
+  firstName      String
+  lastName       String
+  qualification  String?
+  specialization String?
+  joinDate       DateTime @default(now())
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userId         String?  @unique
+  branchId       String
+  employeeCode   String?  @unique
+  classes        Class[]
+  branch         Branch   @relation(fields: [branchId], references: [id])
 }
 
-model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+model Employee {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  designation String
+  department  String?
+  joinDate    DateTime @default(now())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String?  @unique
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id])
+}
 
-    @@unique([identifier, token])
+model Class {
+  id        String          @id @default(cuid())
+  name      String
+  section   String
+  capacity  Int             @default(30)
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  branchId  String
+  teacherId String?
+  sessionId String
+  branch    Branch          @relation(fields: [branchId], references: [id])
+  session   AcademicSession @relation(fields: [sessionId], references: [id])
+  teacher   Teacher?        @relation(fields: [teacherId], references: [id])
+  students  Student[]
+}
+
+model AcademicSession {
+  id              String           @id @default(cuid())
+  name            String
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  academicRecords AcademicRecord[]
+  classes         Class[]
+}
+
+model AcademicRecord {
+  id        String          @id @default(cuid())
+  studentId String
+  sessionId String
+  classId   String?
+  status    String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  session   AcademicSession @relation(fields: [sessionId], references: [id])
+  student   Student         @relation(fields: [studentId], references: [id])
+}
+
+model TransferCertificate {
+  id        String   @id @default(cuid())
+  tcNumber  String   @unique
+  issueDate DateTime @default(now())
+  reason    String?
+  remarks   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id])
+}
+
+model StudentSibling {
+  id              String   @id @default(cuid())
+  relationshipType String
+  createdAt       DateTime @default(now())
+
+  // Student who has the sibling
+  studentId       String
+  student         Student  @relation("StudentToSibling", fields: [studentId], references: [id], onDelete: Cascade)
+
+  // The sibling
+  siblingId       String
+  sibling         Student  @relation("SiblingToStudent", fields: [siblingId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, siblingId])
+}
+
+model TransportRoute {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  branchId    String
+  branch      Branch          @relation(fields: [branchId], references: [id])
+  stops       TransportStop[]
+}
+
+model TransportStop {
+  id          String                @id @default(cuid())
+  name        String
+  address     String?
+  distance    Float?
+  fee         Float
+  sequence    Int
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  routeId     String
+  assignments TransportAssignment[]
+  route       TransportRoute        @relation(fields: [routeId], references: [id], onDelete: Cascade)
+}
+
+model TransportAssignment {
+  id        String        @id @default(cuid())
+  startDate DateTime      @default(now())
+  endDate   DateTime?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  studentId String
+  stopId    String
+  stop      TransportStop @relation(fields: [stopId], references: [id])
+  student   Student       @relation(fields: [studentId], references: [id])
 }

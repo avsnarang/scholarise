@@ -1,6 +1,316 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+@custom-variant dark (&:is(.dark *));
+
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Custom scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 80, 27, 0.2);
+    border-radius: 20px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 80, 27, 0.4);
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 80, 27, 0.2) transparent;
+  }
+
+  /* Custom transition for width property */
+  .transition-width {
+    transition-property: width;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  /* Make elements feel clickable */
+  .clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .clickable:hover {
+    opacity: 0.9;
+  }
+
+  .clickable:active {
+    transform: scale(0.98);
+  }
+}
+
+@layer base {
+  /* Global interactive element styles */
+  a, button,
+  [role="button"],
+  .tabs-trigger,
+  select,
+  summary,
+  .cursor-pointer,
+  input[type="submit"],
+  input[type="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  /* Ensure all interactive elements have focus styles */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  select:focus-visible,
+  summary:focus-visible,
+  input:focus-visible {
+    outline: 2px solid #00501B;
+    outline-offset: 2px;
+  }
+
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 142.1 71.8% 15.7%;
+    --primary-foreground: 355.7 100% 97.3%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 24 89.3% 39.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142.1 71.8% 15.7%;
+
+    --radius: 0.5rem;
+
+    /* Font families */
+    --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-heading: var(--font-lilita-one), var(--font-sans);
+  }
+
+  .dark {
+    --background: 222 18% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 16% 18%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 16% 16%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+
+    --secondary: 222 14% 22%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 24 75% 40%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 142.4 71.8% 29.2%;
+  }
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  /* Base colors - Light mode */
+  --primary: #00501B;
+  --primary-foreground: white;
+  --primary-light: rgba(0, 80, 27, 0.1);
+  
+  --secondary: #A65A20;
+  --secondary-foreground: white;
+  --secondary-light: rgba(166, 90, 32, 0.1);
+  
+  /* Backgrounds */
+  --background: #ffffff;
+  --foreground: #18181b;
+  
+  /* Card/Container backgrounds */
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  
+  /* Borders */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  
+  /* Muted colors */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  
+  /* Accents */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  
+  /* Destructive actions */
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  
+  /* Shadows and rings */
+  --ring: #94a3b8;
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Base colors - Dark mode with pastel versions */
+  --primary: #7aad8c;
+  --primary-foreground: #f8fafc;
+  --primary-light: rgba(122, 173, 140, 0.2);
+  
+  --secondary: #e2bd8c;
+  --secondary-foreground: #0f172a;
+  --secondary-light: rgba(226, 189, 140, 0.2);
+  
+  /* Backgrounds - Dark mode */
+  --background: #202020;
+  --foreground: #e6e6e6;
+  
+  /* Card/Container backgrounds */
+  --card: #252525;
+  --card-foreground: #e6e6e6;
+  
+  /* Sidebar specific dark mode */
+  --sidebar: #101010;
+  --sidebar-foreground: #e6e6e6;
+  --sidebar-border: #151515;
+  
+  /* Borders */
+  --border: #303030;
+  --input: #303030;
+  
+  /* Muted colors */
+  --muted: #303030;
+  --muted-foreground: #c0c0c0;
+  
+  /* Accents */
+  --accent: #2a2a2a;
+  --accent-foreground: #e6e6e6;
+  
+  /* Destructive actions */
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  
+  /* Shadows and rings */
+  --ring: #7aad8c;
+  
+  /* Button glows */
+  --glow-primary: rgba(122, 173, 140, 0.25);
+  --glow-secondary: rgba(226, 189, 140, 0.25);
+  --glow-accent: rgba(42, 42, 42, 0.25);
+  --glow-destructive: rgba(239, 68, 68, 0.25);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Apply heading font to all headings */
+  h1, h2, h3, h4, h5, h6,
+  .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--font-heading);
+    font-weight: 400; /* Lilita One only comes in 400 weight */
+  }
+
+  /* Font utility classes */
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
