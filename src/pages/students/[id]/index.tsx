@@ -325,70 +325,70 @@ const StudentDetailPage: NextPageWithLayout = () => {
           </TabsContent>
 
             {/* Address Tab */}
-            <TabsContent value="address" className="p-6 bg-white rounded-b-md">
+            <TabsContent value="address" className="p-6 bg-white dark:bg-[#101010] rounded-b-md">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Permanent Address</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Permanent Address</h2>
                 </div>
 
-                <div className="mb-6 rounded-lg bg-gray-50 p-4">
+                <div className="mb-6 rounded-lg bg-gray-50 dark:bg-[#303030] p-4">
                   <div className="mb-2 flex items-center">
-                    <span className="rounded-full bg-[#00501B]/10 px-2 py-1 text-xs font-medium text-[#00501B]">Current</span>
+                    <span className="rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/10 px-2 py-1 text-xs font-medium text-[#00501B] dark:text-[#7aad8c]">Current</span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900">{student.address || 'No address provided'}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">{student.address || 'No address provided'}</p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">City</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">City</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">State</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">State</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Country</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">India</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Country</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">India</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Zip Code</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Zip Code</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Correspondence Address</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Correspondence Address</h2>
                 </div>
 
-                <div className="mb-6 rounded-lg bg-gray-50 p-4">
+                <div className="mb-6 rounded-lg bg-gray-50 dark:bg-[#303030] p-4">
                   <div className="mb-2 flex items-center">
-                    <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">Mailing</span>
+                    <span className="rounded-full bg-gray-200 dark:bg-[#404040] px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300">Mailing</span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900">Same as permanent address</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">Same as permanent address</p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">City</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">City</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">State</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">State</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Country</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">India</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Country</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">India</p>
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Zip Code</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                  <div className="rounded-md bg-gray-50 dark:bg-[#303030] p-4">
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Zip Code</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                 </div>
               </div>
@@ -396,24 +396,24 @@ const StudentDetailPage: NextPageWithLayout = () => {
           </TabsContent>
 
             {/* Parent Information Tab */}
-            <TabsContent value="parent-info" className="p-6 bg-white dark:bg-[#252525] rounded-b-md">
+            <TabsContent value="parent-info" className="p-6 bg-white dark:bg-[#101010] rounded-b-md">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="md:col-span-1">
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className="rounded-lg border dark:border-[#303030] bg-white dark:bg-[#252525] p-6 shadow-sm">
                   <div className="flex flex-col items-center justify-center">
-                    <div className="mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-[#A65A20]/10 text-5xl font-bold uppercase text-[#A65A20]">
+                    <div className="mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-[#A65A20]/10 dark:bg-[#e2bd8c]/10 text-5xl font-bold uppercase text-[#A65A20] dark:text-[#e2bd8c]">
                       {student.parent ? 
                         (student.parent.fatherName?.[0] || 
                          student.parent.motherName?.[0] || 
                          student.parent.guardianName?.[0] || '?') : '?'}
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-[#e6e6e6]">
                       {student.parent ? 
                         (student.parent.fatherName || 
                          student.parent.motherName || 
                          student.parent.guardianName || 'Parent') : 'Parent'}
                     </h3>
-                    <p className="text-sm text-gray-500">Primary Contact</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Primary Contact</p>
 
                     <div className="mt-4 w-full">
                       <div className="flex items-center gap-2 rounded-md bg-gray-50 dark:bg-[#303030] p-3">
@@ -442,10 +442,10 @@ const StudentDetailPage: NextPageWithLayout = () => {
               </div>
 
               <div className="md:col-span-2">
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className="rounded-lg border dark:border-[#303030] bg-white dark:bg-[#252525] p-6 shadow-sm">
                   <div className="mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <h2 className="text-lg font-semibold text-gray-900">Father's Information</h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Father's Information</h2>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -480,10 +480,10 @@ const StudentDetailPage: NextPageWithLayout = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-lg border bg-white p-6 shadow-sm">
+                <div className="mt-6 rounded-lg border dark:border-[#303030] bg-white dark:bg-[#252525] p-6 shadow-sm">
                   <div className="mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <h2 className="text-lg font-semibold text-gray-900">Mother's Information</h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Mother's Information</h2>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -518,24 +518,24 @@ const StudentDetailPage: NextPageWithLayout = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-lg border bg-white p-6 shadow-sm">
+                <div className="mt-6 rounded-lg border dark:border-[#303030] bg-white dark:bg-[#252525] p-6 shadow-sm">
                   <div className="mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                    <h2 className="text-lg font-semibold text-gray-900">Additional Information</h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Additional Information</h2>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-md bg-gray-50 p-4">
-                      <p className="text-xs font-medium uppercase text-gray-500">Parent Anniversary</p>
-                      <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                      <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Parent Anniversary</p>
+                      <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                     </div>
                     <div className="rounded-md bg-gray-50 p-4">
-                      <p className="text-xs font-medium uppercase text-gray-500">Monthly Income</p>
-                      <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                      <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Monthly Income</p>
+                      <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                     </div>
                     <div className="rounded-md bg-gray-50 p-4">
-                      <p className="text-xs font-medium uppercase text-gray-500">Parent Username</p>
-                      <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                      <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Parent Username</p>
+                      <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                     </div>
                   </div>
                 </div>
@@ -544,60 +544,60 @@ const StudentDetailPage: NextPageWithLayout = () => {
           </TabsContent>
 
           {/* Other Information Tab */}
-          <TabsContent value="other-info" className="p-6 bg-white rounded-b-md">
+          <TabsContent value="other-info" className="p-6 bg-white dark:bg-[#101010] rounded-b-md">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Previous School Information</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Previous School Information</h2>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Previous School</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Previous School</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Last Class Attended</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Last Class Attended</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Medium of Instruction</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Medium of Instruction</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Recognised by State Board</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Recognised by State Board</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Previous School Location</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Previous School Location</h2>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">School City</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">School City</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                   <div className="rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">School State</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">School State</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                   <div className="col-span-2 rounded-md bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-500">Reason for Leaving</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">N/A</p>
+                    <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Reason for Leaving</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900 dark:text-[#e6e6e6]">N/A</p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Documents</h2>
                 </div>
 
                 <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
@@ -607,10 +607,10 @@ const StudentDetailPage: NextPageWithLayout = () => {
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
                 <div className="mb-4 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Additional Notes</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Additional Notes</h2>
                 </div>
 
                 <div className="rounded-lg bg-gray-50 p-4">
@@ -621,15 +621,15 @@ const StudentDetailPage: NextPageWithLayout = () => {
           </TabsContent>
 
           {/* Sibling Details Tab */}
-          <TabsContent value="sibling-details" className="p-6 bg-white rounded-b-md">
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
+          <TabsContent value="sibling-details" className="p-6 bg-white dark:bg-[#101010] rounded-b-md">
+            <div className="rounded-lg border bg-white dark:bg-[#252525] dark:border-[#303030] p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                  <h2 className="text-lg font-semibold text-gray-900">Sibling Details</h2>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-[#00501B] dark:text-[#7aad8c]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#e6e6e6]">Sibling Details</h2>
                 </div>
                 <button
-                  className="flex items-center gap-1 rounded-md bg-[#00501B]/10 px-3 py-1.5 text-sm font-medium text-[#00501B] hover:bg-[#00501B]/20 transition-colors cursor-pointer clickable"
+                  className="flex items-center gap-1 rounded-md bg-[#00501B]/10 dark:bg-[#7aad8c]/10 px-3 py-1.5 text-sm font-medium text-[#00501B] dark:text-[#7aad8c] hover:bg-[#00501B]/20 dark:hover:bg-[#7aad8c]/20 transition-colors cursor-pointer clickable"
                   onClick={() => setIsSiblingModalOpen(true)}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -643,8 +643,8 @@ const StudentDetailPage: NextPageWithLayout = () => {
               />
 
               <div className="mt-6">
-                <h3 className="mb-2 text-sm font-medium text-gray-700">How to add siblings:</h3>
-                <ol className="list-decimal pl-5 text-sm text-gray-500">
+                <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">How to add siblings:</h3>
+                <ol className="list-decimal pl-5 text-sm text-gray-500 dark:text-gray-400">
                   <li className="mb-1">Click the "Add Sibling" button above</li>
                   <li className="mb-1">Enter the admission number of the sibling</li>
                   <li className="mb-1">Select the relationship type</li>
