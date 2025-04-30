@@ -18,6 +18,7 @@ import {
   ChevronsUpDown,
   Plus,
   AlertCircle,
+  Clock,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -277,6 +278,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Class Students",
           href: "/classes/students",
+        },
+      ],
+    },
+    {
+      title: "Attendance",
+      href: "/attendance-marker",
+      icon: Clock,
+      children: [
+        {
+          title: "Mark Attendance",
+          href: "/attendance-marker",
+        },
+        {
+          title: "View Records",
+          href: "/attendance-records",
+        },
+        {
+          title: "Configure Locations",
+          href: "/settings/location-config",
         },
       ],
     },
