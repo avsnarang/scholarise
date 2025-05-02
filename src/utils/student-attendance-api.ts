@@ -129,7 +129,7 @@ export function useMarkStudentAttendance() {
 
   return {
     markAttendance: mutation.mutate,
-    isLoading: mutation.isLoading,
+    isLoading: mutation.isPending,
     error: mutation.error,
   };
 }
@@ -148,7 +148,7 @@ export function useBulkMarkStudentAttendance() {
 
   return {
     bulkMarkAttendance: mutation.mutate,
-    isLoading: mutation.isLoading,
+    isLoading: mutation.isPending,
     error: mutation.error,
   };
 }
@@ -192,7 +192,7 @@ export function useDeleteStudentAttendance() {
 
   return {
     deleteAttendance: mutation.mutate,
-    isLoading: mutation.isLoading,
+    isLoading: mutation.isPending,
     error: mutation.error,
   };
 }

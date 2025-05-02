@@ -45,8 +45,11 @@ export default function TeachersPage() {
   });
 
   // Transform data to match the Teacher type
-  const teachers: Teacher[] = (teachersData?.items || []).map(teacher => {
+  const teachers: Teacher[] = (teachersData?.items || []).map(teacherData => {
     try {
+      // Use type assertion to handle the API response type
+      const teacher = teacherData as any;
+      
       // Check if teacher has the required fields
       if (!teacher?.firstName || !teacher?.lastName) {
         console.warn('Missing required fields in teacher data:', teacher);
@@ -60,7 +63,7 @@ export default function TeachersPage() {
           phone: teacher?.phone || undefined,
           qualification: teacher?.qualification || undefined,
           specialization: teacher?.specialization || undefined,
-          joinDate: teacher?.joinDate || undefined,
+          joinDate: teacher?.joinDate ? teacher.joinDate.toISOString() : undefined,
           isActive: teacher?.isActive !== undefined ? teacher.isActive : true,
           branch: teacher?.branch ? {
             name: teacher.branch.name || ''
@@ -77,15 +80,15 @@ export default function TeachersPage() {
         phone: teacher.phone || undefined,
         qualification: teacher.qualification || undefined,
         specialization: teacher.specialization || undefined,
-        joinDate: teacher.joinDate || undefined,
+        joinDate: teacher.joinDate ? teacher.joinDate.toISOString() : undefined,
         isActive: teacher.isActive,
         branch: teacher.branch
       };
     } catch (error) {
-      console.error('Error transforming teacher data:', error, teacher);
+      console.error('Error transforming teacher data:', error, teacherData);
       // Return fallback data so the UI doesn't crash
       return {
-        id: teacher?.id || `error-${Math.random().toString(36).substr(2, 9)}`,
+        id: teacherData?.id || `error-${Math.random().toString(36).substr(2, 9)}`,
         employeeCode: 'ERROR',
         firstName: 'Data',
         lastName: 'Error',

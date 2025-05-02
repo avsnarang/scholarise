@@ -25,9 +25,21 @@ const KEEP_LIST = [
 ];
 
 // Files to delete
+/**
+ * @typedef {Object} FileEntry
+ * @property {string} path - Full path to the file or directory
+ * @property {'file'|'directory'} type - Type of the entry
+ * @property {string} relative - Relative path from the base directory
+ */
+
+/** @type {FileEntry[]} */
 const filesToDelete = [];
 
 // Function to recursively gather all files to delete
+/**
+ * @param {string} dir - Directory to search
+ * @param {string} base - Base path for relative paths
+ */
 function collectFilesToDelete(dir, base = '') {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   
@@ -131,8 +143,8 @@ process.stdin.on('data', () => {
       try {
         fs.unlinkSync(file.path);
         deletedCount++;
-      } catch (error) {
-        console.error(`Error deleting ${file.relative}: ${error.message}`);
+      } catch (/** @type {unknown} */ error) {
+        console.error(`Error deleting ${file.relative}: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
     
@@ -142,8 +154,8 @@ process.stdin.on('data', () => {
       try {
         fs.rmdirSync(dir.path);
         deletedCount++;
-      } catch (error) {
-        console.error(`Error deleting directory ${dir.relative}: ${error.message}`);
+      } catch (/** @type {unknown} */ error) {
+        console.error(`Error deleting directory ${dir.relative}: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
     

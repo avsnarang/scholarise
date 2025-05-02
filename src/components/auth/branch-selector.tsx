@@ -15,8 +15,8 @@ export function BranchSelector({ onBranchSelect, defaultBranchId }: BranchSelect
 
   useEffect(() => {
     if (branches && branches.length > 0 && !selectedBranch) {
-      setSelectedBranch(branches[0].id);
-      onBranchSelect(branches[0].id);
+      setSelectedBranch(branches[0]?.id || "");
+      onBranchSelect(branches[0]?.id || "");
     }
   }, [branches, selectedBranch, onBranchSelect]);
 

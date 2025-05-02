@@ -37,14 +37,49 @@ if (!fs.existsSync(APP_DIR)) {
 }
 
 // Track what we've migrated
+/**
+ * @typedef {Object} MigratedFile
+ * @property {string} from - Original path in pages directory
+ * @property {string} to - New path in app directory
+ */
+
+/**
+ * @typedef {Object} AttentionFile
+ * @property {string} path - Path to the file
+ * @property {string} reason - Reason why it needs attention
+ */
+
+/**
+ * @typedef {Object} ErrorFile
+ * @property {string} file - Path to the file
+ * @property {string} error - Error message
+ */
+
+/**
+ * @typedef {Object} PageFile
+ * @property {string} fullPath - Full path to the file
+ * @property {string} relativePath - Relative path from pages directory
+ * @property {string} name - File name
+ * @property {string} dirName - Directory name
+ */
+
+/** @type {MigratedFile[]} */
 const migrated = [];
+/** @type {AttentionFile[]} */
 const needsAttention = [];
+/** @type {ErrorFile[]} */
 const errors = [];
 
 // Get all the page files
+/**
+ * @param {string} dir - Directory to search
+ * @param {string} base - Base path for relative paths
+ * @returns {PageFile[]} - Array of page files
+ */
 function getPagesFiles(dir, base = '') {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   
+  /** @type {PageFile[]} */
   let files = [];
   
   for (const entry of entries) {
@@ -71,6 +106,9 @@ function getPagesFiles(dir, base = '') {
 }
 
 // Create App Router structure
+/**
+ * @param {PageFile[]} pageFiles - Array of page files to migrate
+ */
 function createAppRouterFiles(pageFiles) {
   for (const file of pageFiles) {
     try {
@@ -117,10 +155,10 @@ function createAppRouterFiles(pageFiles) {
           reason: 'App Router file already exists',
         });
       }
-    } catch (error) {
+    } catch (/** @type {unknown} */ error) {
       errors.push({
         file: file.relativePath,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
