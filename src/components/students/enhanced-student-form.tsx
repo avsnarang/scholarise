@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -321,17 +321,17 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
       } catch (e) {
         console.error("Could not stringify error");
       }
-      
+
       // Parse error message for better user experience
       let errorDescription = error.message || "Failed to save student. Please check the form and try again.";
-      
+
       if (error.message.includes("Failed to create student")) {
         errorDescription = "Failed to create student. This could be due to a server issue or validation errors. Please check your data and try again.";
-        
+
         // Add instructions to check console for developers
         console.warn("DEVELOPER NOTE: Please check server logs for more details on what caused this error.");
       }
-      
+
       toast({
         title: "Error",
         description: errorDescription,
@@ -527,7 +527,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
           branchId: branch.id,
           classId: data.classId,
         });
-        
+
         try {
           await createStudent.mutateAsync({
             // Basic student information
@@ -570,19 +570,19 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      
+
       // Parse error message to provide user-friendly feedback
       let errorMessage = "Failed to save student. Please check the form and try again.";
-      
+
       if (error instanceof Error) {
         const errorString = error.message;
         console.error("Full error message:", errorString);
-        
+
         // Email validation errors
         if (errorString.includes("email") && (
-            errorString.includes("fatherEmail") || 
-            errorString.includes("motherEmail") || 
-            errorString.includes("guardianEmail") || 
+            errorString.includes("fatherEmail") ||
+            errorString.includes("motherEmail") ||
+            errorString.includes("guardianEmail") ||
             errorString.includes("personalEmail") ||
             errorString.includes("schoolEmail")
           )) {
@@ -628,7 +628,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
           errorMessage += "\nPlease check your entries and try again, or contact support if the problem persists.";
         }
         // Unprocessable Entity error
-        else if (errorString.includes("Unprocessable Entity") || 
+        else if (errorString.includes("Unprocessable Entity") ||
                 errorString.includes("UNPROCESSABLE_CONTENT") ||
                 errorString.includes("invalid data format")) {
           errorMessage = "The system couldn't process your form submission due to format issues. Please check:";
@@ -656,7 +656,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
           errorMessage = errorString;
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -698,15 +698,15 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
                 <div className="hidden md:flex items-center justify-between mb-4 px-12">
                   {["student-info", "address", "parent-info", "other-info", "sibling-details"].map((tab, index) => (
                     <React.Fragment key={tab}>
-                      <div 
+                      <div
                         className={`relative flex flex-col items-center`}
                       >
                         <button
                           type="button"
                           onClick={() => navigateToTab(tab)}
                           className={`w-8 h-8 flex items-center justify-center rounded-full font-medium text-sm z-10 transition-all duration-300 cursor-pointer hover:scale-110 ${
-                            activeTab === tab 
-                              ? "bg-[#A65A20] text-white" 
+                            activeTab === tab
+                              ? "bg-[#A65A20] text-white"
                               : index < ["student-info", "address", "parent-info", "other-info", "sibling-details"].indexOf(activeTab)
                                 ? "bg-[#00501B] text-white"
                                 : "bg-gray-100 text-gray-500"
@@ -715,7 +715,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
                           {index + 1}
                         </button>
                         <span className={`absolute -bottom-6 whitespace-nowrap text-xs transition-all duration-300 ${
-                          activeTab === tab ? "text-[#A65A20] font-medium" : 
+                          activeTab === tab ? "text-[#A65A20] font-medium" :
                           index < ["student-info", "address", "parent-info", "other-info", "sibling-details"].indexOf(activeTab)
                             ? "text-[#00501B]"
                             : "text-gray-500"
@@ -727,13 +727,13 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
                           {tab === "sibling-details" && "Siblings"}
                         </span>
                       </div>
-                      
+
                       {index < 4 && (
                         <div className="w-full h-0.5 flex-1 mx-2">
-                          <div 
+                          <div
                             className={`h-full transition-all duration-500 ${
                               activeTab === ["student-info", "address", "parent-info", "other-info", "sibling-details"][index]
-                                ? "bg-[#A65A20]" 
+                                ? "bg-[#A65A20]"
                                 : index < ["student-info", "address", "parent-info", "other-info", "sibling-details"].indexOf(activeTab)
                                   ? "bg-[#00501B]"
                                   : "bg-gray-200"
@@ -744,7 +744,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
                     </React.Fragment>
                   ))}
                 </div>
-                
+
                 {/* Mobile-friendly tabs */}
                 <TabsList className="md:hidden flex w-full justify-between bg-transparent p-0 mb-0 overflow-x-auto no-scrollbar">
                   <TabsTrigger
@@ -753,28 +753,28 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
                   >
                     Student
                   </TabsTrigger>
-                  
+
                   <TabsTrigger
                     value="address"
                     className="px-3 py-2 rounded-full data-[state=active]:bg-[#A65A20] data-[state=active]:text-white text-xs"
                   >
                     Address
                   </TabsTrigger>
-                  
+
                   <TabsTrigger
                     value="parent-info"
                     className="px-3 py-2 rounded-full data-[state=active]:bg-[#A65A20] data-[state=active]:text-white text-xs"
                   >
                     Parents
                   </TabsTrigger>
-                  
+
                   <TabsTrigger
                     value="other-info"
                     className="px-3 py-2 rounded-full data-[state=active]:bg-[#A65A20] data-[state=active]:text-white text-xs"
                   >
                     School
                   </TabsTrigger>
-                  
+
                   <TabsTrigger
                     value="sibling-details"
                     className="px-3 py-2 rounded-full data-[state=active]:bg-[#A65A20] data-[state=active]:text-white text-xs"

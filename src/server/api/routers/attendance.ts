@@ -1,7 +1,28 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { AttendanceStatus } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
+
+// Define AttendanceStatus as a custom type that matches the schema
+const AttendanceStatus = {
+  PRESENT: "PRESENT",
+  ABSENT: "ABSENT",
+  LATE: "LATE",
+  HALF_DAY: "HALF_DAY",
+  EXCUSED: "EXCUSED",
+} as const;
+
+// Create a zod schema for this type
+const studentAttendanceStatusSchema = z.enum([
+  "PRESENT",
+  "ABSENT",
+  "LATE",
+  "HALF_DAY",
+  "EXCUSED",
+]);
+
+// Export the type for use elsewhere
+export type AttendanceStatus = typeof studentAttendanceStatusSchema._type;
 
 // Input schema for creating a new attendance location
 const createLocationSchema = z.object({
@@ -23,8 +44,8 @@ const recordAttendanceSchema = z.object({
   locationId: z.string(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  distance: z.number().int().min(0),
-  isWithinAllowedArea: z.boolean(),
+  distance: z.number().min(0),
+  isWithinAllowedArea: z.boolean().optional().default(false),
   notes: z.string().optional(),
   // Only one of these should be provided
   teacherId: z.string().optional(),
@@ -42,9 +63,6 @@ const queryAttendanceSchema = z.object({
   employeeId: z.string().optional(),
   branchId: z.string().optional(),
 });
-
-// Schema for student attendance status
-const studentAttendanceStatusSchema = z.nativeEnum(AttendanceStatus);
 
 // Schema for marking student attendance
 const markStudentAttendanceSchema = z.object({
@@ -84,19 +102,49 @@ export const attendanceRouter = createTRPCRouter({
   createLocation: protectedProcedure
     .input(createLocationSchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.attendanceLocation.create({
-        data: input,
-      });
+      console.log("Creating location with input:", input);
+      try {
+        const result = await ctx.db.attendanceLocation.create({
+          data: {
+            name: input.name,
+            latitude: input.latitude,
+            longitude: input.longitude,
+            radius: input.radius,
+            isActive: input.isActive,
+            branchId: input.branchId,
+          },
+        });
+        console.log("Location created successfully:", result);
+        return result;
+      } catch (error) {
+        console.error("Error creating location:", error);
+        throw error;
+      }
     }),
 
   updateLocation: protectedProcedure
     .input(updateLocationSchema)
     .mutation(async ({ ctx, input }) => {
+      console.log("Updating location with input:", input);
       const { id, ...data } = input;
-      return ctx.db.attendanceLocation.update({
-        where: { id },
-        data,
-      });
+      try {
+        const result = await ctx.db.attendanceLocation.update({
+          where: { id },
+          data: {
+            name: data.name,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            radius: data.radius,
+            isActive: data.isActive,
+            ...(data.branchId ? { branchId: data.branchId } : {}),
+          },
+        });
+        console.log("Location updated successfully:", result);
+        return result;
+      } catch (error) {
+        console.error("Error updating location:", error);
+        throw error;
+      }
     }),
 
   deleteLocation: protectedProcedure
@@ -183,6 +231,13 @@ export const attendanceRouter = createTRPCRouter({
         });
       }
 
+      if (!location.isActive) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This attendance location is not currently active",
+        });
+      }
+
       // Verify teacher/employee exists
       if (input.teacherId) {
         const teacher = await ctx.db.teacher.findUnique({
@@ -208,9 +263,39 @@ export const attendanceRouter = createTRPCRouter({
         }
       }
 
+      // Check if attendance already recorded today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Check if attendance already recorded today
+      const existingAttendance = await ctx.db.staffAttendance.findFirst({
+        where: {
+          OR: [
+            { teacherId: input.teacherId },
+            { employeeId: input.employeeId },
+          ],
+          timestamp: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      });
+
+      if (existingAttendance) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Attendance already marked for today",
+        });
+      }
+
       // Create attendance record
       return ctx.db.staffAttendance.create({
-        data: input,
+        data: {
+          ...input,
+          isWithinAllowedArea: input.distance <= location.radius,
+        },
       });
     }),
 
@@ -248,17 +333,26 @@ export const attendanceRouter = createTRPCRouter({
         where.employeeId = employeeId;
       }
 
-      // For branch filtering, we need to handle it differently as it's not directly on the attendance record
-      const locationFilter = branchId ? {
-        branchId: branchId
-      } : undefined;
+      // If branchId is provided, we'll filter attendances by locations that belong to the branch
+      if (branchId) {
+        // First get all location IDs for this branch
+        const locations = await ctx.db.attendanceLocation.findMany({
+          where: { branchId },
+          select: { id: true }
+        });
+        
+        const locationIds = locations.map((loc: { id: string }) => loc.id);
+        
+        // Add these to the where clause
+        where.locationId = {
+          in: locationIds
+        };
+      }
 
       return ctx.db.staffAttendance.findMany({
         where,
         include: {
-          location: {
-            where: locationFilter
-          },
+          location: true,
           teacher: true,
           employee: true,
         },
@@ -315,76 +409,6 @@ export const attendanceRouter = createTRPCRouter({
         validDays: validAttendance,
         attendanceRate: totalAttendance > 0 ? (validAttendance / totalAttendance) * 100 : 0,
       };
-    }),
-
-  // Record attendance
-  recordAttendance: protectedProcedure
-    .input(z.object({
-      locationId: z.string(),
-      latitude: z.number(),
-      longitude: z.number(),
-      distance: z.number(),
-      teacherId: z.string().optional(),
-      employeeId: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      // Check if attendance already recorded today
-      const existingAttendance = await ctx.db.staffAttendance.findFirst({
-        where: {
-          OR: [
-            { teacherId: input.teacherId },
-            { employeeId: input.employeeId },
-          ],
-          timestamp: {
-            gte: today,
-            lt: tomorrow,
-          },
-        },
-      });
-
-      if (existingAttendance) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Attendance already marked for today",
-        });
-      }
-
-      // Verify the location
-      const location = await ctx.db.attendanceLocation.findUnique({
-        where: { id: input.locationId },
-      });
-
-      if (!location) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Attendance location not found",
-        });
-      }
-
-      if (!location.isActive) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "This attendance location is not currently active",
-        });
-      }
-
-      // Check if user is within the allowed radius
-      if (input.distance > location.radius) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `You are too far from the attendance location. Maximum allowed distance is ${location.radius}m, but you are ${Math.round(input.distance)}m away.`,
-        });
-      }
-
-      // Record attendance
-      return await ctx.db.staffAttendance.create({
-        data: input,
-      });
     }),
 
   // Get attendance by date
@@ -696,8 +720,8 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Create a map of student IDs to their attendance records
-      const attendanceMap = new Map();
-      attendanceRecords.forEach(record => {
+      const attendanceMap = new Map<string, typeof attendanceRecords[0]>();
+      attendanceRecords.forEach((record: typeof attendanceRecords[0]) => {
         attendanceMap.set(record.studentId, record);
       });
 
@@ -735,9 +759,9 @@ export const attendanceRouter = createTRPCRouter({
         date: normalizedDate,
         students: studentAttendance,
         totalStudents: studentAttendance.length,
-        presentCount: attendanceRecords.filter(a => a.status === AttendanceStatus.PRESENT).length,
-        absentCount: attendanceRecords.filter(a => a.status === AttendanceStatus.ABSENT).length,
-        lateCount: attendanceRecords.filter(a => a.status === AttendanceStatus.LATE).length,
+        presentCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.PRESENT).length,
+        absentCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.ABSENT).length,
+        lateCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LATE).length,
       };
     }),
 
@@ -770,11 +794,11 @@ export const attendanceRouter = createTRPCRouter({
       const totalDays = Math.ceil((normalizedEndDate.getTime() - normalizedStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       // Count days by status
-      const presentDays = attendanceRecords.filter(a => a.status === AttendanceStatus.PRESENT).length;
-      const absentDays = attendanceRecords.filter(a => a.status === AttendanceStatus.ABSENT).length;
-      const lateDays = attendanceRecords.filter(a => a.status === AttendanceStatus.LATE).length;
-      const halfDays = attendanceRecords.filter(a => a.status === AttendanceStatus.HALF_DAY).length;
-      const excusedDays = attendanceRecords.filter(a => a.status === AttendanceStatus.EXCUSED).length;
+      const presentDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.PRESENT).length;
+      const absentDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.ABSENT).length;
+      const lateDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LATE).length;
+      const halfDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.HALF_DAY).length;
+      const excusedDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.EXCUSED).length;
 
       // Calculate attendance rate
       const attendedDays = presentDays + (lateDays * 0.75) + (halfDays * 0.5);

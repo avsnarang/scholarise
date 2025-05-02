@@ -414,8 +414,8 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
     <DataTable
       columns={columns}
       data={data}
-      searchKey="firstName"
-      searchPlaceholder="Search students..."
+      searchKey="name"
+      searchPlaceholder="Search by name..."
       pageSize={50} // Increase page size to show more students
     />
   )

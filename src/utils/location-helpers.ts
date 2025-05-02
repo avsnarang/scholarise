@@ -46,6 +46,24 @@ export function calculateDistance(
   return R * c; // Distance in meters
 }
 
+// Function to calculate distance between two coordinate objects
+export function getDistance(
+  coord1: { lat: number; lng: number },
+  coord2: { lat: number; lng: number }
+): number {
+  return calculateDistance(coord1.lat, coord1.lng, coord2.lat, coord2.lng);
+}
+
+// Function to convert meters to miles or kilometers
+export function convertToMilesOrKm(meters: number): string {
+  if (meters < 1000) {
+    return `${Math.round(meters)} meters`;
+  } else {
+    const km = meters / 1000;
+    return `${km.toFixed(2)} km`;
+  }
+}
+
 // Format date for display
 export function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
@@ -160,4 +178,4 @@ export function createAttendanceRecord(
     isWithinAllowedArea,
     distance,
   };
-} 
+}

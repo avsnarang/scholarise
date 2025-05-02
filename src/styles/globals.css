@@ -198,38 +198,46 @@
   --primary: #00501B;
   --primary-foreground: white;
   --primary-light: rgba(0, 80, 27, 0.1);
-  
+
   --secondary: #A65A20;
   --secondary-foreground: white;
   --secondary-light: rgba(166, 90, 32, 0.1);
-  
+
   /* Backgrounds */
   --background: #ffffff;
   --foreground: #18181b;
-  
+
   /* Card/Container backgrounds */
   --card: #ffffff;
   --card-foreground: #18181b;
-  
+
   /* Borders */
   --border: #e2e8f0;
   --input: #e2e8f0;
-  
+
   /* Muted colors */
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  
+
   /* Accents */
   --accent: #f1f5f9;
   --accent-foreground: #0f172a;
-  
+
   /* Destructive actions */
   --destructive: #ef4444;
   --destructive-foreground: #f8fafc;
-  
+
   /* Shadows and rings */
   --ring: #94a3b8;
   --radius: 0.5rem;
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 .dark {
@@ -237,48 +245,53 @@
   --primary: #7aad8c;
   --primary-foreground: #f8fafc;
   --primary-light: rgba(122, 173, 140, 0.2);
-  
+
   --secondary: #e2bd8c;
   --secondary-foreground: #0f172a;
   --secondary-light: rgba(226, 189, 140, 0.2);
-  
+
   /* Backgrounds - Dark mode */
   --background: #202020;
   --foreground: #e6e6e6;
-  
+
   /* Card/Container backgrounds */
   --card: #252525;
   --card-foreground: #e6e6e6;
-  
+
   /* Sidebar specific dark mode */
   --sidebar: #101010;
   --sidebar-foreground: #e6e6e6;
   --sidebar-border: #151515;
-  
+
   /* Borders */
   --border: #303030;
   --input: #303030;
-  
+
   /* Muted colors */
   --muted: #303030;
   --muted-foreground: #c0c0c0;
-  
+
   /* Accents */
   --accent: #2a2a2a;
   --accent-foreground: #e6e6e6;
-  
+
   /* Destructive actions */
   --destructive: #ef4444;
   --destructive-foreground: #f8fafc;
-  
+
   /* Shadows and rings */
   --ring: #7aad8c;
-  
+
   /* Button glows */
   --glow-primary: rgba(122, 173, 140, 0.25);
   --glow-secondary: rgba(226, 189, 140, 0.25);
   --glow-accent: rgba(42, 42, 42, 0.25);
   --glow-destructive: rgba(239, 68, 68, 0.25);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 @layer base {

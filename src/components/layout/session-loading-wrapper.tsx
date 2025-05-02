@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { Loader2 } from "lucide-react";

@@ -1,13 +1,26 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
+import { usePathname, useRouter as useAppRouter } from "next/navigation";
 import { useUser, useClerk, useAuth as useClerkAuth } from "@clerk/nextjs";
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  
+  // Use App Router's navigation hooks inside useEffect to prevent hydration errors
+  const appRouter = useAppRouter();
+  const pathname = usePathname();
+  
+  // Handle Clerk hooks
   const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
   const { signOut } = useClerk();
   const { isSignedIn } = useClerkAuth();
+
+  // Track component mount state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Update loading state based on Clerk's loading state
   useEffect(() => {
@@ -67,10 +80,11 @@ export function useAuth() {
   }, [signOut]);
 
   const requireAuth = useCallback(() => {
-    if (clerkIsLoaded && !isSignedIn) {
-      void router.push("/sign-in");
+    // Only run redirect if component is mounted
+    if (mounted && clerkIsLoaded && !isSignedIn) {
+      appRouter.push("/sign-in");
     }
-  }, [clerkIsLoaded, isSignedIn, router]);
+  }, [clerkIsLoaded, isSignedIn, appRouter, mounted]);
 
   return {
     session: { user },
@@ -81,5 +95,6 @@ export function useAuth() {
     loginWithGoogle,
     logout,
     requireAuth,
+    pathname,
   };
 }

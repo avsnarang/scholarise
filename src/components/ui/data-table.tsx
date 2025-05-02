@@ -53,30 +53,112 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [error, setError] = React.useState<string | null>(null)
 
-  const table = useReactTable({
-    data,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-    initialState: {
-      pagination: {
-        pageSize,
+  // Validate data and columns before rendering
+  React.useEffect(() => {
+    try {
+      // Check columns without causing type errors
+      for (const column of columns) {
+        const columnAny = column as any;
+        if (columnAny.accessorKey && typeof columnAny.accessorKey === 'string') {
+          const accessorKey = columnAny.accessorKey;
+          
+          // Check if any data is missing the required field
+          const missingData = data.some((row: any) => {
+            // Handle nested paths (e.g., "class.name")
+            const path = accessorKey.split('.');
+            let value = row;
+            for (const key of path) {
+              if (value === null || value === undefined) return true;
+              value = value[key];
+              if (value === undefined) return true;
+            }
+            return false;
+          });
+
+          if (missingData) {
+            console.warn(`Some data is missing the field: ${accessorKey}`);
+          }
+        }
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error in DataTable validation:', err);
+      setError(`Error initializing table: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }, [data, columns]);
+
+  // Initialize the table configuration - NOT inside useMemo
+  let tableConfig: any = {}; 
+  
+  try {
+    tableConfig = {
+      data,
+      columns,
+      onSortingChange: setSorting,
+      onColumnFiltersChange: setColumnFilters,
+      getCoreRowModel: getCoreRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      onColumnVisibilityChange: setColumnVisibility,
+      onRowSelectionChange: setRowSelection,
+      state: {
+        sorting,
+        columnFilters,
+        columnVisibility,
+        rowSelection,
       },
-    },
-  })
+      initialState: {
+        pagination: {
+          pageSize,
+        },
+      },
+    };
+  } catch (err) {
+    console.error('Error setting up table config:', err);
+    setError(`Table configuration error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    // Set minimum config
+    tableConfig = {
+      data: [],
+      columns: [],
+      getCoreRowModel: getCoreRowModel(),
+    };
+  }
+
+  // Initialize the table - this needs to be at the top level, not in a useMemo
+  const table = useReactTable(tableConfig);
+
+  // If there's an error, show a message
+  if (error) {
+    return (
+      <div className="w-full p-4 border border-red-300 bg-red-50 text-red-800 rounded-md">
+        <p className="font-medium">Error loading table</p>
+        <p className="text-sm">{error}</p>
+        <p className="text-sm mt-2">Please check the browser console for more details.</p>
+      </div>
+    );
+  }
+
+  // Function to handle search input changes - it can search by ID, accessorKey, or accessorFn
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    
+    // If we have a direct column match, use it
+    const column = table.getColumn(searchKey || "");
+    
+    if (column) {
+      column.setFilterValue(value);
+    } else {
+      // Otherwise, try to find a column with matching accessorKey or accessorFn
+      // This handles cases where column ID doesn't match accessorKey
+      console.warn(`Column with id '${searchKey}' not found. Using global filter instead.`);
+      
+      // Set a global filter if searchKey isn't found as a column ID
+      table.setGlobalFilter(value);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -85,9 +167,7 @@ export function DataTable<TData, TValue>({
           <Input
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
+            onChange={handleSearchChange}
             className="max-w-sm"
           />
         )}
@@ -129,7 +209,7 @@ export function DataTable<TData, TValue>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
+                            header.column.columnDef.header as any,
                             header.getContext()
                           )}
                     </TableHead>
@@ -148,7 +228,7 @@ export function DataTable<TData, TValue>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
-                        cell.column.columnDef.cell,
+                        cell.column.columnDef.cell as any,
                         cell.getContext()
                       )}
                     </TableCell>

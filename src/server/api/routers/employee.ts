@@ -86,4 +86,44 @@ export const employeeRouter = createTRPCRouter({
         ],
       });
     }),
+
+  getByUserId: publicProcedure
+    .input(z.object({
+      userId: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      console.log("Looking for employee with userId:", input.userId);
+      
+      if (!input.userId || input.userId.trim() === "") {
+        console.log("Invalid userId provided:", input.userId);
+        return null;
+      }
+
+      try {
+        // First try to find by userId field
+        let employee = await ctx.db.employee.findFirst({
+          where: {
+            userId: input.userId,
+          },
+        });
+
+        if (!employee) {
+          console.log("Employee not found by userId, attempting raw query...");
+          // As a fallback, try a raw query to see if there's any employee with this userId
+          const employees = await ctx.db.$queryRaw`
+            SELECT * FROM "Employee" 
+            WHERE "userId" = ${input.userId}
+            LIMIT 1
+          `;
+          
+          employee = Array.isArray(employees) && employees.length > 0 ? employees[0] : null;
+        }
+        
+        console.log("Employee lookup result:", employee ? "Found" : "Not found");
+        return employee;
+      } catch (error) {
+        console.error("Error finding employee by userId:", error);
+        return null;
+      }
+    }),
 });

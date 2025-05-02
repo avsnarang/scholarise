@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { type Prisma } from "@prisma/client";
+import { createTeacherUser } from "@/utils/clerk";
 
 export const teacherRouter = createTRPCRouter({
   getStats: publicProcedure
@@ -200,6 +202,51 @@ export const teacherRouter = createTRPCRouter({
       return teacher;
     }),
 
+  getByUserId: publicProcedure
+    .input(z.object({
+      userId: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      console.log("Looking for teacher with userId:", input.userId);
+      
+      if (!input.userId || input.userId.trim() === "") {
+        console.log("Invalid userId provided:", input.userId);
+        return null;
+      }
+
+      try {
+        // Use Prisma's findFirst with a raw filter condition
+        const teachers = await ctx.db.$queryRaw`
+          SELECT * FROM "Teacher" 
+          WHERE "clerkId" = ${input.userId}
+          LIMIT 1
+        `;
+        
+        const teacher = Array.isArray(teachers) && teachers.length > 0 ? teachers[0] : null;
+        
+        console.log("Teacher lookup result:", teacher ? "Found" : "Not found");
+        
+        if (teacher) {
+          // Get classes for this teacher
+          const classes = await ctx.db.class.findMany({
+            where: {
+              teacherId: teacher.id
+            }
+          });
+          
+          return {
+            ...teacher,
+            classes
+          };
+        }
+        
+        return null;
+      } catch (error) {
+        console.error("Error finding teacher by userId:", error);
+        return null;
+      }
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
@@ -220,22 +267,151 @@ export const teacherRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Create teacher record without user account for simplicity
+      try {
+        console.log("Teacher create mutation called with input:", {
+          ...input,
+          password: input.password ? "********" : undefined, // Mask password for security
+        });
+        
+        // Create a Clerk user account if requested
+        let clerkUserId = null;
+        if (input.createUser && input.email && input.password) {
+          console.log("Attempting to create Clerk user for teacher");
+          try {
+            // Get branch code for Clerk user creation
+            const branch = await ctx.db.branch.findUnique({
+              where: { id: input.branchId },
+              select: { code: true },
+            });
 
-      // Create teacher record
-      return ctx.db.teacher.create({
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          employeeCode: input.employeeCode,
-          qualification: input.qualification,
-          specialization: input.specialization,
-          joinDate: input.joinDate || new Date(),
-          isActive: input.isActive ?? true,
-          branchId: input.branchId,
-          userId: input.userId,
-        },
-      });
+            if (!branch) {
+              console.error("Branch not found:", input.branchId);
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Branch not found",
+              });
+            }
+
+            console.log("Found branch:", branch);
+
+            // Generate a username from the email
+            const email = input.email || '';
+            
+            // Extract part before @ from email or use 'teacher' as fallback
+            const emailBase = email.includes('@') 
+              ? email.substring(0, email.indexOf('@'))
+              : 'teacher';
+            
+            // Clean up the username (remove special chars)
+            const cleanedBase = emailBase.replace(/[^a-zA-Z0-9]/g, '');
+            const timestamp = Date.now().toString().slice(-6);
+            const username = `${cleanedBase}${timestamp}`;
+            
+            // Create teacher user in Clerk
+            console.log("Calling createTeacherUser with:", {
+              firstName: input.firstName,
+              lastName: input.lastName,
+              email: input.email,
+              username: username,
+              branchId: input.branchId,
+              isHQ: input.isHQ || false,
+            });
+            
+            try {
+              const teacherUser = await createTeacherUser({
+                firstName: input.firstName,
+                lastName: input.lastName,
+                email: input.email || '',
+                password: input.password || '',
+                branchId: input.branchId,
+                isHQ: input.isHQ || false,
+                username: username, // Pass the generated username
+              });
+
+              clerkUserId = teacherUser.id;
+              console.log("Created Clerk user for teacher:", clerkUserId);
+            } catch (clerkError) {
+              console.error("Failed to create Clerk user:", clerkError);
+              
+              // Format the error message to be more user-friendly
+              let errorMessage = "Failed to create user account";
+              if (clerkError instanceof Error) {
+                errorMessage = clerkError.message;
+              }
+              
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: errorMessage,
+                cause: clerkError,
+              });
+            }
+          } catch (error) {
+            console.error("Error creating Clerk user for teacher:", error);
+            const errorDetails = error instanceof Error ? 
+              { message: error.message, stack: error.stack } : 
+              String(error);
+            console.error("Error details:", errorDetails);
+            
+            // If it's already a TRPCError, just rethrow it
+            if (error instanceof TRPCError) {
+              throw error;
+            }
+            
+            // Otherwise wrap it
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Failed to create user account: ${error instanceof Error ? error.message : String(error)}`,
+              cause: error,
+            });
+          }
+        } else {
+          console.log("Skipping Clerk user creation as conditions not met:", {
+            createUser: input.createUser,
+            hasEmail: !!input.email,
+            hasPassword: !!input.password,
+          });
+        }
+
+        console.log("Creating teacher record in database, clerkId:", clerkUserId);
+        
+        // Create teacher record
+        try {
+          const newTeacher = await ctx.db.teacher.create({
+            data: {
+              firstName: input.firstName,
+              lastName: input.lastName,
+              employeeCode: input.employeeCode,
+              qualification: input.qualification,
+              specialization: input.specialization,
+              joinDate: input.joinDate || new Date(),
+              isActive: input.isActive ?? true,
+              branchId: input.branchId,
+              userId: input.userId,
+              // Add clerkId if user was created
+              ...(clerkUserId ? { clerkId: clerkUserId } : {}),
+            },
+          });
+          
+          console.log("Teacher record created successfully:", newTeacher);
+          return newTeacher;
+        } catch (dbError) {
+          console.error("Database error creating teacher:", dbError);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Failed to create teacher: ${(dbError as Error).message}`,
+          });
+        }
+      } catch (error) {
+        console.error("Unhandled error in create teacher mutation:", error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Unhandled error: ${error instanceof Error ? error.message : String(error)}`,
+          cause: error,
+        });
+      }
     }),
 
   update: protectedProcedure
@@ -379,6 +555,73 @@ export const teacherRouter = createTRPCRouter({
         where: { id: input.id },
         data: { isActive: input.isActive },
       });
+    }),
+
+  // Get teachers without clerkId
+  getTeachersWithoutClerkId: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        // Use raw SQL to find teachers without clerkId
+        const teachers = await ctx.db.$queryRaw`
+          SELECT id, "firstName", "lastName", qualification, specialization, "employeeCode"
+          FROM "Teacher" 
+          WHERE "clerkId" IS NULL OR "clerkId" = ''
+          ORDER BY "lastName" ASC, "firstName" ASC
+        `;
+        
+        return teachers;
+      } catch (error) {
+        console.error("Error fetching teachers without clerkId:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch teachers without authentication accounts",
+        });
+      }
+    }),
+    
+  // Update teacher's clerkId
+  updateClerkId: protectedProcedure
+    .input(z.object({
+      teacherId: z.string(),
+      clerkId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Check if teacher exists
+        const teacher = await ctx.db.teacher.findUnique({
+          where: { id: input.teacherId },
+        });
+
+        if (!teacher) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Teacher not found",
+          });
+        }
+        
+        // Update teacher's clerkId using raw SQL
+        await ctx.db.$executeRaw`
+          UPDATE "Teacher"
+          SET "clerkId" = ${input.clerkId}
+          WHERE id = ${input.teacherId}
+        `;
+        
+        // Retrieve the updated teacher record
+        const updatedTeacher = await ctx.db.teacher.findUnique({
+          where: { id: input.teacherId },
+        });
+        
+        return updatedTeacher;
+      } catch (error) {
+        console.error("Error updating teacher clerkId:", error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update teacher authentication link",
+        });
+      }
     }),
 
   // Search for teachers - used by global search

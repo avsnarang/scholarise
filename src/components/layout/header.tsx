@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Menu, Bell } from "lucide-react";
 import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
+import { EnhancedBranchSelector } from "@/components/enhanced-branch-selector";
 import { GlobalSearch } from "@/components/global-search";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,11 @@ export function Header({
 
       {/* Right side of header with notifications and user profile */}
       <div className="flex items-center gap-3 mr-4">
+        {/* Branch selector */}
+        <div className="relative z-[60]">
+          <EnhancedBranchSelector />
+        </div>
+        
         {/* Session selector */}
         <div className="relative z-[60]">
           <EnhancedAcademicSessionSelector />

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, createContext, useContext, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";

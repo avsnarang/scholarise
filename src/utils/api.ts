@@ -6,6 +6,7 @@
  */
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
+import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
 
@@ -17,38 +18,43 @@ const getBaseUrl = () => {
   return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
 };
 
-/** A set of type-safe react-query hooks for your tRPC API. */
-export const api = createTRPCNext<AppRouter>({
+// For App Router with client components
+export const api = createTRPCReact<AppRouter>({
+  overrides: {
+    useMutation: {
+      async onSuccess(opts) {
+        await opts.originalFn();
+        await opts.queryClient.invalidateQueries();
+      },
+    },
+  },
+});
+
+// Common links configuration with transformer
+const commonLinks = [
+  loggerLink({
+    enabled: (opts) =>
+      process.env.NODE_ENV === "development" ||
+      (opts.direction === "down" && opts.result instanceof Error),
+  }),
+  httpBatchLink({
+    url: `${getBaseUrl()}/api/trpc`,
+    transformer: superjson,
+  }),
+];
+
+// For App Router - used in providers
+export const getClientConfig = () => ({
+  links: commonLinks,
+});
+
+// For Pages Router - used in withTRPC wrapper
+export const pagesRouterApi = createTRPCNext<AppRouter>({
   config() {
     return {
-      /**
-       * Links used to determine request flow from client to server.
-       *
-       * @see https://trpc.io/docs/links
-       */
-      links: [
-        loggerLink({
-          enabled: (opts) =>
-            process.env.NODE_ENV === "development" ||
-            (opts.direction === "down" && opts.result instanceof Error),
-        }),
-        httpBatchLink({
-          /**
-           * Transformer used for data de-serialization from the server.
-           *
-           * @see https://trpc.io/docs/data-transformers
-           */
-          transformer: superjson,
-          url: `${getBaseUrl()}/api/trpc`,
-        }),
-      ],
+      links: commonLinks,
     };
   },
-  /**
-   * Whether tRPC should await queries when server rendering pages.
-   *
-   * @see https://trpc.io/docs/nextjs#ssr-boolean-default-false
-   */
   ssr: false,
   transformer: superjson,
 });

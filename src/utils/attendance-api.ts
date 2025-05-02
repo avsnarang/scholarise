@@ -78,12 +78,16 @@ export function useRecordAttendance() {
     onSuccess: () => {
       // Invalidate queries that depend on this data
       void utils.attendance.getAttendanceRecords.invalidate();
+      // Also invalidate the getAttendanceByDate query to refresh the UI
+      void utils.attendance.getAttendanceByDate.invalidate();
+      // Invalidate attendance summary
+      void utils.attendance.getStaffAttendanceSummary.invalidate();
     },
   });
 
   return {
     recordAttendance: mutation.mutate,
-    isLoading: mutation.isLoading,
+    isLoading: mutation.isPending,
     error: mutation.error,
   };
 }
@@ -93,15 +97,29 @@ export function useAttendanceLocationMutations() {
   const utils = api.useUtils();
 
   const createMutation = api.attendance.createLocation.useMutation({
-    onSuccess: () => {
+    onMutate: (data) => {
+      console.log("Creating location with data:", data);
+    },
+    onSuccess: (data) => {
+      console.log("Location created successfully:", data);
       void utils.attendance.getLocations.invalidate();
     },
+    onError: (error) => {
+      console.error("Error creating location:", error);
+    }
   });
 
   const updateMutation = api.attendance.updateLocation.useMutation({
-    onSuccess: () => {
+    onMutate: (data) => {
+      console.log("Updating location with data:", data);
+    },
+    onSuccess: (data) => {
+      console.log("Location updated successfully:", data);
       void utils.attendance.getLocations.invalidate();
     },
+    onError: (error) => {
+      console.error("Error updating location:", error);
+    }
   });
 
   const deleteMutation = api.attendance.deleteLocation.useMutation({

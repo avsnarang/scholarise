@@ -99,16 +99,16 @@ export const studentRouter = createTRPCRouter({
   getAll: publicProcedure
     .input(
       z.object({
-        branchId: z.string().optional(),
-        classId: z.string().optional(),
-        search: z.string().optional(),
-        sessionId: z.string().optional(),
+        branchId: z.string().optional().nullable(),
+        classId: z.string().optional().nullable(),
+        search: z.string().optional().nullable(),
+        sessionId: z.string().optional().nullable(),
         limit: z.number().min(1).max(100).nullish(),
         cursor: z.string().nullish(),
         filters: z.record(z.string(), z.any()).nullish(),
-      }),
+      }).optional(),
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input = {} }) => {
       const limit = input.limit ?? 50;
       const { cursor, filters } = input;
 

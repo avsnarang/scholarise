@@ -10,6 +10,15 @@ interface Branch {
   id: string;
   name: string;
   code: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  phone: string | null;
+  email: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  order: number;
 }
 
 export function EnhancedBranchSelector() {
@@ -18,28 +27,36 @@ export function EnhancedBranchSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: branches = [], isLoading } = api.branch.getAll.useQuery<Branch[]>();
+  const { data, isLoading, error } = api.branch.getAll.useQuery();
 
-  const filteredBranches = branches.filter((branch: Branch) =>
+  // Safely convert data to array
+  const branches: Branch[] = Array.isArray(data) ? data : [];
+
+  useEffect(() => {
+    // Debug logging
+    console.log("EnhancedBranchSelector rendered");
+    console.log("Current branch ID:", currentBranchId);
+    console.log("Branches data type:", data ? typeof data : "undefined");
+    console.log("Branches data isArray:", data ? Array.isArray(data) : "undefined");
+    console.log("Branches count:", branches.length);
+    console.log("Is loading branches:", isLoading);
+    
+    if (error) {
+      console.error("Error loading branches:", error);
+    }
+  }, [currentBranchId, data, branches.length, isLoading, error]);
+
+  const filteredBranches = branches.filter((branch) =>
     branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     branch.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle branch selection
-  const handleBranchSelect = (branchId: string) => {
-    if (branchId !== currentBranchId) {
-      setCurrentBranchId(branchId);
-    }
-    setIsOpen(false);
-  };
-
-  // Handle click outside to close dropdown
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -47,190 +64,106 @@ export function EnhancedBranchSelector() {
     };
   }, []);
 
-  // Get branch icon based on branch code
-  const getBranchIcon = (code: string) => {
-    switch (code) {
-      case 'JUN':
-        return <School className="h-4 w-4" />;
-      case 'MAJ':
-        return <Home className="h-4 w-4" />;
-      default:
-        return <Building className="h-4 w-4" />;
+  useEffect(() => {
+    if (isOpen) {
+      // Reset search when dropdown opens
+      setSearchQuery("");
     }
-  };
+  }, [isOpen]);
 
-  // Get branch color based on branch code
-  const getBranchColor = (code: string) => {
-    switch (code) {
-      case 'PS':
-        return '#00501B'; // Primary green
-      case 'JUN':
-        return '#A65A20'; // Orange accent
-      case 'MAJ':
-        return '#2563EB'; // Blue accent
-      default:
-        return '#00501B'; // Default green
-    }
-  };
-
-  // Get current branch
-  const currentBranch = currentBranchId
-    ? branches.find((b: Branch) => b.id === currentBranchId)
-    : null;
+  // Get current branch display data
+  const currentBranch = branches.find((branch) => branch.id === currentBranchId);
+  const branchName = currentBranch?.name || "Select Branch";
+  const branchCode = currentBranch?.code || "";
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Branch selector button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
+      {/* Branch Selector Button */}
+      <div
         className={cn(
-          "flex h-10 items-center gap-2.5 rounded-lg border px-3 py-2",
-          "text-sm font-medium shadow-sm transition-all duration-200",
-          "relative", // Added for the badge
-          isOpen
-            ? "border-[#00501B] bg-[#F0F9F1] text-[#00501B]"
-            : "border-gray-200 bg-white text-gray-700 hover:border-[#00501B]/30 hover:bg-[#F0F9F1]/50",
-          "focus:outline-none focus:ring-2 focus:ring-[#00501B]/20"
+          "flex h-10 items-center gap-1 rounded-md border px-3 py-2",
+          "text-sm text-muted-foreground cursor-pointer",
+          "hover:bg-accent hover:text-accent-foreground",
+          "transition-colors"
         )}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-2">
-          {/* Branch badge */}
-          <div className="relative">
-            <Building className="h-4 w-4 text-[#00501B]" />
-          </div>
-
-          <div className="flex flex-col items-start leading-tight">
-            <span className="text-xs font-normal text-gray-500">Branch</span>
-            <span className="font-medium truncate max-w-[120px]">
-              {isLoading ? "Loading..." : (currentBranch?.name || "Select Branch")}
-            </span>
-          </div>
-
-          <ChevronDown
-            className={cn(
-              "ml-1 h-4 w-4 flex-shrink-0 opacity-70 transition-transform duration-200",
-              isOpen && "rotate-180 text-[#00501B]"
-            )}
-          />
+        <Building size={16} className="shrink-0" />
+        <div className="flex items-center gap-1 truncate">
+          <span className="truncate font-medium">{branchName}</span>
+          {branchCode && <span className="text-xs text-muted-foreground">({branchCode})</span>}
         </div>
-      </button>
+        <ChevronDown size={14} className="shrink-0 opacity-50" />
+      </div>
 
-      {/* Dropdown menu with animation */}
+      {/* Dropdown Content */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute right-0 z-[100] mt-2 w-[300px] origin-top-right rounded-xl border border-gray-100 bg-white shadow-xl">
-
-          {/* Search input */}
-          <div className="p-3 border-b border-gray-100">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            initial={{ opacity: 0, y: -5, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -5, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className={cn(
+              "absolute left-0 top-11 z-50 w-[280px] overflow-hidden rounded-md border bg-popover shadow-md",
+            )}
+          >
+            {/* Search Input */}
+            <div className="flex items-center border-b px-3 py-2">
+              <Search size={14} className="mr-2 opacity-50" />
               <Input
-                type="text"
                 placeholder="Search branches..."
-                className="pl-9 pr-4 h-9 bg-gray-50 border-gray-200"
+                className="h-8 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
 
-          {/* Branch list */}
-          <div className="py-2 max-h-[300px] overflow-y-auto">
-            <div className="px-3 py-1.5">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Branches</h3>
-            </div>
-
-            {filteredBranches.map((branch: Branch, index: number) => (
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, delay: index * 0.03 }}
-                key={branch.id}
-                role="option"
-                aria-selected={branch.id === currentBranchId}
-                className={cn(
-                  "group flex items-center gap-3 mx-2 px-3 py-2.5 cursor-pointer rounded-lg",
-                  "transition-all duration-150",
-                  branch.id === currentBranchId
-                    ? "bg-[#F0F9F1] text-[#00501B]"
-                    : "hover:bg-gray-50"
-                )}
-                onClick={() => handleBranchSelect(branch.id)}
-              >
-                {/* Branch icon/avatar */}
-                <div
-                  className={cn(
-                    "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
-                    branch.id === currentBranchId
-                      ? "bg-[#00501B]/10"
-                      : "bg-gray-100 group-hover:bg-[#00501B]/5"
-                  )}
-                  style={branch.id === currentBranchId ? { backgroundColor: `${getBranchColor(branch.code)}15` } : {}}
-                >
+            {/* Branch List */}
+            <div className="max-h-[280px] overflow-y-auto p-1">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                  Loading branches...
+                </div>
+              ) : filteredBranches.length === 0 ? (
+                <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                  {searchQuery ? "No branches found" : "No branches available"}
+                </div>
+              ) : (
+                filteredBranches.map((branch) => (
                   <div
+                    key={branch.id}
                     className={cn(
-                      "text-base font-semibold",
-                      branch.id === currentBranchId ? "text-[#00501B]" : "text-gray-500 group-hover:text-[#00501B]"
+                      "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      branch.id === currentBranchId
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground"
                     )}
-                    style={branch.id === currentBranchId ? { color: getBranchColor(branch.code) } : {}}
+                    onClick={() => {
+                      setCurrentBranchId(branch.id);
+                      setIsOpen(false);
+                    }}
                   >
-                    {branch.code}
-                  </div>
-                </div>
-
-                {/* Branch details */}
-                <div className="flex flex-col min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className={cn(
-                      "font-medium truncate",
-                      branch.id === currentBranchId ? "text-[#00501B]" : "text-gray-900 group-hover:text-[#00501B]"
-                    )}>
-                      {branch.name}
-                    </span>
-
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">{branch.name}</span>
+                        <span className="text-xs opacity-80">({branch.code})</span>
+                      </div>
+                      {branch.city && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <Home size={10} className="shrink-0 opacity-70" />
+                          <span className="truncate opacity-70">{branch.city}</span>
+                        </div>
+                      )}
+                    </div>
                     {branch.id === currentBranchId && (
-                      <Check className="h-4 w-4 text-[#00501B] flex-shrink-0" />
+                      <Check size={16} className="shrink-0" />
                     )}
                   </div>
-
-                  {/* Branch code if available */}
-                  {branch.code && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Hash className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-500 truncate">
-                        {branch.code}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-
-            {filteredBranches.length === 0 && (
-              <div className="px-3 py-8 text-sm text-[#00501B]/70 text-center italic">
-                No branches found
-              </div>
-            )}
-          </div>
-
-          {/* Footer with actions */}
-          <div className="border-t border-gray-100 p-3">
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Cancel
-              </button>
+                ))
+              )}
             </div>
-          </div>
           </motion.div>
         )}
       </AnimatePresence>

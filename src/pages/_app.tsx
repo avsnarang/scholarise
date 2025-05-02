@@ -1,10 +1,12 @@
 import { type NextPage } from "next";
 import { Montserrat, Lilita_One } from "next/font/google";
 import Head from "next/head";
-import { api } from "@/utils/api";
+import { pagesRouterApi } from "@/utils/api";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
 import { PopupProvider } from "@/components/ui/custom-popup";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
 
 import "@/styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -41,22 +43,24 @@ const MyApp = ({
 
   return (
     <ClerkProvider {...pageProps}>
-      <ThemeProvider>
-      <PopupProvider>
-        <Head>
-          <title>ScholaRise ERP</title>
-          <meta name="description" content="ScholaRise ERP System" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
-        <div className={`${montserrat.variable} ${lilitaOne.variable} font-sans`}>
-          {/* UserButton is now in the header component */}
-          {getLayout(<Component {...pageProps} />)}
-          <ImprovedToaster />
-        </div>
-      </PopupProvider>
-      </ThemeProvider>
+      <SessionProvider session={pageProps.session as any}>
+        <ThemeProvider>
+          <PopupProvider>
+            <Head>
+              <title>ScholaRise ERP</title>
+              <meta name="description" content="ScholaRise ERP System" />
+              <link rel="icon" href="/favicon.ico" />
+            </Head>
+            <div className={`${montserrat.variable} ${lilitaOne.variable} font-sans`}>
+              {/* UserButton is now in the header component */}
+              {getLayout(<Component {...pageProps} />)}
+              <ImprovedToaster />
+            </div>
+          </PopupProvider>
+        </ThemeProvider>
+      </SessionProvider>
     </ClerkProvider>
   );
 };
 
-export default api.withTRPC(MyApp);
+export default pagesRouterApi.withTRPC(MyApp);

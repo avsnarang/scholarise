@@ -1,9 +1,12 @@
+"use client";
+
 import { useCallback } from "react";
-import { useRouter } from "next/router";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "./useAuth";
 
 export function useAnalytics() {
-  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {

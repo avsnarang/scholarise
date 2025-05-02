@@ -11,31 +11,39 @@ export const academicSessionRouter = createTRPCRouter({
         includeClassCount: z.boolean().optional(),
       }).optional()
     )
-    .query(async ({ ctx, input }) => {
-      // Note: AcademicSession no longer has a branchId column, so we don't apply branch filtering
-      const sessions = await ctx.db.academicSession.findMany({
-        where: {
-          isActive: input?.isActive,
-        },
-        orderBy: [
-          { startDate: "desc" },
-          { name: "asc" },
-        ],
-        include: {
-          ...(input?.includeClassCount ? { _count: { select: { classes: true } } } : {}),
-        },
-      });
+    .query(async ({ ctx, input = {} }) => {
+      try {
+        // Simple direct query with minimal complexity
+        const sessions = await ctx.db.academicSession.findMany({
+          where: {
+            isActive: input?.isActive,
+          },
+          orderBy: [
+            { startDate: "desc" },
+            { name: "asc" },
+          ],
+          include: {
+            ...(input?.includeClassCount ? { _count: { select: { classes: true } } } : {}),
+          },
+        });
 
-      // Transform the result to include classCount if requested
-      if (input?.includeClassCount) {
-        return sessions.map(session => ({
-          ...session,
-          classCount: session._count?.classes || 0,
-          _count: undefined,
-        }));
+        console.log(`Successfully found ${sessions.length} academic sessions`);
+
+        // Transform the result to include classCount if requested
+        if (input?.includeClassCount) {
+          return sessions.map(session => ({
+            ...session,
+            classCount: session._count?.classes || 0,
+            _count: undefined,
+          }));
+        }
+
+        return sessions;
+      } catch (error) {
+        console.error('Error fetching academic sessions:', error);
+        // Always return an array even on error
+        return [];
       }
-
-      return sessions;
     }),
 
   getById: publicProcedure

@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { Header } from "./header";
 import { useAuth } from "@/hooks/useAuth";
 import { BranchProvider } from "@/hooks/useBranchContext";

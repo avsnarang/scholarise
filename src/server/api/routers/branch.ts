@@ -6,40 +6,20 @@ import { Prisma } from "@prisma/client";
 export const branchRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     try {
-      console.log('Fetching all branches...');
-
-      // Add a timeout promise to detect if the database query is hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Database query timeout after 5 seconds'));
-        }, 5000);
-      });
-
-      // Create the actual query promise
-      const queryPromise = ctx.db.branch.findMany({
+      // Simple direct query without any complications
+      const branches = await ctx.db.branch.findMany({
         orderBy: [
           { order: "asc" },
           { name: "asc" }
         ],
       });
-
-      // Race the promises to see which resolves/rejects first
-      const branches = await Promise.race([queryPromise, timeoutPromise]) as any;
-
+      
       console.log(`Successfully found ${branches.length} branches`);
-
-      // Return the branches, or an empty array if none found
-      return branches || [];
+      return branches;
     } catch (error) {
-      console.error('Error fetching all branches:', error);
-
-      // Instead of silently returning an empty array, throw a proper error
-      // that will be handled by the tRPC error formatter
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch branches. Please try again.',
-        cause: error,
-      });
+      console.error('Error fetching branches:', error);
+      // Always return an array even on error
+      return [];
     }
   }),
 
@@ -47,8 +27,8 @@ export const branchRouter = createTRPCRouter({
     .input(z.object({ id: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       // If no ID is provided or it's an empty string, return null
-      if (!input.id) {
-        console.log('No branch ID provided to getById');
+      if (!input.id || input.id.trim() === "") {
+        console.log('No valid branch ID provided to getById');
         return null;
       }
 
@@ -80,7 +60,12 @@ export const branchRouter = createTRPCRouter({
       } catch (error) {
         console.error('Error fetching branch by ID:', error);
 
-        // Instead of silently returning null, throw a proper error
+        // Instead of throwing an error for not found, just return null
+        // Only throw errors for actual database issues
+        if (error instanceof Error && error.message.includes('not found')) {
+          return null;
+        }
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: `Failed to fetch branch with ID: ${input.id}. Please try again.`,

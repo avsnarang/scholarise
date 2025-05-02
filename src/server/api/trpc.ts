@@ -12,6 +12,7 @@ import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { getAuth } from "@clerk/nextjs/server";
+import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
 import { db } from "@/server/db";
 import { withBranchFilter } from "@/utils/branch-filter";
@@ -26,7 +27,7 @@ import { withBranchFilter } from "@/utils/branch-filter";
 
 interface CreateContextOptions {
   userId: string | null;
-  auth: ReturnType<typeof getAuth>;
+  auth: any;
 }
 
 /**
@@ -53,16 +54,47 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  *
  * @see https://trpc.io/docs/context
  */
-export const createTRPCContext = async (opts: CreateNextContextOptions) => {
-  const { req } = opts;
-
-  // Get the auth information from Clerk
-  const auth = getAuth(req);
-
-  return createInnerTRPCContext({
-    userId: auth.userId,
-    auth,
-  });
+export const createTRPCContext = async (
+  opts: CreateNextContextOptions | FetchCreateContextFnOptions
+) => {
+  // For Pages Router (next adapter)
+  if ('req' in opts && 'res' in opts) {
+    try {
+      // Pass the full request object to getAuth
+      const auth = getAuth(opts.req);
+      return createInnerTRPCContext({
+        userId: auth.userId,
+        auth,
+      });
+    } catch (error) {
+      console.error('Error getting Pages Router auth:', error);
+      return createInnerTRPCContext({
+        userId: null,
+        auth: { userId: null },
+      });
+    }
+  }
+  
+  // For App Router (fetch adapter)
+  try {
+    // For the fetch adapter, create auth object from headers
+    const req = 'req' in opts 
+      ? (opts.req as unknown as Request) 
+      : (opts as FetchCreateContextFnOptions).req;
+    
+    // Use a simpler approach for App Router
+    // Let the actual auth happen in the route handler
+    return createInnerTRPCContext({
+      userId: null,
+      auth: { userId: null },
+    });
+  } catch (error) {
+    console.error('Error in createTRPCContext:', error);
+    return createInnerTRPCContext({
+      userId: null,
+      auth: { userId: null },
+    });
+  }
 };
 
 /**

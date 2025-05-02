@@ -135,6 +135,7 @@ model Teacher {
   userId         String?  @unique
   branchId       String
   employeeCode   String?  @unique
+  clerkId        String?  // Clerk auth user ID
   classes        Class[]
   branch         Branch   @relation(fields: [branchId], references: [id])
   attendances    StaffAttendance[]
@@ -153,6 +154,7 @@ model Employee {
   userId      String?  @unique
   branchId    String
   branch      Branch   @relation(fields: [branchId], references: [id])
+  attendances StaffAttendance[]
 }
 
 model Class {
@@ -278,6 +280,8 @@ model AttendanceLocation {
   branchId    String
   branch      Branch   @relation(fields: [branchId], references: [id])
   attendances StaffAttendance[]
+
+  @@map("attendanceLocation")
 }
 
 // Staff attendance records model
@@ -291,23 +295,21 @@ model StaffAttendance {
   notes               String?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
-  
+
   // The location where attendance was marked
   locationId          String
   location            AttendanceLocation @relation(fields: [locationId], references: [id])
-  
+
   // Staff can be either a teacher or an employee
   teacherId           String?
   teacher             Teacher?           @relation(fields: [teacherId], references: [id])
-  
+
   employeeId          String?
   employee            Employee?          @relation(fields: [employeeId], references: [id])
-  
-  // Ensure that either teacherId or employeeId is present, but not both
-  @@check(
-    ((teacherId IS NOT NULL) AND (employeeId IS NULL)) OR
-    ((employeeId IS NOT NULL) AND (teacherId IS NULL))
-  )
+
+  // We can't use complex check constraints in Prisma yet, so we'll enforce this in application code
+
+  @@map("staffAttendance")
 }
 
 // Student attendance model for tracking student attendance
@@ -319,17 +321,18 @@ model StudentAttendance {
   notes             String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  
+
   // Relations
   studentId         String
   student           Student           @relation(fields: [studentId], references: [id])
   classId           String
   class             Class             @relation(fields: [classId], references: [id])
   markedById        String?           // Teacher or employee who marked attendance
-  
+
   @@unique([studentId, date])
   @@index([date, classId])
   @@index([studentId, date])
+  @@map("studentAttendance")
 }
 
 enum AttendanceStatus {

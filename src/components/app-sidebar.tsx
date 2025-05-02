@@ -4,7 +4,6 @@ import * as React from "react"
 import {
   Users,
   GraduationCap,
-  BookOpen,
   Building,
   Bus,
   CreditCard,
@@ -14,16 +13,16 @@ import {
   LayoutDashboard,
   HelpCircle,
   School,
-  ChevronDown,
   ChevronsUpDown,
-  Plus,
+  ChevronDown,
   AlertCircle,
   Clock,
+  LogOut,
+  User,
+  Settings2,
+  BadgeCheck,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
@@ -52,171 +52,38 @@ import { useAuth } from "@/hooks/useAuth"
 import { api } from "@/utils/api"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
-
-// Create proper icon components compatible with the navigation components
-// Use proper SVGSVGElement props to match Lucide icon signatures
-const IconWrapper = ({ component: Icon }: { component: React.ComponentType<any> }) => 
-  React.createElement(Icon, { className: "h-4 w-4" });
-
-// This is sample data.
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@scholarise.com",
-    avatar: "/avatars/admin.jpg",
-  },
-  teams: [
-    {
-      name: "ScholaRise",
-      logo: School,
-      plan: "Paonta Sahib",
-    },
-    {
-      name: "ScholaRise",
-      logo: School,
-      plan: "Juniors",
-    },
-    {
-      name: "ScholaRise",
-      logo: School,
-      plan: "Majra",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      isActive: true,
-    },
-    {
-      title: "Students",
-      url: "/students",
-      icon: GraduationCap,
-      items: [
-        {
-          title: "All Students",
-          url: "/students",
-        },
-        {
-          title: "Admission",
-          url: "/students/admission",
-        },
-        {
-          title: "Transfer Certificates",
-          url: "/students/transfer",
-        },
-      ],
-    },
-    {
-      title: "Teachers",
-      url: "/teachers",
-      icon: Users,
-      items: [
-        {
-          title: "All Teachers",
-          url: "/teachers",
-        },
-        {
-          title: "Add Teacher",
-          url: "/teachers/create",
-        },
-      ],
-    },
-    {
-      title: "Classes",
-      url: "/classes",
-      icon: Building,
-      items: [
-        {
-          title: "All Classes",
-          url: "/classes",
-        },
-        {
-          title: "Class Students",
-          url: "/classes/students",
-        },
-      ],
-    },
-    {
-      title: "Transport",
-      url: "/transport",
-      icon: Bus,
-      items: [
-        {
-          title: "Routes",
-          url: "/transport/routes",
-        },
-        {
-          title: "Stops",
-          url: "/transport/stops",
-        },
-        {
-          title: "Assignments",
-          url: "/transport/assignments",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-      items: [
-        {
-          title: "Branches",
-          url: "/settings/branches",
-        },
-        {
-          title: "Academic Sessions",
-          url: "/settings/academic-sessions",
-        },
-        {
-          title: "Users",
-          url: "/settings/users",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Fees",
-      url: "/fees",
-      icon: CreditCard,
-    },
-    {
-      name: "Reports",
-      url: "/reports",
-      icon: FileText,
-    },
-    {
-      name: "Help",
-      url: "/help",
-      icon: HelpCircle,
-    },
-  ],
-}
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import { usePathname } from "next/navigation"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>({});
   const { isMobile } = useSidebar();
-  
+
   // Fetch branches from API
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getAll.useQuery();
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
   const { user } = useAuth();
-  
+
   // Define Branch type based on the API response
   type Branch = {
     id: string;
     name: string;
     code: string;
   };
-  
+
   // Find the selected branch using currentBranchId
-  const selectedBranch = React.useMemo(() => 
-    branches.find((branch: Branch) => branch.id === currentBranchId),
-    [branches, currentBranchId]
-  );
+  const selectedBranch = React.useMemo(() => {
+    // Ensure branches is an array before using find on it
+    const branchesArray = Array.isArray(branches) ? branches : [];
+    return branchesArray.find((branch: Branch) => branch.id === currentBranchId);
+  }, [branches, currentBranchId]);
+
+  // Add usePathname hook
+  const pathname = usePathname();
 
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) => ({
@@ -283,20 +150,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Attendance",
-      href: "/attendance-marker",
+      href: "/attendance/mark",
       icon: Clock,
       children: [
         {
           title: "Mark Attendance",
-          href: "/attendance-marker",
+          href: "/attendance/mark",
         },
         {
-          title: "View Records",
-          href: "/attendance-records",
+          title: "Student Attendance",
+          href: "/attendance/students",
         },
         {
-          title: "Configure Locations",
-          href: "/settings/location-config",
+          title: "Attendance Reports",
+          href: "/attendance/reports",
         },
       ],
     },
@@ -336,6 +203,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Users",
           href: "/settings/users",
         },
+        {
+          title: "Assign Attendance Locations",
+          href: "/settings/attendance-locations",
+        },
       ],
     },
   ];
@@ -360,15 +231,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Function to check if a route is active
   const isActive = (href: string) => {
-    if (typeof window !== 'undefined') {
-      const pathname = window.location.pathname;
-      return pathname === href || pathname.startsWith(`${href}/`);
-    }
-    return false;
+    return pathname === href || pathname?.startsWith(`${href}/`);
   };
 
   return (
-    <Sidebar 
+    <Sidebar
       className="border-r dark:border-sidebar-border shadow-sm max-h-screen overflow-hidden dark:shadow-none"
       collapsible="icon"
       {...props}
@@ -401,38 +268,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-white dark:bg-[#252525] dark:border-[#303030]"
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
                 align="start"
                 side={isMobile ? "bottom" : "right"}
                 sideOffset={4}
               >
-                <DropdownMenuLabel className="text-gray-500 text-xs dark:text-[#c0c0c0]">
+                <DropdownMenuLabel className="text-gray-500 text-xs">
                   Select Branch
                 </DropdownMenuLabel>
                 {isLoadingBranches ? (
                   <div className="p-2">
-                    <Skeleton className="h-8 w-full bg-white dark:bg-gray-600" />
-                    <Skeleton className="h-8 w-full mt-1 bg-white dark:bg-gray-600" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full mt-1" />
                   </div>
                 ) : branches.length === 0 ? (
-                  <div className="p-4 text-sm text-center text-muted-foreground dark:text-foreground/70">
-                    <AlertCircle className="h-4 w-4 mx-auto mb-2 dark:text-foreground/70" />
+                  <div className="p-4 text-sm text-center text-muted-foreground">
+                    <AlertCircle className="h-4 w-4 mx-auto mb-2" />
                     No branches found
                   </div>
                 ) : (
-                  branches.map((branch: Branch) => (
+                  // Ensure branches is an array before using map
+                  (Array.isArray(branches) ? branches : []).map((branch: Branch) => (
                     <DropdownMenuItem
                       key={branch.id}
                       onClick={() => setCurrentBranchId(branch.id)}
-                      className="gap-2 p-2 dark:hover:bg-[#303030] dark:focus:bg-[#303030] dark:text-[#e6e6e6]"
+                      className="gap-2 p-2"
                     >
-                      <div className="flex size-6 items-center justify-center rounded-md border border-gray-200 dark:border-[#303030] dark:bg-[#303030]/50">
-                        <School className="size-3.5 shrink-0 dark:text-[#7aad8c]" />
+                      <div className="flex size-6 items-center justify-center rounded-md border border-gray-200">
+                        <School className="size-3.5 shrink-0" />
                       </div>
-                      <span className="font-medium dark:text-[#e6e6e6]">{branch.code}</span>
-                      <span className="flex-1 text-gray-500 dark:text-[#c0c0c0]">{branch.name}</span>
+                      <span className="font-medium">{branch.code}</span>
+                      <span className="flex-1 text-gray-500">{branch.name}</span>
                       {currentBranchId === branch.id && (
-                        <DropdownMenuShortcut className="dark:text-[#7aad8c]">✓</DropdownMenuShortcut>
+                        <DropdownMenuShortcut>✓</DropdownMenuShortcut>
                       )}
                     </DropdownMenuItem>
                   ))
@@ -448,21 +316,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem key={item.title}>
               {item.children ? (
                 <>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     isActive={isActive(item.href)}
-                    className={`
-                      ${isActive(item.href) ? 'dark:text-primary dark:hover:text-primary' : 'dark:text-foreground dark:hover:text-foreground/90'} 
-                      hover:bg-accent/20 dark:hover:bg-sidebar-accent/40
-                    `}
                     tooltip={item.title}
                     onClick={() => toggleExpand(item.title)}
                   >
                     <item.icon className="h-4 w-4" />
                     <span className="flex-1">{item.title}</span>
-                    <ChevronDown 
+                    <ChevronDown
                       className={`h-4 w-4 transition-transform ${
                         expandedItems[item.title] ? "rotate-180" : ""
-                      }`} 
+                      }`}
                     />
                   </SidebarMenuButton>
 
@@ -487,10 +351,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   isActive={isActive(item.href)}
-                  className={`
-                    ${isActive(item.href) ? 'dark:text-primary dark:hover:text-primary' : 'dark:text-foreground dark:hover:text-foreground/90'} 
-                    hover:bg-accent/20 dark:hover:bg-sidebar-accent/40
-                  `}
                   tooltip={item.title}
                 >
                   <Link href={item.href}>
@@ -505,17 +365,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         {/* Secondary navigation */}
         <div className="mt-6">
-          <h3 className="mb-2 px-4 text-xs font-semibold text-gray-500 dark:text-foreground/50">Resources</h3>
+          <h3 className="mb-2 px-4 text-xs font-semibold text-gray-500">Resources</h3>
           <SidebarMenu>
             {secondaryItems.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild
                   isActive={isActive(item.href)}
-                  className={`
-                    ${isActive(item.href) ? 'dark:text-primary dark:hover:text-primary' : 'dark:text-foreground dark:hover:text-foreground/90'} 
-                    hover:bg-accent/20 dark:hover:bg-sidebar-accent/40
-                  `}
                   tooltip={item.title}
                 >
                   <Link href={item.href}>
@@ -529,30 +385,95 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarContent>
       <SidebarFooter>
-        {user ? (
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-sidebar-accent/20 dark:text-primary text-primary/80">
-              {user.name ? (
-                <span className="text-sm font-medium">
-                  {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </span>
-              ) : (
-                <Users className="h-4 w-4 text-gray-500 dark:text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium dark:text-foreground">{user.name || "User"}</span>
-              <span className="text-xs text-gray-500 dark:text-muted-foreground">{user.email || ""}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4">
-            <Skeleton className="h-10 w-full dark:bg-gray-600" />
-          </div>
-        )}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  {user ? (
+                    <>
+                      <Avatar className="h-8 w-8 rounded-lg">
+                        <AvatarImage src="" alt={user.name || "User"} />
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                          {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">{user.name || "User"}</span>
+                        <span className="truncate text-xs text-muted-foreground">{user.email || ""}</span>
+                      </div>
+                      <ChevronsUpDown className="ml-auto size-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Skeleton className="h-8 w-8 rounded-lg" />
+                      <div className="grid flex-1 gap-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                      <ChevronsUpDown className="ml-auto size-4 opacity-30" />
+                    </>
+                  )}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                side={isMobile ? "bottom" : "right"}
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src="" alt={user?.name || "User"} />
+                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                        {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{user?.name || "User"}</span>
+                      <span className="truncate text-xs">{user?.email || ""}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notifications
+                    <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <BadgeCheck className="mr-2 h-4 w-4" />
+                    Staff Permissions
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                  <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
 }
-
