@@ -125,32 +125,32 @@
   }
 
   .dark {
-    --background: 222 18% 11%;
+    --background: 0 0% 6%;
     --foreground: 210 40% 98%;
 
-    --card: 222 16% 18%;
+    --card: 0 0% 13%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 16% 16%;
+    --popover: 0 0% 13%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 142.1 70.6% 45.3%;
     --primary-foreground: 144.9 80.4% 10%;
 
-    --secondary: 222 14% 22%;
+    --secondary: 25 60% 40%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 0 0% 13%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 24 75% 40%;
+    --accent: 25 60% 40%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 85.7% 97.3%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 0 0% 19%;
+    --input: 0 0% 13%;
     --ring: 142.4 71.8% 29.2%;
   }
 }
@@ -242,56 +242,50 @@
 
 .dark {
   /* Base colors - Dark mode with pastel versions */
-  --primary: #7aad8c;
+  --primary: #7aad8c;  /* Pastel green */
   --primary-foreground: #f8fafc;
   --primary-light: rgba(122, 173, 140, 0.2);
 
-  --secondary: #e2bd8c;
-  --secondary-foreground: #0f172a;
-  --secondary-light: rgba(226, 189, 140, 0.2);
+  --secondary: #c27c54;  /* Rust/orange color */
+  --secondary-foreground: #f8fafc;
+  --secondary-light: rgba(194, 124, 84, 0.2);
 
-  /* Backgrounds - Dark mode */
-  --background: #202020;
-  --foreground: #e6e6e6;
+  /* Backgrounds */
+  --background: #191919;  /* Lightened from #101010 to create contrast with sidebar */
+  --foreground: #e2e8f0;
 
   /* Card/Container backgrounds */
-  --card: #252525;
-  --card-foreground: #e6e6e6;
-
-  /* Sidebar specific dark mode */
-  --sidebar: #101010;
-  --sidebar-foreground: #e6e6e6;
-  --sidebar-border: #151515;
+  --card: #252525;  /* Lightened from #202020 for better contrast */
+  --card-foreground: #e2e8f0;
 
   /* Borders */
-  --border: #303030;
-  --input: #303030;
+  --border: #353535;  /* Lightened slightly for better contrast */
+  --input: #252525;  /* Match card background */
 
   /* Muted colors */
-  --muted: #303030;
-  --muted-foreground: #c0c0c0;
+  --muted: #252525;  /* Match card background */
+  --muted-foreground: #a0aec0;
 
   /* Accents */
-  --accent: #2a2a2a;
-  --accent-foreground: #e6e6e6;
+  --accent: #c27c54;  /* Rust/orange color */
+  --accent-foreground: #f8fafc;
 
   /* Destructive actions */
-  --destructive: #ef4444;
+  --destructive: #b91c1c;
   --destructive-foreground: #f8fafc;
 
   /* Shadows and rings */
-  --ring: #7aad8c;
-
-  /* Button glows */
-  --glow-primary: rgba(122, 173, 140, 0.25);
-  --glow-secondary: rgba(226, 189, 140, 0.25);
-  --glow-accent: rgba(42, 42, 42, 0.25);
-  --glow-destructive: rgba(239, 68, 68, 0.25);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --ring: #7aad8c;  /* Pastel green */
+  
+  /* Sidebar - Keep darker than main content */
+  --sidebar: #101010;  /* Keep darkest gray for sidebar */
+  --sidebar-foreground: #a0aec0;
+  --sidebar-primary: #f8fafc;
+  --sidebar-primary-foreground: #202020;
+  --sidebar-accent: #202020;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #202020;
+  --sidebar-ring: #7aad8c;  /* Pastel green */
 }
 
 @layer base {
@@ -326,4 +320,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.bg-dropdown {
+  background-color: #f9fafb !important;
 }

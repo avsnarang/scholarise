@@ -1,15 +1,10 @@
+import type { AttendanceLocation } from "@prisma/client";
+
 // Type definition for location
-export interface Location {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  radius: number; // In meters
-  isActive: boolean;
-}
+export type Location = AttendanceLocation;
 
 // Alias for AttendanceLocation to match usage in attendance-api.ts
-export type AttendanceLocation = Location;
+export type AttendanceLocationAlias = Location;
 
 // Type definition for attendance record
 export interface AttendanceRecord {
@@ -79,26 +74,23 @@ export function formatDateTime(dateString: string): string {
 }
 
 // Get current location with high accuracy
-export function getCurrentPosition(
-  options?: PositionOptions
-): Promise<GeolocationPosition> {
+export async function getCurrentPosition(): Promise<{ lat: number; lng: number }> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by this browser"));
+      reject(new Error("Geolocation is not supported by your browser"));
       return;
     }
 
-    const defaultOptions: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-      ...options
-    };
-
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position),
-      (error) => reject(error),
-      defaultOptions
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (error) => {
+        reject(error);
+      }
     );
   });
 }

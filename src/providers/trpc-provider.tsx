@@ -26,11 +26,21 @@ export function TRPCProvider({
   if (typeof window !== 'undefined') {
     const originalConsoleError = console.error;
     console.error = (...args: any[]) => {
+      // Handle NextAuth-related errors silently
+      const errorString = args.join(' ');
+      if (
+        errorString.includes('[next-auth]') &&
+        (errorString.includes('CLIENT_FETCH_ERROR') || errorString.includes('Unexpected token'))
+      ) {
+        // Don't show these errors in console - app is using Clerk for auth
+        // Silent handling to avoid confusion
+        return;
+      }
+      
       // Log to original console.error
       originalConsoleError(...args);
       
       // Check for array-related errors
-      const errorString = args.join(' ');
       if (errorString.includes('is not an array') || errorString.includes('is not iterable')) {
         console.warn('Data type error detected! This might be because an API returned an object instead of an array.');
         // For debugging - add additional info here

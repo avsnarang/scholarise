@@ -15,86 +15,106 @@ export const studentRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      // Use a single query with Prisma's aggregation to get all counts at once
-      // This is much faster than multiple separate count queries
-      const [studentCounts, classGroups] = await Promise.all([
-        // Get all student counts in a single query with aggregation
-        ctx.db.$queryRaw`
-          SELECT
-            COUNT(*) AS "totalStudents",
-            SUM(CASE WHEN "isActive" = true THEN 1 ELSE 0 END) AS "activeStudents",
-            SUM(CASE WHEN "isActive" = false THEN 1 ELSE 0 END) AS "inactiveStudents"
-          FROM "Student" s
-          WHERE (${input?.branchId}::text IS NULL OR s."branchId" = ${input?.branchId}::text)
-          AND (${input?.sessionId}::text IS NULL OR EXISTS (
-            SELECT 1 FROM "AcademicRecord" ar 
-            WHERE ar."studentId" = s.id 
-            AND ar."sessionId" = ${input?.sessionId}::text
-          ))
-        `,
+      console.log('Getting student stats with input:', input);
 
-        // Get class counts in parallel
-        ctx.db.student.groupBy({
-          by: ["classId"],
-          where: {
-            branchId: input?.branchId,
-            // Only include students with a classId
-            classId: { not: null },
-            // Filter by session if provided
-            ...(input?.sessionId
-              ? {
-              academicRecords: {
-                some: {
-                      sessionId: input.sessionId,
+      try {
+        // Use a single query with Prisma's aggregation to get all counts at once
+        // This is much faster than multiple separate count queries
+        const [studentCounts, classGroups] = await Promise.all([
+          // Get all student counts in a single query with aggregation
+          ctx.db.$queryRaw`
+            SELECT
+              COUNT(DISTINCT s.id) AS "totalStudents",
+              SUM(CASE WHEN s."isActive" = true THEN 1 ELSE 0 END) AS "activeStudents",
+              SUM(CASE WHEN s."isActive" = false THEN 1 ELSE 0 END) AS "inactiveStudents"
+            FROM "Student" s
+            WHERE (${input?.branchId}::text IS NULL OR s."branchId" = ${input?.branchId}::text)
+            AND (${input?.sessionId}::text IS NULL OR EXISTS (
+              SELECT 1 FROM "AcademicRecord" ar 
+              WHERE ar."studentId" = s.id 
+              AND ar."sessionId" = ${input?.sessionId}::text
+            ))
+          `,
+
+          // Get class counts in parallel
+          ctx.db.student.groupBy({
+            by: ["classId"],
+            where: {
+              branchId: input?.branchId,
+              // Only include students with a classId
+              classId: { not: null },
+              // Filter by session if provided
+              ...(input?.sessionId
+                ? {
+                academicRecords: {
+                  some: {
+                        sessionId: input.sessionId,
+                      },
                     },
-                  },
-                }
-              : {}),
-          },
-          _count: true,
-        }),
-      ]);
+                  }
+                : {}),
+            },
+            _count: true,
+          }),
+        ]);
 
-      // Extract counts from the raw query result
-      const counts = (studentCounts as unknown[])[0] as {
-        totalStudents: bigint;
-        activeStudents: bigint;
-        inactiveStudents: bigint;
-      };
+        console.log('Raw student counts:', studentCounts);
 
-      // Get class details for the IDs (only if there are classes)
-      const classIds = classGroups
-        .map((group) => group.classId)
-        .filter(Boolean) as string[];
+        // Extract counts from the raw query result
+        const counts = (studentCounts as unknown[])[0] as {
+          totalStudents: bigint;
+          activeStudents: bigint;
+          inactiveStudents: bigint;
+        };
 
-      // Only fetch classes if there are class IDs
-      const classes =
-        classIds.length > 0
-        ? await ctx.db.class.findMany({
-            where: { id: { in: classIds } },
-            // Only select the fields we need
-            select: { id: true, name: true, section: true },
-          })
-        : [];
+        console.log('Processed counts:', counts);
 
-      // Create a map of class counts
-      const classCounts: Record<string, number> = {};
-      classGroups.forEach((group) => {
-        if (group.classId) {
-          const classInfo = classes.find((c) => c.id === group.classId);
-          if (classInfo) {
-            const key = `${classInfo.name}-${classInfo.section}`;
-            classCounts[key] = group._count;
+        // Get class details for the IDs (only if there are classes)
+        const classIds = classGroups
+          .map((group) => group.classId)
+          .filter(Boolean) as string[];
+
+        console.log('Class IDs:', classIds);
+
+        // Only fetch classes if there are class IDs
+        const classes =
+          classIds.length > 0
+          ? await ctx.db.class.findMany({
+              where: { id: { in: classIds } },
+              // Only select the fields we need
+              select: { id: true, name: true, section: true },
+            })
+          : [];
+
+        console.log('Classes:', classes);
+
+        // Create a map of class counts
+        const classCounts: Record<string, number> = {};
+        classGroups.forEach((group) => {
+          if (group.classId) {
+            const classInfo = classes.find((c) => c.id === group.classId);
+            if (classInfo) {
+              const key = `${classInfo.name}-${classInfo.section}`;
+              classCounts[key] = group._count;
+            }
           }
-        }
-      });
+        });
 
-      return {
-        totalStudents: Number(counts.totalStudents),
-        activeStudents: Number(counts.activeStudents),
-        inactiveStudents: Number(counts.inactiveStudents),
-        classCounts,
-      };
+        console.log('Class counts:', classCounts);
+
+        const result = {
+          totalStudents: Number(counts.totalStudents || 0),
+          activeStudents: Number(counts.activeStudents || 0),
+          inactiveStudents: Number(counts.inactiveStudents || 0),
+          classCounts,
+        };
+
+        console.log('Final result:', result);
+        return result;
+      } catch (error) {
+        console.error('Error getting student stats:', error);
+        throw error;
+      }
     }),
   getAll: publicProcedure
     .input(
@@ -417,6 +437,8 @@ export const studentRouter = createTRPCRouter({
         caste: z.string().optional(),
         aadharNumber: z.string().optional(),
         udiseId: z.string().optional(),
+        cbse10RollNumber: z.string().optional(),
+        cbse12RollNumber: z.string().optional(),
         classId: z.string().optional(),
         parentId: z.string().optional(),
         dateOfAdmission: z.string().optional().transform(val => val ? new Date(val) : undefined),
@@ -711,6 +733,8 @@ export const studentRouter = createTRPCRouter({
         caste: z.string().optional(),
         aadharNumber: z.string().optional(),
         udiseId: z.string().optional(),
+        cbse10RollNumber: z.string().optional(),
+        cbse12RollNumber: z.string().optional(),
         username: z.string().optional(),
         password: z.string().optional(),
 
@@ -1102,6 +1126,8 @@ export const studentRouter = createTRPCRouter({
               caste: student.caste,
               aadharNumber: student.aadharNumber,
               udiseId: student.udiseId,
+              cbse10RollNumber: student.cbse10RollNumber,
+              cbse12RollNumber: student.cbse12RollNumber,
               branchId: studentBranchId,
               isActive: true,
               joinDate: new Date(),

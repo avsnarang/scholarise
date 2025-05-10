@@ -47,6 +47,7 @@ const recordAttendanceSchema = z.object({
   distance: z.number().min(0),
   isWithinAllowedArea: z.boolean().optional().default(false),
   notes: z.string().optional(),
+  type: z.enum(["IN", "OUT", "BRANCH_TRANSFER_OUT", "BRANCH_TRANSFER_IN"]).default("IN"),
   // Only one of these should be provided
   teacherId: z.string().optional(),
   employeeId: z.string().optional(),
@@ -222,6 +223,9 @@ export const attendanceRouter = createTRPCRouter({
       // Verify the location exists
       const location = await ctx.db.attendanceLocation.findUnique({
         where: { id: input.locationId },
+        include: {
+          branch: true,
+        }
       });
 
       if (!location) {
@@ -239,9 +243,13 @@ export const attendanceRouter = createTRPCRouter({
       }
 
       // Verify teacher/employee exists
+      let userId: string | undefined;
+      let userBranchId: string | undefined;
+
       if (input.teacherId) {
         const teacher = await ctx.db.teacher.findUnique({
           where: { id: input.teacherId },
+          include: { branch: true }
         });
 
         if (!teacher) {
@@ -250,9 +258,12 @@ export const attendanceRouter = createTRPCRouter({
             message: "Teacher not found",
           });
         }
+        userId = input.teacherId;
+        userBranchId = teacher.branchId;
       } else if (input.employeeId) {
         const employee = await ctx.db.employee.findUnique({
           where: { id: input.employeeId },
+          include: { branch: true }
         });
 
         if (!employee) {
@@ -261,40 +272,84 @@ export const attendanceRouter = createTRPCRouter({
             message: "Employee not found",
           });
         }
+        userId = input.employeeId;
+        userBranchId = employee.branchId;
       }
 
-      // Check if attendance already recorded today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Get the current time
+      const now = new Date();
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
 
-      // Check if attendance already recorded today
-      const existingAttendance = await ctx.db.staffAttendance.findFirst({
+      // Get the last attendance record for today
+      const lastAttendance = await ctx.db.staffAttendance.findFirst({
         where: {
           OR: [
             { teacherId: input.teacherId },
             { employeeId: input.employeeId },
           ],
           timestamp: {
-            gte: today,
-            lt: tomorrow,
+            gte: startOfDay,
           },
+        },
+        include: {
+          location: true,
+        },
+        orderBy: {
+          timestamp: 'desc',
         },
       });
 
-      if (existingAttendance) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Attendance already marked for today",
-        });
+      // Validate attendance type based on context
+      if (input.type === "IN") {
+        // Check if there's already an IN record without an OUT
+        if (lastAttendance?.type === "IN" || lastAttendance?.type === "BRANCH_TRANSFER_IN") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot mark IN attendance when previous IN or BRANCH_TRANSFER_IN has no corresponding OUT record",
+          });
+        }
+      } else if (input.type === "OUT") {
+        // Check if there's an IN record to match this OUT
+        if (!lastAttendance || (lastAttendance.type !== "IN" && lastAttendance.type !== "BRANCH_TRANSFER_IN")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot mark OUT attendance without a corresponding IN record",
+          });
+        }
+      } else if (input.type === "BRANCH_TRANSFER_OUT") {
+        // Check if there's an IN or BRANCH_TRANSFER_IN record
+        if (!lastAttendance || (lastAttendance.type !== "IN" && lastAttendance.type !== "BRANCH_TRANSFER_IN")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot mark BRANCH_TRANSFER_OUT without a corresponding IN or BRANCH_TRANSFER_IN record",
+          });
+        }
+      } else if (input.type === "BRANCH_TRANSFER_IN") {
+        // Check if there's a BRANCH_TRANSFER_OUT record
+        if (!lastAttendance || lastAttendance.type !== "BRANCH_TRANSFER_OUT") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot mark BRANCH_TRANSFER_IN without a corresponding BRANCH_TRANSFER_OUT record",
+          });
+        }
       }
 
       // Create attendance record
       return ctx.db.staffAttendance.create({
         data: {
-          ...input,
+          type: input.type,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          distance: input.distance,
           isWithinAllowedArea: input.distance <= location.radius,
+          notes: input.notes,
+          locationId: input.locationId,
+          teacherId: input.teacherId,
+          employeeId: input.employeeId,
+        },
+        include: {
+          location: true,
         },
       });
     }),
@@ -419,11 +474,9 @@ export const attendanceRouter = createTRPCRouter({
       employeeId: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const startDate = new Date(input.date);
-      startDate.setHours(0, 0, 0, 0);
-
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 1);
+      // Ensure we're working with UTC dates to avoid timezone issues
+      const startDate = new Date(input.date.toISOString().split('T')[0] + 'T00:00:00.000Z');
+      const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
 
       return await ctx.db.staffAttendance.findFirst({
         where: {
@@ -438,6 +491,9 @@ export const attendanceRouter = createTRPCRouter({
         },
         include: {
           location: true,
+        },
+        orderBy: {
+          timestamp: 'desc',
         },
       });
     }),

@@ -12,6 +12,10 @@ import { employeeRouter } from "@/server/api/routers/employee";
 import { authRouter } from "@/server/api/routers/auth";
 import { academicSessionRouter } from "@/server/api/routers/academicSession";
 import { attendanceRouter } from "@/server/api/routers/attendance";
+import { attendanceLocationRouter } from "@/server/api/routers/attendanceLocation";
+import { attendanceDeviceRouter } from "@/server/api/routers/attendanceDevice";
+import { attendanceWindowRouter } from "@/server/api/routers/attendanceWindow";
+import { subjectRouter } from "@/server/api/routers/subject";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -34,6 +38,10 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   academicSession: academicSessionRouter,
   attendance: attendanceRouter,
+  attendanceLocation: attendanceLocationRouter,
+  attendanceDevice: attendanceDeviceRouter,
+  attendanceWindow: attendanceWindowRouter,
+  subject: subjectRouter,
 });
 
 // export type definition of API

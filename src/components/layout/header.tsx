@@ -1,14 +1,10 @@
 import Link from "next/link";
-import { Menu, Bell } from "lucide-react";
+import { Menu } from "lucide-react";
 import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
-import { EnhancedBranchSelector } from "@/components/enhanced-branch-selector";
 import { GlobalSearch } from "@/components/global-search";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -21,23 +17,6 @@ export function Header({
   isSidebarCollapsed = false,
   onSidebarCollapseToggle
 }: HeaderProps) {
-  const { user } = useAuth();
-  
-  // Get user initials for avatar
-  const getUserInitials = () => {
-    if (!user?.name) return "SR";
-    
-    const nameParts = user.name.trim().split(/\s+/);
-    
-    if (nameParts.length >= 2) {
-      const first = nameParts[0]?.charAt(0) || '';
-      const last = nameParts[1]?.charAt(0) || '';
-      return (first + last).toUpperCase();
-    }
-    
-    return (user.name.substring(0, 2) || "SR").toUpperCase();
-  };
-  
   return (
     <header className={cn(
       "sticky top-0 z-20 flex h-14 items-center justify-between bg-white shadow-sm border-b border-[#00501B]/10 w-full dark:bg-[#101010]"
@@ -75,13 +54,8 @@ export function Header({
         </div>
       </div>
 
-      {/* Right side of header with notifications and user profile */}
+      {/* Right side of header with session selector and theme toggle */}
       <div className="flex items-center gap-3 mr-4">
-        {/* Branch selector */}
-        <div className="relative z-[60]">
-          <EnhancedBranchSelector />
-        </div>
-        
         {/* Session selector */}
         <div className="relative z-[60]">
           <EnhancedAcademicSessionSelector />
@@ -89,16 +63,6 @@ export function Header({
         
         {/* Theme toggle */}
         <ThemeToggle />
-        
-        {/* Notification button */}
-        <Button variant="ghost" size="icon" className="rounded-full hover:bg-[#A65A20]/10 text-[#A65A20]">
-          <Bell className="h-5 w-5" />
-        </Button>
-        
-        {/* User avatar */}
-        <Avatar className="h-8 w-8 bg-gradient-to-r from-[#00501B] to-[#A65A20] text-white cursor-pointer">
-          <AvatarFallback>{getUserInitials()}</AvatarFallback>
-        </Avatar>
       </div>
     </header>
   );

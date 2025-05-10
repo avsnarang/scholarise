@@ -47,10 +47,16 @@ export function StudentStatsCards({
   const branchId = getBranchFilterParam();
   
   // Fetch real stats from API
-  const { data: stats, isLoading } = api.student.getStats.useQuery({
+  const { data: stats, isLoading, error } = api.student.getStats.useQuery({
     branchId,
     sessionId
   });
+
+  // Log for debugging
+  console.log('Branch ID:', branchId);
+  console.log('Session ID:', sessionId);
+  console.log('Stats:', stats);
+  console.log('Error:', error);
 
   // Use API stats if available
   const displayStats = {
@@ -67,6 +73,10 @@ export function StudentStatsCards({
         <span className="sr-only">Loading stats...</span>
       </div>
     );
+  }
+
+  if (error) {
+    console.error('Error fetching student stats:', error);
   }
 
   return (

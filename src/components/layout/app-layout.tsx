@@ -10,8 +10,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { BranchProvider } from "@/hooks/useBranchContext";
 import { AcademicSessionProvider } from "@/hooks/useAcademicSessionContext";
-import { BranchLoadingWrapper } from "./branch-loading-wrapper";
-import { SessionLoadingWrapper } from "./session-loading-wrapper";
+import { SessionLoadingWrapper } from "@/components/layout/session-loading-wrapper";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -41,28 +40,26 @@ export function AppLayout({
     <>
       <BranchProvider>
         <AcademicSessionProvider>
-          <BranchLoadingWrapper>
-            <SidebarProvider
-              style={{
-                "--sidebar-width": "calc(var(--spacing) * 72)",
-                "--header-height": "calc(var(--spacing) * 12)",
-              } as React.CSSProperties}
-            >
-              <AppSidebar variant="inset" />
-              <SidebarInset>
-                <Header />
-                <div className="flex flex-1 flex-col">
-                  <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                      <SessionLoadingWrapper>
-                        {children}
-                      </SessionLoadingWrapper>
-                    </div>
+          <SidebarProvider
+            style={{
+              "--sidebar-width": "calc(var(--spacing) * 72)",
+              "--header-height": "calc(var(--spacing) * 12)",
+            } as React.CSSProperties}
+          >
+            <AppSidebar variant="inset" />
+            <SidebarInset>
+              <Header />
+              <div className="flex flex-1 flex-col">
+                <div className="@container/main flex flex-1 flex-col gap-2">
+                  <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                    <SessionLoadingWrapper>
+                      {children}
+                    </SessionLoadingWrapper>
                   </div>
                 </div>
-              </SidebarInset>
-            </SidebarProvider>
-          </BranchLoadingWrapper>
+              </div>
+            </SidebarInset>
+          </SidebarProvider>
         </AcademicSessionProvider>
       </BranchProvider>
     </>

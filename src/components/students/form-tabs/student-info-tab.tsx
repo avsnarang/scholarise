@@ -398,7 +398,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Nationality</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Nationality" defaultValue="Indian" />
+                <Input {...field} placeholder="Nationality" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -426,9 +426,39 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
           name="udiseId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>UDISE ID / Apaar ID</FormLabel>
+              <FormLabel>UDISE ID</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="UDISE ID / Apaar ID" />
+                <Input {...field} placeholder="UDISE ID" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* CBSE-10 Roll Number */}
+        <FormField
+          control={control}
+          name="cbse10RollNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CBSE-10 Roll Number</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="CBSE-10 Roll Number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* CBSE-12 Roll Number */}
+        <FormField
+          control={control}
+          name="cbse12RollNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CBSE-12 Roll Number</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="CBSE-12 Roll Number" />
               </FormControl>
               <FormMessage />
             </FormItem>

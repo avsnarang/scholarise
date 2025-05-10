@@ -76,12 +76,8 @@ export function useRecordAttendance() {
   const utils = api.useUtils();
   const mutation = api.attendance.recordAttendance.useMutation({
     onSuccess: () => {
-      // Invalidate queries that depend on this data
+      // Only invalidate the records query since we're manually refetching the date query
       void utils.attendance.getAttendanceRecords.invalidate();
-      // Also invalidate the getAttendanceByDate query to refresh the UI
-      void utils.attendance.getAttendanceByDate.invalidate();
-      // Invalidate attendance summary
-      void utils.attendance.getStaffAttendanceSummary.invalidate();
     },
   });
 

@@ -20,14 +20,9 @@ const getBaseUrl = () => {
 
 // For App Router with client components
 export const api = createTRPCReact<AppRouter>({
-  overrides: {
-    useMutation: {
-      async onSuccess(opts) {
-        await opts.originalFn();
-        await opts.queryClient.invalidateQueries();
-      },
-    },
-  },
+  // Remove the global override that invalidates all queries on mutation success
+  // This was causing infinite loops as any mutation would invalidate all queries including getAttendanceByDate
+  // Instead, we'll handle invalidations manually in each specific mutation
 });
 
 // Common links configuration with transformer

@@ -22,6 +22,7 @@ import {
   Settings2,
   BadgeCheck,
 } from "lucide-react"
+import { useClerk } from "@clerk/nextjs"
 
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ import { usePathname } from "next/navigation"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>({});
   const { isMobile } = useSidebar();
+  const { signOut } = useClerk();
 
   // Fetch branches from API
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getAll.useQuery();
@@ -150,9 +152,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Attendance",
-      href: "/attendance/mark",
+      href: "/attendance",
       icon: Clock,
       children: [
+        {
+          title: "Dashboard",
+          href: "/attendance",
+        },
         {
           title: "Mark Attendance",
           href: "/attendance/mark",
@@ -200,12 +206,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/settings/academic-sessions",
         },
         {
+          title: "Subjects",
+          href: "/settings/subjects",
+        },
+        {
           title: "Users",
           href: "/settings/users",
         },
         {
-          title: "Assign Attendance Locations",
-          href: "/settings/attendance-locations",
+          title: "Attendance Configuration",
+          href: "/settings/attendance-config",
         },
       ],
     },
@@ -232,6 +242,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Function to check if a route is active
   const isActive = (href: string) => {
     return pathname === href || pathname?.startsWith(`${href}/`);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      // Sign out with redirect to login page
+      await signOut({ redirectUrl: "/login" });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      // Fallback: redirect to login page even if there's an error
+      window.location.href = "/login";
+    }
   };
 
   return (
@@ -316,36 +337,67 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem key={item.title}>
               {item.children ? (
                 <>
+                  <div className="group relative flex flex-col">
+                    {/* Main menu item */}
+                    <div className="relative">
+                      <Link href={item.href}>
                   <SidebarMenuButton
                     isActive={isActive(item.href)}
                     tooltip={item.title}
-                    onClick={() => toggleExpand(item.title)}
+                          className="relative pr-8"
                   >
                     <item.icon className="h-4 w-4" />
                     <span className="flex-1">{item.title}</span>
+                        </SidebarMenuButton>
+                      </Link>
+                      
+                      {/* Dropdown button with high z-index to stay on top */}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none z-30">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleExpand(item.title);
+                          }}
+                          className={`
+                            h-7 w-7 flex items-center justify-center rounded-[6px]
+                            transition-all duration-200 pointer-events-auto
+                            ${expandedItems[item.title] 
+                              ? "bg-[#00501B] text-white shadow-sm" 
+                              : "text-muted-foreground/70 hover:text-white hover:bg-[#00501B]/90 hover:shadow-sm"}
+                          `}
+                          aria-label={`Toggle ${item.title} submenu`}
+                        >
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
+                            className={`h-4 w-4 transition-transform duration-300 ${
                         expandedItems[item.title] ? "rotate-180" : ""
                       }`}
                     />
-                  </SidebarMenuButton>
+                        </button>
+                      </div>
+                    </div>
 
+                    {/* Submenu as sibling of main menu item */}
                   {expandedItems[item.title] && (
-                    <SidebarMenuSub>
+                      <div className="w-full mt-1">
+                        <SidebarMenuSub className="pl-4 ml-2 border-l border-primary/20 overflow-visible">
                       {item.children.map((child) => (
                         <SidebarMenuSubItem key={child.href}>
                           <SidebarMenuSubButton
                             asChild
                             isActive={isActive(child.href)}
+                                className="hover:bg-transparent relative z-20"
                           >
-                            <Link href={child.href}>
-                              <span>{child.title}</span>
+                                <Link href={child.href} className="group transition-all duration-200 hover:pl-1">
+                                  <span className={isActive(child.href) ? "font-medium text-primary" : "font-normal"}>{child.title}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
                     </SidebarMenuSub>
+                      </div>
                   )}
+                  </div>
                 </>
               ) : (
                 <SidebarMenuButton
@@ -353,9 +405,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   isActive={isActive(item.href)}
                   tooltip={item.title}
                 >
-                  <Link href={item.href}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                  <Link href={item.href} className="group transition-all duration-200">
+                    <item.icon className="h-4 w-4 transition-colors duration-200 group-hover:text-primary" />
+                    <span className="transition-all duration-200 group-hover:pl-0.5">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               )}
@@ -374,9 +426,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   isActive={isActive(item.href)}
                   tooltip={item.title}
                 >
-                  <Link href={item.href}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                  <Link href={item.href} className="group transition-all duration-200">
+                    <item.icon className="h-4 w-4 transition-colors duration-200 group-hover:text-primary" />
+                    <span className="transition-all duration-200 group-hover:pl-0.5">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -463,7 +515,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                   <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
