@@ -1,5 +1,5 @@
 // @ts-ignore - Next.js page params type error workaround
-export const runtime = 'edge';
+// export const runtime = 'edge'; // Removed this line
 
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { DepartmentForm } from "@/components/departments/department-form";
