@@ -58,12 +58,16 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ClassDataTable, type Class } from "@/components/classes/class-data-table";
+import { useActionPermissions } from "@/utils/permission-utils";
 
 export default function ClassesPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentSessionId } = useAcademicSessionContext();
   const { currentBranchId, currentBranch } = useBranchContext();
+  
+  // Get permissions for the classes module
+  const { canView, canCreate, canEdit } = useActionPermissions("classes");
   
   // State for UI
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,31 +181,45 @@ export default function ClassesPage() {
   const activeClasses = classes?.filter(c => c.isActive).length || 0;
   const withTeachers = classes?.filter(c => c.teacher).length || 0;
   
+  // Page action buttons that respect permissions
+  const renderPageActions = () => (
+    <div className="flex gap-2">
+      {/* Export button - requires view permission */}
+      {canView() && (
+        <Button variant="glowing-secondary" className="flex items-center gap-1">
+          <FileDown className="h-4 w-4" />
+          <span>Export</span>
+        </Button>
+      )}
+      
+      {/* Order classes button - requires edit permission */}
+      {canEdit() && (
+        <Link href="/classes/order">
+          <Button variant="outline" className="flex items-center gap-1">
+            <ArrowUpDown className="h-4 w-4" />
+            <span>Order Classes</span>
+          </Button>
+        </Link>
+      )}
+      
+      {/* Add class button - requires create permission */}
+      {canCreate() && (
+        <Link href="/settings/classes/new">
+          <Button variant="glowing" className="flex items-center gap-1">
+            <PlusCircle className="h-4 w-4" />
+            <span>Add Class</span>
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+  
   if (isLoading) {
     return (
       <PageWrapper
         title="Classes"
         subtitle="Manage school classes and sections"
-        action={
-          <div className="flex gap-2">
-            <Button variant="glowing-secondary" className="flex items-center gap-1">
-              <FileDown className="h-4 w-4" />
-              <span>Export</span>
-            </Button>
-            <Link href="/classes/order">
-              <Button variant="outline" className="flex items-center gap-1">
-                <ArrowUpDown className="h-4 w-4" />
-                <span>Order Classes</span>
-              </Button>
-            </Link>
-            <Link href="/settings/classes/new">
-              <Button variant="glowing" className="flex items-center gap-1">
-                <PlusCircle className="h-4 w-4" />
-                <span>Add Class</span>
-              </Button>
-            </Link>
-          </div>
-        }
+        action={renderPageActions()}
       >
         {/* Stats cards skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -225,26 +243,7 @@ export default function ClassesPage() {
       <PageWrapper
         title="Classes"
         subtitle="Manage school classes and sections"
-        action={
-          <div className="flex gap-2">
-            <Button variant="glowing-secondary" className="flex items-center gap-1">
-              <FileDown className="h-4 w-4" />
-              <span>Export</span>
-            </Button>
-            <Link href="/classes/order">
-              <Button variant="outline" className="flex items-center gap-1">
-                <ArrowUpDown className="h-4 w-4" />
-                <span>Order Classes</span>
-              </Button>
-            </Link>
-            <Link href="/settings/classes/new">
-              <Button variant="glowing" className="flex items-center gap-1">
-                <PlusCircle className="h-4 w-4" />
-                <span>Add Class</span>
-              </Button>
-            </Link>
-          </div>
-        }
+        action={renderPageActions()}
       >
         <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-8 text-center dark:border-gray-700">
           <GraduationCap className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
@@ -264,26 +263,7 @@ export default function ClassesPage() {
     <PageWrapper
       title="Classes"
       subtitle={`Manage classes and sections for ${currentBranch?.name || ""}`}
-      action={
-        <div className="flex gap-2">
-          <Button variant="glowing-secondary" className="flex items-center gap-1">
-            <FileDown className="h-4 w-4" />
-            <span>Export</span>
-          </Button>
-          <Link href="/classes/order">
-            <Button variant="outline" className="flex items-center gap-1">
-              <ArrowUpDown className="h-4 w-4" />
-              <span>Order Classes</span>
-            </Button>
-          </Link>
-          <Link href="/settings/classes/new">
-            <Button variant="glowing" className="flex items-center gap-1">
-              <PlusCircle className="h-4 w-4" />
-              <span>Add Class</span>
-            </Button>
-          </Link>
-        </div>
-      }
+      action={renderPageActions()}
     >
       {/* Stats Cards */}
       <div className="*:data-[slot=card]:from-[#00501B]/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:from-[#7aad8c]/10 dark:*:data-[slot=card]:to-[#252525] dark:*:data-[slot=card]:bg-[#252525] grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 mb-6">

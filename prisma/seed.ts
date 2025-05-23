@@ -1,9 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import { seedLeavePolicies } from './seed/leave-policies/seed';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting branch and academic session seed script...');
+  console.log('Starting seed script...');
 
   try {
     // Check if branches and academic sessions already exist
@@ -45,6 +46,7 @@ async function main() {
       console.log("Academic session already exists. Skipping seed.");
     }
 
+    let branchesCreated = false;
     if (existingBranches.length === 0) {
       console.log("No branches found. Creating default branches...");
       // Create default branches
@@ -89,20 +91,29 @@ async function main() {
         console.log(`Created branch: ${branch.name} (${branch.code})`);
       }
 
+      branchesCreated = true;
       console.log("Default branches created successfully");
     } else {
-      console.log("Branches already exist. Skipping seed.");
+      console.log("Branches already exist. Skipping branch seed.");
+    }
+
+    // Get branches for leave policy seeding
+    const branches = await prisma.branch.findMany();
+    
+    // Seed leave policies for each branch
+    for (const branch of branches) {
+      await seedLeavePolicies(prisma, branch.id);
     }
   } catch (error) {
-    console.error("Error seeding branches and academic sessions:", error);
+    console.error("Error in seed script:", error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
 main()
-  .then(() => console.log("Branch and academic session seed completed"))
+  .then(() => console.log("Seed completed successfully"))
   .catch((e) => {
-    console.error("Error in branch and academic session seed script:", e);
+    console.error("Error in seed script:", e);
     process.exit(1);
   });

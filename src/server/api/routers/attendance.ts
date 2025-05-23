@@ -6,10 +6,10 @@ import { type Prisma } from "@prisma/client";
 // Define AttendanceStatus as a custom type that matches the schema
 const AttendanceStatus = {
   PRESENT: "PRESENT",
+  LEAVE: "LEAVE",
   ABSENT: "ABSENT",
-  LATE: "LATE",
   HALF_DAY: "HALF_DAY",
-  EXCUSED: "EXCUSED",
+  LATE: "LATE",
 } as const;
 
 // Create a zod schema for this type
@@ -18,7 +18,7 @@ const studentAttendanceStatusSchema = z.enum([
   "ABSENT",
   "LATE",
   "HALF_DAY",
-  "EXCUSED",
+  "LEAVE",
 ]);
 
 // Export the type for use elsewhere
@@ -854,7 +854,7 @@ export const attendanceRouter = createTRPCRouter({
       const absentDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.ABSENT).length;
       const lateDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LATE).length;
       const halfDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.HALF_DAY).length;
-      const excusedDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.EXCUSED).length;
+      const excusedDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LEAVE).length;
 
       // Calculate attendance rate
       const attendedDays = presentDays + (lateDays * 0.75) + (halfDays * 0.5);

@@ -1,12 +1,23 @@
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
+"use client"
 
-import { Button } from "@/components/ui/button"
+import { ChevronRight, type LucideIcon } from "lucide-react"
+import { useState } from "react"
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   SidebarGroup,
-  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
@@ -15,42 +26,81 @@ export function NavMain({
   items: {
     title: string
     url: string
-    icon?: Icon
+    icon?: LucideIcon
+    isActive?: boolean
+    items?: {
+      title: string
+      url: string
+    }[]
   }[]
 }) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (title: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedItems(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
+
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip="Quick Create"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-            >
-              <IconCirclePlusFilled />
-              <span>Quick Create</span>
-            </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconMail />
-              <span className="sr-only">Inbox</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
+      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => (
+          <div key={item.title} className="relative">
+            <SidebarMenuItem>
+              <a href={item.url} className="flex-1">
+                <SidebarMenuButton 
+                  tooltip={item.title}
+                  className={`${!isCollapsed && item.items && item.items.length > 0 ? 'pr-10' : ''}`}
+                >
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </a>
+              
+              {!isCollapsed && item.items && item.items.length > 0 && (
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
+                  <button
+                    onClick={(e) => toggleExpand(item.title, e)}
+                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-sidebar-accent text-sidebar-foreground"
+                    aria-label={`Toggle ${item.title} submenu`}
+                  >
+                    <ChevronRight 
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        expandedItems[item.title] ? 'rotate-90' : ''
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
+            
+            {!isCollapsed && item.items && item.items.length > 0 && (
+              <div className={`overflow-hidden transition-all duration-200 ${
+                expandedItems[item.title] ? 'max-h-96' : 'max-h-0'
+              }`}>
+                <SidebarMenuSub>
+                  {item.items.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.title}>
+                      <SidebarMenuSubButton asChild>
+                        <a href={subItem.url}>
+                          <span>{subItem.title}</span>
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </div>
+            )}
+          </div>
+        ))}
+      </SidebarMenu>
     </SidebarGroup>
   )
 }

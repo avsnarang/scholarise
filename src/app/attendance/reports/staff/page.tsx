@@ -49,14 +49,14 @@ const columns = [
   {
     accessorKey: "userName",
     header: "Name",
-    cell: ({ row }) => (
+    cell: ({ row }: { row: any }) => (
       <div className="font-medium">{row.original.userName}</div>
     ),
   },
   {
     accessorKey: "timestamp",
     header: "Date & Time",
-    cell: ({ row }) => (
+    cell: ({ row }: { row: any }) => (
       <div>
         {format(new Date(row.original.timestamp), "dd MMM yyyy, hh:mm a")}
       </div>
@@ -69,7 +69,7 @@ const columns = [
   {
     accessorKey: "isWithinAllowedArea",
     header: "Status",
-    cell: ({ row }) => (
+    cell: ({ row }: { row: any }) => (
       <div 
         className={cn(
           "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
@@ -85,7 +85,7 @@ const columns = [
   {
     accessorKey: "distance",
     header: "Distance",
-    cell: ({ row }) => <div>{row.original.distance} meters</div>,
+    cell: ({ row }: { row: any }) => <div>{row.original.distance} meters</div>,
   }
 ];
 
@@ -219,13 +219,35 @@ export default function StaffAttendanceReportsPage() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarComponent
-                mode="range"
-                selected={selectedDateRange}
-                onSelect={setSelectedDateRange}
-                initialFocus
-              />
+            <PopoverContent className="flex flex-col gap-4 p-4 w-auto">
+              <div>
+                <div className="mb-2 text-sm font-medium">Start Date</div>
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDateRange?.from}
+                  onSelect={(date) =>
+                    setSelectedDateRange((prev) => ({
+                      from: date || new Date(), // Default to today if undefined
+                      to: prev?.to,
+                    }))
+                  }
+                  initialFocus
+                />
+              </div>
+              <div>
+                <div className="mb-2 text-sm font-medium">End Date</div>
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDateRange?.to}
+                  onSelect={(date) =>
+                    setSelectedDateRange((prev) => ({
+                      from: prev?.from || new Date(), // Default to today if undefined
+                      to: date,
+                    }))
+                  }
+                  initialFocus
+                />
+              </div>
             </PopoverContent>
           </Popover>
 

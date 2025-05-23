@@ -113,6 +113,13 @@ const attendanceGroups = [
 
 export default function AttendancePage() {
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin } = useUserRole();
+  
+  console.log("Attendance Dashboard - Role checks:", { 
+    isTeacher, 
+    isEmployee, 
+    isAdmin, 
+    isSuperAdmin 
+  });
 
   // Helper function to check if user has access to an item
   const hasAccess = (allowedRoles: string[]) => {

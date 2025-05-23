@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassForm } from "@/components/classes/class-form";
@@ -12,7 +12,10 @@ import { Loader2, ArrowLeft, Edit, GraduationCap, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function EditClassPage({ params }: { params: { id: string } }) {
+// Create a separate client component that doesn't use params from props
+function EditClassContent() {
+  const params = useParams();
+  const classId = params?.id as string || ""; // Handle potential null params
   const router = useRouter();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -21,8 +24,8 @@ export default function EditClassPage({ params }: { params: { id: string } }) {
 
   // Fetch the class data
   const { data: classData, isLoading: isClassLoading, error } = api.class.getById.useQuery(
-    { id: params.id },
-    { enabled: !!params.id }
+    { id: classId },
+    { enabled: !!classId }
   );
   
   // Handle loading state and errors
@@ -130,4 +133,9 @@ export default function EditClassPage({ params }: { params: { id: string } }) {
       </div>
     </PageWrapper>
   );
+}
+
+// Simple page component that renders the client component
+export default function EditClassPage() {
+  return <EditClassContent />;
 } 

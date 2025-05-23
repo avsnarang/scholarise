@@ -11,7 +11,6 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { getAuth } from "@clerk/nextjs/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
 import { db } from "@/server/db";
@@ -41,6 +40,16 @@ interface CreateContextOptions {
  * @see https://create.t3.gg/en/usage/trpc#-serverapitrpcts
  */
 const createInnerTRPCContext = (opts: CreateContextOptions) => {
+  // Log database state for debugging
+  if (!db) {
+    console.error("Database connection is null in createInnerTRPCContext");
+  } else if (!db.designation) {
+    console.error("Designation model is not available on the database client");
+    console.log("Available models:", Object.keys(db).filter(key => !key.startsWith('_')));
+  } else {
+    console.log("Database connection successfully initialized");
+  }
+
   return {
     userId: opts.userId,
     auth: opts.auth,
@@ -60,11 +69,12 @@ export const createTRPCContext = async (
   // For Pages Router (next adapter)
   if ('req' in opts && 'res' in opts) {
     try {
-      // Pass the full request object to getAuth
-      const auth = getAuth(opts.req);
+      // Instead of using getAuth directly, rely on the req object
+      // This avoids the server-only import issue
+      const userId = opts.req.headers['x-user-id'] as string || null;
       return createInnerTRPCContext({
-        userId: auth.userId,
-        auth,
+        userId,
+        auth: { userId },
       });
     } catch (error) {
       console.error('Error getting Pages Router auth:', error);

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash, UserCheck, UserX, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
 import { api } from "@/utils/api"
 import { useRouter } from "next/navigation"
+import { useActionPermissions } from "@/utils/permission-utils"
+import { Permission } from "@/types/permissions"
 
 // Define the Class type
 export type Class = {
@@ -46,35 +48,80 @@ interface ClassDataTableProps {
 }
 
 export function ClassDataTable({ data, onRowSelectionChange, pageSize = 10 }: ClassDataTableProps) {
+  const router = useRouter()
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  
+  // Delete and toggle status mutations
+  const classApi = api.class
   const { toast } = useToast()
+  
+  // Permissions hooks
   const deleteConfirm = useDeleteConfirm()
   const statusChangeConfirm = useStatusChangeConfirm()
-  const router = useRouter()
   
-  // API mutations
-  const utils = api.useContext()
+  // Setup permissions
+  const { hasPermission } = useActionPermissions("classes")
+  const canView = () => {
+    return hasPermission(Permission.VIEW_CLASSES)
+  }
   
-  const deleteClassMutation = api.class.delete.useMutation({
+  const canEdit = () => {
+    return hasPermission(Permission.EDIT_CLASS)
+  }
+  
+  const canDelete = () => {
+    return hasPermission(Permission.DELETE_CLASS)
+  }
+  
+  const canManageStudents = hasPermission(Permission.MANAGE_CLASS_STUDENTS)
+
+  // Delete class mutation
+  const deleteClassMutation = classApi.delete.useMutation({
     onSuccess: () => {
-      void utils.class.getAll.invalidate()
-      void utils.class.getStats.invalidate()
+      toast({
+        title: "Success",
+        description: "Class has been deleted successfully.",
+        variant: "success",
+      })
+      window.location.reload()
     },
-  })
-  
-  const toggleStatusMutation = api.class.update.useMutation({
-    onSuccess: () => {
-      void utils.class.getAll.invalidate()
-      void utils.class.getStats.invalidate()
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while deleting the class.",
+        variant: "destructive",
+      })
     },
   })
 
-  // Handle row selection change
-  const handleRowSelectionChange = (rowIds: string[]) => {
-    setSelectedRows(rowIds)
-    if (onRowSelectionChange) {
-      onRowSelectionChange(rowIds)
-    }
+  // Toggle class status mutation  
+  const toggleStatusMutation = classApi.toggleStatus.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Class status updated successfully.",
+        variant: "success",
+      })
+      window.location.reload()
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while updating class status.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const handleDeleteClass = (id: string) => {
+    deleteClassMutation.mutate({ id })
+  }
+
+  const handleToggleClassStatus = (id: string, currentStatus: boolean) => {
+    toggleStatusMutation.mutate({
+      id,
+      isActive: !currentStatus
+    })
   }
 
   const columns: ColumnDef<Class>[] = [
@@ -226,6 +273,9 @@ export function ClassDataTable({ data, onRowSelectionChange, pageSize = 10 }: Cl
       cell: ({ row }) => {
         const classItem = row.original
 
+        // If user doesn't have view permission, don't show the actions menu
+        if (!canView()) return null
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -236,6 +286,8 @@ export function ClassDataTable({ data, onRowSelectionChange, pageSize = 10 }: Cl
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dark:bg-[#252525] dark:border-[#303030]">
               <DropdownMenuLabel className="dark:text-[#e6e6e6]">Actions</DropdownMenuLabel>
+              
+              {/* View details - always visible if user can view */}
               <DropdownMenuItem 
                 onClick={() => router.push(`/classes/${classItem.id}`)}
                 className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
@@ -243,83 +295,44 @@ export function ClassDataTable({ data, onRowSelectionChange, pageSize = 10 }: Cl
                 <Eye className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
                 View details
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => router.push(`/classes/${classItem.id}/students`)}
-                className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
-              >
-                <Users className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
-                Manage Students
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => router.push(`/settings/classes/${classItem.id}/edit`)}
-                className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
-              >
-                <Edit className="mr-2 h-4 w-4 dark:text-[#e2bd8c]" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="dark:bg-[#303030]" />
-              <DropdownMenuItem
-                onClick={() => {
-                  statusChangeConfirm("class", !classItem.isActive, 1, async () => {
-                    try {
-                      await toggleStatusMutation.mutateAsync({
-                        id: classItem.id,
-                        isActive: !classItem.isActive
-                      })
-                      toast({
-                        title: `Class ${classItem.isActive ? "deactivated" : "activated"}`,
-                        description: `Class has been ${classItem.isActive ? "deactivated" : "activated"} successfully.`,
-                        variant: "success"
-                      })
-                    } catch (error) {
-                      console.error(`Error ${classItem.isActive ? "deactivating" : "activating"} class:`, error)
-                      toast({
-                        title: "Error",
-                        description: `Failed to ${classItem.isActive ? "deactivate" : "activate"} class. Please try again.`,
-                        variant: "destructive"
-                      })
-                    }
-                  })
-                }}
-                className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
-              >
-                {classItem.isActive ? (
-                  <>
-                    <UserX className="mr-2 h-4 w-4 dark:text-red-400" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="mr-2 h-4 w-4 dark:text-green-400" />
-                    Activate
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  deleteConfirm("class", async () => {
-                    try {
-                      await deleteClassMutation.mutateAsync({ id: classItem.id })
-                      toast({
-                        title: "Class deleted",
-                        description: "Class has been successfully deleted.",
-                        variant: "success"
-                      })
-                    } catch (error) {
-                      console.error("Error deleting class:", error)
-                      toast({
-                        title: "Error",
-                        description: "Failed to delete class. Please try again.",
-                        variant: "destructive"
-                      })
-                    }
-                  })
-                }}
-                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-[#303030] cursor-pointer"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+              
+              {/* Manage Students - requires MANAGE_CLASS_STUDENTS permission */}
+              {canManageStudents && (
+                <DropdownMenuItem 
+                  onClick={() => router.push(`/classes/${classItem.id}/students`)}
+                  className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
+                >
+                  <Users className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
+                  Manage Students
+                </DropdownMenuItem>
+              )}
+              
+              {/* Edit - requires EDIT_CLASS permission */}
+              {canEdit() && (
+                <DropdownMenuItem 
+                  onClick={() => router.push(`/settings/classes/${classItem.id}/edit`)}
+                  className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
+                >
+                  <Edit className="mr-2 h-4 w-4 dark:text-[#e2bd8c]" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              
+              {/* Separator only shown if delete permission exists */}
+              {canDelete() && <DropdownMenuSeparator className="dark:bg-[#303030]" />}
+              
+              {/* Delete - requires DELETE_CLASS permission */}
+              {canDelete() && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    deleteConfirm("class", () => handleDeleteClass(classItem.id));
+                  }}
+                  className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] text-red-600 dark:text-red-400 cursor-pointer"
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
@@ -327,12 +340,30 @@ export function ClassDataTable({ data, onRowSelectionChange, pageSize = 10 }: Cl
     },
   ]
 
+  // Handle row selection
+  const handleSelectionChange = useCallback((rows: string[]) => {
+    setSelectedRows(rows);
+    if (onRowSelectionChange) {
+      onRowSelectionChange(rows);
+    }
+  }, [onRowSelectionChange]);
+
+  // Set up row selection state for the table
+  const [rowSelection, setRowSelection] = useState({});
+
+  // When rowSelection changes, convert it to an array of IDs and call our handler
+  useEffect(() => {
+    const selectedIds = Object.keys(rowSelection).map(index => {
+      return data[parseInt(index)]?.id ?? '';
+    }).filter(id => id !== '');
+    
+    handleSelectionChange(selectedIds);
+  }, [rowSelection, data, handleSelectionChange]);
+
   return (
     <DataTable
       columns={columns}
       data={data}
-      searchKey="name"
-      searchPlaceholder="Search classes..."
       pageSize={pageSize}
     />
   )

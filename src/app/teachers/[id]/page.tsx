@@ -20,7 +20,7 @@ export default function TeacherDetailPage() {
   const { toast } = useToast();
   const deleteConfirm = useDeleteConfirm();
   const statusChangeConfirm = useStatusChangeConfirm();
-  const [currentTab, setCurrentTab] = useState("overview");
+  const [currentTab, setCurrentTab] = useState("personal-info");
 
   // Fetch teacher data
   const { data: teacher, isLoading, error } = api.teacher.getById.useQuery({ 
@@ -189,13 +189,15 @@ export default function TeacherDetailPage() {
       </div>
 
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="classes">Classes</TabsTrigger>
-          <TabsTrigger value="activities">Activities</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="personal-info" className="rounded-l-md">Personal Info</TabsTrigger>
+          <TabsTrigger value="contact-info">Contact Info</TabsTrigger>
+          <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
+          <TabsTrigger value="employment">Employment</TabsTrigger>
+          <TabsTrigger value="account-info" className="rounded-r-md">Account</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="personal-info" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
@@ -204,35 +206,148 @@ export default function TeacherDetailPage() {
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-                <p>{teacher.firstName} {teacher.lastName}</p>
+                <p>{teacher.firstName} {teacher.middleName ? teacher.middleName + ' ' : ''}{teacher.lastName}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Employee Code</p>
-                <p>{teacher.employeeCode || "Not assigned"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Gender</p>
+                <p>{teacher.gender || "Not specified"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p>{teacher.email || "Not provided"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
+                <p>{teacher.dateOfBirth ? new Date(teacher.dateOfBirth).toLocaleDateString() : "Not specified"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                <p>{teacher.phone || "Not provided"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Blood Group</p>
+                <p>{teacher.bloodGroup || "Not specified"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Branch</p>
-                <p>{teacher.branch?.name || "Not assigned"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Marital Status</p>
+                <p>{teacher.maritalStatus || "Not specified"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Join Date</p>
-                <p>{teacher.joinDate ? new Date(teacher.joinDate).toLocaleDateString() : "Not specified"}</p>
+                <p className="text-sm font-medium text-muted-foreground">Nationality</p>
+                <p>{teacher.nationality || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Religion</p>
+                <p>{teacher.religion || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">ID Details</p>
+                <p>PAN: {teacher.panNumber || "Not provided"}</p>
+                <p>Aadhar: {teacher.aadharNumber || "Not provided"}</p>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="contact-info" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Qualifications</CardTitle>
-              <CardDescription>Professional qualifications and specializations</CardDescription>
+              <CardTitle>Contact Information</CardTitle>
+              <CardDescription>Contact details and address information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Current Address</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Address</p>
+                    <p>{teacher.address || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">City</p>
+                    <p>{teacher.city || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">State</p>
+                    <p>{teacher.state || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Country</p>
+                    <p>{teacher.country || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pincode</p>
+                    <p>{teacher.pincode || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Permanent Address</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Address</p>
+                    <p>{teacher.permanentAddress || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">City</p>
+                    <p>{teacher.permanentCity || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">State</p>
+                    <p>{teacher.permanentState || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Country</p>
+                    <p>{teacher.permanentCountry || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pincode</p>
+                    <p>{teacher.permanentPincode || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Contact Details</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                    <p>{teacher.phone || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Alternate Phone</p>
+                    <p>{teacher.alternatePhone || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Personal Email</p>
+                    <p>{teacher.personalEmail || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Official Email</p>
+                    <p>{teacher.officialEmail || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Emergency Contact</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Name</p>
+                    <p>{teacher.emergencyContactName || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                    <p>{teacher.emergencyContactPhone || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Relation</p>
+                    <p>{teacher.emergencyContactRelation || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="qualifications" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Qualifications & Expertise</CardTitle>
+              <CardDescription>Educational and professional qualifications</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
@@ -242,6 +357,201 @@ export default function TeacherDetailPage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Specialization</p>
                 <p>{teacher.specialization || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Professional Qualifications</p>
+                <p>{teacher.professionalQualifications || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Special Certifications</p>
+                <p>{teacher.specialCertifications || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Year of Completion</p>
+                <p>{teacher.yearOfCompletion || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Institution</p>
+                <p>{teacher.institution || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Experience</p>
+                <p>{teacher.experience || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Bio</p>
+                <p>{teacher.bio || "Not provided"}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-muted-foreground">Subject Expertise</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {teacher.subjects && teacher.subjects.length > 0 ? (
+                    teacher.subjects.map((subject: string, index: number) => (
+                      <Badge key={index} variant="outline">{subject}</Badge>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No subjects specified</p>
+                  )}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm font-medium text-muted-foreground">Certifications</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {teacher.certifications && teacher.certifications.length > 0 ? (
+                    teacher.certifications.map((cert: string, index: number) => (
+                      <Badge key={index} variant="outline">{cert}</Badge>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">No certifications specified</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="employment" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Employment Details</CardTitle>
+              <CardDescription>Job-related information and employment details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Employee Code</p>
+                  <p>{teacher.employeeCode || "Not assigned"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Join Date</p>
+                  <p>{teacher.joinDate ? new Date(teacher.joinDate).toLocaleDateString() : "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Designation</p>
+                  <p>{teacher.designation || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Department</p>
+                  <p>{teacher.department || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Reporting Manager</p>
+                  <p>{teacher.reportingManager || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Employee Type</p>
+                  <p>{teacher.employeeType || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Branch</p>
+                  <p>{teacher.branch?.name || "Not assigned"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Confirmation Date</p>
+                  <p>{teacher.confirmationDate ? new Date(teacher.confirmationDate).toLocaleDateString() : "Not specified"}</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Previous Employment</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Previous Experience</p>
+                    <p>{teacher.previousExperience || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Previous Employer</p>
+                    <p>{teacher.previousEmployer || "Not specified"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Salary & Banking</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Salary Structure</p>
+                    <p>{teacher.salaryStructure || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">PF Number</p>
+                    <p>{teacher.pfNumber || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">ESI Number</p>
+                    <p>{teacher.esiNumber || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">UAN Number</p>
+                    <p>{teacher.uanNumber || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Bank Name</p>
+                    <p>{teacher.bankName || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Account Number</p>
+                    <p>{teacher.accountNumber || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">IFSC Code</p>
+                    <p>{teacher.ifscCode || "Not specified"}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account-info" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>IT & Assets</CardTitle>
+              <CardDescription>IT related information and asset allocation</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Official Email</p>
+                <p>{teacher.officialEmail || "Not assigned"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Device Issued</p>
+                <p>{teacher.deviceIssued || "Not assigned"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Access Card ID</p>
+                <p>{teacher.accessCardId || "Not assigned"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Software Licenses</p>
+                <p>{teacher.softwareLicenses || "Not assigned"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Asset Return Status</p>
+                <p>{teacher.assetReturnStatus || "Not specified"}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>System Information</CardTitle>
+              <CardDescription>Account status and system information</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <p className={teacher.isActive ? "text-green-600" : "text-red-600"}>
+                  {teacher.isActive ? "Active" : "Inactive"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                <p>{teacher.updatedAt ? new Date(teacher.updatedAt).toLocaleString() : "Not available"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                <p>{teacher.createdAt ? new Date(teacher.createdAt).toLocaleString() : "Not available"}</p>
               </div>
             </CardContent>
           </Card>
@@ -255,16 +565,16 @@ export default function TeacherDetailPage() {
             </CardHeader>
             <CardContent>
               {teacher.classes && teacher.classes.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {teacher.classes.map((cls: any) => (
-                    <div key={cls.id} className="rounded-md border p-4">
-                      <p className="font-medium">{cls.name} {cls.section}</p>
-                      <p className="text-sm text-muted-foreground">{cls.description || "No description"}</p>
+                    <div key={cls.id} className="rounded-lg border p-3">
+                      <h3 className="font-medium">{cls.name}</h3>
+                      <p className="text-sm text-muted-foreground">Section: {cls.section}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No classes assigned to this teacher.</p>
+                <p className="text-muted-foreground">No classes assigned yet.</p>
               )}
             </CardContent>
           </Card>

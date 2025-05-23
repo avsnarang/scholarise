@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 
 import { env } from "@/env";
@@ -21,6 +21,11 @@ async function handleRequest(req: NextRequest) {
   const user = await currentUser();
   const userId = user?.id || null;
 
+  // Make sure database is initialized before creating the context
+  if (!db) {
+    console.error("Database connection is not initialized");
+  }
+
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
@@ -29,7 +34,7 @@ async function handleRequest(req: NextRequest) {
       return {
         userId,
         auth: { userId },
-        db,
+        db,  // Ensure db is passed correctly
       };
     },
     onError:

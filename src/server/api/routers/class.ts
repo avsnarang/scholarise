@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 
 // Define the schema for class creation and updates
 const classSchema = z.object({
@@ -529,6 +529,37 @@ export const classRouter = createTRPCRouter({
         where: { id: input.classId },
         data: {
           teacherId: input.teacherId,
+        },
+      });
+    }),
+
+  // Toggle the active status of a class
+  toggleStatus: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if the class exists
+      const classData = await ctx.db.class.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!classData) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Class not found",
+        });
+      }
+
+      // If isActive is provided, use it; otherwise toggle the current value
+      const newStatus = input.isActive !== undefined ? input.isActive : !classData.isActive;
+
+      // Update the class with the new status
+      return ctx.db.class.update({
+        where: { id: input.id },
+        data: {
+          isActive: newStatus,
         },
       });
     }),

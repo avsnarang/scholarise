@@ -256,4 +256,98 @@ export const branchRouter = createTRPCRouter({
         });
       }
     }),
+
+  getUserBranches: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        // Get the current user's ID from the context
+        const userId = ctx.userId;
+        
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User is not authenticated",
+          });
+        }
+
+        // First check if the user is an employee
+        const employee = await ctx.db.employee.findFirst({
+          where: { userId: userId },
+          include: {
+            branchAccess: true,
+          },
+        });
+
+        if (employee) {
+          // If employee has branchAccess records, return those branches
+          if (employee.branchAccess.length > 0) {
+            const branchIds = employee.branchAccess.map(access => access.branchId);
+            
+            return ctx.db.branch.findMany({
+              where: {
+                id: {
+                  in: branchIds,
+                },
+              },
+              orderBy: [
+                { order: "asc" },
+                { name: "asc" },
+              ],
+            });
+          }
+          
+          // If no specific branch access records, just return their assigned branch
+          return ctx.db.branch.findMany({
+            where: {
+              id: employee.branchId,
+            },
+          });
+        }
+        
+        // Check if the user is a teacher
+        const teacher = await ctx.db.teacher.findFirst({
+          where: { userId: userId },
+        });
+        
+        if (teacher) {
+          // Return the teacher's branch
+          return ctx.db.branch.findMany({
+            where: {
+              id: teacher.branchId,
+            },
+          });
+        }
+        
+        // If user isn't an employee or teacher, check if they're a super admin
+        const userRoles = await ctx.db.userRole.findMany({
+          where: { userId: userId },
+          include: {
+            role: true,
+          },
+        });
+        
+        const isSuperAdmin = userRoles.some(
+          userRole => userRole.role.name === "Super Admin" || userRole.role.isSystem
+        );
+        
+        if (isSuperAdmin) {
+          // Super admins can access all branches
+          return ctx.db.branch.findMany({
+            orderBy: [
+              { order: "asc" },
+              { name: "asc" },
+            ],
+          });
+        }
+        
+        // If we get here, user doesn't have access to any branches
+        return [];
+      } catch (error) {
+        console.error("Error fetching user branches:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch branches accessible to the user",
+        });
+      }
+    }),
 });

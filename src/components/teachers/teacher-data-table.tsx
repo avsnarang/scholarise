@@ -141,7 +141,7 @@ export function TeacherDataTable({ data, onRowSelectionChange }: TeacherDataTabl
       accessorKey: "qualification",
       header: "Qualification",
       cell: ({ row }) => {
-        const qualification = row.getValue("qualification") as string
+        const qualification = row.getValue("qualification") as string | null | undefined;
         return <div>{qualification || "-"}</div>
       },
     },
@@ -149,7 +149,7 @@ export function TeacherDataTable({ data, onRowSelectionChange }: TeacherDataTabl
       accessorKey: "specialization",
       header: "Specialization",
       cell: ({ row }) => {
-        const specialization = row.getValue("specialization") as string
+        const specialization = row.getValue("specialization") as string | null | undefined;
         return <div>{specialization || "-"}</div>
       },
     },

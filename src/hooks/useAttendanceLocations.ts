@@ -11,7 +11,7 @@ export function useAttendanceLocations(branchId: string) {
   );
 
   return {
-    locations: locations as AttendanceLocation[],
+    locations: locations,
     isLoading,
   };
 } 

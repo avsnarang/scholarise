@@ -1,19 +1,14 @@
+"use client";
+
 import { PageHeader } from "@/components/page-header";
 import { PageWrapper } from "@/components/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubjectForm } from "@/components/settings/subjects/subject-form";
-import { api } from "@/utils/api";
+import { useParams } from "next/navigation";
 
-interface EditSubjectPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default async function EditSubjectPage({ params }: EditSubjectPageProps) {
-  const { id } = params;
-  
-  // Fetch subject data (this will be done client-side)
+function SubjectEditContent() {
+  const params = useParams();
+  const id = params?.id as string || "";
   
   return (
     <PageWrapper className="max-w-full">
@@ -36,4 +31,9 @@ export default async function EditSubjectPage({ params }: EditSubjectPageProps) 
       </Card>
     </PageWrapper>
   );
+}
+
+// Simple page component that renders the client component
+export default function EditSubjectPage() {
+  return <SubjectEditContent />;
 } 

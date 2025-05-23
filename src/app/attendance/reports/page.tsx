@@ -3,7 +3,7 @@
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileBarChart, FileText, ChartIcon, BarChart2, CalendarIcon, Calendar } from "lucide-react";
+import { FileBarChart, FileText, BarChart2, CalendarIcon, Calendar } from "lucide-react";
 import Link from "next/link";
 
 // TODO: Migrate from attendance/reports.tsx

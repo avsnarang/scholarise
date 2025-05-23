@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
+import type { 
   ColumnDef, 
+  SortingState, 
+  ColumnFiltersState 
+} from "@tanstack/react-table";
+import { 
   flexRender, 
   getCoreRowModel, 
   getFilteredRowModel, 
   getPaginationRowModel, 
   getSortedRowModel, 
-  SortingState, 
-  useReactTable, 
-  ColumnFiltersState 
+  useReactTable
 } from "@tanstack/react-table";
 import { api } from "@/utils/api";
 import { Button } from "@/components/ui/button";

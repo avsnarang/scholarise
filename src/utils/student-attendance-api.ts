@@ -206,17 +206,17 @@ export function getStatusColor(status: AttendanceStatus) {
         text: "text-green-700 dark:text-green-400",
         border: "border-green-200 dark:border-green-800"
       };
+    case AttendanceStatus.LEAVE:
+      return {
+        bg: "bg-blue-50 dark:bg-blue-900/20",
+        text: "text-blue-700 dark:text-blue-400",
+        border: "border-blue-200 dark:border-blue-800"
+      };
     case AttendanceStatus.ABSENT:
       return {
         bg: "bg-red-50 dark:bg-red-900/20",
         text: "text-red-700 dark:text-red-400",
         border: "border-red-200 dark:border-red-800"
-      };
-    case AttendanceStatus.LATE:
-      return {
-        bg: "bg-yellow-50 dark:bg-yellow-900/20",
-        text: "text-yellow-700 dark:text-yellow-400",
-        border: "border-yellow-200 dark:border-yellow-800"
       };
     case AttendanceStatus.HALF_DAY:
       return {
@@ -224,11 +224,11 @@ export function getStatusColor(status: AttendanceStatus) {
         text: "text-orange-700 dark:text-orange-400",
         border: "border-orange-200 dark:border-orange-800"
       };
-    case AttendanceStatus.EXCUSED:
+    case AttendanceStatus.LATE:
       return {
-        bg: "bg-blue-50 dark:bg-blue-900/20",
-        text: "text-blue-700 dark:text-blue-400",
-        border: "border-blue-200 dark:border-blue-800"
+        bg: "bg-yellow-50 dark:bg-yellow-900/20",
+        text: "text-yellow-700 dark:text-yellow-400",
+        border: "border-yellow-200 dark:border-yellow-800"
       };
     default:
       return {
@@ -244,14 +244,14 @@ export function getStatusName(status: AttendanceStatus): string {
   switch (status) {
     case AttendanceStatus.PRESENT:
       return "Present";
+    case AttendanceStatus.LEAVE:
+      return "Leave";
     case AttendanceStatus.ABSENT:
       return "Absent";
-    case AttendanceStatus.LATE:
-      return "Late";
     case AttendanceStatus.HALF_DAY:
       return "Half Day";
-    case AttendanceStatus.EXCUSED:
-      return "Excused";
+    case AttendanceStatus.LATE:
+      return "Late";
     default:
       return status;
   }

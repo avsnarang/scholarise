@@ -20,7 +20,7 @@ export const studentRouter = createTRPCRouter({
       try {
         // Use a single query with Prisma's aggregation to get all counts at once
         // This is much faster than multiple separate count queries
-        const [studentCounts, classGroups] = await Promise.all([
+        const [studentCounts, classGroups, genderCounts] = await Promise.all([
           // Get all student counts in a single query with aggregation
           ctx.db.$queryRaw`
             SELECT
@@ -43,6 +43,26 @@ export const studentRouter = createTRPCRouter({
               branchId: input?.branchId,
               // Only include students with a classId
               classId: { not: null },
+              // Filter by session if provided
+              ...(input?.sessionId
+                ? {
+                academicRecords: {
+                  some: {
+                        sessionId: input.sessionId,
+                      },
+                    },
+                  }
+                : {}),
+            },
+            _count: true,
+          }),
+          
+          // Get gender distribution
+          ctx.db.student.groupBy({
+            by: ["gender"],
+            where: {
+              branchId: input?.branchId,
+              isActive: true,
               // Filter by session if provided
               ...(input?.sessionId
                 ? {
@@ -101,12 +121,23 @@ export const studentRouter = createTRPCRouter({
         });
 
         console.log('Class counts:', classCounts);
+        
+        // Process gender distribution
+        const genderDistribution: Record<string, number> = {};
+        genderCounts.forEach((group) => {
+          if (group.gender) {
+            genderDistribution[group.gender] = group._count;
+          }
+        });
+        
+        console.log('Gender distribution:', genderDistribution);
 
         const result = {
           totalStudents: Number(counts.totalStudents || 0),
           activeStudents: Number(counts.activeStudents || 0),
           inactiveStudents: Number(counts.inactiveStudents || 0),
           classCounts,
+          genderDistribution,
         };
 
         console.log('Final result:', result);
@@ -212,11 +243,23 @@ export const studentRouter = createTRPCRouter({
   getById: publicProcedure
     .input(
       z.object({
-      id: z.string(),
+      id: z.string().min(1, "Student ID is required"),
         branchId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
+      // Add logging to help diagnose empty ID calls
+      console.log('student.getById called with input:', JSON.stringify(input));
+      
+      // Add additional validation for empty id, just to be safe
+      if (!input.id) {
+        console.error('Empty ID passed to student.getById');
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Student ID is required",
+        });
+      }
+
       const student = await ctx.db.student.findFirst({
         where: {
           id: input.id,
@@ -250,6 +293,7 @@ export const studentRouter = createTRPCRouter({
         gender: z.enum(["Male", "Female", "Other"]),
         email: z.string().email().nullish(),
         personalEmail: z.string().email().nullish(),
+        phone: z.string().nullish(),
         branchId: z.string(),
         classId: z.string(),
         siblings: z.array(z.string()).optional(),
@@ -276,6 +320,14 @@ export const studentRouter = createTRPCRouter({
         guardianOccupation: z.string().nullish(),
         guardianMobile: z.string().nullish(),
         guardianEmail: z.string().email().nullish(),
+        // Additional student data from form
+        religion: z.string().optional().nullish(),
+        nationality: z.string().optional().nullish(),
+        caste: z.string().optional().nullish(),
+        aadharNumber: z.string().optional().nullish(),
+        udiseId: z.string().optional().nullish(),
+        cbse10RollNumber: z.string().optional().nullish(),
+        cbse12RollNumber: z.string().optional().nullish(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -300,6 +352,7 @@ export const studentRouter = createTRPCRouter({
         guardianOccupation,
         guardianMobile,
         guardianEmail,
+        phone,
         ...studentData
       } = input;
 
@@ -388,6 +441,7 @@ export const studentRouter = createTRPCRouter({
       const student = await ctx.db.student.create({
         data: {
           ...studentData,
+          phone,
           parentId: parentData.id,
           username,
           password,
@@ -974,7 +1028,7 @@ export const studentRouter = createTRPCRouter({
           }
 
           let clerkStudentId = null;
-          let clerkParentId = null;
+          const clerkParentId = null;
 
           // Create Clerk user for student if username and password are provided
           if (student.username && student.password) {

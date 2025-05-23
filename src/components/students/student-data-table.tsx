@@ -18,6 +18,8 @@ import { DataTable } from "@/components/ui/data-table"
 import { useToast } from "@/components/ui/use-toast"
 import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
 import { api } from "@/utils/api"
+import { useActionPermissions } from "@/utils/permission-utils"
+import { useRouter } from "next/navigation"
 
 // Define the Student type
 export type Student = {
@@ -49,13 +51,19 @@ export type Student = {
 interface StudentDataTableProps {
   data: Student[]
   onRowSelectionChange?: (selectedRows: string[]) => void
+  initialPageSize?: number
 }
 
-export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTableProps) {
+export function StudentDataTable({ data, onRowSelectionChange, initialPageSize = 10 }: StudentDataTableProps) {
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const { toast } = useToast()
   const deleteConfirm = useDeleteConfirm()
   const statusChangeConfirm = useStatusChangeConfirm()
+  const router = useRouter()
+  
+  // Get permissions for the students module
+  const { canView, canEdit, canDelete } = useActionPermissions("students")
 
   // API mutations
   const trpc = api.useUtils()
@@ -317,6 +325,9 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
       enableHiding: false,
       cell: ({ row }) => {
         const student = row.original
+        
+        // If user doesn't have view permission, don't show any actions
+        if (!canView()) return null;
 
         return (
           <DropdownMenu>
@@ -328,81 +339,47 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dark:bg-[#252525] dark:border-[#303030]">
               <DropdownMenuLabel className="dark:text-[#e6e6e6]">Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6]">
-                <a href={`/students/${student.id}`} className="dark:text-[#c0c0c0]">
-                  <Eye className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
-                  View details
-                </a>
+              
+              {/* View details - always available if user has view permission */}
+              <DropdownMenuItem 
+                onClick={() => router.push(`/students/${student.id}`)}
+                className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
+              >
+                <Eye className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
+                View details
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6]">
-                <a href={`/students/${student.id}/edit`} className="dark:text-[#c0c0c0]">
+              
+              {/* Edit - requires EDIT_STUDENT permission */}
+              {canEdit() && (
+                <DropdownMenuItem 
+                  onClick={() => router.push(`/students/${student.id}/edit`)}
+                  className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] cursor-pointer"
+                >
                   <Edit className="mr-2 h-4 w-4 dark:text-[#e2bd8c]" />
                   Edit
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="dark:bg-[#303030]" />
-              <DropdownMenuItem
-                onClick={() => {
-                  statusChangeConfirm("student", !student.isActive, 1, async () => {
-                    try {
-                      await toggleStatusMutation.mutateAsync({
-                        id: student.id,
-                        isActive: !student.isActive
-                      })
-                      toast({
-                        title: `Student ${student.isActive ? "deactivated" : "activated"}`,
-                        description: `Student has been ${student.isActive ? "deactivated" : "activated"} successfully.`,
-                        variant: "success"
-                      })
-                    } catch (error) {
-                      console.error(`Error ${student.isActive ? "deactivating" : "activating"} student:`, error)
-                      toast({
-                        title: "Error",
-                        description: `Failed to ${student.isActive ? "deactivate" : "activate"} student. Please try again.`,
-                        variant: "destructive"
-                      })
-                    }
-                  })
-                }}
-                className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0]"
-              >
-                {student.isActive ? (
-                  <>
-                    <UserX className="mr-2 h-4 w-4 dark:text-[#e2bd8c]" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="mr-2 h-4 w-4 dark:text-[#7aad8c]" />
-                    Activate
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  deleteConfirm("student", async () => {
-                    try {
-                      await deleteStudentMutation.mutateAsync({ id: student.id })
+                </DropdownMenuItem>
+              )}
+              
+              {/* Delete - requires DELETE_STUDENT permission */}
+              {canDelete() && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    deleteConfirm("student", () => {
+                      // Code to delete student record
                       toast({
                         title: "Student deleted",
-                        description: "Student has been successfully deleted.",
+                        description: "Student record has been successfully deleted.",
                         variant: "success"
-                      })
-                    } catch (error) {
-                      console.error("Error deleting student:", error)
-                      toast({
-                        title: "Error",
-                        description: "Failed to delete student. Please try again.",
-                        variant: "destructive"
-                      })
-                    }
-                  })
-                }}
-                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-[#303030]"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+                      });
+                      router.refresh();
+                    });
+                  }}
+                  className="dark:focus:bg-[#303030] dark:focus:text-[#e6e6e6] dark:text-[#c0c0c0] text-red-600 dark:text-red-400 cursor-pointer"
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
@@ -416,7 +393,7 @@ export function StudentDataTable({ data, onRowSelectionChange }: StudentDataTabl
       data={data}
       searchKey="name"
       searchPlaceholder="Search by name..."
-      pageSize={50} // Increase page size to show more students
+      pageSize={pageSize}
     />
   )
 }

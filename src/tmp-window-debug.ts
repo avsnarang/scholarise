@@ -8,7 +8,19 @@ const prisma = new PrismaClient();
 // Function to run the debug tests
 async function debug() {
   // Create a context for tRPC
-  const ctx = await createTRPCContext({ req: {} as any, resHeaders: new Headers() });
+  const ctx = await createTRPCContext({ 
+    req: {} as any, 
+    resHeaders: new Headers(), 
+    info: {
+      isBatchCall: false,
+      calls: [],
+      accept: null,
+      type: 'query',
+      connectionParams: {},
+      signal: new AbortController().signal,
+      url: null,
+    } 
+  });
   
   // Create a caller
   const caller = appRouter.createCaller(ctx);
@@ -21,7 +33,7 @@ async function debug() {
       branchId: "cm9vr2pix00037i2gb1vyn8pw" 
     });
     console.log(`Router returned ${routerWindows.length} windows`);
-    if (routerWindows.length > 0) {
+    if (routerWindows.length > 0 && routerWindows[0]) {
       console.log("First window from router:", routerWindows[0]);
     }
     
@@ -33,14 +45,14 @@ async function debug() {
       include: { locationType: true }
     });
     console.log(`Database has ${dbWindows.length} attendance windows`);
-    if (dbWindows.length > 0) {
+    if (dbWindows.length > 0 && dbWindows[0]) {
       console.log("First window from database:", dbWindows[0]);
     }
     
     // Check if there's a mismatch
     if (routerWindows.length !== dbWindows.length) {
       console.log("\n🚨 WARNING: Count mismatch between router and database!");
-    } else if (routerWindows.length > 0 && dbWindows.length > 0) {
+    } else if (routerWindows.length > 0 && dbWindows.length > 0 && routerWindows[0] && dbWindows[0]) {
       if (routerWindows[0].id !== dbWindows[0].id) {
         console.log("\n🚨 WARNING: ID mismatch between router and database!");
         console.log("Router ID:", routerWindows[0].id);

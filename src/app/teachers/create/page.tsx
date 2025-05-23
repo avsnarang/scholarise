@@ -8,16 +8,9 @@ import { Card } from "@/components/ui/card";
 
 export default function CreateTeacherPage() {
   return (
-    <div className="w-full px-4 py-8">
+    <div className="w-full px-4">
       {/* Header with breadcrumb navigation */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/dashboard" className="hover:text-primary">Dashboard</Link>
-          <span>/</span>
-          <Link href="/teachers" className="hover:text-primary">Teachers</Link>
-          <span>/</span>
-          <span className="text-foreground">Create</span>
-        </div>
+      <div className="">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-start gap-3">

@@ -258,7 +258,7 @@ export function AttendanceWindowFormModal({
         isActive: Boolean(data.isActive),
       };
 
-      if (initialData && initialData.id) {
+      if (initialData?.id) {
         const id = initialData.id;
         console.log("Updating window with ID:", id);
         console.log("Full update payload:", { id, ...payload });

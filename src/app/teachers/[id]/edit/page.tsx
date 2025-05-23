@@ -1,308 +1,195 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
-import { api } from "@/utils/api";
-import { Loader2, ArrowLeft } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
+import { EnhancedTeacherForm } from "@/components/teachers/enhanced-teacher-form";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/utils/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  qualification: z.string().optional(),
-  specialization: z.string().optional(),
-  joinDate: z.string().optional(),
-  isActive: z.boolean(),
-  employeeCode: z.string().optional(),
-});
+// Helper function to convert API data to form values
+const convertApiToFormValues = (apiData: any) => {
+  // Helper function to safely format a date value
+  const formatDate = (dateValue: any): string => {
+    if (!dateValue) return "";
+    
+    try {
+      // If it's already a string, try to create a Date from it
+      if (typeof dateValue === 'string') {
+        // If it looks like an ISO string, just split it
+        if (dateValue.includes('T')) {
+          const result = dateValue.split('T')[0];
+          return result!;
+        }
+        // Otherwise return as is if it's a valid date string
+        return dateValue;
+      }
+      
+      // If it's a Date object, convert to ISO and get the date part
+      if (dateValue instanceof Date) {
+        const result = dateValue.toISOString().split('T')[0];
+        return result!;
+      }
+      
+      // For any other type, try to make it a Date first
+      const result = new Date(dateValue).toISOString().split('T')[0];
+      return result!;
+    } catch (error) {
+      console.error(`Error formatting date: ${error}`);
+      return "";
+    }
+  };
 
-type FormValues = z.infer<typeof formSchema>;
+  // Check if user already has a Clerk account
+  const hasClerkAccount = !!(apiData.clerkId || apiData.userId);
+  
+  // Make sure email and roleId are preserved 
+  const email = apiData.email || apiData.officialEmail || apiData.personalEmail || "";
+  const roleId = apiData.roleId || "";
+
+  return {
+    ...apiData,
+    dateOfBirth: formatDate(apiData.dateOfBirth),
+    joinDate: formatDate(apiData.joinDate),
+    confirmationDate: formatDate(apiData.confirmationDate),
+    // Convert any null values to undefined or empty string to match form schema
+    qualification: apiData.qualification || "",
+    specialization: apiData.specialization || "",
+    middleName: apiData.middleName || "",
+    bloodGroup: apiData.bloodGroup || "",
+    maritalStatus: apiData.maritalStatus || "",
+    nationality: apiData.nationality || "",
+    religion: apiData.religion || "",
+    panNumber: apiData.panNumber || "",
+    aadharNumber: apiData.aadharNumber || "",
+    // Make sure to handle all optional fields that might be null
+    certifications: apiData.certifications || [],
+    subjects: apiData.subjects || [],
+    // Set createUser to true if the user already has a Clerk account
+    createUser: hasClerkAccount || apiData.createUser || false,
+    // Use explicitly provided email and roleId
+    email,
+    password: "", // Empty password field for existing users
+    roleId,
+  };
+};
 
 export default function EditTeacherPage() {
   const params = useParams() || {};
-  const teacherId = params.id as string;
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
+  
+  const teacherId = typeof params.id === "string" ? params.id : "";
+  
   const { data: teacher, isLoading, error } = api.teacher.getById.useQuery(
     { id: teacherId },
-    { enabled: !!teacherId, retry: 1 }
+    { enabled: !!teacherId }
   );
-
-  useEffect(() => {
-    if (teacher) {
-      document.title = `Edit ${teacher.firstName} ${teacher.lastName} | ScholaRise ERP`;
-    }
-  }, [teacher]);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      qualification: "",
-      specialization: "",
-      joinDate: "",
-      isActive: true,
-      employeeCode: "",
-    },
-  });
-
-  // Update form values when teacher data is loaded
-  useEffect(() => {
-    if (teacher) {
-      form.reset({
-        firstName: teacher.firstName,
-        lastName: teacher.lastName,
-        qualification: teacher.qualification || "",
-        specialization: teacher.specialization || "",
-        joinDate: teacher.joinDate
-          ? new Date(teacher.joinDate).toISOString().split("T")[0]
-          : "",
-        isActive: teacher.isActive,
-        employeeCode: teacher.employeeCode || "",
-      });
-    }
-  }, [teacher, form]);
-
-  const utils = api.useContext();
-  const updateTeacherMutation = api.teacher.update.useMutation({
-    onSuccess: () => {
-      // Invalidate relevant queries
-      void utils.teacher.getById.invalidate({ id: teacherId });
-      void utils.teacher.getAll.invalidate();
-      void utils.teacher.getStats.invalidate();
-      
-      toast({
-        title: "Teacher updated",
-        description: "Teacher details have been successfully updated.",
-        variant: "default",
-      });
-      
-      setIsSubmitting(false);
-      void router.push(`/teachers/${teacherId}`);
-    },
-    onError: (error) => {
-      setIsSubmitting(false);
-      
-      toast({
-        title: "Error updating teacher",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: FormValues) => {
-    if (!teacher) return;
-    
-    setIsSubmitting(true);
-    updateTeacherMutation.mutate({
-      id: teacherId,
-      ...data,
-      branchId: teacher.branchId,
-      joinDate: data.joinDate ? new Date(data.joinDate) : undefined,
-    });
-  };
-
-  if (isLoading) {
+  
+  // If teacher has a clerkId, fetch clerk user data to get email
+  const { data: clerkUserData } = api.users.getByClerkId.useQuery(
+    { clerkId: teacher?.clerkId || "" },
+    { enabled: !!teacher?.clerkId }
+  );
+  
+  // Fetch user roles if clerkId is available to get roleId
+  const { data: userRoles } = api.role.getUserRoles.useQuery(
+    { userId: teacher?.clerkId || "" },
+    { enabled: !!teacher?.clerkId }
+  );
+  
+  // Find the first role ID from userRoles if available
+  const roleId = userRoles && userRoles.length > 0 ? userRoles[0]?.id : "";
+  
+  // Handle error
+  if (error) {
     return (
-      <div className="px-4 lg:px-6">
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-[400px] w-full" />
-        </div>
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-red-500">Error</h2>
+        <p className="mt-2">{error.message || "Failed to load teacher details"}</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => router.push('/teachers')}
+        >
+          Back to Teachers
+        </Button>
       </div>
     );
   }
-
-  if (error || !teacher) {
+  
+  // Loading state
+  if (isLoading || !teacher) {
     return (
-      <div className="px-4 lg:px-6">
-        <div className="py-8 text-center">
-          <p className="text-muted-foreground mb-4">
-            Error: {error?.message || "Teacher not found"}
-          </p>
-          <Button asChild>
-            <Link href="/teachers">Back to Teachers</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="px-4 lg:px-6">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Button variant="outline" size="icon" asChild>
-              <Link href={`/teachers/${teacherId}`}>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Edit Teacher</h1>
+      <div className="w-full px-4 py-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Skeleton className="h-4 w-20" />
+            <span>/</span>
+            <Skeleton className="h-4 w-20" />
+            <span>/</span>
+            <Skeleton className="h-4 w-20" />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{teacher.firstName} {teacher.lastName}</p>
-        </div>
-      </div>
-
-      <div className="max-w-3xl">
-        <Form form={form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="rounded-md border p-6 space-y-6">
-              <h2 className="text-lg font-medium">Personal Information</h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="employeeCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Employee Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="PS-23101" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Unique identifier for this teacher
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="qualification"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Qualification</FormLabel>
-                      <FormControl>
-                        <Input placeholder="M.Sc., B.Ed." {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Highest educational qualification
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="specialization"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Specialization</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Mathematics" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Subject specialization or expertise
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="joinDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Join Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Active</FormLabel>
-                        <FormDescription>
-                          Determines if the teacher is active in the system
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-lg" />
+              <div>
+                <Skeleton className="h-8 w-40 mb-1" />
+                <Skeleton className="h-4 w-60" />
               </div>
             </div>
-
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push(`/teachers/${teacherId}`)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Form>
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </div>
+        
+        <Skeleton className="h-96 w-full" />
       </div>
+    );
+  }
+  
+  // Enhance teacher data with clerk user data if available
+  const enhancedTeacherData = {
+    ...teacher,
+    // Use email from clerk user data if available, otherwise use teacher email
+    email: clerkUserData?.emailAddress || teacher.officialEmail || teacher.personalEmail || "",
+    // Add roleId from userRoles
+    roleId: roleId || "",
+  };
+  
+  const formattedTeacherData = convertApiToFormValues(enhancedTeacherData);
+  
+  return (
+    <div className="w-full px-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="bg-primary/10 p-2 rounded-lg">
+            <GraduationCap className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Edit Teacher</h1>
+            <p className="text-muted-foreground">Update teacher information for {teacher.firstName} {teacher.lastName}</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild className="w-fit">
+          <Link href={`/teachers/${teacherId}`} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Teacher Details
+          </Link>
+        </Button>
+      </div>
+
+      {/* Main form area with shadow and rounded corners */}
+      <Card className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="border-b px-6 py-4 bg-muted/30">
+          <h2 className="text-xl font-semibold">Teacher Information Form</h2>
+          <p className="text-sm text-muted-foreground">Update teacher information</p>
+        </div>
+        <div className="p-6">
+          <EnhancedTeacherForm initialData={formattedTeacherData} isEditing={true} />
+        </div>
+      </Card>
     </div>
   );
 }

@@ -109,24 +109,24 @@ export function MultiCombobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-[var(--radix-popover-trigger-width)] p-0" 
+          className={cn("w-[var(--radix-popover-trigger-width)] p-0", className)} 
           align="start"
           side="bottom"
           sideOffset={5}
           avoidCollisions={true}
         >
-          <Command shouldFilter={false}>
+          <Command shouldFilter={false} className={className}>
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <Input
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="h-9 w-full border-0 bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                className={cn("h-9 w-full border-0 bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground", className)}
               />
             </div>
             <CommandList>
-              <CommandGroup className="max-h-[300px] overflow-auto">
+              <CommandGroup className={cn("max-h-[300px] overflow-auto", className)}>
                 {sortedOptions.map((option) => {
                   const isSelected = selected.includes(option.value)
                   return (
@@ -135,6 +135,7 @@ export function MultiCombobox({
                       className={cn(
                         "flex cursor-pointer items-center py-2 px-2 m-1 rounded-sm",
                         isSelected ? "bg-accent" : "hover:bg-accent/50",
+                        className
                       )}
                       onClick={() => handleSelect(option.value)}
                     >
@@ -148,7 +149,7 @@ export function MultiCombobox({
                       >
                         {isSelected && <Check className="h-3 w-3" />}
                       </div>
-                      <span className="flex-1">
+                      <span className={cn("flex-1", className)}>
                         {option.label}
                       </span>
                     </div>
@@ -169,7 +170,7 @@ export function MultiCombobox({
               <Badge 
                 key={value} 
                 variant="secondary"
-                className="px-2 py-1 text-sm flex items-center gap-1"
+                className={cn("px-2 py-1 flex items-center gap-1", className)}
               >
                 {option?.label || value}
                 <button

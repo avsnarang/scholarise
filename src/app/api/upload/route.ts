@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server"; 
 import { createClient } from '@supabase/supabase-js';
 import formidable from "formidable";

@@ -1,3 +1,5 @@
+import { Breadcrumbs } from "@/components/breadcrumbs";
+
 interface PageWrapperProps {
   children: React.ReactNode;
   className?: string;

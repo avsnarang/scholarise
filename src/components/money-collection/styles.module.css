@@ -1,0 +1,35 @@
+.smallMultiCombobox {
+  font-size: 0.75rem !important; /* 12px */
+}
+
+.smallMultiCombobox * {
+  font-size: 0.75rem !important; 
+}
+
+.smallMultiCombobox button,
+.smallMultiCombobox span,
+.smallMultiCombobox div,
+.smallMultiCombobox input,
+.smallMultiCombobox [role="combobox"] {
+  font-size: 0.75rem !important;
+}
+
+.smallMultiCombobox [class*="badge"] {
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.smallMultiCombobox svg {
+  height: 0.75rem !important;
+  width: 0.75rem !important;
+}
+
+.smallMultiCombobox [class*="popoverContent"] {
+  max-width: 300px !important;
+  width: auto !important;
+}
+
+.smallMultiCombobox [class*="commandGroup"] {
+  max-height: 200px !important;
+  overflow-y: auto !important;
+} 

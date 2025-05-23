@@ -1,68 +1,69 @@
-import { useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Eye, EyeOff } from "lucide-react";
 import type { TeacherFormValues } from "../enhanced-teacher-form";
+import { api } from "@/utils/api";
+import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
 
-// Helper function to generate a secure password
-function generateSecurePassword(length = 14) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
-  let password = '';
-  
-  // Ensure at least one character from each category
-  password += chars.substring(0, 26).charAt(Math.floor(Math.random() * 26)); // Uppercase
-  password += chars.substring(26, 52).charAt(Math.floor(Math.random() * 26)); // Lowercase
-  password += chars.substring(52, 62).charAt(Math.floor(Math.random() * 10)); // Number
-  password += chars.substring(62).charAt(Math.floor(Math.random() * (chars.length - 62))); // Special char
-  
-  // Fill the rest
-  for (let i = 4; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  // Shuffle the password characters
-  return password.split('').sort(() => 0.5 - Math.random()).join('');
+// Asset return status options
+const assetReturnStatusOptions = [
+  "Not Applicable",
+  "Issued",
+  "Partially Returned",
+  "Fully Returned"
+];
+
+interface AccountInfoTabProps {
+  isEditing?: boolean;
 }
 
-export function AccountInfoTab() {
-  const { control, watch, setValue } = useFormContext<TeacherFormValues>();
-  const [showPassword, setShowPassword] = useState(false);
+export function AccountInfoTab({ isEditing = false }: AccountInfoTabProps) {
+  const { control, watch } = useFormContext<TeacherFormValues>();
   const createUser = watch("createUser");
-
-  // Generate password automatically when createUser is toggled on
+  
+  // Check if the user has an existing clerk account
+  const [hasExistingAccount, setHasExistingAccount] = useState(false);
+  
+  // Check when component mounts and when createUser changes
   useEffect(() => {
-    if (createUser) {
-      const currentPassword = watch("password");
-      if (!currentPassword) {
-        setValue("password", generateSecurePassword());
-      }
+    if (isEditing && createUser) {
+      setHasExistingAccount(true);
     }
-  }, [createUser, setValue, watch]);
-
-  const handleRegeneratePassword = () => {
-    setValue("password", generateSecurePassword());
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  }, [isEditing, createUser]);
+  
+  // Fetch roles from the API
+  const { data: dbRoles, isLoading: isLoadingRoles } = api.role.getAll.useQuery();
+  
+  // Role badge colors helper
+  const getRoleBadgeColor = (role: string) => {
+    const colors: Record<string, string> = {
+      "SUPER_ADMIN": "bg-red-100 text-red-800 border-red-200",
+      "ADMIN": "bg-purple-100 text-purple-800 border-purple-200",
+      "PRINCIPAL": "bg-blue-100 text-blue-800 border-blue-200",
+      "TEACHER": "bg-green-100 text-green-800 border-green-200",
+      "ACCOUNTANT": "bg-amber-100 text-amber-800 border-amber-200",
+      "RECEPTIONIST": "bg-pink-100 text-pink-800 border-pink-200",
+      "TRANSPORT_MANAGER": "bg-indigo-100 text-indigo-800 border-indigo-200",
+      "STAFF": "bg-slate-100 text-slate-800 border-slate-200",
+    };
+    return colors[role] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <h3 className="text-xl font-medium text-[#00501B]">User Account</h3>
-
+    <div className="space-y-2 p-6">
+      <h3 className="text-xl font-medium text-[#00501B] mt-8">User Account</h3>
       <FormField
         control={control}
         name="createUser"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
             <div className="space-y-0.5">
-              <FormLabel className="text-base">Create User Account</FormLabel>
+              <FormLabel>Create Login Account</FormLabel>
               <FormDescription>
-                Create login credentials for this teacher
+                Create a user account that can login to the system
               </FormDescription>
             </div>
             <FormControl>
@@ -74,9 +75,9 @@ export function AccountInfoTab() {
           </FormItem>
         )}
       />
-
       {createUser && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+          {/* Email */}
           <FormField
             control={control}
             name="email"
@@ -86,83 +87,84 @@ export function AccountInfoTab() {
                   Email <span className="text-red-500 ml-1">*</span>
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="teacher@example.com"
-                    {...field}
-                  />
+                  <Input {...field} placeholder="Email address" type="email" />
                 </FormControl>
-                <FormDescription>
-                  Will be used for login and communications
-                </FormDescription>
+                <FormDescription>This will be used for login</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          {/* Password */}
           <FormField
             control={control}
             name="password"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center">
-                  Password <span className="text-red-500 ml-1">*</span>
+                  {hasExistingAccount ? "Update Password" : "Password"} <span className="text-red-500 ml-1">*</span>
                 </FormLabel>
-                <div className="flex gap-2">
-                  <FormControl>
-                    <div className="relative w-full">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={togglePasswordVisibility}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRegeneratePassword}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    placeholder={hasExistingAccount ? "Leave blank to keep current password" : "Password"} 
+                    type="password" 
+                  />
+                </FormControl>
                 <FormDescription>
-                  Auto-generated secure password
+                  {hasExistingAccount 
+                    ? "Enter new password only if you want to change it" 
+                    : "Minimum 8 characters"}
                 </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Role */}
+          <FormField
+            control={control}
+            name="roleId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center">
+                  Role <span className="text-red-500 ml-1">*</span>
+                </FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value} 
+                  value={field.value || undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {dbRoles?.map((role: any) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        <div className="flex items-center">
+                          <Badge 
+                            variant="outline" 
+                            className={`${getRoleBadgeColor(role.name)} text-xs font-normal mr-2`}
+                          >
+                            {role.name.replace(/_/g, " ")}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({role.description || role.name})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>This determines what the user can access</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
       )}
-
-      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-6">
-        <h4 className="text-amber-800 font-medium">Account Access Information</h4>
-        <p className="text-amber-700 text-sm mt-1">
-          Creating a user account will allow this teacher to log into the ScholaRise ERP system. They will have access to:
-        </p>
-        <ul className="text-amber-700 text-sm mt-2 list-disc pl-5 space-y-1">
-          <li>Their personal dashboard</li>
-          <li>Class information for classes they teach</li>
-          <li>Student information for their classes</li>
-          <li>Attendance management</li>
-          <li>Assignment tracking</li>
-          <li>Grade management</li>
-        </ul>
-      </div>
     </div>
   );
 } 

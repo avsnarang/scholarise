@@ -14,6 +14,7 @@ import { StudentBulkImport } from "@/components/students/student-bulk-import"
 import { useToast } from "@/components/ui/use-toast"
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext"
 import { StudentDataTableWrapper } from "@/components/students/student-data-table-wrapper"
+import { StudentFilter } from "@/components/students/student-filter-adapter"
 
 export default function StudentsPage() {
   const [filters, setFilters] = useState<AdvancedFilters>({
@@ -199,9 +200,9 @@ export default function StudentsPage() {
       <div className="mt-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-medium">All Students</h2>
-          <StudentAdvancedFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
+          <StudentFilter 
+            filters={filters} 
+            onFilterChange={handleFilterChange} 
           />
         </div>
 

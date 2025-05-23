@@ -43,6 +43,7 @@ type BranchFormValues = z.infer<typeof branchFormSchema>;
 interface BranchFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   branch?: {
     id?: string;
     name: string;
@@ -58,7 +59,7 @@ interface BranchFormModalProps {
   };
 }
 
-export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProps) {
+export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const utils = api.useContext();
@@ -172,6 +173,7 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
         variant: "success",
       });
       handleClose();
+      onSuccess?.();
     },
     onError: (error) => {
       toast({
@@ -191,6 +193,7 @@ export function BranchFormModal({ isOpen, onClose, branch }: BranchFormModalProp
         variant: "success",
       });
       handleClose();
+      onSuccess?.();
     },
     onError: (error) => {
       toast({

@@ -239,11 +239,7 @@ export default function BranchesPage() {
                             {branch.address || <span className="text-gray-400">No address</span>}
                           </TableCell>
                           <TableCell>
-                            {branch.isActive ? (
-                              <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-gray-500">Inactive</Badge>
-                            )}
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
@@ -264,7 +260,6 @@ export default function BranchesPage() {
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteBranch(branch)}
                                   className="text-red-600 focus:text-red-600 clickable"
-                                  disabled={branch.isActive}
                                 >
                                   <Trash className="mr-2 h-4 w-4" />
                                   <span>Delete</span>
@@ -285,19 +280,19 @@ export default function BranchesPage() {
 
       {/* Modals */}
       <BranchFormModal
-        open={isFormModalOpen}
+        isOpen={isFormModalOpen}
         branch={selectedBranch}
         onClose={() => setIsFormModalOpen(false)}
         onSuccess={handleFormSuccess}
       />
 
       <DeleteConfirmationDialog
-        open={isDeleteDialogOpen}
+        isOpen={isDeleteDialogOpen}
         title="Delete Branch"
         description={`Are you sure you want to delete the branch "${selectedBranch?.name}"? This action cannot be undone.`}
         onConfirm={confirmDelete}
-        onCancel={() => setIsDeleteDialogOpen(false)}
-        loading={deleteMutation.isPending}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        isDeleting={deleteMutation.isPending}
       />
     </PageWrapper>
   );

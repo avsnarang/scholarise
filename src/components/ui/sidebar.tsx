@@ -25,6 +25,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// LEGACY SIDEBAR: The new sidebar implementation is in app-sidebar.tsx. Prefer using that for new layouts.
+
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
@@ -699,28 +701,28 @@ function SidebarMenuSubButton({
 }
 
 export {
+  useSidebar,
+  SidebarProvider,
   Sidebar,
+  SidebarTrigger,
+  SidebarInset,
+  SidebarRail,
   SidebarContent,
+  SidebarInput,
+  SidebarHeader,
   SidebarFooter,
+  SidebarSeparator,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInput,
-  SidebarInset,
   SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuBadge,
-  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
+  SidebarMenuButton,
+  SidebarMenuAction,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger,
-  useSidebar,
+  SidebarMenuBadge,
+  SidebarMenuSubButton,
+  SidebarMenuSkeleton,
 }

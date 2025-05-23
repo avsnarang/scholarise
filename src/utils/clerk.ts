@@ -34,6 +34,8 @@ interface CreateTeacherUserParams {
   branchId: string;
   isHQ?: boolean;
   username?: string; // Make username optional
+  roleId?: string; // Add roleId param
+  roleName?: string; // Add roleName param
 }
 
 /**
@@ -147,6 +149,8 @@ export async function createTeacherUser({
   branchId,
   isHQ = false,
   username,
+  roleId,
+  roleName,
 }: CreateTeacherUserParams) {
   if (!email) {
     throw new Error('Email is required to create a teacher user');
@@ -162,7 +166,9 @@ export async function createTeacherUser({
     email, 
     branchId, 
     isHQ,
-    hasUsername: !!username
+    hasUsername: !!username,
+    roleId,
+    roleName
   });
   
   // We already verified email exists above, but TypeScript doesn't know that
@@ -203,10 +209,11 @@ export async function createTeacherUser({
         username: usernameToUse,
         password,
         publicMetadata: {
-          role: 'Teacher',
-          roles: ['Teacher'],
+          role: roleName || 'Teacher', // Use provided role or default to Teacher
+          roles: [roleName || 'Teacher'],
           branchId,
           isHQ,
+          roleId, // Include roleId in metadata
         },
       });
 
@@ -243,6 +250,133 @@ export async function createTeacherUser({
     }
   } catch (error) {
     console.error('Error creating teacher user in Clerk:', error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Create a Clerk user account for an employee
+ */
+export async function createEmployeeUser({
+  firstName,
+  lastName,
+  email,
+  password,
+  branchId,
+  username,
+  roleId,
+  roleName,
+}: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  branchId: string;
+  username?: string;
+  roleId?: string;
+  roleName?: string;
+}) {
+  if (!email) {
+    throw new Error('Email is required to create an employee user');
+  }
+  
+  if (!password || password.length < 8) {
+    throw new Error('Password must be at least 8 characters long');
+  }
+  
+  console.log("createEmployeeUser called with:", { 
+    firstName, 
+    lastName, 
+    email, 
+    branchId,
+    hasUsername: !!username,
+    roleId,
+    roleName
+  });
+  
+  // We already verified email exists above, but TypeScript doesn't know that
+  const emailValue: string = email || '';
+  
+  try {
+    // Generate a username from email if not provided
+    let usernameToUse = username;
+    if (!usernameToUse) {
+      // Extract part before @ from email or use 'employee' as fallback
+      const emailBase = emailValue.includes('@') 
+        ? emailValue.substring(0, emailValue.indexOf('@'))
+        : 'employee';
+      
+      // Clean up the username (remove special chars)
+      const cleanedBase = emailBase.replace(/[^a-zA-Z0-9]/g, '');
+      const timestamp = Date.now().toString().slice(-6);
+      usernameToUse = `${cleanedBase}${timestamp}`;
+    }
+    
+    console.log("Creating user in Clerk with email:", email, "and username:", usernameToUse);
+    
+    // Validate required parameters before making the API call
+    if (!firstName || !lastName) {
+      throw new Error('First name and last name are required');
+    }
+    
+    if (!branchId) {
+      throw new Error('Branch ID is required');
+    }
+    
+    // Create user in Clerk
+    try {
+      const user = await clerk.users.createUser({
+        firstName,
+        lastName,
+        emailAddress: [email],
+        username: usernameToUse,
+        password,
+        publicMetadata: {
+          role: roleName || 'Employee',
+          roles: [roleName || 'Employee'],
+          branchId,
+          roleId, // Include roleId in metadata
+        },
+      });
+
+      console.log("Clerk user created successfully:", user.id);
+      return user;
+    } catch (clerkError) {
+      console.error('Clerk API error creating employee user:', clerkError);
+      
+      // Handle specific Clerk errors more gracefully
+      if (typeof clerkError === 'object' && clerkError !== null) {
+        const error = clerkError as { status?: number; errors?: Array<{ code?: string; message?: string }> };
+        
+        // Check for common errors
+        if (error.status === 422) {
+          const messages = error.errors?.map(e => e.message).filter(Boolean).join(', ');
+          if (messages?.toLowerCase().includes('password')) {
+            throw new Error(`Password validation failed: ${messages}. Please use a stronger password that is not commonly used.`);
+          }
+          throw new Error(`Invalid data for user creation: ${messages || 'Unknown validation error'}`);
+        }
+        
+        if (error.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+
+        // Handle duplicate emails
+        if (error.errors?.some(e => e.code === 'user_already_exists' || e.message?.includes('already exists'))) {
+          throw new Error('A user with this email already exists. Please use a different email address.');
+        }
+      }
+      
+      // Rethrow with more context
+      throw new Error(`Failed to create user in Clerk: ${clerkError instanceof Error ? clerkError.message : String(clerkError)}`);
+    }
+  } catch (error) {
+    console.error('Error creating employee user in Clerk:', error);
     // Log more details about the error
     if (error instanceof Error) {
       console.error('Error message:', error.message);

@@ -3,6 +3,11 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/
 import { TRPCError } from "@trpc/server";
 import { type Prisma } from "@prisma/client";
 import { createTeacherUser } from "@/utils/clerk";
+import { Clerk } from "@clerk/clerk-sdk-node";
+
+// Initialize Clerk client
+const secretKey = process.env.CLERK_SECRET_KEY;
+const clerk = Clerk({ secretKey: secretKey || "" });
 
 export const teacherRouter = createTRPCRouter({
   getStats: publicProcedure
@@ -89,7 +94,7 @@ export const teacherRouter = createTRPCRouter({
       const cursor = input?.cursor;
 
       // Build the where clause dynamically to avoid type issues
-      let whereClause: any = {
+      const whereClause: any = {
         branchId: input?.branchId,
         isActive: input?.isActive,
       };
@@ -250,20 +255,85 @@ export const teacherRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
+        // Personal Info
         firstName: z.string().min(1),
         lastName: z.string().min(1),
-        employeeCode: z.string().optional(),
+        middleName: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.enum(["Male", "Female", "Other"]).optional(),
+        bloodGroup: z.string().optional(),
+        maritalStatus: z.string().optional(),
+        nationality: z.string().optional(),
+        religion: z.string().optional(),
+        panNumber: z.string().optional(),
+        aadharNumber: z.string().optional(),
+        
+        // Contact Information
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        country: z.string().optional(),
+        pincode: z.string().optional(),
+        permanentAddress: z.string().optional(),
+        permanentCity: z.string().optional(),
+        permanentState: z.string().optional(),
+        permanentCountry: z.string().optional(),
+        permanentPincode: z.string().optional(),
+        phone: z.string().optional(),
+        alternatePhone: z.string().optional(),
+        personalEmail: z.string().optional(),
+        emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(),
+        emergencyContactRelation: z.string().optional(),
+        
+        // Educational Qualifications
         qualification: z.string().optional(),
         specialization: z.string().optional(),
+        professionalQualifications: z.string().optional(),
+        specialCertifications: z.string().optional(),
+        yearOfCompletion: z.string().optional(),
+        institution: z.string().optional(),
+        experience: z.string().optional(),
+        bio: z.string().optional(),
+        
+        // Employment Details
+        employeeCode: z.string().optional(),
         joinDate: z.date().optional(),
+        designation: z.string().optional(),
+        department: z.string().optional(),
+        reportingManager: z.string().optional(),
+        employeeType: z.string().optional(),
+        previousExperience: z.string().optional(),
+        previousEmployer: z.string().optional(),
+        confirmationDate: z.string().optional(),
         isActive: z.boolean().optional(),
+        
+        // Branch Information
         branchId: z.string(),
         isHQ: z.boolean().optional(),
-        userId: z.string().optional(),
+        
+        // Salary & Banking Details
+        salaryStructure: z.string().optional(),
+        pfNumber: z.string().optional(),
+        esiNumber: z.string().optional(),
+        uanNumber: z.string().optional(),
+        bankName: z.string().optional(),
+        accountNumber: z.string().optional(),
+        ifscCode: z.string().optional(),
+        
+        // IT & Asset Allocation
+        officialEmail: z.string().optional(),
+        deviceIssued: z.string().optional(),
+        accessCardId: z.string().optional(),
+        softwareLicenses: z.string().optional(),
+        assetReturnStatus: z.string().optional(),
+        
         // User credentials (optional)
+        userId: z.string().optional(),
         createUser: z.boolean().optional(),
         email: z.string().email().optional(),
         password: z.string().min(8).optional(),
+        roleId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -307,16 +377,18 @@ export const teacherRouter = createTRPCRouter({
             const timestamp = Date.now().toString().slice(-6);
             const username = `${cleanedBase}${timestamp}`;
             
-            // Create teacher user in Clerk
-            console.log("Calling createTeacherUser with:", {
-              firstName: input.firstName,
-              lastName: input.lastName,
-              email: input.email,
-              username: username,
-              branchId: input.branchId,
-              isHQ: input.isHQ || false,
-            });
+            // Get role details if roleId provided
+            let roleName = undefined;
+            if (input.roleId) {
+              const role = await ctx.db.rbacRole.findUnique({
+                where: { id: input.roleId },
+                select: { name: true }
+              });
+              roleName = role?.name;
+            }
             
+            console.log("Found role:", roleName);
+
             try {
               const teacherUser = await createTeacherUser({
                 firstName: input.firstName,
@@ -326,6 +398,8 @@ export const teacherRouter = createTRPCRouter({
                 branchId: input.branchId,
                 isHQ: input.isHQ || false,
                 username: username, // Pass the generated username
+                roleId: input.roleId, // Pass the role ID
+                roleName: roleName, // Pass the role name
               });
 
               clerkUserId = teacherUser.id;
@@ -378,17 +452,88 @@ export const teacherRouter = createTRPCRouter({
         try {
           const newTeacher = await ctx.db.teacher.create({
             data: {
+              // Personal Info
               firstName: input.firstName,
               lastName: input.lastName,
-              employeeCode: input.employeeCode,
+              middleName: input.middleName,
+              // Convert dateOfBirth from string to Date if provided
+              ...(input.dateOfBirth ? { dateOfBirth: new Date(input.dateOfBirth) } : {}),
+              gender: input.gender,
+              bloodGroup: input.bloodGroup,
+              maritalStatus: input.maritalStatus,
+              nationality: input.nationality,
+              religion: input.religion,
+              panNumber: input.panNumber,
+              aadharNumber: input.aadharNumber,
+              
+              // Contact Information
+              address: input.address,
+              city: input.city,
+              state: input.state,
+              country: input.country,
+              pincode: input.pincode,
+              permanentAddress: input.permanentAddress,
+              permanentCity: input.permanentCity,
+              permanentState: input.permanentState,
+              permanentCountry: input.permanentCountry,
+              permanentPincode: input.permanentPincode,
+              phone: input.phone,
+              alternatePhone: input.alternatePhone,
+              personalEmail: input.personalEmail,
+              emergencyContactName: input.emergencyContactName,
+              emergencyContactPhone: input.emergencyContactPhone,
+              emergencyContactRelation: input.emergencyContactRelation,
+              
+              // Educational Qualifications
               qualification: input.qualification,
               specialization: input.specialization,
+              professionalQualifications: input.professionalQualifications,
+              specialCertifications: input.specialCertifications,
+              yearOfCompletion: input.yearOfCompletion,
+              institution: input.institution,
+              experience: input.experience,
+              bio: input.bio,
+              
+              // Employment Details
+              employeeCode: input.employeeCode,
               joinDate: input.joinDate || new Date(),
+              designation: input.designation,
+              department: input.department,
+              reportingManager: input.reportingManager,
+              employeeType: input.employeeType,
+              previousExperience: input.previousExperience,
+              previousEmployer: input.previousEmployer,
+              // Convert confirmationDate from string to Date if provided
+              ...(input.confirmationDate ? { confirmationDate: new Date(input.confirmationDate) } : {}),
               isActive: input.isActive ?? true,
+              
+              // Branch Information
               branchId: input.branchId,
+              
+              // Salary & Banking Details
+              salaryStructure: input.salaryStructure,
+              pfNumber: input.pfNumber,
+              esiNumber: input.esiNumber,
+              uanNumber: input.uanNumber,
+              bankName: input.bankName,
+              accountNumber: input.accountNumber,
+              ifscCode: input.ifscCode,
+              
+              // IT & Asset Allocation
+              officialEmail: input.officialEmail,
+              deviceIssued: input.deviceIssued,
+              accessCardId: input.accessCardId,
+              softwareLicenses: input.softwareLicenses,
+              assetReturnStatus: input.assetReturnStatus,
+              
+              // User-related fields
               userId: input.userId,
               // Add clerkId if user was created
-              ...(clerkUserId ? { clerkId: clerkUserId } : {}),
+              ...(clerkUserId ? { 
+                clerkId: clerkUserId, 
+                userId: clerkUserId,
+                roleId: input.roleId
+              } : {}),
             },
           });
           
@@ -418,16 +563,82 @@ export const teacherRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
+        // Personal Info
         firstName: z.string().min(1),
         lastName: z.string().min(1),
-        employeeCode: z.string().optional(),
+        middleName: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.enum(["Male", "Female", "Other"]).optional(),
+        bloodGroup: z.string().optional(),
+        maritalStatus: z.string().optional(),
+        nationality: z.string().optional(),
+        religion: z.string().optional(),
+        panNumber: z.string().optional(),
+        aadharNumber: z.string().optional(),
+        
+        // Contact Information
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        country: z.string().optional(),
+        pincode: z.string().optional(),
+        permanentAddress: z.string().optional(),
+        permanentCity: z.string().optional(),
+        permanentState: z.string().optional(),
+        permanentCountry: z.string().optional(),
+        permanentPincode: z.string().optional(),
+        phone: z.string().optional(),
+        alternatePhone: z.string().optional(),
+        personalEmail: z.string().optional(),
+        emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(),
+        emergencyContactRelation: z.string().optional(),
+        
+        // Educational Qualifications
         qualification: z.string().optional(),
         specialization: z.string().optional(),
+        professionalQualifications: z.string().optional(),
+        specialCertifications: z.string().optional(),
+        yearOfCompletion: z.string().optional(),
+        institution: z.string().optional(),
+        experience: z.string().optional(),
+        bio: z.string().optional(),
+        
+        // Employment Details
+        employeeCode: z.string().optional(),
         joinDate: z.date().optional(),
+        designation: z.string().optional(),
+        department: z.string().optional(),
+        reportingManager: z.string().optional(),
+        employeeType: z.string().optional(),
+        previousExperience: z.string().optional(),
+        previousEmployer: z.string().optional(),
+        confirmationDate: z.string().optional(),
         isActive: z.boolean().optional(),
+        
+        // Branch Information
         branchId: z.string(),
         isHQ: z.boolean().optional(),
+        
+        // Salary & Banking Details
+        salaryStructure: z.string().optional(),
+        pfNumber: z.string().optional(),
+        esiNumber: z.string().optional(),
+        uanNumber: z.string().optional(),
+        bankName: z.string().optional(),
+        accountNumber: z.string().optional(),
+        ifscCode: z.string().optional(),
+        
+        // IT & Asset Allocation
+        officialEmail: z.string().optional(),
+        deviceIssued: z.string().optional(),
+        accessCardId: z.string().optional(),
+        softwareLicenses: z.string().optional(),
+        assetReturnStatus: z.string().optional(),
+        
+        // User-related fields
         userId: z.string().optional(),
+        roleId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -442,27 +653,164 @@ export const teacherRouter = createTRPCRouter({
           message: "Teacher not found",
         });
       }
+      
+      // Check if role has been updated
+      const roleChanged = input.roleId !== undefined && input.roleId !== (teacher as Record<string, unknown>).roleId;
+      let roleName = undefined;
+      
+      // Get the role name if roleId is provided and it's different from the current one
+      if (roleChanged && input.roleId) {
+        try {
+          const role = await ctx.db.rbacRole.findUnique({
+            where: { id: input.roleId },
+            select: { name: true }
+          });
+          roleName = role?.name;
+          console.log(`Role changed to: ${roleName} (${input.roleId})`);
+        } catch (error) {
+          console.error("Error fetching role details:", error);
+        }
+      }
+      
+      // If teacher has a Clerk account, update the Clerk user
+      if (teacher.clerkId) {
+        try {
+          // Build the publicMetadata update
+          const userResponse = await clerk.users.getUser(teacher.clerkId);
+          const currentMetadata = userResponse.publicMetadata;
+          
+          const updatedMetadata = {
+            ...currentMetadata,
+            // Update isActive if it's changed
+            ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+            // Update role information if it's changed
+            ...(roleChanged ? { 
+              roleId: input.roleId,
+              roleName: roleName 
+            } : {})
+          };
+          
+          // Update the Clerk user
+          await clerk.users.updateUser(teacher.clerkId, {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            publicMetadata: updatedMetadata
+          });
+          
+          console.log(`Updated Clerk user ${teacher.clerkId} with new information`);
+        } catch (error) {
+          console.error("Error updating Clerk user:", error);
+          // Don't throw here, just log the error and continue
+        }
+      }
 
-      // Update teacher record
-      const updatedTeacher = await ctx.db.teacher.update({
-        where: { id: input.id },
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          employeeCode: input.employeeCode,
-          qualification: input.qualification,
-          specialization: input.specialization,
-          joinDate: input.joinDate,
-          isActive: input.isActive,
-          branchId: input.branchId,
-          userId: input.userId,
-        },
-        // Removed user include since it no longer exists
-      });
+      // Build the update data object
+      const updateData = {
+        // Personal Info
+        firstName: input.firstName,
+        lastName: input.lastName,
+        middleName: input.middleName,
+        // Convert dateOfBirth from string to Date if provided
+        ...(input.dateOfBirth ? { dateOfBirth: new Date(input.dateOfBirth) } : {}),
+        gender: input.gender,
+        bloodGroup: input.bloodGroup,
+        maritalStatus: input.maritalStatus,
+        nationality: input.nationality,
+        religion: input.religion,
+        panNumber: input.panNumber,
+        aadharNumber: input.aadharNumber,
+        
+        // Contact Information
+        address: input.address,
+        city: input.city,
+        state: input.state,
+        country: input.country,
+        pincode: input.pincode,
+        permanentAddress: input.permanentAddress,
+        permanentCity: input.permanentCity,
+        permanentState: input.permanentState,
+        permanentCountry: input.permanentCountry,
+        permanentPincode: input.permanentPincode,
+        phone: input.phone,
+        alternatePhone: input.alternatePhone,
+        personalEmail: input.personalEmail,
+        emergencyContactName: input.emergencyContactName,
+        emergencyContactPhone: input.emergencyContactPhone,
+        emergencyContactRelation: input.emergencyContactRelation,
+        
+        // Educational Qualifications
+        qualification: input.qualification,
+        specialization: input.specialization,
+        professionalQualifications: input.professionalQualifications,
+        specialCertifications: input.specialCertifications,
+        yearOfCompletion: input.yearOfCompletion,
+        institution: input.institution,
+        experience: input.experience,
+        bio: input.bio,
+        
+        // Employment Details
+        employeeCode: input.employeeCode,
+        joinDate: input.joinDate,
+        designation: input.designation,
+        department: input.department,
+        reportingManager: input.reportingManager,
+        employeeType: input.employeeType,
+        previousExperience: input.previousExperience,
+        previousEmployer: input.previousEmployer,
+        // Convert confirmationDate from string to Date if provided
+        ...(input.confirmationDate ? { confirmationDate: new Date(input.confirmationDate) } : {}),
+        isActive: input.isActive,
+        
+        // Branch Information
+        branchId: input.branchId,
+        
+        // Salary & Banking Details
+        salaryStructure: input.salaryStructure,
+        pfNumber: input.pfNumber,
+        esiNumber: input.esiNumber,
+        uanNumber: input.uanNumber,
+        bankName: input.bankName,
+        accountNumber: input.accountNumber,
+        ifscCode: input.ifscCode,
+        
+        // IT & Asset Allocation
+        officialEmail: input.officialEmail,
+        deviceIssued: input.deviceIssued,
+        accessCardId: input.accessCardId,
+        softwareLicenses: input.softwareLicenses,
+        assetReturnStatus: input.assetReturnStatus,
+        
+        // User-related fields
+        userId: input.userId,
+      };
 
-      // The user model no longer exists, so we don't update it
-      // If teacher has a user and isHQ is provided, we would update the user's isHQ field
-      // But since the model is gone, we skip this part
+      // Handle the roleId update using raw SQL to avoid type issues
+      let updatedTeacher;
+      if (input.roleId !== undefined) {
+        // First update all other fields using Prisma
+        updatedTeacher = await ctx.db.teacher.update({
+          where: { id: input.id },
+          data: updateData,
+        });
+        
+        // Then update roleId using raw SQL
+        await ctx.db.$executeRaw`
+          UPDATE "Teacher"
+          SET "roleId" = ${input.roleId}
+          WHERE id = ${input.id}
+        `;
+        
+        // Fetch the updated teacher to return
+        updatedTeacher = await ctx.db.teacher.findUnique({
+          where: { id: input.id },
+        });
+      } else {
+        // If no roleId update, just use the normal Prisma update
+        updatedTeacher = await ctx.db.teacher.update({
+          where: { id: input.id },
+          data: updateData,
+        });
+      }
 
       return updatedTeacher;
     }),
@@ -480,6 +828,17 @@ export const teacherRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "Teacher not found",
         });
+      }
+      
+      // If teacher has a Clerk account, delete it
+      if (teacher.clerkId) {
+        try {
+          console.log(`Deleting Clerk user for teacher ${teacher.id} (${teacher.clerkId})`);
+          await clerk.users.deleteUser(teacher.clerkId);
+        } catch (error) {
+          console.error("Error deleting Clerk user:", error);
+          // Don't throw here, just log the error and continue
+        }
       }
 
       return ctx.db.teacher.delete({
@@ -501,18 +860,21 @@ export const teacherRouter = createTRPCRouter({
 
       if (teachers.length !== input.ids.length) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Some teachers not found",
+          code: "NOT_FOUND",
+          message: "One or more teachers not found",
         });
       }
 
-      return ctx.db.teacher.deleteMany({
+      // Delete teachers
+      await ctx.db.teacher.deleteMany({
         where: {
           id: {
             in: input.ids,
           },
         },
       });
+
+      return { success: true };
     }),
 
   bulkUpdateStatus: protectedProcedure

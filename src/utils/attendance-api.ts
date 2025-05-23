@@ -1,8 +1,8 @@
 import { api } from "@/utils/api";
-import { type AttendanceLocation, type AttendanceRecord } from "./location-helpers";
+import { type AttendanceLocationAlias, type AttendanceRecord } from "./location-helpers";
 
 // Convert Prisma models to our frontend types
-export function mapLocationFromApi(apiLocation: any): AttendanceLocation {
+export function mapLocationFromApi(apiLocation: any): AttendanceLocationAlias {
   return {
     id: apiLocation.id,
     name: apiLocation.name,
@@ -10,6 +10,10 @@ export function mapLocationFromApi(apiLocation: any): AttendanceLocation {
     longitude: apiLocation.longitude,
     radius: apiLocation.radius,
     isActive: apiLocation.isActive,
+    branchId: "", // Placeholder, adjust as needed
+    createdAt: new Date(), // Placeholder, adjust as needed
+    updatedAt: new Date(), // Placeholder, adjust as needed
+    locationTypeId: null, // Placeholder, adjust as needed
   };
 }
 
@@ -33,7 +37,7 @@ export function mapAttendanceFromApi(apiAttendance: any): AttendanceRecord {
 }
 
 // Hook for loading attendance locations
-export function useAttendanceLocations(branchId?: string, includeInactive: boolean = false) {
+export function useAttendanceLocations(branchId?: string, includeInactive = false) {
   const { data, isLoading, error, refetch } = api.attendance.getLocations.useQuery(
     { branchId, includeInactive },
     { staleTime: 5 * 60 * 1000 } // 5 minutes

@@ -57,23 +57,17 @@ export default function EditStudentPage() {
 
   // Format the data for the form
   const formattedData = {
-    // Start with a clean object instead of spreading the entire student
     id: student.id,
     admissionNumber: student.admissionNumber,
     firstName: student.firstName,
     lastName: student.lastName,
     middleName: (student as any).middleName || "",
-    // Ensure dates are properly formatted as strings
-    dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : "",
-    dateOfAdmission: student.dateOfAdmission ? new Date(student.dateOfAdmission).toISOString().split('T')[0] : "",
-    dateOfJoining: student.joinDate ? new Date(student.joinDate).toISOString().split('T')[0] : "",
-    
-    // Cast gender to expected type
+    dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : undefined,
+    dateOfAdmission: student.dateOfAdmission ? new Date(student.dateOfAdmission).toISOString().split('T')[0] : undefined,
+    dateOfJoining: student.joinDate ? new Date(student.joinDate).toISOString().split('T')[0] : undefined,
     gender: (student.gender === "Male" || student.gender === "Female" || student.gender === "Other" 
       ? student.gender 
-      : "Other") as "Male" | "Female" | "Other",
-    
-    // Convert null values to empty strings
+      : undefined) as "Male" | "Female" | "Other" | undefined,
     phone: student.phone || "",
     schoolEmail: student.email || "",
     personalEmail: student.personalEmail || "",
@@ -83,11 +77,7 @@ export default function EditStudentPage() {
     caste: student.caste || "",
     aadharNumber: student.aadharNumber || "",
     udiseId: student.udiseId || "",
-    
-    // Ensure classId is a string with minimum length 1
     classId: student.classId || "",
-    
-    // Address fields
     permanentAddress: student.permanentAddress || "",
     permanentCity: student.permanentCity || "",
     permanentState: student.permanentState || "",
@@ -98,8 +88,6 @@ export default function EditStudentPage() {
     correspondenceState: student.correspondenceState || "",
     correspondenceCountry: student.correspondenceCountry || "",
     correspondenceZipCode: student.correspondenceZipCode || "",
-    
-    // Previous school fields
     previousSchool: student.previousSchool || "",
     lastClassAttended: student.lastClassAttended || "",
     mediumOfInstruction: student.mediumOfInstruction || "",
@@ -107,32 +95,25 @@ export default function EditStudentPage() {
     schoolCity: student.schoolCity || "",
     schoolState: student.schoolState || "",
     reasonForLeaving: student.reasonForLeaving || "",
-    
-    // Parent dates formatted as strings if they exist
-    fatherDob: student.parent?.fatherDob ? new Date(student.parent.fatherDob).toISOString().split('T')[0] : "",
-    motherDob: student.parent?.motherDob ? new Date(student.parent.motherDob).toISOString().split('T')[0] : "",
-    guardianDob: student.parent?.guardianDob ? new Date(student.parent.guardianDob).toISOString().split('T')[0] : "",
-    parentAnniversary: student.parent?.parentAnniversary ? new Date(student.parent.parentAnniversary).toISOString().split('T')[0] : "",
-    
-    // Add parent fields if they exist
+    fatherDob: student.parent?.fatherDob ? new Date(student.parent.fatherDob).toISOString().split('T')[0] : undefined,
+    motherDob: student.parent?.motherDob ? new Date(student.parent.motherDob).toISOString().split('T')[0] : undefined,
+    guardianDob: student.parent?.guardianDob ? new Date(student.parent.guardianDob).toISOString().split('T')[0] : undefined,
+    parentAnniversary: student.parent?.parentAnniversary ? new Date(student.parent.parentAnniversary).toISOString().split('T')[0] : undefined,
     fatherName: student.parent?.fatherName || "",
     fatherEducation: student.parent?.fatherEducation || "",
     fatherOccupation: student.parent?.fatherOccupation || "",
     fatherMobile: student.parent?.fatherMobile || "",
     fatherEmail: student.parent?.fatherEmail || "",
-    
     motherName: student.parent?.motherName || "",
     motherEducation: student.parent?.motherEducation || "",
     motherOccupation: student.parent?.motherOccupation || "",
     motherMobile: student.parent?.motherMobile || "",
     motherEmail: student.parent?.motherEmail || "",
-    
     guardianName: student.parent?.guardianName || "",
     guardianEducation: student.parent?.guardianEducation || "",
     guardianOccupation: student.parent?.guardianOccupation || "",
     guardianMobile: student.parent?.guardianMobile || "",
     guardianEmail: student.parent?.guardianEmail || "",
-    
     monthlyIncome: student.parent?.monthlyIncome || "",
   };
 

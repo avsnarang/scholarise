@@ -14,16 +14,35 @@ import {
   HelpCircle,
   School,
   ChevronsUpDown,
-  ChevronDown,
+  ChevronRight,
   AlertCircle,
   Clock,
   LogOut,
   User,
   Settings2,
   BadgeCheck,
+  Calendar,
+  DollarSign,
+  BookOpen,
+  Plus,
 } from "lucide-react"
 import { useClerk } from "@clerk/nextjs"
-
+import { type Prisma } from "@prisma/client"
+import { useBranchContext } from "@/hooks/useBranchContext"
+import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
+import { Permission, Role } from "@/types/permissions"
+import { navItemPermissions, moduleViewPermissions } from "@/utils/rbac"
+import { api } from "@/utils/api"
+import Link from "next/link"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import { usePathname } from "next/navigation"
+import { useSession } from "@clerk/nextjs"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,28 +66,23 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar"
-import { useBranchContext } from "@/hooks/useBranchContext"
-import { useAuth } from "@/hooks/useAuth"
-import { api } from "@/utils/api"
-import Link from "next/link"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import { usePathname } from "next/navigation"
+
+export * from "@/components/ui/app-sidebar";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>({});
-  const { isMobile } = useSidebar();
+  const { isMobile, state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   const { signOut } = useClerk();
 
   // Fetch branches from API
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getAll.useQuery();
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
   const { user } = useAuth();
+  const { canAccess, isSuperAdmin, can } = usePermissions();
 
   // Define Branch type based on the API response
   type Branch = {
@@ -87,10 +101,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Add usePathname hook
   const pathname = usePathname();
 
-  const toggleExpand = (title: string) => {
-    setExpandedItems((prev) => ({
+  const [forceAdminMode, setForceAdminMode] = React.useState(false);
+  
+  // Check for force admin mode in localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isForceAdmin = localStorage.getItem('forceAdmin') === 'true';
+      setForceAdminMode(isForceAdmin);
+      
+      // For debugging
+      if (isForceAdmin) {
+        console.log("Force admin mode active in sidebar");
+      }
+    }
+  }, []);
+
+  const toggleExpand = (title: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedItems(prev => ({
       ...prev,
-      [title]: !prev[title],
+      [title]: !prev[title]
     }));
   };
 
@@ -100,38 +131,122 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
+      permissions: navItemPermissions.dashboard,
     },
     {
-      title: "Students",
-      href: "/students",
-      icon: GraduationCap,
+      title: "Admissions",
+      href: "/admissions/dashboard",
+      icon: School,
+      permissions: navItemPermissions.admission,
       children: [
         {
-          title: "All Students",
-          href: "/students",
+          title: "Dashboard",
+          href: "/admissions/dashboard",
+          permissions: navItemPermissions.admission,
         },
         {
-          title: "Admission",
-          href: "/students/admission",
+          title: "Leads",
+          href: "/admissions/leads",
+          permissions: navItemPermissions.admission,
         },
         {
-          title: "Transfer Certificates",
-          href: "/students/transfer",
+          title: "Applications",
+          href: "/admissions/applications",
+          permissions: navItemPermissions.admission,
+        },
+        {
+          title: "Staff",
+          href: "/admissions/staff",
+          permissions: navItemPermissions.admission,
+        },
+        {
+          title: "Settings",
+          href: "/admissions/settings",
+          permissions: navItemPermissions.admission,
         },
       ],
     },
     {
-      title: "Teachers",
-      href: "/teachers",
-      icon: Users,
+      title: "Students",
+      href: "/students/dashboard",
+      icon: GraduationCap,
+      permissions: navItemPermissions.students,
       children: [
         {
-          title: "All Teachers",
+          title: "All Students",
+          href: "/students",
+          permissions: navItemPermissions.students,
+        },
+        {
+          title: "Assign Roll Numbers",
+          href: "/students/assign-roll-number",
+          permissions: navItemPermissions.students,
+        },
+        {
+          title: "Transfer Certificates",
+          href: "/students/transfer",
+          permissions: navItemPermissions.transfer,
+        },
+      ],
+    },
+    {
+      title: "Money Collection",
+      href: "/money-collection",
+      icon: CreditCard,
+      permissions: navItemPermissions.moneyCollection,
+      children: [
+        {
+          title: "All Collections",
+          href: "/money-collection",
+          permissions: [Permission.VIEW_MONEY_COLLECTION],
+        },
+        {
+          title: "New Collection",
+          href: "/money-collection/new",
+          permissions: [Permission.CREATE_MONEY_COLLECTION],
+        },
+      ],
+    },
+    {
+      title: "Staff",
+      href: "/staff",
+      icon: Users,
+      permissions: [
+        ...new Set([
+          ...navItemPermissions.teachers,
+          ...navItemPermissions.employees,
+        ]),
+      ],
+      children: [
+        {
+          title: "Teachers",
           href: "/teachers",
+          permissions: navItemPermissions.teachers,
         },
         {
           title: "Add Teacher",
           href: "/teachers/create",
+          permissions: navItemPermissions.createTeacher,
+        },
+        {
+          title: "Employees",
+          href: "/employees",
+          permissions: navItemPermissions.employees,
+        },
+        {
+          title: "Add Employee",
+          href: "/employees/create",
+          permissions: navItemPermissions.createEmployee,
+        },
+        {
+          title: "Departments",
+          href: "/departments/list",
+          permissions: navItemPermissions.departments,
+        },
+        {
+          title: "Designations",
+          href: "/designations/list",
+          permissions: navItemPermissions.designations,
         },
       ],
     },
@@ -139,14 +254,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Classes",
       href: "/classes",
       icon: Building,
+      permissions: navItemPermissions.classes,
       children: [
         {
           title: "All Classes",
           href: "/classes",
+          permissions: navItemPermissions.classes,
         },
         {
           title: "Class Students",
           href: "/classes/students",
+          permissions: navItemPermissions.classStudents,
         },
       ],
     },
@@ -154,22 +272,121 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Attendance",
       href: "/attendance",
       icon: Clock,
+      permissions: navItemPermissions.attendance,
       children: [
         {
           title: "Dashboard",
           href: "/attendance",
+          permissions: navItemPermissions.attendance,
         },
         {
           title: "Mark Attendance",
           href: "/attendance/mark",
+          permissions: navItemPermissions.markAttendance,
         },
         {
           title: "Student Attendance",
           href: "/attendance/students",
+          permissions: navItemPermissions.attendance,
         },
         {
           title: "Attendance Reports",
           href: "/attendance/reports",
+          permissions: navItemPermissions.attendanceReports,
+        },
+      ],
+    },
+    {
+      title: "Leave Management",
+      href: "/leaves/dashboard",
+      icon: Calendar,
+      permissions: navItemPermissions.leaves,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/leaves/dashboard",
+          permissions: navItemPermissions.leaves,
+        },
+        {
+          title: "Leave Applications",
+          href: "/leaves",
+          permissions: navItemPermissions.leaveApplications,
+        },
+        {
+          title: "Leave Policies",
+          href: "/leaves?tab=policies",
+          permissions: navItemPermissions.leavePolicies,
+        },
+      ],
+    },
+    {
+      title: "Salary Management",
+      href: "/salary",
+      icon: DollarSign,
+      permissions: navItemPermissions.salary,
+      children: [
+        {
+          title: "Overview",
+          href: "/salary",
+          permissions: navItemPermissions.salary,
+        },
+        {
+          title: "Salary Structures",
+          href: "/salary/structures",
+          permissions: navItemPermissions.salaryStructures,
+        },
+        {
+          title: "Teacher Salaries",
+          href: "/salary/teachers/assign",
+          permissions: navItemPermissions.teacherSalaries,
+        },
+        {
+          title: "Employee Salaries",
+          href: "/salary/employees/assign",
+          permissions: navItemPermissions.employeeSalaries,
+        },
+        {
+          title: "Salary Increments",
+          href: "/salary/increments",
+          permissions: navItemPermissions.salaryIncrements,
+        },
+        {
+          title: "Increment History",
+          href: "/salary/increments/history",
+          permissions: navItemPermissions.salaryIncrements,
+        },
+        {
+          title: "Process Payments",
+          href: "/salary/payments",
+          permissions: navItemPermissions.salaryPayments,
+        },
+      ],
+    },
+    {
+      title: "Question Papers",
+      href: "/question-papers",
+      icon: BookOpen,
+      permissions: navItemPermissions.questionPapers,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/question-papers",
+          permissions: navItemPermissions.questionPapers,
+        },
+        {
+          title: "Create Blueprint",
+          href: "/question-papers/blueprints/create",
+          permissions: navItemPermissions.createQuestionPaper,
+        },
+        {
+          title: "Create Question Paper",
+          href: "/question-papers/create",
+          permissions: navItemPermissions.createQuestionPaper,
+        },
+        {
+          title: "All Question Papers",
+          href: "/question-papers/list",
+          permissions: navItemPermissions.questionPapers,
         },
       ],
     },
@@ -177,18 +394,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Transport",
       href: "/transport",
       icon: Bus,
+      permissions: navItemPermissions.transport,
       children: [
         {
           title: "Routes",
           href: "/transport/routes",
+          permissions: navItemPermissions.transportRoutes,
         },
         {
           title: "Stops",
           href: "/transport/stops",
+          permissions: navItemPermissions.transportStops,
         },
         {
           title: "Assignments",
           href: "/transport/assignments",
+          permissions: navItemPermissions.transportAssignments,
         },
       ],
     },
@@ -196,26 +417,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Settings",
       href: "/settings",
       icon: Settings,
+      permissions: navItemPermissions.settings,
       children: [
         {
           title: "Branches",
           href: "/settings/branches",
+          permissions: navItemPermissions.branches,
         },
         {
           title: "Academic Sessions",
           href: "/settings/academic-sessions",
+          permissions: navItemPermissions.academicSessions,
         },
         {
           title: "Subjects",
           href: "/settings/subjects",
+          permissions: navItemPermissions.subjects,
         },
         {
           title: "Users",
           href: "/settings/users",
+          permissions: navItemPermissions.users,
+        },
+        {
+          title: "User Roles",
+          href: "/settings/roles",
+          permissions: navItemPermissions.users,
         },
         {
           title: "Attendance Configuration",
           href: "/settings/attendance-config",
+          permissions: navItemPermissions.attendanceConfig,
+        },
+        {
+          title: "AI Configuration",
+          href: "/settings/ai-configuration",
+          permissions: navItemPermissions.questionPapers,
         },
       ],
     },
@@ -226,18 +463,86 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Fees",
       href: "/fees",
       icon: CreditCard,
+      permissions: navItemPermissions.fees,
     },
     {
       title: "Reports",
       href: "/reports",
       icon: FileText,
+      permissions: navItemPermissions.reports,
     },
     {
       title: "Help",
       href: "/help",
       icon: HelpCircle,
+      permissions: [], // Empty array means everyone can access
     },
   ];
+
+  // Revise the filteredNavItems logic to be completely generic for any module
+
+  // Fully generic approach to checking permissions for menu items
+  const filteredNavItems = isSuperAdmin || forceAdminMode
+    ? navItems  // Superadmin or force mode sees everything
+    : navItems.filter(item => {
+        // Generic approach: First check module view permission based on module title
+        const viewPermission = moduleViewPermissions[item.title];
+        
+        if (viewPermission) {
+          // Check permission directly using can() 
+          const hasViewPermission = can(viewPermission);
+          console.log(`Module ${item.title}: view permission (${viewPermission}): ${hasViewPermission}`);
+          
+          if (hasViewPermission) {
+            return true;
+          }
+        }
+        
+        // If no match in moduleViewPermissions mapping or permission check failed,
+        // fall back to standard permission checks from the navItemPermissions
+        const hasPermissionViaStandard = canAccess(item.permissions);
+        
+        // Also check if any child items are accessible
+        const hasPermissionViaChildren = item.children?.some(child => canAccess(child.permissions));
+        
+        const shouldShow = hasPermissionViaStandard || hasPermissionViaChildren;
+        console.log(`Module ${item.title}: standard permission check result: ${shouldShow}`);
+        
+        return shouldShow;
+      }).map(item => {
+        // If the item has children, filter those too
+        if (item.children) {
+          return {
+            ...item,
+            children: item.children.filter(child => {
+              const hasChildPermission = canAccess(child.permissions);
+              
+              // For debugging
+              if (!hasChildPermission) {
+                console.log(`Child item ${child.title} (of ${item.title}) filtered out: insufficient permissions`);
+              }
+              
+              return hasChildPermission;
+            })
+          };
+        }
+        return item;
+      });
+
+  const filteredSecondaryItems = isSuperAdmin || forceAdminMode
+    ? secondaryItems  // Superadmin or force mode sees everything
+    : secondaryItems.filter(item => 
+        !item.permissions.length || canAccess(item.permissions)
+      );
+
+  // Add a check to determine if a submenu item is enabled based on permissions
+  const isMenuItemEnabled = (permissions: Permission[]): boolean => {
+    if (isSuperAdmin || forceAdminMode) return true;
+    
+    // Check if the permissions array contains any create/edit permissions
+    // If it has only VIEW permissions, we'll show the item but disable interactions
+    return canAccess(permissions);
+  };
 
   // Function to check if a route is active
   const isActive = (href: string) => {
@@ -309,22 +614,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </div>
                 ) : (
                   // Ensure branches is an array before using map
-                  (Array.isArray(branches) ? branches : []).map((branch: Branch) => (
-                    <DropdownMenuItem
-                      key={branch.id}
-                      onClick={() => setCurrentBranchId(branch.id)}
-                      className="gap-2 p-2"
-                    >
-                      <div className="flex size-6 items-center justify-center rounded-md border border-gray-200">
-                        <School className="size-3.5 shrink-0" />
-                      </div>
-                      <span className="font-medium">{branch.code}</span>
-                      <span className="flex-1 text-gray-500">{branch.name}</span>
-                      {currentBranchId === branch.id && (
-                        <DropdownMenuShortcut>✓</DropdownMenuShortcut>
-                      )}
-                    </DropdownMenuItem>
-                  ))
+                  (Array.isArray(branches) ? branches : [])
+                    // Filter out headquarters branch for non-superadmins
+                    .filter(branch => branch.id !== 'headquarters' || isSuperAdmin)
+                    .map((branch: Branch) => (
+                      <DropdownMenuItem
+                        key={branch.id}
+                        onClick={() => setCurrentBranchId(branch.id)}
+                        className={`gap-2 p-2 ${branch.id === 'headquarters' ? 'bg-red-50 hover:bg-red-100' : ''}`}
+                      >
+                        <div className={`flex size-6 items-center justify-center rounded-md border border-gray-200 ${branch.id === 'headquarters' ? 'border-red-200 bg-red-100' : ''}`}>
+                          <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
+                        </div>
+                        <span className={`font-medium ${branch.id === 'headquarters' ? 'text-red-800' : ''}`}>{branch.code}</span>
+                        <span className={`flex-1 ${branch.id === 'headquarters' ? 'text-red-800' : 'text-gray-500'}`}>{branch.name}</span>
+                        {currentBranchId === branch.id && (
+                          <DropdownMenuShortcut>✓</DropdownMenuShortcut>
+                        )}
+                      </DropdownMenuItem>
+                    ))
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -332,109 +640,105 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              {item.children ? (
-                <>
-                  <div className="group relative flex flex-col">
-                    {/* Main menu item */}
-                    <div className="relative">
-                      <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={isActive(item.href)}
-                    tooltip={item.title}
-                          className="relative pr-8"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.title}</span>
-                        </SidebarMenuButton>
-                      </Link>
-                      
-                      {/* Dropdown button with high z-index to stay on top */}
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none z-30">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleExpand(item.title);
-                          }}
-                          className={`
-                            h-7 w-7 flex items-center justify-center rounded-[6px]
-                            transition-all duration-200 pointer-events-auto
-                            ${expandedItems[item.title] 
-                              ? "bg-[#00501B] text-white shadow-sm" 
-                              : "text-muted-foreground/70 hover:text-white hover:bg-[#00501B]/90 hover:shadow-sm"}
-                          `}
-                          aria-label={`Toggle ${item.title} submenu`}
-                        >
-                    <ChevronDown
-                            className={`h-4 w-4 transition-transform duration-300 ${
-                        expandedItems[item.title] ? "rotate-180" : ""
-                      }`}
-                    />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Submenu as sibling of main menu item */}
-                  {expandedItems[item.title] && (
-                      <div className="w-full mt-1">
-                        <SidebarMenuSub className="pl-4 ml-2 border-l border-primary/20 overflow-visible">
-                      {item.children.map((child) => (
-                        <SidebarMenuSubItem key={child.href}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={isActive(child.href)}
-                                className="hover:bg-transparent relative z-20"
-                          >
-                                <Link href={child.href} className="group transition-all duration-200 hover:pl-1">
-                                  <span className={isActive(child.href) ? "font-medium text-primary" : "font-normal"}>{child.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                      </div>
-                  )}
-                  </div>
-                </>
-              ) : (
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(item.href)}
-                  tooltip={item.title}
-                >
-                  <Link href={item.href} className="group transition-all duration-200">
-                    <item.icon className="h-4 w-4 transition-colors duration-200 group-hover:text-primary" />
-                    <span className="transition-all duration-200 group-hover:pl-0.5">{item.title}</span>
+        <SidebarGroup>
+          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarMenu>
+            {filteredNavItems.map((item) => (
+              <div key={item.title} className="relative">
+                <SidebarMenuItem>
+                  <Link href={item.href} className="flex-1">
+                    <SidebarMenuButton 
+                      className={`${!isCollapsed && item.children && item.children.length > 0 ? 'pr-10' : ''}`}
+                      isActive={isActive(item.href)}
+                    >
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
                   </Link>
-                </SidebarMenuButton>
-              )}
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+                  
+                  {!isCollapsed && item.children && item.children.length > 0 && (
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
+                      <button
+                        onClick={(e) => toggleExpand(item.title, e)}
+                        className={`
+                          h-7 w-7 flex items-center justify-center rounded-md 
+                          hover:bg-sidebar-accent text-sidebar-foreground
+                          transition-all duration-200
+                          ${expandedItems[item.title] ? "bg-sidebar-accent" : ""}
+                        `}
+                        aria-label={`Toggle ${item.title} submenu`}
+                      >
+                        <ChevronRight 
+                          className={`h-4 w-4 transition-transform duration-200 ${
+                            expandedItems[item.title] ? 'rotate-90' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+                </SidebarMenuItem>
+                
+                {!isCollapsed && item.children && item.children.length > 0 && (
+                  <div className={`overflow-hidden transition-all duration-200 ${
+                    expandedItems[item.title] ? 'max-h-96' : 'max-h-0'
+                  }`}>
+                    <SidebarMenuSub>
+                      {item.children.map((child) => {
+                        // Check if this item should be disabled (greyed out)
+                        const isEnabled = isMenuItemEnabled(child.permissions);
+                        // Special handling for attendance items
+                        const isAttendanceItem = item.title === "Attendance";
+                        // If it's attendance and user only has VIEW_ATTENDANCE, 
+                        // only the dashboard should be enabled
+                        const isAttendanceDashboard = isAttendanceItem && child.title === "Dashboard";
+                        const showDisabled = 
+                          (isAttendanceItem && !isAttendanceDashboard && 
+                          !canAccess([Permission.MARK_ATTENDANCE]) && 
+                          !canAccess([Permission.MARK_SELF_ATTENDANCE]) &&
+                          !canAccess([Permission.MARK_ALL_STAFF_ATTENDANCE])) ||
+                          (!isEnabled);
+
+                        return (
+                          <SidebarMenuSubItem key={child.href}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isActive(child.href)}
+                              className={showDisabled ? 'pointer-events-none opacity-50' : ''}
+                            >
+                              <Link 
+                                href={showDisabled ? "#" : child.href}
+                                onClick={e => showDisabled && e.preventDefault()}
+                              >
+                                <span>{child.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
+                    </SidebarMenuSub>
+                  </div>
+                )}
+              </div>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
 
         {/* Secondary navigation */}
-        <div className="mt-6">
-          <h3 className="mb-2 px-4 text-xs font-semibold text-gray-500">Resources</h3>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel>Resources</SidebarGroupLabel>
           <SidebarMenu>
-            {secondaryItems.map((item) => (
+            {filteredSecondaryItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(item.href)}
-                  tooltip={item.title}
-                >
-                  <Link href={item.href} className="group transition-all duration-200">
-                    <item.icon className="h-4 w-4 transition-colors duration-200 group-hover:text-primary" />
-                    <span className="transition-all duration-200 group-hover:pl-0.5">{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
+                <Link href={item.href} className="flex-1">
+                  <SidebarMenuButton isActive={isActive(item.href)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-        </div>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

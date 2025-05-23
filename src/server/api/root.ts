@@ -8,8 +8,9 @@ import { studentRouter } from "@/server/api/routers/student";
 import { parentRouter } from "@/server/api/routers/parent";
 import { classRouter } from "@/server/api/routers/class";
 import { teacherRouter } from "@/server/api/routers/teacher";
-import { employeeRouter } from "@/server/api/routers/employee";
+import { employeeRouter } from "./routers/employee";
 import { authRouter } from "@/server/api/routers/auth";
+import { usersRouter } from "@/server/api/routers/users";
 import { academicSessionRouter } from "@/server/api/routers/academicSession";
 import { attendanceRouter } from "@/server/api/routers/attendance";
 import { attendanceLocationRouter } from "@/server/api/routers/attendanceLocation";
@@ -17,6 +18,15 @@ import { attendanceDeviceRouter } from "@/server/api/routers/attendanceDevice";
 import { attendanceWindowRouter } from "@/server/api/routers/attendanceWindow";
 import { subjectRouter } from "@/server/api/routers/subject";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
+import { leaveRouter } from "./routers/leave";
+import { dashboardRouter } from "@/server/api/routers/dashboard";
+import { salaryRouter } from "./routers/salary";
+import { departmentRouter } from "./routers/department";
+import { designationRouter } from "./routers/designation";
+import { admissionRouter } from "./routers/admission";
+import { admissionsRouter } from "./routers/admissions";
+import { questionPaperRouter } from "./routers/questionPaper";
+import { moneyCollectionRouter } from "./routers/money-collection";
 
 /**
  * This is the primary router for your server.
@@ -36,12 +46,22 @@ export const appRouter = createTRPCRouter({
   teacher: teacherRouter,
   employee: employeeRouter,
   auth: authRouter,
+  users: usersRouter,
   academicSession: academicSessionRouter,
   attendance: attendanceRouter,
   attendanceLocation: attendanceLocationRouter,
   attendanceDevice: attendanceDeviceRouter,
   attendanceWindow: attendanceWindowRouter,
   subject: subjectRouter,
+  leave: leaveRouter,
+  dashboard: dashboardRouter,
+  salary: salaryRouter,
+  department: departmentRouter,
+  designation: designationRouter,
+  admission: admissionRouter,
+  admissions: admissionsRouter,
+  questionPaper: questionPaperRouter,
+  moneyCollection: moneyCollectionRouter,
 });
 
 // export type definition of API

@@ -4,12 +4,18 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import type { TeacherFormValues } from "../enhanced-teacher-form";
 
 interface PersonalInfoTabProps {
   branches: any[];
 }
+
+// Define blood group options
+const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+// Define marital status options
+const maritalStatusOptions = ["Single", "Married", "Divorced", "Widowed", "Separated"];
 
 export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
   const { control, watch } = useFormContext<TeacherFormValues>();
@@ -73,13 +79,17 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
         <FormField
           control={control}
           name="dateOfBirth"
-          render={({ field }) => (
+          render={({ field: { value, onChange, ...rest } }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date of Birth</FormLabel>
               <FormControl>
-                <Input 
-                  type="date" 
-                  {...field} 
+                <DatePicker
+                  value={value ? new Date(value) : undefined}
+                  onChange={(date) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    onChange(dateStr);
+                  }}
+                  placeholder="Select date of birth"
                 />
               </FormControl>
               <FormMessage />
@@ -125,37 +135,104 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
           )}
         />
 
-        {/* Employee Code */}
+        {/* Blood Group */}
         <FormField
           control={control}
-          name="employeeCode"
+          name="bloodGroup"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Employee Code</FormLabel>
+              <FormLabel>Blood Group</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="e.g., PS-23101" />
+                <Combobox
+                  options={bloodGroups.map(group => ({ value: group, label: group }))}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  placeholder="Select blood group"
+                  emptyMessage="No blood groups found."
+                />
               </FormControl>
-              <FormDescription>
-                Unique identifier for this teacher
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Join Date */}
+        {/* Marital Status */}
         <FormField
           control={control}
-          name="joinDate"
+          name="maritalStatus"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Join Date</FormLabel>
+            <FormItem>
+              <FormLabel>Marital Status</FormLabel>
               <FormControl>
-                <Input 
-                  type="date" 
-                  {...field} 
+                <Combobox
+                  options={maritalStatusOptions.map(status => ({ value: status, label: status }))}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  placeholder="Select marital status"
+                  emptyMessage="No status options found."
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Nationality */}
+        <FormField
+          control={control}
+          name="nationality"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nationality</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Nationality" defaultValue="Indian" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Religion */}
+        <FormField
+          control={control}
+          name="religion"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Religion</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Religion" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* PAN Card Number */}
+        <FormField
+          control={control}
+          name="panNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>PAN Card Number</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="PAN Card Number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Aadhaar Number */}
+        <FormField
+          control={control}
+          name="aadharNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Aadhaar Number</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Aadhaar Number" />
+              </FormControl>
+              <FormDescription>Optional, but useful for verification</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -170,197 +247,18 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
               <FormLabel className="flex items-center">
                 Branch <span className="text-red-500 ml-1">*</span>
               </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {branches.map((branch: any) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Combobox
+                  options={branches.map(branch => ({ value: branch.id, label: branch.name }))}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  placeholder="Select branch"
+                  emptyMessage="No branches found."
+                />
+              </FormControl>
               <FormDescription>
                 The branch this teacher is assigned to
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Phone */}
-        <FormField
-          control={control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Phone Number" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Alternate Phone */}
-        <FormField
-          control={control}
-          name="alternatePhone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Alternate Phone</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Alternate Phone" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Personal Email */}
-        <FormField
-          control={control}
-          name="personalEmail"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Personal Email</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Personal Email" type="email" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">Emergency Contact</h3>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Emergency Contact Name */}
-        <FormField
-          control={control}
-          name="emergencyContactName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Emergency Contact Name</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Emergency Contact Name" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Emergency Contact Phone */}
-        <FormField
-          control={control}
-          name="emergencyContactPhone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Emergency Contact Phone</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Emergency Contact Phone" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Emergency Contact Relation */}
-        <FormField
-          control={control}
-          name="emergencyContactRelation"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Relationship</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g., Spouse, Parent" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">Address Information</h3>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Address */}
-        <FormField
-          control={control}
-          name="address"
-          render={({ field }) => (
-            <FormItem className="col-span-full">
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Address" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* City */}
-        <FormField
-          control={control}
-          name="city"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>City</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="City" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* State */}
-        <FormField
-          control={control}
-          name="state"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>State</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="State" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Country */}
-        <FormField
-          control={control}
-          name="country"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Country</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Country" defaultValue="India" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* PIN Code */}
-        <FormField
-          control={control}
-          name="pincode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>PIN Code</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="PIN Code" />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}

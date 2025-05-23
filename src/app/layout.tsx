@@ -5,7 +5,6 @@ import { PopupProvider } from "@/components/ui/custom-popup";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
 import { TRPCProvider } from "@/providers/trpc-provider";
 import "@/styles/globals.css";
-
 // Body font
 const montserrat = Montserrat({
   subsets: ["latin"],

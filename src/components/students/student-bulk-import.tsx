@@ -188,12 +188,12 @@ export function StudentBulkImport({ onSuccess }: StudentBulkImportProps) {
           }
 
           // Validate email format if provided
-          if (rowData.email && !rowData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          if (rowData.email && !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.exec(rowData.email))) {
             errors.push(`Row ${i}: Invalid email format`);
           }
 
           // Validate personal email format if provided
-          if (rowData.personalEmail && !rowData.personalEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          if (rowData.personalEmail && !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.exec(rowData.personalEmail))) {
             errors.push(`Row ${i}: Invalid personal email format`);
           }
 
@@ -253,7 +253,7 @@ export function StudentBulkImport({ onSuccess }: StudentBulkImportProps) {
           ];
 
           parentEmailFields.forEach(({ field, label }) => {
-            if (rowData[field] && !rowData[field].match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            if (rowData[field] && !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.exec(rowData[field]))) {
               errors.push(`Row ${i}: Invalid email format for ${label}`);
             }
           });

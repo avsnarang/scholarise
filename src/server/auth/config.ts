@@ -1,4 +1,4 @@
-import { type DefaultSession } from "next-auth";
+import { type DefaultSession, type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -20,6 +20,10 @@ declare module "next-auth" {
   }
 
   interface User {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
     role: string;
     branchId: string | null;
   }
@@ -30,7 +34,7 @@ declare module "next-auth" {
  *
  * @see https://next-auth.js.org/configuration/options
  */
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID,
@@ -65,6 +69,7 @@ export const authOptions = {
           id: data.user.id,
           email: data.user.email,
           name: data.user.user_metadata?.name ?? data.user.email?.split('@')[0],
+          image: null,
           role: "User", // Default role since we can't get from DB
           branchId: null,
         };
@@ -82,18 +87,14 @@ export const authOptions = {
       // You may want to implement a different auth strategy
       return true;
     },
-    session: ({ session, user }: {
-      session: { user?: Record<string, unknown> };
-      user: { id: string; role?: string; branchId?: string | null }
-    }) => ({
-      ...session,
-      user: {
-        ...(session.user ?? {}),
-        id: user.id,
-        role: user.role ?? "User",
-        branchId: user.branchId ?? null,
-      },
-    }),
+    async session({ session, token, user }) {
+      if (session.user) {
+        session.user.id = user?.id || token?.sub || "";
+        session.user.role = (user?.role) || "User";
+        session.user.branchId = (user?.branchId) || null;
+      }
+      return session;
+    },
   },
   secret: env.AUTH_SECRET,
 };

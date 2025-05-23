@@ -210,9 +210,9 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
                     onChange(dateStr);
                     
                     // Also update the joining date if it's not set or is before admission date
-                    const joiningDateStr = watch("dateOfJoining") as string;
+                    const joiningDateStr = watch("dateOfJoining");
                     if (!joiningDateStr || joiningDateStr === "" || new Date(joiningDateStr) < date) {
-                      setValue("dateOfJoining", dateStr as string);
+                      setValue("dateOfJoining", dateStr!);
                     }
                   }}
                   placeholder="Select date of admission"
@@ -512,7 +512,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
                     <MultiSelect
                       options={subjectOptions}
                       selected={field.value || []}
-                      onChange={field.onChange}
+                      onValueChange={field.onChange}
                       placeholder="Select subjects"
                     />
                   )}

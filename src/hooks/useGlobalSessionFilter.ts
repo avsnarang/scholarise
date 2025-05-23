@@ -7,11 +7,15 @@ import { useCallback } from "react";
  */
 export function useGlobalSessionFilter() {
   const { currentSessionId, isLoading } = useAcademicSessionContext();
+  
+  // Add logging to debug session ID issues
+  console.log("Current session ID in useGlobalSessionFilter:", currentSessionId);
 
   /**
    * Returns the current session ID for use in API queries
    */
   const getSessionFilterParam = useCallback(() => {
+    console.log("getSessionFilterParam called, returning:", currentSessionId || undefined);
     return currentSessionId || undefined;
   }, [currentSessionId]);
 
@@ -22,14 +26,21 @@ export function useGlobalSessionFilter() {
    */
   const withSessionFilter = useCallback(
     <T extends Record<string, unknown>>(input?: T) => {
+      console.log("withSessionFilter called with input:", input);
+      console.log("Current session ID:", currentSessionId);
+      
       if (!currentSessionId) {
+        console.log("No session ID available, returning original input");
         return input;
       }
 
-      return {
+      const result = {
         ...input,
         sessionId: currentSessionId,
       } as unknown as T;
+      
+      console.log("withSessionFilter result:", result);
+      return result;
     },
     [currentSessionId]
   );

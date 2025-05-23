@@ -56,6 +56,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSession } from "next-auth/react";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import type { AttendanceLocation } from "@prisma/client";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/types/permissions";
 
 // Define valid attendance types
 const VALID_ATTENDANCE_TYPES = ["IN", "OUT", "BRANCH_TRANSFER_OUT", "BRANCH_TRANSFER_IN"] as const;
@@ -104,7 +106,13 @@ export default function MarkAttendancePage() {
   const { currentBranchId } = useBranchContext();
   const { data: session } = useSession();
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, userId, teacherId, employeeId } = useUserRole();
+  const { can } = usePermissions();
   const utils = api.useUtils();
+
+  // Check for granular permissions
+  const canMarkSelfAttendance = isSuperAdmin || can(Permission.MARK_SELF_ATTENDANCE);
+  const canMarkAllStaffAttendance = isSuperAdmin || can(Permission.MARK_ALL_STAFF_ATTENDANCE);
+  const canMarkAttendance = isSuperAdmin || can(Permission.MARK_ATTENDANCE);
 
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
@@ -126,23 +134,27 @@ export default function MarkAttendancePage() {
   // Record attendance mutation
   const { recordAttendance, isLoading: isRecordingAttendance } = useRecordAttendance();
 
-  // Fetch all active teachers for superadmin
+  // Fetch all active teachers for superadmin or users with MARK_ALL_STAFF_ATTENDANCE permission
   const { data: teachers, isLoading: isLoadingTeachers } = api.teacher.getAll.useQuery(
     { 
       branchId: currentBranchId || undefined,
       isActive: true 
     },
     { 
-      enabled: isSuperAdmin,
+      enabled: isSuperAdmin || canMarkAllStaffAttendance,
       staleTime: 5 * 60 * 1000 // 5 minutes
     }
   );
 
   // Determine which teacherId to use for attendance check and recording
-  const effectiveTeacherId = React.useMemo(() => 
-    isSuperAdmin && selectedTeacherId ? selectedTeacherId : teacherId,
-    [isSuperAdmin, selectedTeacherId, teacherId]
-  );
+  const effectiveTeacherId = React.useMemo(() => {
+    // If user can only mark self attendance, always use their own teacherId
+    if (canMarkSelfAttendance && !canMarkAllStaffAttendance && !canMarkAttendance) {
+      return teacherId;
+    }
+    // Otherwise use selected teacherId if admin/superadmin and a teacher is selected
+    return (isSuperAdmin || canMarkAllStaffAttendance) && selectedTeacherId ? selectedTeacherId : teacherId;
+  }, [isSuperAdmin, canMarkSelfAttendance, canMarkAllStaffAttendance, canMarkAttendance, selectedTeacherId, teacherId]);
 
   // Create a stable date value for today (midnight)
   const today = React.useMemo(() => {
@@ -204,11 +216,11 @@ export default function MarkAttendancePage() {
     }
 
     const lastRecord = todayAttendance;
-    if (!lastRecord || !lastRecord.type) {
+    if (!lastRecord?.type) {
       return ["IN"] as AttendanceType[];
     }
 
-    switch (lastRecord.type as AttendanceType) {
+    switch (lastRecord.type) {
       case "IN":
         return ["OUT", "BRANCH_TRANSFER_OUT"] as AttendanceType[];
       case "OUT":
@@ -225,7 +237,7 @@ export default function MarkAttendancePage() {
   // Update attendance type when available types change
   useEffect(() => {
     if (availableTypes.length > 0 && !availableTypes.includes(attendanceType)) {
-      setAttendanceType(availableTypes[0] as AttendanceType);
+      setAttendanceType(availableTypes[0]!);
     }
   }, [availableTypes, attendanceType]);
 
@@ -235,12 +247,14 @@ export default function MarkAttendancePage() {
     
     if (!userId) {
       setIdentityError("User ID not found. Please try logging out and back in.");
-    } else if (!teacherId && !employeeId && !isSuperAdmin) {
+    } else if (!teacherId && !employeeId && !isSuperAdmin && !canMarkAllStaffAttendance) {
       setIdentityError("Your account is not associated with a teacher or employee profile. Please contact administrator.");
+    } else if (!teacherId && !employeeId && (canMarkSelfAttendance && !canMarkAllStaffAttendance)) {
+      setIdentityError("You only have permission to mark your own attendance, but you don't have a teacher or employee profile.");
     } else {
       setIdentityError(null);
     }
-  }, [teacherId, employeeId, userId, isSuperAdmin]);
+  }, [teacherId, employeeId, userId, isSuperAdmin, canMarkSelfAttendance, canMarkAllStaffAttendance]);
 
   // Effect to auto-select a location if there's only one
   useEffect(() => {
@@ -320,8 +334,8 @@ export default function MarkAttendancePage() {
       return;
     }
 
-    // If superadmin and no teacher selected, show error
-    if (isSuperAdmin && !selectedTeacherId) {
+    // If superadmin or has mark all staff permission and no teacher selected, show error
+    if ((isSuperAdmin || canMarkAllStaffAttendance) && !selectedTeacherId) {
       toast.error("Please select a teacher first");
       return;
     }
@@ -341,9 +355,9 @@ export default function MarkAttendancePage() {
       distance,
       type: attendanceType,
       isWithinAllowedArea: distance <= selectedLocation.radius,
-      ...(isSuperAdmin && selectedTeacherId ? { teacherId: selectedTeacherId } : {}),
-      ...(!isSuperAdmin && teacherId ? { teacherId } : {}),
-      ...(!isSuperAdmin && employeeId ? { employeeId } : {}),
+      ...(isSuperAdmin || canMarkAllStaffAttendance) && selectedTeacherId ? { teacherId: selectedTeacherId } : {},
+      ...(!isSuperAdmin && !canMarkAllStaffAttendance && teacherId) ? { teacherId } : {},
+      ...(!isSuperAdmin && !canMarkAllStaffAttendance && employeeId) ? { employeeId } : {},
     };
 
     // Record attendance

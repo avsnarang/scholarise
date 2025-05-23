@@ -1,12 +1,18 @@
 "use client";
 
-// TODO: Migrate from assign-roll-number.tsx
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function Page() {
+export default function RedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push("/students/assign-roll-number");
+  }, [router]);
+
   return (
-    <div>
-      <h1>This page needs to be migrated from Pages Router</h1>
-      <p>Original file: assign-roll-number.tsx</p>
+    <div className="flex justify-center items-center h-screen">
+      <p>Redirecting to the new location...</p>
     </div>
   );
-}
+} 
