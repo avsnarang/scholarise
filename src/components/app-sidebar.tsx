@@ -752,9 +752,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {user ? (
                     <>
                       <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src="" alt={user.name || "User"} />
+                        <AvatarImage src={user.image || undefined} alt={user.name || "User"} />
                         <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                          {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+                          {(user.name 
+                            ? user.name.split(' ').map(n => n[0]?.[0] || '').join('').toUpperCase() 
+                            : 'U').slice(0,2)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="grid flex-1 text-left text-sm leading-tight">
@@ -784,9 +786,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src="" alt={user?.name || "User"} />
+                      <AvatarImage src={user?.image || undefined} alt={user?.name || "User"} />
                       <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                        {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+                        {(user?.name 
+                          ? user.name.split(' ').map(n => n[0]?.[0] || '').join('').toUpperCase() 
+                          : 'U').slice(0,2)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
@@ -797,10 +801,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile Settings
-                  </DropdownMenuItem>
+                  <Link href="/profile" passHref>
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile Settings
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem>
                     <Bell className="mr-2 h-4 w-4" />
                     Notifications
