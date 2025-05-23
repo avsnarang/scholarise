@@ -112,7 +112,7 @@ export default async function MoneyCollectionPage() {
               </Link>
             </Button>
             <Button variant="outline" className="justify-start" asChild>
-              <Link href="/reports/money-collection">
+              <Link href="/money-collection">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 View Reports
               </Link>
