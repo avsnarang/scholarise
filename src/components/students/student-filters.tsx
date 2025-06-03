@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { api } from "@/utils/api";
 
 export interface StudentFilters {
-  classId?: string;
+  sectionId?: string;
   gender?: string;
   isActive?: boolean;
 }
@@ -40,13 +40,16 @@ export function StudentFilters({ filters, onFilterChange }: StudentFiltersProps)
     setLocalFilters(filters);
   }, [filters]);
 
-  // Fetch classes from the API
-  const { data: classesData } = api.class.getAll.useQuery();
-  const classes = classesData || [];
+  // Fetch sections from the API (since students belong to sections, not classes directly)
+  const { data: sectionsData } = api.section.getAll.useQuery({
+    includeClass: true,
+    isActive: true,
+  });
+  const sections = sectionsData || [];
 
   const handleFilterChange = (key: keyof StudentFilters, value: any) => {
     // Handle special values for "All" options
-    if (value === 'all_classes' || value === 'all_genders') {
+    if (value === 'all_sections' || value === 'all_genders') {
       value = undefined;
     }
 
@@ -97,24 +100,24 @@ export function StudentFilters({ filters, onFilterChange }: StudentFiltersProps)
         </SheetHeader>
         <div className="mt-6 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="classFilter" className="flex items-center gap-2">
-              Class
-              {localFilters.classId && (
+            <Label htmlFor="sectionFilter" className="flex items-center gap-2">
+              Section
+              {localFilters.sectionId && (
                 <span className="inline-flex h-2 w-2 rounded-full bg-blue-600"></span>
               )}
             </Label>
             <Select
-              value={localFilters.classId || "all_classes"}
-              onValueChange={(value) => handleFilterChange("classId", value)}
+              value={localFilters.sectionId || "all_sections"}
+              onValueChange={(value) => handleFilterChange("sectionId", value)}
             >
-              <SelectTrigger id="classFilter">
-                <SelectValue placeholder="All Classes" />
+              <SelectTrigger id="sectionFilter">
+                <SelectValue placeholder="All Sections" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all_classes">All Classes</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name} - {cls.section}
+                <SelectItem value="all_sections">All Sections</SelectItem>
+                {sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.class.name} - {section.name}
                   </SelectItem>
                 ))}
               </SelectContent>

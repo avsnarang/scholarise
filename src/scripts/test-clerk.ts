@@ -1,9 +1,10 @@
 // Run this script with ts-node: npx ts-node src/scripts/test-clerk.ts
 
 import { Clerk } from '@clerk/clerk-sdk-node';
+import { env } from '@/env';
 
-// Access environment variables directly
-const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
+// Initialize Clerk client
+const CLERK_SECRET_KEY = env.CLERK_SECRET_KEY;
 console.log("CLERK_SECRET_KEY present:", !!CLERK_SECRET_KEY);
 
 if (!CLERK_SECRET_KEY) {
@@ -11,7 +12,6 @@ if (!CLERK_SECRET_KEY) {
   process.exit(1);
 }
 
-// Initialize Clerk client
 const clerk = Clerk({ secretKey: CLERK_SECRET_KEY });
 
 // Generate a secure random password

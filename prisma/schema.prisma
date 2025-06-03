@@ -24,10 +24,14 @@ model Branch {
   admissionLeads       AdmissionLead[]
   chapters             Chapter[]
   classes              Class[]
+  classwiseFees        ClasswiseFee[]
   departments          Department[]
   designations         Designation[]
   employees            Employee[]
   employeeBranchAccess EmployeeBranchAccess[]
+  feeCollections       FeeCollection[]
+  feeHeads             FeeHead[]
+  feeTerms             FeeTerm[]
   leavePolicies        LeavePolicy[]
   moneyCollections     MoneyCollection[]
   students             Student[]
@@ -58,13 +62,12 @@ model Student {
   udiseId                String?
   joinDate               DateTime              @default(now())
   dateOfAdmission        DateTime?
-  rollNumber             String?
+  rollNumber             Int?                  @db.SmallInt
   isActive               Boolean               @default(true)
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   branchId               String
   parentId               String?
-  classId                String?
   username               String?
   password               String?
   permanentAddress       String?
@@ -87,17 +90,25 @@ model Student {
   clerkId                String?
   cbse10RollNumber       String?
   cbse12RollNumber       String?
+  sectionId              String?
   academicRecords        AcademicRecord[]
+  feeCollections         FeeCollection[]
   moneyCollectionItems   MoneyCollectionItem[]
   branch                 Branch                @relation(fields: [branchId], references: [id])
-  class                  Class?                @relation(fields: [classId], references: [id])
   parent                 Parent?               @relation(fields: [parentId], references: [id])
-  siblingOf              StudentSibling[]      @relation("SiblingToStudent")
-  siblings               StudentSibling[]      @relation("StudentToSibling")
-  subjects               StudentSubject[]
-  transferCertificates   TransferCertificate[]
-  transportAssignments   TransportAssignment[]
-  attendanceRecords      StudentAttendance[]
+  section                Section?              @relation(fields: [sectionId], references: [id])
+  studentAttendance      StudentAttendance[]
+  studentSiblings        StudentSibling[]      @relation("StudentToSibling")
+  siblingRelationships   StudentSibling[]      @relation("SiblingToStudent")
+  subjects               StudentSubject[]      // Student-Subject enrollments
+  transferCertificates   TransferCertificate[] // Transfer certificates for the student
+  transportAssignments   TransportAssignment[] // Transport assignments (bus routes)
+  
+  // Add database indexes for performance
+  @@index([branchId, admissionNumber], name: "student_branch_admission_idx")
+  @@index([branchId, isActive], name: "student_branch_active_idx")
+  @@index([sectionId, isActive], name: "student_section_active_idx")
+  @@index([admissionNumber, branchId], name: "student_admission_branch_idx")
 }
 
 model Parent {
@@ -108,18 +119,21 @@ model Parent {
   fatherOccupation   String?
   fatherMobile       String?
   fatherEmail        String?
+  fatherAadharNumber String?
   motherName         String?
   motherDob          DateTime?
   motherEducation    String?
   motherOccupation   String?
   motherMobile       String?
   motherEmail        String?
+  motherAadharNumber String?
   guardianName       String?
   guardianDob        DateTime?
   guardianEducation  String?
   guardianOccupation String?
   guardianMobile     String?
   guardianEmail      String?
+  guardianAadharNumber String?
   parentAnniversary  DateTime?
   monthlyIncome      String?
   createdAt          DateTime  @default(now())
@@ -194,11 +208,11 @@ model Teacher {
   state                      String?
   uanNumber                  String?
   yearOfCompletion           String?
-  classes                    Class[]
   leaveApplications          LeaveApplication[]
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
   branch                     Branch             @relation(fields: [branchId], references: [id])
+  sections                   Section[]          // Teachers are assigned to sections
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   attendances                StaffAttendance[]
@@ -273,37 +287,62 @@ model Employee {
   yearOfCompletion           String?
   clerkId                    String?
   branch                     Branch                 @relation(fields: [branchId], references: [id])
-  departmentRef              Department?            @relation(fields: [departmentId], references: [id])
-  designationRef             Designation?           @relation(fields: [designationId], references: [id])
-  branchAccess               EmployeeBranchAccess[]
+  departmentRef              Department?            @relation("EmployeeDepartment", fields: [departmentId], references: [id])
+  designationRef             Designation?           @relation("EmployeeDesignation", fields: [designationId], references: [id])
+  branchAccessRecords        EmployeeBranchAccess[] @relation("EmployeeBranchAccessRecords")
   salaries                   EmployeeSalary[]
   leaveApplications          LeaveApplication[]
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
-  attendances                StaffAttendance[]
+  staffAttendances           StaffAttendance[]
 }
 
 model Class {
-  id                String              @id @default(cuid())
-  name              String
-  section           String
-  capacity          Int                 @default(30)
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  branchId          String
-  teacherId         String?
-  sessionId         String
-  displayOrder      Int                 @default(0)
-  blueprints        Blueprint[]
-  branch            Branch              @relation(fields: [branchId], references: [id])
-  session           AcademicSession     @relation(fields: [sessionId], references: [id])
-  teacher           Teacher?            @relation(fields: [teacherId], references: [id])
-  subjects          ClassSubject[]
-  moneyCollections  MoneyCollectionClass[]
-  students          Student[]
-  attendanceRecords StudentAttendance[]
+  id                   String                 @id @default(cuid())
+  name                 String
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  branchId             String
+  sessionId            String
+  displayOrder         Int                    @default(0)
+  description          String?
+  grade                Int?
+  
+  // Relations
+  branch               Branch                 @relation(fields: [branchId], references: [id])
+  session              AcademicSession        @relation(fields: [sessionId], references: [id])
+  sections             Section[]              // One class can have multiple sections
+  subjects             ClassSubject[]
+  blueprints           Blueprint[]
+  classwiseFees        ClasswiseFee[]
+  moneyCollectionLinks MoneyCollectionClass[] @relation("ClassMoneyCollectionLinks")
+  
+  @@unique([name, branchId, sessionId]) // Ensure unique class names per branch/session
+}
+
+model Section {
+  id                 String              @id @default(cuid())
+  name               String
+  capacity           Int                 @default(30)
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  classId            String
+  teacherId          String?
+  displayOrder       Int                 @default(0)
+  
+  // Relations
+  class              Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher            Teacher?            @relation(fields: [teacherId], references: [id])
+  students           Student[]
+  studentAttendances StudentAttendance[]
+
+  // Add database indexes for performance
+  @@index([classId, isActive], name: "section_class_active_idx")
+  @@index([isActive, displayOrder], name: "section_active_display_idx")
+  @@unique([name, classId])
 }
 
 model AcademicSession {
@@ -316,7 +355,11 @@ model AcademicSession {
   updatedAt        DateTime          @updatedAt
   academicRecords  AcademicRecord[]
   classes          Class[]
-  moneyCollections MoneyCollection[]
+  classwiseFees    ClasswiseFee[]    @relation("ClasswiseFeeSession")
+  feeCollections   FeeCollection[]   @relation("FeeCollectionSession")
+  feeHeads         FeeHead[]         @relation("FeeHeadSession")
+  feeTerms         FeeTerm[]         @relation("FeeTermSession")
+  moneyCollections MoneyCollection[] @relation("MoneyCollectionSession")
 }
 
 model AcademicRecord {
@@ -507,13 +550,13 @@ model StudentAttendance {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   studentId  String
-  classId    String
   markedById String?
-  class      Class            @relation(fields: [classId], references: [id])
+  sectionId  String
+  section    Section          @relation(fields: [sectionId], references: [id])
   student    Student          @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, date])
-  @@index([date, classId])
+  @@index([date, sectionId])
   @@index([studentId, date])
   @@map("studentAttendance")
 }
@@ -774,7 +817,7 @@ model Department {
   branchId    String
   headId      String?
   branch      Branch     @relation(fields: [branchId], references: [id])
-  employees   Employee[]
+  employees   Employee[] @relation("EmployeeDepartment")
 }
 
 model Designation {
@@ -789,7 +832,7 @@ model Designation {
   updatedAt   DateTime   @updatedAt
   branchId    String
   branch      Branch     @relation(fields: [branchId], references: [id])
-  employees   Employee[]
+  employees   Employee[] @relation("EmployeeDesignation")
 }
 
 model AdmissionLead {
@@ -1025,7 +1068,7 @@ model EmployeeBranchAccess {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   Employee @relation("EmployeeBranchAccessRecords", fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, branchId])
 }
@@ -1197,18 +1240,18 @@ model TextbookProcessing {
 }
 
 model MoneyCollection {
-  id             String                @id @default(cuid())
+  id             String                 @id @default(cuid())
   title          String
   description    String?
-  collectionDate DateTime              @default(now())
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  collectionDate DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   branchId       String
   sessionId      String?
-  branch         Branch                @relation(fields: [branchId], references: [id])
-  session        AcademicSession?      @relation(fields: [sessionId], references: [id])
-  items          MoneyCollectionItem[]
+  branch         Branch                 @relation(fields: [branchId], references: [id])
+  session        AcademicSession?       @relation("MoneyCollectionSession", fields: [sessionId], references: [id])
   classes        MoneyCollectionClass[]
+  items          MoneyCollectionItem[]
 }
 
 model MoneyCollectionClass {
@@ -1216,8 +1259,8 @@ model MoneyCollectionClass {
   moneyCollectionId String
   classId           String
   createdAt         DateTime        @default(now())
+  class             Class           @relation("ClassMoneyCollectionLinks", fields: [classId], references: [id])
   moneyCollection   MoneyCollection @relation(fields: [moneyCollectionId], references: [id], onDelete: Cascade)
-  class             Class           @relation(fields: [classId], references: [id])
 
   @@unique([moneyCollectionId, classId])
 }
@@ -1233,6 +1276,110 @@ model MoneyCollectionItem {
   updatedAt         DateTime        @updatedAt
   moneyCollection   MoneyCollection @relation(fields: [moneyCollectionId], references: [id], onDelete: Cascade)
   student           Student         @relation(fields: [studentId], references: [id])
+}
+
+model FeeHead {
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  isSystemDefined    Boolean             @default(false)
+  isActive           Boolean             @default(true)
+  branchId           String
+  sessionId          String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  classwiseFees      ClasswiseFee[]
+  feeCollectionItems FeeCollectionItem[]
+  branch             Branch              @relation(fields: [branchId], references: [id])
+  session            AcademicSession     @relation("FeeHeadSession", fields: [sessionId], references: [id])
+  feeTerms           FeeTermFeeHead[]
+
+  @@unique([name, branchId, sessionId])
+}
+
+model FeeTerm {
+  id             String           @id @default(cuid())
+  name           String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  dueDate        DateTime
+  isActive       Boolean          @default(true)
+  branchId       String
+  sessionId      String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  classwiseFees  ClasswiseFee[]
+  feeCollections FeeCollection[]
+  branch         Branch           @relation(fields: [branchId], references: [id])
+  session        AcademicSession  @relation("FeeTermSession", fields: [sessionId], references: [id])
+  feeHeads       FeeTermFeeHead[]
+
+  @@unique([name, branchId, sessionId])
+}
+
+model FeeTermFeeHead {
+  id        String   @id @default(cuid())
+  feeTermId String
+  feeHeadId String
+  createdAt DateTime @default(now())
+  feeHead   FeeHead  @relation(fields: [feeHeadId], references: [id], onDelete: Cascade)
+  feeTerm   FeeTerm  @relation(fields: [feeTermId], references: [id], onDelete: Cascade)
+
+  @@unique([feeTermId, feeHeadId])
+}
+
+model ClasswiseFee {
+  id        String          @id @default(cuid())
+  classId   String
+  feeTermId String
+  feeHeadId String
+  amount    Float
+  branchId  String
+  sessionId String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  branch    Branch          @relation(fields: [branchId], references: [id])
+  class     Class           @relation(fields: [classId], references: [id])
+  feeHead   FeeHead         @relation(fields: [feeHeadId], references: [id])
+  feeTerm   FeeTerm         @relation(fields: [feeTermId], references: [id])
+  session   AcademicSession @relation("ClasswiseFeeSession", fields: [sessionId], references: [id])
+
+  @@unique([classId, feeTermId, feeHeadId])
+}
+
+model FeeCollection {
+  id                   String              @id @default(cuid())
+  receiptNumber        String              @unique
+  studentId            String
+  feeTermId            String
+  totalAmount          Float
+  paidAmount           Float
+  paymentMode          String
+  transactionReference String?
+  paymentDate          DateTime
+  notes                String?
+  status               String              @default("COMPLETED")
+  branchId             String
+  sessionId            String
+  createdBy            String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  branch               Branch              @relation(fields: [branchId], references: [id])
+  feeTerm              FeeTerm             @relation(fields: [feeTermId], references: [id])
+  session              AcademicSession     @relation("FeeCollectionSession", fields: [sessionId], references: [id])
+  student              Student             @relation(fields: [studentId], references: [id])
+  items                FeeCollectionItem[]
+}
+
+model FeeCollectionItem {
+  id              String        @id @default(cuid())
+  feeCollectionId String
+  feeHeadId       String
+  amount          Float
+  createdAt       DateTime      @default(now())
+  feeCollection   FeeCollection @relation(fields: [feeCollectionId], references: [id], onDelete: Cascade)
+  feeHead         FeeHead       @relation(fields: [feeHeadId], references: [id])
 }
 
 enum AttendanceType {

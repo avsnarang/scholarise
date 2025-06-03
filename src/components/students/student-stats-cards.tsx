@@ -53,10 +53,10 @@ export function StudentStatsCards({
   });
 
   // Log for debugging
-  console.log('Branch ID:', branchId);
-  console.log('Session ID:', sessionId);
-  console.log('Stats:', stats);
-  console.log('Error:', error);
+  // console.log('Branch ID:', branchId);
+  // console.log('Session ID:', sessionId);
+  // console.log('Stats:', stats);
+  // console.log('Error:', error);
 
   // Use API stats if available
   const displayStats = {

@@ -7,6 +7,7 @@ import { permissionRouter } from "@/server/api/routers/permission";
 import { studentRouter } from "@/server/api/routers/student";
 import { parentRouter } from "@/server/api/routers/parent";
 import { classRouter } from "@/server/api/routers/class";
+import { sectionRouter } from "@/server/api/routers/section";
 import { teacherRouter } from "@/server/api/routers/teacher";
 import { employeeRouter } from "./routers/employee";
 import { authRouter } from "@/server/api/routers/auth";
@@ -27,6 +28,8 @@ import { admissionRouter } from "./routers/admission";
 import { admissionsRouter } from "./routers/admissions";
 import { questionPaperRouter } from "./routers/questionPaper";
 import { moneyCollectionRouter } from "./routers/money-collection";
+import { transferCertificateRouter } from "./routers/transferCertificate";
+import { financeRouter } from "./routers/finance";
 
 /**
  * This is the primary router for your server.
@@ -43,6 +46,7 @@ export const appRouter = createTRPCRouter({
   student: studentRouter,
   parent: parentRouter,
   class: classRouter,
+  section: sectionRouter,
   teacher: teacherRouter,
   employee: employeeRouter,
   auth: authRouter,
@@ -62,6 +66,8 @@ export const appRouter = createTRPCRouter({
   admissions: admissionsRouter,
   questionPaper: questionPaperRouter,
   moneyCollection: moneyCollectionRouter,
+  transferCertificate: transferCertificateRouter,
+  finance: financeRouter,
 });
 
 // export type definition of API

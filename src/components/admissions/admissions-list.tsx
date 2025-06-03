@@ -68,7 +68,7 @@ export function AdmissionsList() {
                   {student.firstName} {student.lastName}
                 </TableCell>
                 <TableCell>{student.admissionNumber}</TableCell>
-                <TableCell>{student.class?.name ?? "Not Assigned"}</TableCell>
+                <TableCell>{student.sectionId ? "Assigned" : "Not Assigned"}</TableCell>
                 <TableCell>
                   {student.dateOfAdmission
                     ? format(new Date(student.dateOfAdmission), "MMM d, yyyy")

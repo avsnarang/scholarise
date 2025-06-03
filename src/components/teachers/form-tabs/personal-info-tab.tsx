@@ -107,7 +107,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <div className="flex items-center space-x-3">
@@ -185,7 +185,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
             <FormItem>
               <FormLabel>Nationality</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Nationality" defaultValue="Indian" />
+                <Input {...field} placeholder="Nationality" />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -228,15 +228,6 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
               </Button>
             </div>
           </form>
-
-          <div className="p-0 mt-6">
-            <p className="text-sm text-center text-muted-foreground w-full">
-              Don&apos;t have an account?{" "}
-              <a href="#" className="text-primary hover:underline font-medium">
-                Sign up
-              </a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

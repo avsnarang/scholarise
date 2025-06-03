@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -87,29 +87,21 @@ const teacherFormSchema = z.object({
   ifscCode: z.string().optional(),
   
   // IT & Asset Allocation
-  officialEmail: z.string().email("Invalid email").optional().or(z.literal("")),
+  officialEmail: z.string().email("Invalid email").min(1, "Official email is required"),
   deviceIssued: z.string().optional(),
   accessCardId: z.string().optional(),
   softwareLicenses: z.string().optional(),
   assetReturnStatus: z.string().optional(),
   
-  // User Account
-  createUser: z.boolean(),
-  email: z.string().email("Invalid email").optional()
-    .refine(email => !email || email.length > 0, "Email is required when creating a user account"),
-  password: z.string().optional()
-    .refine(password => !password || password.length >= 8, "Password must be at least 8 characters"),
-  roleId: z.string().optional()
-    .refine(roleId => !!roleId, "Role is required when creating a user account"),
+  // User Account (always required for teachers)
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  roleId: z.string().min(1, "Role is required"),
 }).refine((data) => {
-  // If createUser is true, email, password and role are required
-  if (data.createUser) {
-    return !!data.email && !!data.password && !!data.roleId;
-  }
+  // Password is only required for new teachers, not for existing teachers being updated
   return true;
 }, {
-  message: "Email, password and role are required when creating a user account",
-  path: ["createUser"],
+  message: "All fields are required",
+  path: ["roleId"],
 });
 
 export type TeacherFormValues = z.infer<typeof teacherFormSchema>;
@@ -127,7 +119,7 @@ const tabOrder = [
 type TabType = typeof tabOrder[number];
 
 interface EnhancedTeacherFormProps {
-  initialData?: Partial<TeacherFormValues>;
+  initialData?: Partial<TeacherFormValues> & { id?: string };
   isEditing?: boolean;
 }
 
@@ -161,9 +153,22 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
   // Fetch all branches for the branch selector
   const { data: branches = [] } = api.branch.getAll.useQuery();
 
+  // Dynamic schema based on editing mode
+  const dynamicTeacherFormSchema = teacherFormSchema.refine((data) => {
+    // For new teachers, password is required
+    // For existing teachers, password is optional (only if they want to change it)
+    if (!isEditing && (!data.password || data.password.length < 8)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "Password is required for new teachers and must be at least 8 characters",
+    path: ["password"],
+  });
+
   // Initialize form with default values
   const methods = useForm<TeacherFormValues>({
-    resolver: zodResolver(teacherFormSchema),
+    resolver: zodResolver(dynamicTeacherFormSchema),
     defaultValues: initialData || {
       firstName: "",
       lastName: "",
@@ -232,12 +237,18 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
       softwareLicenses: "",
       assetReturnStatus: "",
       
-      createUser: false,
-      email: "",
       password: "",
       roleId: "",
     },
   });
+
+  // Reset form values when initialData changes (important for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      methods.reset(initialData);
+      console.log("Resetting form with initial data:", initialData);
+    }
+  }, [initialData, methods]);
 
   const utils = api.useContext();
   const createTeacherMutation = api.teacher.create.useMutation({
@@ -265,94 +276,202 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
     },
   });
 
+  const updateTeacherMutation = api.teacher.update.useMutation({
+    onSuccess: () => {
+      // Invalidate all relevant queries
+      void utils.teacher.getAll.invalidate();
+      void utils.teacher.getStats.invalidate();
+      void utils.teacher.getById.invalidate();
+      
+      setIsSubmitting(false);
+      toast({
+        title: "Teacher updated",
+        description: "Teacher has been successfully updated.",
+        variant: "default",
+      });
+      void router.push("/teachers");
+    },
+    onError: (error) => {
+      console.error("Error updating teacher:", error);
+      setIsSubmitting(false);
+      toast({
+        title: "Error updating teacher",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: TeacherFormValues) => {
     setIsSubmitting(true);
     
     try {
-      createTeacherMutation.mutate({
-        // Basic Info
-        firstName: data.firstName,
-        lastName: data.lastName,
-        middleName: data.middleName,
-        dateOfBirth: data.dateOfBirth,
-        gender: data.gender,
-        bloodGroup: data.bloodGroup,
-        maritalStatus: data.maritalStatus,
-        nationality: data.nationality,
-        religion: data.religion,
-        panNumber: data.panNumber,
-        aadharNumber: data.aadharNumber,
-        
-        // Contact Info
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        pincode: data.pincode,
-        permanentAddress: data.permanentAddress,
-        permanentCity: data.permanentCity,
-        permanentState: data.permanentState,
-        permanentCountry: data.permanentCountry,
-        permanentPincode: data.permanentPincode,
-        phone: data.phone,
-        alternatePhone: data.alternatePhone,
-        personalEmail: data.personalEmail,
-        emergencyContactName: data.emergencyContactName,
-        emergencyContactPhone: data.emergencyContactPhone,
-        emergencyContactRelation: data.emergencyContactRelation,
-        
-        // Educational Qualifications
-        qualification: data.qualification,
-        specialization: data.specialization,
-        professionalQualifications: data.professionalQualifications,
-        specialCertifications: data.specialCertifications,
-        yearOfCompletion: data.yearOfCompletion,
-        institution: data.institution,
-        experience: data.experience,
-        bio: data.bio,
-        
-        // Employment Details
-        employeeCode: data.employeeCode,
-        joinDate: data.joinDate ? new Date(data.joinDate) : undefined,
-        designation: data.designation,
-        department: data.department,
-        reportingManager: data.reportingManager,
-        employeeType: data.employeeType,
-        previousExperience: data.previousExperience,
-        previousEmployer: data.previousEmployer,
-        confirmationDate: data.confirmationDate,
-        isActive: data.isActive,
-        
-        // Branch Information
-        branchId: data.branchId,
-        
-        // Salary & Banking Details
-        salaryStructure: data.salaryStructure,
-        pfNumber: data.pfNumber,
-        esiNumber: data.esiNumber,
-        uanNumber: data.uanNumber,
-        bankName: data.bankName,
-        accountNumber: data.accountNumber,
-        ifscCode: data.ifscCode,
-        
-        // IT & Asset Allocation
-        officialEmail: data.officialEmail,
-        deviceIssued: data.deviceIssued,
-        accessCardId: data.accessCardId,
-        softwareLicenses: data.softwareLicenses,
-        assetReturnStatus: data.assetReturnStatus,
-        
-        // User Account
-        createUser: data.createUser,
-        email: data.createUser ? data.email : undefined,
-        password: data.createUser ? data.password : undefined,
-        roleId: data.createUser ? data.roleId : undefined,
-      });
+      if (isEditing && initialData?.id) {
+        // Update existing teacher
+        updateTeacherMutation.mutate({
+          id: initialData.id,
+          // Basic Info
+          firstName: data.firstName,
+          lastName: data.lastName,
+          middleName: data.middleName,
+          dateOfBirth: data.dateOfBirth,
+          gender: data.gender,
+          bloodGroup: data.bloodGroup,
+          maritalStatus: data.maritalStatus,
+          nationality: data.nationality,
+          religion: data.religion,
+          panNumber: data.panNumber,
+          aadharNumber: data.aadharNumber,
+          
+          // Contact Info
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          country: data.country,
+          pincode: data.pincode,
+          permanentAddress: data.permanentAddress,
+          permanentCity: data.permanentCity,
+          permanentState: data.permanentState,
+          permanentCountry: data.permanentCountry,
+          permanentPincode: data.permanentPincode,
+          phone: data.phone,
+          alternatePhone: data.alternatePhone,
+          personalEmail: data.personalEmail,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone,
+          emergencyContactRelation: data.emergencyContactRelation,
+          
+          // Educational Qualifications
+          qualification: data.qualification,
+          specialization: data.specialization,
+          professionalQualifications: data.professionalQualifications,
+          specialCertifications: data.specialCertifications,
+          yearOfCompletion: data.yearOfCompletion,
+          institution: data.institution,
+          experience: data.experience,
+          bio: data.bio,
+          
+          // Employment Details
+          employeeCode: data.employeeCode,
+          joinDate: data.joinDate ? new Date(data.joinDate) : undefined,
+          designation: data.designation,
+          department: data.department,
+          reportingManager: data.reportingManager,
+          employeeType: data.employeeType,
+          previousExperience: data.previousExperience,
+          previousEmployer: data.previousEmployer,
+          confirmationDate: data.confirmationDate,
+          isActive: data.isActive,
+          
+          // Branch Information
+          branchId: data.branchId,
+          
+          // Salary & Banking Details
+          salaryStructure: data.salaryStructure,
+          pfNumber: data.pfNumber,
+          esiNumber: data.esiNumber,
+          uanNumber: data.uanNumber,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          ifscCode: data.ifscCode,
+          
+          // IT & Asset Allocation
+          officialEmail: data.officialEmail,
+          deviceIssued: data.deviceIssued,
+          accessCardId: data.accessCardId,
+          softwareLicenses: data.softwareLicenses,
+          assetReturnStatus: data.assetReturnStatus,
+          
+          // User-related fields
+          roleId: data.roleId,
+        });
+      } else {
+        // Create new teacher
+        createTeacherMutation.mutate({
+          // Basic Info
+          firstName: data.firstName,
+          lastName: data.lastName,
+          middleName: data.middleName,
+          dateOfBirth: data.dateOfBirth,
+          gender: data.gender,
+          bloodGroup: data.bloodGroup,
+          maritalStatus: data.maritalStatus,
+          nationality: data.nationality,
+          religion: data.religion,
+          panNumber: data.panNumber,
+          aadharNumber: data.aadharNumber,
+          
+          // Contact Info
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          country: data.country,
+          pincode: data.pincode,
+          permanentAddress: data.permanentAddress,
+          permanentCity: data.permanentCity,
+          permanentState: data.permanentState,
+          permanentCountry: data.permanentCountry,
+          permanentPincode: data.permanentPincode,
+          phone: data.phone,
+          alternatePhone: data.alternatePhone,
+          personalEmail: data.personalEmail,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone,
+          emergencyContactRelation: data.emergencyContactRelation,
+          
+          // Educational Qualifications
+          qualification: data.qualification,
+          specialization: data.specialization,
+          professionalQualifications: data.professionalQualifications,
+          specialCertifications: data.specialCertifications,
+          yearOfCompletion: data.yearOfCompletion,
+          institution: data.institution,
+          experience: data.experience,
+          bio: data.bio,
+          
+          // Employment Details
+          employeeCode: data.employeeCode,
+          joinDate: data.joinDate ? new Date(data.joinDate) : undefined,
+          designation: data.designation,
+          department: data.department,
+          reportingManager: data.reportingManager,
+          employeeType: data.employeeType,
+          previousExperience: data.previousExperience,
+          previousEmployer: data.previousEmployer,
+          confirmationDate: data.confirmationDate,
+          isActive: data.isActive,
+          
+          // Branch Information
+          branchId: data.branchId,
+          
+          // Salary & Banking Details
+          salaryStructure: data.salaryStructure,
+          pfNumber: data.pfNumber,
+          esiNumber: data.esiNumber,
+          uanNumber: data.uanNumber,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          ifscCode: data.ifscCode,
+          
+          // IT & Asset Allocation
+          officialEmail: data.officialEmail,
+          deviceIssued: data.deviceIssued,
+          accessCardId: data.accessCardId,
+          softwareLicenses: data.softwareLicenses,
+          assetReturnStatus: data.assetReturnStatus,
+          
+          // User Account
+          createUser: true, // Always create user accounts for teachers
+          email: data.officialEmail, // Use officialEmail for account creation
+          password: data.password,
+          roleId: data.roleId,
+        });
+      }
     } catch (error) {
       setIsSubmitting(false);
       console.error("Error in form submission:", error);
       toast({
-        title: "Error creating teacher",
+        title: isEditing ? "Error updating teacher" : "Error creating teacher",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });

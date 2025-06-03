@@ -138,8 +138,8 @@ export function SiblingModal({ isOpen, onClose, studentId, onSiblingAdded }: Sib
                                 <span className="text-gray-300 dark:text-gray-600">•</span>
                                 <span className="flex items-center gap-1">
                                   <GraduationCap className="h-3 w-3" />
-                                  {student.class?.name || 'No Class'}
-                                  {student.class?.section ? ` - ${student.class.section}` : ''}
+                                  {student.section?.class?.name || 'No Class'}
+                                  {student.section?.name ? ` - ${student.section.name}` : ''}
                                 </span>
                               </div>
                             </div>

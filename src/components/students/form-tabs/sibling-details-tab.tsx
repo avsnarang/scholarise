@@ -42,8 +42,8 @@ export function SiblingDetailsTab() {
         if (sibling) {
           setSiblingInfo({
             name: `${sibling.firstName} ${sibling.lastName}`,
-            class: sibling.class?.name || "Unknown",
-            section: sibling.class?.section || "",
+            class: sibling.section?.class?.name || "Unknown",
+            section: sibling.section?.name || "",
             admissionNumber: sibling.admissionNumber,
           });
         } else {
@@ -71,7 +71,7 @@ export function SiblingDetailsTab() {
               <FormItem className="flex-1">
                 <FormLabel className="dark:text-[#e6e6e6]">Sibling's Admission Number</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter sibling's admission number" className="dark:border-[#303030] dark:bg-[#252525] dark:text-[#e6e6e6] dark:placeholder:text-[#808080]" />
+                  <Input {...field} value={field.value || ""} placeholder="Enter sibling's admission number" className="dark:border-[#303030] dark:bg-[#252525] dark:text-[#e6e6e6] dark:placeholder:text-[#808080]" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

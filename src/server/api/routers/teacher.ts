@@ -4,9 +4,10 @@ import { TRPCError } from "@trpc/server";
 import { type Prisma } from "@prisma/client";
 import { createTeacherUser } from "@/utils/clerk";
 import { Clerk } from "@clerk/clerk-sdk-node";
+import { env } from '@/env';
 
 // Initialize Clerk client
-const secretKey = process.env.CLERK_SECRET_KEY;
+const secretKey = env.CLERK_SECRET_KEY;
 const clerk = Clerk({ secretKey: secretKey || "" });
 
 export const teacherRouter = createTRPCRouter({
@@ -19,7 +20,7 @@ export const teacherRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       // Use a single query with Prisma's aggregation to get all counts at once
       // This is much faster than multiple separate count queries
-      const [teacherCounts, classAssignments] = await Promise.all([
+      const [teacherCounts, sectionAssignments] = await Promise.all([
         // Get all teacher counts in a single query with aggregation
         ctx.db.$queryRaw`
           SELECT
@@ -34,11 +35,13 @@ export const teacherRouter = createTRPCRouter({
           inactiveTeachers: bigint;
         }>,
 
-        // Get class assignments in parallel
-        ctx.db.class.groupBy({
+        // Get section assignments in parallel
+        ctx.db.section.groupBy({
           by: ['teacherId'],
           where: {
-            branchId: input?.branchId,
+            class: {
+              branchId: input?.branchId,
+            },
             teacherId: { not: null },
           },
           _count: true,
@@ -52,8 +55,8 @@ export const teacherRouter = createTRPCRouter({
         inactiveTeachers: 0n
       };
 
-      // Count teachers with classes
-      const teachersWithClasses = classAssignments.length;
+      // Count teachers with sections
+      const teachersWithSections = sectionAssignments.length;
 
       // Convert bigint to number and calculate derived stats
       const activeTeachersCount = Number(counts.activeTeachers);
@@ -62,8 +65,8 @@ export const teacherRouter = createTRPCRouter({
         totalTeachers: Number(counts.totalTeachers),
         activeTeachers: activeTeachersCount,
         inactiveTeachers: Number(counts.inactiveTeachers),
-        teachersWithClasses,
-        teachersWithoutClasses: activeTeachersCount - teachersWithClasses,
+        teachersWithClasses: teachersWithSections,
+        teachersWithoutClasses: activeTeachersCount - teachersWithSections,
       };
     }),
 
@@ -162,7 +165,7 @@ export const teacherRouter = createTRPCRouter({
         cursor: cursor ? { id: cursor } : undefined,
         orderBy: { lastName: "asc" },
         include: {
-          classes: true,
+          sections: true,
           // user model no longer exists, so we don't include it
         },
       });
@@ -192,8 +195,12 @@ export const teacherRouter = createTRPCRouter({
           ...(input.branchId ? { branchId: input.branchId } : {})
         },
         include: {
-          classes: true,
-          // user model no longer exists, so we don't include it
+          sections: true,
+          userRoles: {
+            include: {
+              role: true
+            }
+          }
         },
       });
 
@@ -232,8 +239,8 @@ export const teacherRouter = createTRPCRouter({
         console.log("Teacher lookup result:", teacher ? "Found" : "Not found");
         
         if (teacher) {
-          // Get classes for this teacher
-          const classes = await ctx.db.class.findMany({
+          // Get sections for this teacher
+          const sections = await ctx.db.section.findMany({
             where: {
               teacherId: teacher.id
             }
@@ -241,7 +248,7 @@ export const teacherRouter = createTRPCRouter({
           
           return {
             ...teacher,
-            classes
+            sections
           };
         }
         
@@ -345,8 +352,8 @@ export const teacherRouter = createTRPCRouter({
         
         // Create a Clerk user account if requested
         let clerkUserId = null;
-        if (input.createUser && input.email && input.password) {
-          console.log("Attempting to create Clerk user for teacher");
+        if (input.createUser && input.officialEmail && input.password) {
+          console.log("Attempting to create Clerk user for teacher using official email");
           try {
             // Get branch code for Clerk user creation
             const branch = await ctx.db.branch.findUnique({
@@ -364,8 +371,8 @@ export const teacherRouter = createTRPCRouter({
 
             console.log("Found branch:", branch);
 
-            // Generate a username from the email
-            const email = input.email || '';
+            // Generate a username from the official email
+            const email = input.officialEmail;
             
             // Extract part before @ from email or use 'teacher' as fallback
             const emailBase = email.includes('@') 
@@ -393,7 +400,7 @@ export const teacherRouter = createTRPCRouter({
               const teacherUser = await createTeacherUser({
                 firstName: input.firstName,
                 lastName: input.lastName,
-                email: input.email || '',
+                email: input.officialEmail, // Use official email for account creation
                 password: input.password || '',
                 branchId: input.branchId,
                 isHQ: input.isHQ || false,
@@ -441,7 +448,7 @@ export const teacherRouter = createTRPCRouter({
         } else {
           console.log("Skipping Clerk user creation as conditions not met:", {
             createUser: input.createUser,
-            hasEmail: !!input.email,
+            hasOfficialEmail: !!input.officialEmail,
             hasPassword: !!input.password,
           });
         }
@@ -531,13 +538,30 @@ export const teacherRouter = createTRPCRouter({
               // Add clerkId if user was created
               ...(clerkUserId ? { 
                 clerkId: clerkUserId, 
-                userId: clerkUserId,
-                roleId: input.roleId
+                userId: clerkUserId
               } : {}),
             },
           });
           
           console.log("Teacher record created successfully:", newTeacher);
+          
+          // Create UserRole record if roleId is provided and user was created
+          if (clerkUserId && input.roleId) {
+            try {
+              await ctx.db.userRole.create({
+                data: {
+                  userId: clerkUserId,
+                  roleId: input.roleId,
+                  teacherId: newTeacher.id,
+                },
+              });
+              console.log("UserRole record created successfully for teacher");
+            } catch (roleError) {
+              console.error("Error creating UserRole record:", roleError);
+              // Don't throw here as the teacher has been created successfully
+            }
+          }
+          
           return newTeacher;
         } catch (dbError) {
           console.error("Database error creating teacher:", dbError);
@@ -849,12 +873,18 @@ export const teacherRouter = createTRPCRouter({
   bulkDelete: protectedProcedure
     .input(z.object({ ids: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
-      // Check if teachers exist
+      // Check if teachers exist and get their Clerk IDs
       const teachers = await ctx.db.teacher.findMany({
         where: {
           id: {
             in: input.ids,
           },
+        },
+        select: {
+          id: true,
+          clerkId: true,
+          firstName: true,
+          lastName: true,
         },
       });
 
@@ -865,7 +895,20 @@ export const teacherRouter = createTRPCRouter({
         });
       }
 
-      // Delete teachers
+      // Delete Clerk users for teachers that have them
+      for (const teacher of teachers) {
+        if (teacher.clerkId) {
+          try {
+            console.log(`Deleting Clerk user for teacher ${teacher.firstName} ${teacher.lastName} (${teacher.clerkId})`);
+            await clerk.users.deleteUser(teacher.clerkId);
+          } catch (error) {
+            console.error(`Error deleting Clerk user for teacher ${teacher.id}:`, error);
+            // Don't throw here, just log the error and continue
+          }
+        }
+      }
+
+      // Delete teachers from database
       await ctx.db.teacher.deleteMany({
         where: {
           id: {

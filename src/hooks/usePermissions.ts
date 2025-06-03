@@ -63,13 +63,13 @@ export function usePermissions() {
       
       // For debugging
       if (isForceAdmin) {
-        console.log("Force admin mode active in usePermissions");
+        // console.log("Force admin mode active in usePermissions");
       }
     }
   }, []);
   
   // Debug the user roles
-  console.log("User in usePermissions:", user);
+  // console.log("User in usePermissions:", user);
   
   // Get roles from the user object, fallback to 'role' singular if 'roles' array is empty
   let userRoles = user?.roles || [];
@@ -77,7 +77,7 @@ export function usePermissions() {
   // If userRoles is empty but user has a singular role, use that
   if (userRoles.length === 0 && user?.role) {
     userRoles = [user.role];
-    console.log("Using fallback singular role:", user.role);
+    // console.log("Using fallback singular role:", user.role);
   }
   
   // Check for localStorage role if available (used by force admin mode)
@@ -85,7 +85,7 @@ export function usePermissions() {
     const localStorageRole = localStorage.getItem('userRole');
     if (localStorageRole) {
       userRoles = [localStorageRole];
-      console.log("Using localStorage role:", localStorageRole);
+      // console.log("Using localStorage role:", localStorageRole);
     }
   }
   
@@ -99,7 +99,7 @@ export function usePermissions() {
     user?.role === 'SuperAdmin' ||
     user?.role === 'superadmin';
   
-  console.log("User roles:", userRoles, "Is super admin:", isSuperAdmin, "Force admin:", forceAdmin);
+  // console.log("User roles:", userRoles, "Is super admin:", isSuperAdmin, "Force admin:", forceAdmin);
   
   // Get custom role permissions by checking metadata or local storage
   useEffect(() => {
@@ -126,7 +126,7 @@ export function usePermissions() {
           // Use the tRPC client directly to avoid the hooks limitation
           const client = api.useContext();
           const permissions = await client.role.getUserPermissionsByRoleId.fetch({ roleId });
-          console.log("Custom role permissions loaded:", permissions);
+          // console.log("Custom role permissions loaded:", permissions);
           setCustomRolePermissions(permissions || []);
         } catch (error) {
           console.error("Error fetching custom role permissions:", error);
@@ -162,9 +162,9 @@ export function usePermissions() {
       if (customRolePermissions.length > 0) {
         const hasCustomPermission = customRolePermissions.includes(permission);
         
-        if (permission === Permission.VIEW_ATTENDANCE) {
-          console.log(`Custom role check for permission ${permission}: ${hasCustomPermission}`);
-        }
+        // if (permission === Permission.VIEW_ATTENDANCE) {
+        //   console.log(`Custom role check for permission ${permission}: ${hasCustomPermission}`);
+        // }
         
         if (hasCustomPermission) return true;
       }
@@ -176,15 +176,15 @@ export function usePermissions() {
       );
       
       if (hasDefaultPermission) {
-        console.log(`User has default permission ${permission} based on role`);
+        // console.log(`User has default permission ${permission} based on role`);
         return true;
       }
       
       // Fall back to standard permission check
       const result = hasPermission(userRoles, permission);
-      if (permission === Permission.VIEW_ATTENDANCE) {
-        console.log(`Checking ${permission} permission for user roles ${userRoles.join(', ')}: ${result}`);
-      }
+      // if (permission === Permission.VIEW_ATTENDANCE) {
+      //   console.log(`Checking ${permission} permission for user roles ${userRoles.join(', ')}: ${result}`);
+      // }
       return result;
     },
     
@@ -229,13 +229,13 @@ export function usePermissions() {
     // Check if user has access to a specific route/page
     canAccess: (requiredPermissions: Permission[]): boolean => {
       if (!requiredPermissions || requiredPermissions.length === 0) {
-        console.log("Empty permissions array - everyone can access");
+        // console.log("Empty permissions array - everyone can access");
         return true;
       }
 
       // Super admins (including force admin mode) can access everything
       if (isSuperAdmin) {
-        console.log(`Super admin access granted for: [${requiredPermissions.join(', ')}]`);
+        // console.log(`Super admin access granted for: [${requiredPermissions.join(', ')}]`);
         return true;
       }
       
@@ -243,10 +243,10 @@ export function usePermissions() {
       if (customRolePermissions.length > 0) {
         const hasCustomAccess = requiredPermissions.some(perm => customRolePermissions.includes(perm));
         
-        if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-          console.log(`Custom role check for permissions: ${hasCustomAccess}`);
-          console.log(`Custom permissions: [${customRolePermissions.join(", ")}]`);
-        }
+        // if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
+        //   console.log(`Custom role check for permissions: ${hasCustomAccess}`);
+        //   console.log(`Custom permissions: [${customRolePermissions.join(", ")}]`);
+        // }
         
         if (hasCustomAccess) return true;
       }
@@ -257,26 +257,26 @@ export function usePermissions() {
           userRoles.filter(role => typeof role === 'string'),
           perm
         )) {
-          console.log(`User has default access to ${perm} based on role`);
+          // console.log(`User has default access to ${perm} based on role`);
           return true;
         }
       }
       
       // Fall back to standard permission check
-      if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-        console.log(`Checking access for permissions: [${requiredPermissions.join(', ')}]`);
-        console.log(`Using roles: [${userRoles.join(', ')}]`);
-      }
+      // if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
+      //   console.log(`Checking access for permissions: [${requiredPermissions.join(', ')}]`);
+      //   console.log(`Using roles: [${userRoles.join(', ')}]`);
+      // }
 
       const result = hasAnyPermission(userRoles, requiredPermissions);
       
       if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-        console.log(`Access result for [${requiredPermissions.join(', ')}]: ${result}`);
+        // console.log(`Access result for [${requiredPermissions.join(', ')}]: ${result}`);
         
         // Check each permission individually for detailed debugging
         requiredPermissions.forEach(perm => {
           const hasPerm = hasPermission(userRoles, perm);
-          console.log(`- Permission check for ${perm}: ${hasPerm}`);
+          // console.log(`- Permission check for ${perm}: ${hasPerm}`);
         });
       }
       

@@ -85,7 +85,7 @@ export function ContactInfoTab() {
             <FormItem>
               <FormLabel>Country</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Country" defaultValue="India" />
+                <Input {...field} placeholder="Country" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -179,7 +179,7 @@ export function ContactInfoTab() {
             <FormItem>
               <FormLabel>Country</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Country" defaultValue="India" disabled={sameAsCurrent} />
+                <Input {...field} placeholder="Country" disabled={sameAsCurrent} />
               </FormControl>
               <FormMessage />
             </FormItem>

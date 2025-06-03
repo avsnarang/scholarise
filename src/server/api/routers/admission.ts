@@ -1332,7 +1332,7 @@ export const admissionRouter = createTRPCRouter({
           dateOfAdmission: new Date(),
           branchId: lead.branchId,
           parentId: parentId || undefined,
-          classId: input.classId,
+          sectionId: input.classId,
         }
       });
       

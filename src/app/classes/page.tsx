@@ -57,8 +57,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ClassDataTable, type Class } from "@/components/classes/class-data-table";
 import { useActionPermissions } from "@/utils/permission-utils";
+import { CreateClassModal } from "@/components/classes/create-class-modal";
+import { SectionDataTable } from "@/components/classes/class-data-table";
+import type { SectionTableData } from "@/components/classes/class-data-table";
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -74,88 +76,84 @@ export default function ClassesPage() {
   const [classToDelete, setClassToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [pageSize, setPageSize] = useState(50);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  // Get classes for the current session and branch
+  // Get sections for the current session and branch
   const {
-    data: classes,
+    data: sectionsData,
     isLoading,
-    refetch: refetchClasses
-  } = api.class.getAll.useQuery(
+    refetch: refetchSections
+  } = api.section.getAll.useQuery(
     { 
       sessionId: currentSessionId || undefined,
       branchId: currentBranchId || undefined,
+      includeClass: true,
       includeTeacher: true,
       includeStudentCount: true
     },
     { enabled: !!currentSessionId && !!currentBranchId }
   );
   
-  // Get sections for filtering
-  const { data: sections = [] } = api.class.getSections.useQuery(
-    { 
-      sessionId: currentSessionId || undefined,
-      branchId: currentBranchId || undefined
+  // Transform sections data to match SectionTableData type
+  const sections: SectionTableData[] = sectionsData?.map((section: any) => ({
+    id: section.id,
+    name: section.name,
+    capacity: section.capacity,
+    isActive: section.isActive,
+    displayOrder: section.displayOrder,
+    classId: section.classId,
+    teacherId: section.teacherId,
+    class: {
+      id: section.class.id,
+      name: section.class.name,
+      isActive: section.class.isActive,
+      displayOrder: section.class.displayOrder,
+      grade: section.class.grade
     },
-    { enabled: !!currentSessionId && !!currentBranchId }
-  );
-  
-  // Delete class mutation
-  const { mutate: deleteClass, isPending: isDeleting } = api.class.delete.useMutation({
+    teacher: section.teacher,
+    _count: section._count,
+    studentCount: section._count?.students
+  })) || [];
+
+  // Delete section mutation
+  const { mutate: deleteSection, isPending: isDeleting } = api.section.delete.useMutation({
     onSuccess: () => {
       toast({
-        title: "Class deleted",
-        description: "The class has been deleted successfully.",
+        title: "Section deleted",
+        description: "The section has been deleted successfully.",
         variant: "success"
       });
-      void refetchClasses();
+      void refetchSections();
       setClassToDelete(null);
       setIsDeleteDialogOpen(false);
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete class. Please try again.",
+        description: error.message || "Failed to delete section. Please try again.",
         variant: "destructive"
       });
     }
   });
   
-  // Filter classes based on status and section filters (not search, which is handled by the data table)
-  const filteredClasses = classes?.filter(classItem => {
-    // Apply status filter
-    if (statusFilter !== "all") {
-      if (statusFilter === "active" && !classItem.isActive) return false;
-      if (statusFilter === "inactive" && classItem.isActive) return false;
-    }
-    
-    // Apply section filter
-    if (sectionFilter !== "all" && classItem.section !== sectionFilter) {
-      return false;
-    }
-    
-    return true;
+  // Filter sections based on status filter
+  const filteredSections = sections?.filter(section => {
+    const matchesStatus = statusFilter === "all" || 
+                         (statusFilter === "active" && section.isActive) ||
+                         (statusFilter === "inactive" && !section.isActive);
+    const matchesSearch = !searchQuery || 
+                         section.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         section.class.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
   }) || [];
 
-  // Transform data to match the ClassDataTable expected format
-  const formattedClasses: Class[] = filteredClasses.map(classItem => ({
-    id: classItem.id,
-    name: classItem.name,
-    section: classItem.section,
-    capacity: classItem.capacity || 0,
-    isActive: classItem.isActive,
-    teacher: classItem.teacher ? {
-      id: classItem.teacher.id,
-      firstName: classItem.teacher.firstName,
-      lastName: classItem.teacher.lastName
-    } : undefined,
-    _count: {
-      students: classItem._count?.students || 0
-    },
-    studentCount: (classItem as any).studentCount || classItem._count?.students || 0
-  }));
+  // Get stats
+  const totalClasses = [...new Set(sections?.map(s => s.classId))].length || 0;
+  const activeClasses = [...new Set(sections?.filter(s => s.class.isActive).map(s => s.classId))].length || 0;
+  const totalSections = sections?.length || 0;
+  const withTeachers = sections?.filter(s => s.teacher).length || 0;
   
   // Handle page size change
   const handlePageSizeChange = (newSize: number) => {
@@ -165,7 +163,7 @@ export default function ClassesPage() {
   // Handle class deletion
   const handleDeleteClass = () => {
     if (classToDelete) {
-      deleteClass({ id: classToDelete });
+      deleteSection({ id: classToDelete });
     }
   };
   
@@ -173,13 +171,7 @@ export default function ClassesPage() {
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
-    setSectionFilter("all");
   };
-  
-  // Get stats
-  const totalClasses = classes?.length || 0;
-  const activeClasses = classes?.filter(c => c.isActive).length || 0;
-  const withTeachers = classes?.filter(c => c.teacher).length || 0;
   
   // Page action buttons that respect permissions
   const renderPageActions = () => (
@@ -204,12 +196,14 @@ export default function ClassesPage() {
       
       {/* Add class button - requires create permission */}
       {canCreate() && (
-        <Link href="/settings/classes/new">
-          <Button variant="glowing" className="flex items-center gap-1">
-            <PlusCircle className="h-4 w-4" />
-            <span>Add Class</span>
-          </Button>
-        </Link>
+        <Button 
+          variant="glowing" 
+          className="flex items-center gap-1"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          <PlusCircle className="h-4 w-4" />
+          <span>Add Class</span>
+        </Button>
       )}
     </div>
   );
@@ -341,24 +335,24 @@ export default function ClassesPage() {
         
         <Card className="@container/card dark:border-[#303030]">
           <CardHeader>
-            <CardDescription className="dark:text-[#c0c0c0]">Average Size</CardDescription>
+            <CardDescription className="dark:text-[#c0c0c0]">Total Sections</CardDescription>
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
-              {classes?.length ? Math.round(classes.reduce((sum, c) => sum + (c._count?.students || 0), 0) / classes.length) : 0}
+              {totalSections}
             </CardTitle>
             <CardAction>
               <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
                 <TrendingUp className="text-[#00501B] dark:text-[#7aad8c]" />
-                Students
+                Sections
               </Badge>
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
-              <Users className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
-              Average students per class
+              <BookOpen className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
+              {totalSections} total sections
             </div>
             <div className="text-muted-foreground dark:text-[#c0c0c0]">
-              Based on active enrollment
+              Across all classes
             </div>
           </CardFooter>
         </Card>
@@ -385,7 +379,7 @@ export default function ClassesPage() {
         </div>
 
         {/* Active filters display */}
-        {(statusFilter !== "all" || sectionFilter !== "all") && (
+        {(statusFilter !== "all") && (
           <div className="flex flex-wrap gap-2 items-center text-sm p-3 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
             <span className="text-gray-600 dark:text-gray-300 font-medium">Active filters:</span>
             
@@ -395,31 +389,24 @@ export default function ClassesPage() {
                 <X className="h-3 w-3 cursor-pointer hover:text-green-900 dark:hover:text-green-100 transition-colors" onClick={() => setStatusFilter("all")} />
               </Badge>
             )}
-            
-            {sectionFilter !== "all" && (
-              <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 gap-1 pl-2 border-purple-200 dark:border-purple-700 shadow-sm">
-                Section: {sectionFilter}
-                <X className="h-3 w-3 cursor-pointer hover:text-purple-900 dark:hover:text-purple-100 transition-colors" onClick={() => setSectionFilter("all")} />
-              </Badge>
-            )}
           </div>
         )}
         
         {/* Empty state */}
-        {filteredClasses.length === 0 ? (
+        {filteredSections.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-12 text-center bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
             <div className="h-16 w-16 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center mb-4">
               <GraduationCap className="h-8 w-8 text-[#00501B] dark:text-[#7aad8c]" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No classes found</h3>
             <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md">
-              {(statusFilter !== "all" || sectionFilter !== "all") 
+              {(statusFilter !== "all") 
                 ? "Try changing your filters or" 
                 : "Get started by"} adding a new class.
             </p>
             <div className="mt-6">
               <Button 
-                onClick={() => router.push("/settings/classes/new")}
+                onClick={() => setIsCreateModalOpen(true)}
                 className="bg-[#00501B] hover:bg-[#00501B]/90 dark:bg-[#7aad8c] dark:hover:bg-[#7aad8c]/90 text-white shadow-sm hover:shadow transition-all"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -431,31 +418,31 @@ export default function ClassesPage() {
           <>
             {/* Class data table */}
             <div className="rounded-md overflow-hidden shadow-sm">
-              <ClassDataTable 
-                key={`class-table-${pageSize}`}
-                data={formattedClasses}
-                pageSize={pageSize}
+              <SectionDataTable 
+                key={`section-table-${pageSize}`}
+                data={filteredSections}
+                isLoading={isLoading}
               />
             </div>
             
             {/* Simplified pagination controls */}
             <div className="mt-4 flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                {pageSize >= formattedClasses.length 
-                  ? `Showing all ${formattedClasses.length} classes` 
-                  : `Showing up to ${pageSize} classes per page`}
+                {pageSize >= filteredSections.length 
+                  ? `Showing all ${filteredSections.length} sections` 
+                  : `Showing up to ${pageSize} sections per page`}
               </div>
               <div className="flex items-center gap-4">
                 <select 
                   className="border rounded p-1 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
-                  value={pageSize === formattedClasses.length ? formattedClasses.length.toString() : pageSize}
+                  value={pageSize === filteredSections.length ? filteredSections.length.toString() : pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 >
                   <option value={10}>10 per page</option>
                   <option value={25}>25 per page</option>
                   <option value={50}>50 per page</option>
                   <option value={100}>100 per page</option>
-                  <option value={formattedClasses.length}>All</option>
+                  <option value={filteredSections.length}>All</option>
                 </select>
               </div>
             </div>
@@ -475,6 +462,20 @@ export default function ClassesPage() {
         description="Are you sure you want to delete this class? This action cannot be undone, and all associated data will be permanently removed."
         isDeleting={isDeleting}
       />
+
+      {/* Create class modal */}
+      {currentBranchId && currentSessionId && (
+        <CreateClassModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            void refetchSections();
+            setIsCreateModalOpen(false);
+          }}
+          branchId={currentBranchId}
+          sessionId={currentSessionId}
+        />
+      )}
     </PageWrapper>
   );
 }

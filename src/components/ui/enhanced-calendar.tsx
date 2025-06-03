@@ -86,7 +86,6 @@ export function EnhancedCalendar({
     
     // Create the date at noon to avoid timezone issues
     const selectedDate = new Date(year, month, day, 12, 0, 0)
-    console.log("Date selected:", selectedDate)
     onChange?.(selectedDate)
   }
 

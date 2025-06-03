@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Always make sure that you're applying the changes requested yourself, not asking the user to apply those changes to the files manually. 

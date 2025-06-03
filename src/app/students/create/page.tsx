@@ -2,53 +2,42 @@
 
 import { EnhancedStudentForm } from "@/components/students/enhanced-student-form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, HelpCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, UserPlus, Users, GraduationCap } from "lucide-react";
 import Link from "next/link";
-import { PageWrapper } from "@/components/layout/page-wrapper";
 
 export default function CreateStudentPage() {
   return (
-    <PageWrapper
-      title="Add New Student"
-      subtitle="Register a new student in the ScholaRise system"
-      action={
-        <Link href="/students">
-          <Button variant="outline" className="flex items-center gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Students</span>
+    <div className="px-4 lg:px-6 w-full">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/students">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
-        </Link>
-      }
-    >
-      {/* Steps indicator */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="rounded-full bg-[#00501B]/10 border border-[#00501B]/30 px-4 py-1.5 text-sm text-[#00501B] flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00501B] text-xs font-bold text-white">1</span>
-          <span>Fill in all required information</span>
-        </div>
-        <div className="rounded-full bg-gray-100 px-4 py-1.5 text-sm text-gray-600 flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-white">2</span>
-          <span>Review student details</span>
-        </div>
-        <div className="rounded-full bg-gray-100 px-4 py-1.5 text-sm text-gray-600 flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-300 text-xs font-bold text-white">3</span>
-          <span>Submit the form</span>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Add New Student
+            </h1>
+            <p className="text-muted-foreground">Register a new student in the system</p>
+          </div>
         </div>
       </div>
 
-      {/* Form Container */}
-      <Card className="border-t-4 border-t-[#00501B]">
-        <CardHeader className="pb-0">
-          <CardTitle>Student Information</CardTitle>
-          <CardDescription>
-            Enter the student's details below. Fields marked with * are required.
-          </CardDescription>
+      {/* Form Section */}
+      <Card className="border-2">
+        <CardHeader className="border-b bg-muted/30">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <UserPlus className="h-5 w-5" />
+            Student Registration Form
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <EnhancedStudentForm />
         </CardContent>
       </Card>
-    </PageWrapper>
+    </div>
   );
 }

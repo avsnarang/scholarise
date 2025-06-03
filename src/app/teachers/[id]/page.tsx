@@ -560,21 +560,22 @@ export default function TeacherDetailPage() {
         <TabsContent value="classes" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Assigned Classes</CardTitle>
-              <CardDescription>Classes assigned to this teacher</CardDescription>
+              <CardTitle>Assigned Sections</CardTitle>
+              <CardDescription>Sections assigned to this teacher</CardDescription>
             </CardHeader>
             <CardContent>
-              {teacher.classes && teacher.classes.length > 0 ? (
+              {teacher.sections && teacher.sections.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {teacher.classes.map((cls: any) => (
-                    <div key={cls.id} className="rounded-lg border p-3">
-                      <h3 className="font-medium">{cls.name}</h3>
-                      <p className="text-sm text-muted-foreground">Section: {cls.section}</p>
+                  {teacher.sections.map((section: any) => (
+                    <div key={section.id} className="rounded-lg border p-3">
+                      <h3 className="font-medium">{section.class?.name} - {section.name}</h3>
+                      <p className="text-sm text-muted-foreground">Capacity: {section.capacity}</p>
+                      <p className="text-sm text-muted-foreground">Status: {section.isActive ? 'Active' : 'Inactive'}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No classes assigned yet.</p>
+                <p className="text-muted-foreground">No sections assigned yet.</p>
               )}
             </CardContent>
           </Card>

@@ -4,116 +4,138 @@ import { seedLeavePolicies } from './seed/leave-policies/seed';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting seed script...');
+  console.log('🌱 Starting database seeding...');
 
-  try {
-    // Check if branches and academic sessions already exist
-    const existingAcademicSession = await prisma.academicSession.findMany();
-    console.log(`Found ${existingAcademicSession.length} existing academic sessions`);
-    const existingBranches = await prisma.branch.findMany();
-    console.log(`Found ${existingBranches.length} existing branches`);
-
-    if (existingAcademicSession.length === 0) {
-      const academicSession = [
-        {
-          name: "2023-24",
-          startDate: new Date("2023-04-01"),
-          endDate: new Date("2024-03-31"),
-          isActive: false,
-        },
-        {
-          name: "2024-25",
-          startDate: new Date("2024-04-01"),
-          endDate: new Date("2025-03-31"),
-          isActive: false,
-        },
-        {
-          name: "2025-26",
-          startDate: new Date("2025-04-01"),
-          endDate: new Date("2026-03-31"),
-          isActive: true,
-        },
-      ];
-
-      for (const session of academicSession) {
-        await prisma.academicSession.create({
-          data: session,
-        });
-        console.log(`Created academic session: ${session.name}`);
-      }
-      console.log("Academic session created successfully");
-    } else {
-      console.log("Academic session already exists. Skipping seed.");
-    }
-
-    let branchesCreated = false;
-    if (existingBranches.length === 0) {
-      console.log("No branches found. Creating default branches...");
-      // Create default branches
-      const branches = [
-        {
-          name: "Paonta Sahib",
-          code: "PS",
-          address: "Jamniwala Road, Badripur",
-          city: "Paonta Sahib",
-          state: "Himachal Pradesh",
-          country: "India",
-          phone: "+91 8627800056",
-          order: 1,
-        },
-        {
-          name: "Juniors",
-          code: "JUN",
-          address: "Near Degree College, Devinagar",
-          city: "Paonta Sahib",
-          state: "Himachal Pradesh",
-          country: "India",
-          phone: "+91 9805735656",
-          order: 2,
-        },
-        {
-          name: "Majra",
-          code: "MAJ",
-          address: "Near SBI, Majra",
-          city: "Paonta Sahib",
-          state: "Himachal Pradesh",
-          country: "India",
-          phone: "+91 9692700056",
-          order: 3,
-        },
-      ];
-
-      // Insert branches
-      for (const branch of branches) {
-        await prisma.branch.create({
-          data: branch,
-        });
-        console.log(`Created branch: ${branch.name} (${branch.code})`);
-      }
-
-      branchesCreated = true;
-      console.log("Default branches created successfully");
-    } else {
-      console.log("Branches already exist. Skipping branch seed.");
-    }
-
-    // Get branches for leave policy seeding
-    const branches = await prisma.branch.findMany();
-    
-    // Seed leave policies for each branch
-    for (const branch of branches) {
-      await seedLeavePolicies(prisma, branch.id);
-    }
-  } catch (error) {
-    console.error("Error in seed script:", error);
-  } finally {
-    await prisma.$disconnect();
+  // Check if we already have data
+  const existingBranches = await prisma.branch.count();
+  if (existingBranches > 0) {
+    console.log('✅ Database already has data, skipping seed.');
+    return;
   }
+
+  // Create a test branch
+  const branch = await prisma.branch.create({
+    data: {
+      name: 'Main Branch',
+      code: 'MAIN',
+      address: '123 School Street',
+      city: 'Demo City',
+      state: 'Demo State',
+      country: 'Demo Country',
+      phone: '+1234567890',
+      email: 'main@school.edu',
+    },
+  });
+
+  // Create an academic session
+  const session = await prisma.academicSession.create({
+    data: {
+      name: '2024-25',
+      startDate: new Date('2024-04-01'),
+      endDate: new Date('2025-03-31'),
+      isActive: true,
+    },
+  });
+
+  // Create test classes
+  const classes = await Promise.all([
+    prisma.class.create({
+      data: {
+        name: 'Class I',
+        description: 'First grade',
+        grade: 1,
+        branchId: branch.id,
+        sessionId: session.id,
+        displayOrder: 1,
+      },
+    }),
+    prisma.class.create({
+      data: {
+        name: 'Class II',
+        description: 'Second grade',
+        grade: 2,
+        branchId: branch.id,
+        sessionId: session.id,
+        displayOrder: 2,
+      },
+    }),
+    prisma.class.create({
+      data: {
+        name: 'Class III',
+        description: 'Third grade',
+        grade: 3,
+        branchId: branch.id,
+        sessionId: session.id,
+        displayOrder: 3,
+      },
+    }),
+  ]);
+
+  // Create test teachers
+  const teachers = await Promise.all([
+    prisma.teacher.create({
+      data: {
+        firstName: 'John',
+        lastName: 'Doe',
+        qualification: 'M.Ed',
+        specialization: 'Mathematics',
+        branchId: branch.id,
+        employeeCode: 'TCH001',
+      },
+    }),
+    prisma.teacher.create({
+      data: {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        qualification: 'B.Ed',
+        specialization: 'English',
+        branchId: branch.id,
+        employeeCode: 'TCH002',
+      },
+    }),
+  ]);
+
+  // Create sections for each class
+  const sections = [];
+  for (const cls of classes) {
+    // Create A and B sections for each class
+    const sectionA = await prisma.section.create({
+      data: {
+        name: 'A',
+        capacity: 30,
+        classId: cls.id,
+        teacherId: teachers[0]?.id,
+        displayOrder: 1,
+      },
+    });
+    
+    const sectionB = await prisma.section.create({
+      data: {
+        name: 'B',
+        capacity: 25,
+        classId: cls.id,
+        teacherId: teachers[1]?.id,
+        displayOrder: 2,
+      },
+    });
+
+    sections.push(sectionA, sectionB);
+  }
+
+  console.log('✅ Database seeded successfully!');
+  console.log(`📊 Created:
+    - 1 Branch: ${branch.name}
+    - 1 Academic Session: ${session.name}
+    - ${classes.length} Classes
+    - ${teachers.length} Teachers
+    - ${sections.length} Sections`);
 }
 
 main()
-  .then(() => console.log("Seed completed successfully"))
   .catch((e) => {
-    console.error("Error in seed script:", e);
+    console.error('❌ Error seeding database:', e);
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });

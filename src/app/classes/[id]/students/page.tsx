@@ -50,25 +50,27 @@ export default function ClassStudentsPage() {
     isLoading: isLoadingClass,
     refetch: refetchClass
   } = api.class.getById.useQuery(
-    { id: id, includeStudents: true },
+    { id: id, includeSections: true },
     { enabled: !!id }
   );
   
-  // Get students in the class
+  // Get students in the class using section API
   const {
-    data: students,
+    data: studentsData,
     isLoading: isLoadingStudents,
     refetch: refetchStudents
-  } = api.class.getStudents.useQuery(
+  } = api.student.getAll.useQuery(
     { 
-      classId: id,
-      sessionId: currentSessionId || undefined
+      sectionId: classData?.sections?.[0]?.id
     },
-    { enabled: !!id }
+    { enabled: !!classData?.sections?.[0]?.id }
   );
+
+  // Extract students from the API response
+  const students = studentsData?.items || [];
   
   // Filter students based on search query
-  const filteredStudents = students?.filter(student => {
+  const filteredStudents = students.filter((student: any) => {
     if (!searchQuery) return true;
     
     const searchLower = searchQuery.toLowerCase();
@@ -77,7 +79,10 @@ export default function ClassStudentsPage() {
       student.lastName.toLowerCase().includes(searchLower) ||
       student.admissionNumber.toLowerCase().includes(searchLower)
     );
-  }) || [];
+  });
+
+  // Get the first section for display
+  const primarySection = classData?.sections?.[0];
   
   // Loading state
   const isLoading = isLoadingClass || isLoadingStudents || !id;
@@ -141,7 +146,7 @@ export default function ClassStudentsPage() {
   return (
     <PageWrapper>
       <PageHeader
-        heading={`${classData.name} - ${classData.section} Students`}
+        heading={`${classData.name}${primarySection ? ` - ${primarySection.name}` : ''} Students`}
         description="View and manage students in this class"
         backPath={`/classes/${id}`}
       />

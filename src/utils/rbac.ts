@@ -65,6 +65,13 @@ export const rolePermissions: PermissionMap = {
     Permission.MANAGE_SUBJECTS,
     Permission.MANAGE_USERS,
     Permission.MANAGE_ATTENDANCE_CONFIG,
+    // Finance Module Permissions for Admin
+    Permission.VIEW_FINANCE_MODULE,
+    Permission.MANAGE_FEE_HEADS,
+    Permission.MANAGE_FEE_TERMS,
+    Permission.MANAGE_CLASSWISE_FEES,
+    Permission.COLLECT_FEES,
+    Permission.VIEW_FINANCE_REPORTS,
   ],
   
   [Role.PRINCIPAL]: [
@@ -131,6 +138,13 @@ export const rolePermissions: PermissionMap = {
     Permission.VIEW_FEES,
     Permission.MANAGE_FEES,
     Permission.VIEW_REPORTS,
+    // Finance Module Permissions for Accountant
+    Permission.VIEW_FINANCE_MODULE,
+    Permission.MANAGE_FEE_HEADS,
+    Permission.MANAGE_FEE_TERMS,
+    Permission.MANAGE_CLASSWISE_FEES,
+    Permission.COLLECT_FEES,
+    Permission.VIEW_FINANCE_REPORTS,
   ],
   
   [Role.RECEPTIONIST]: [
@@ -184,6 +198,7 @@ export const moduleViewPermissions: Record<string, Permission> = {
   "Question Papers": Permission.VIEW_QUESTION_PAPERS,
   "Reports": Permission.VIEW_REPORTS,
   "Settings": Permission.VIEW_SETTINGS,
+  "Finance": Permission.VIEW_FINANCE_MODULE,
   
   // Submodules 
   "Class Students": Permission.MANAGE_CLASS_STUDENTS,
@@ -295,9 +310,12 @@ export const navItemPermissions = {
   transportAssignments: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
   
   // Question Paper module
-  questionPapers: [Permission.VIEW_QUESTION_PAPERS],
+  questionPapers: [
+    Permission.VIEW_QUESTION_PAPERS,
+    Permission.CREATE_QUESTION_PAPER, 
+    Permission.MANAGE_QUESTION_PAPERS,
+  ],
   createQuestionPaper: [Permission.CREATE_QUESTION_PAPER],
-  manageQuestionPapers: [Permission.MANAGE_QUESTION_PAPERS],
   
   // Other modules
   fees: [Permission.VIEW_FEES],
@@ -308,6 +326,14 @@ export const navItemPermissions = {
   subjects: [Permission.MANAGE_SUBJECTS],
   users: [Permission.MANAGE_USERS],
   attendanceConfig: [Permission.MANAGE_ATTENDANCE_CONFIG],
+
+  // Finance Module
+  finance: [Permission.VIEW_FINANCE_MODULE],
+  feeHead: [Permission.MANAGE_FEE_HEADS],
+  feeTerm: [Permission.MANAGE_FEE_TERMS],
+  classwiseFee: [Permission.MANAGE_CLASSWISE_FEES],
+  feeCollection: [Permission.COLLECT_FEES],
+  financeReports: [Permission.VIEW_FINANCE_REPORTS],
 };
 
 // Check if user has a specific permission

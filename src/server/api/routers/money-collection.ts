@@ -250,7 +250,7 @@ export const moneyCollectionRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.student.findMany({
         where: {
-          classId: input.classId,
+          sectionId: input.classId,
           isActive: true,
         },
         orderBy: {
@@ -265,11 +265,11 @@ export const moneyCollectionRouter = createTRPCRouter({
       // First fetch all students for the class
       const students = await ctx.db.student.findMany({
         where: {
-          classId: input.classId,
+          sectionId: input.classId,
           isActive: true,
         },
         include: {
-          class: true,
+          section: true,
         },
         orderBy: [
           { firstName: "asc" }, // Secondary sort by name
@@ -282,9 +282,9 @@ export const moneyCollectionRouter = createTRPCRouter({
         if (!a.rollNumber) return 1;
         if (!b.rollNumber) return -1;
         
-        // Convert roll numbers to numbers for proper numerical sorting
-        const rollA = parseInt(a.rollNumber) || 0;
-        const rollB = parseInt(b.rollNumber) || 0;
+        // Use roll numbers directly since they are already numbers
+        const rollA = a.rollNumber || 0;
+        const rollB = b.rollNumber || 0;
         
         return rollA - rollB;
       });

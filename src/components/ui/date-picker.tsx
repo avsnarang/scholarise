@@ -73,7 +73,6 @@ export function DatePicker({
         <EnhancedCalendar
           value={value}
           onChange={(date) => {
-            console.log("Calendar date selected:", date);
             onChange(date);
             setOpen(false);
           }}

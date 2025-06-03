@@ -1,8 +1,9 @@
 import { Clerk } from '@clerk/clerk-sdk-node';
+import { env } from '@/env';
 
 // Initialize Clerk client
-console.log("Initializing Clerk with secret key:", process.env.CLERK_SECRET_KEY ? "Key is present" : "Key is missing");
-const secretKey = process.env.CLERK_SECRET_KEY;
+console.log("Initializing Clerk with secret key:", env.CLERK_SECRET_KEY ? "Key is present" : "Key is missing");
+const secretKey = env.CLERK_SECRET_KEY;
 if (!secretKey) {
   console.error("CLERK_SECRET_KEY is not defined in environment variables!");
 }
@@ -11,7 +12,7 @@ const clerk = Clerk({ secretKey: secretKey || "" });
 interface CreateStudentUserParams {
   firstName: string;
   lastName: string;
-  username: string; // This will be used as email (e.g. username@ps.tsh.edu.in)
+  username: string; // This will be used to generate email (e.g. username@ps.tsh.edu.in)
   password: string;
   branchCode: string; // PS, JUN, MAJRA
   branchId: string;
@@ -50,30 +51,63 @@ export async function createStudentUser({
   branchId,
 }: CreateStudentUserParams) {
   try {
-    // Determine email domain based on branch code
-    let emailDomain = '';
-    if (branchCode === 'PS') {
-      emailDomain = 'ps.tsh.edu.in';
-    } else if (branchCode === 'JUN') {
-      emailDomain = 'jun.tsh.edu.in';
-    } else if (branchCode === 'MAJ') {
-      emailDomain = 'majra.tsh.edu.in';
+    // Validate required parameters
+    if (!firstName || !lastName) {
+      throw new Error('First name and last name are required for student user creation');
     }
 
-    if (!emailDomain) {
-      throw new Error(`Invalid branch code: ${branchCode}`);
+    if (!username) {
+      throw new Error('Username is required for student user creation');
     }
 
-    // Create email from username and domain
-    const email = `${username}@${emailDomain}`;
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters long for student user creation');
+    }
 
-    // Create user in Clerk
+    if (!branchCode || !branchId) {
+      throw new Error('Branch code and branch ID are required for student user creation');
+    }
+
+    // Check if username is already a full email address
+    let email: string;
+    
+    if (username.includes('@')) {
+      // Username is already a full email
+      email = username;
+    } else {
+      // Username is just the local part, need to create full email
+      // Determine email domain based on branch code
+      let emailDomain = '';
+      if (branchCode === 'PS') {
+        emailDomain = 'ps.tsh.edu.in';
+      } else if (branchCode === 'JUN') {
+        emailDomain = 'jun.tsh.edu.in';
+      } else if (branchCode === 'MAJ') {
+        emailDomain = 'majra.tsh.edu.in';
+      }
+
+      if (!emailDomain) {
+        throw new Error(`Invalid branch code: ${branchCode}`);
+      }
+
+      email = `${username}@${emailDomain}`;
+    }
+
+    console.log('Creating student user with params:', {
+      firstName,
+      lastName,
+      email,
+      branchCode,
+      branchId,
+      passwordLength: password.length
+    });
+
+    // Create user in Clerk - only use email, no username
     const user = await clerk.users.createUser({
       firstName,
       lastName,
       emailAddress: [email],
       password,
-      username,
       publicMetadata: {
         role: 'Student',
         roles: ['Student'],
@@ -81,9 +115,30 @@ export async function createStudentUser({
       },
     });
 
+    console.log('Successfully created student user:', user.id);
     return user;
   } catch (error) {
     console.error('Error creating student user in Clerk:', error);
+    
+    // Handle specific Clerk errors
+    if (typeof error === 'object' && error !== null) {
+      const clerkError = error as { status?: number; errors?: Array<{ code?: string; message?: string; longMessage?: string }> };
+      
+      if (clerkError.status === 422) {
+        const errorMessages = clerkError.errors?.map(e => e.message || e.longMessage).filter(Boolean).join(', ');
+        throw new Error(`Student user validation failed: ${errorMessages || 'Unknown validation error'}`);
+      }
+      
+      if (clerkError.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+
+      // Handle duplicate users
+      if (clerkError.errors?.some(e => e.code === 'user_already_exists' || e.message?.includes('already exists'))) {
+        throw new Error('A student user with this email already exists. Please use a different email address.');
+      }
+    }
+    
     throw error;
   }
 }
@@ -100,6 +155,23 @@ export async function createParentUser({
   branchId,
 }: CreateParentUserParams) {
   try {
+    // Validate required parameters
+    if (!firstName || !lastName) {
+      throw new Error('First name and last name are required for parent user creation');
+    }
+
+    if (!username) {
+      throw new Error('Username is required for parent user creation');
+    }
+
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters long for parent user creation');
+    }
+
+    if (!branchId) {
+      throw new Error('Branch ID is required for parent user creation');
+    }
+
     // Create user in Clerk
     const createParams: {
       firstName: string;
@@ -124,16 +196,46 @@ export async function createParentUser({
       },
     };
 
-    // Add email if provided
-    if (email) {
-      createParams.emailAddress = [email];
+    // Add email if provided and valid
+    if (email && email.trim() && email.includes('@')) {
+      createParams.emailAddress = [email.trim()];
     }
+
+    console.log('Creating parent user with params:', {
+      firstName,
+      lastName,
+      username,
+      hasEmail: !!email,
+      branchId,
+      passwordLength: password.length
+    });
 
     const user = await clerk.users.createUser(createParams);
 
+    console.log('Successfully created parent user:', user.id);
     return user;
   } catch (error) {
     console.error('Error creating parent user in Clerk:', error);
+    
+    // Handle specific Clerk errors
+    if (typeof error === 'object' && error !== null) {
+      const clerkError = error as { status?: number; errors?: Array<{ code?: string; message?: string; longMessage?: string }> };
+      
+      if (clerkError.status === 422) {
+        const errorMessages = clerkError.errors?.map(e => e.message || e.longMessage).filter(Boolean).join(', ');
+        throw new Error(`Parent user validation failed: ${errorMessages || 'Unknown validation error'}`);
+      }
+      
+      if (clerkError.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+
+      // Handle duplicate users
+      if (clerkError.errors?.some(e => e.code === 'user_already_exists' || e.message?.includes('already exists'))) {
+        throw new Error('A parent user with this username or email already exists. Please use different credentials.');
+      }
+    }
+    
     throw error;
   }
 }

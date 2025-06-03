@@ -40,7 +40,7 @@ export default function AssignRollNumberPage() {
   // Fetch students for the selected class
   const { data: studentsData, isLoading: isLoadingStudents } = api.student.getAll.useQuery({
     branchId: getBranchFilterParam(),
-    classId: selectedClass || undefined,
+    sectionId: selectedClass || undefined,
     sessionId: currentSessionId || undefined,
   }, {
     enabled: !!selectedClass,
@@ -79,7 +79,7 @@ export default function AssignRollNumberPage() {
         admissionNumber: student.admissionNumber || "",
         firstName: student.firstName,
         lastName: student.lastName,
-        rollNumber: student.rollNumber || null,
+        rollNumber: student.rollNumber?.toString() || null,
         isModified: false,
       }));
       setStudents(formattedStudents);
@@ -145,7 +145,7 @@ export default function AssignRollNumberPage() {
         admissionNumber: student.admissionNumber || "",
         firstName: student.firstName,
         lastName: student.lastName,
-        rollNumber: student.rollNumber || null,
+        rollNumber: student.rollNumber?.toString() || null,
         isModified: false,
       }));
       setStudents(formattedStudents);
@@ -182,7 +182,7 @@ export default function AssignRollNumberPage() {
                     <SelectContent>
                       {classesData?.map(classItem => (
                         <SelectItem key={classItem.id} value={classItem.id}>
-                          {classItem.name} - {classItem.section}
+                          {classItem.name} - {classItem.sections?.[0]?.name || "No Section"}
                         </SelectItem>
                       ))}
                     </SelectContent>

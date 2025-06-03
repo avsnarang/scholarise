@@ -81,7 +81,7 @@ export function useStudentAttendance(
     id: record.id,
     studentId: record.student.id,
     studentName: `${record.student.firstName} ${record.student.lastName}`,
-    rollNumber: record.student.rollNumber || undefined,
+    rollNumber: record.student.rollNumber?.toString(),
     admissionNumber: record.student.admissionNumber,
     date: new Date(record.date),
     status: record.status,

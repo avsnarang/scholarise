@@ -77,7 +77,7 @@ const FILTER_FIELDS: FilterField[] = [
     { id: "Female", name: "Female" },
     { id: "Other", name: "Other" },
   ]},
-  { id: "classId", name: "Class", type: "relation" },
+  { id: "sectionId", name: "Section", type: "relation" },
   { id: "email", name: "Email", type: "text" },
   { id: "phone", name: "Phone", type: "text" },
   { id: "isActive", name: "Status", type: "boolean" },
@@ -142,9 +142,12 @@ export function StudentAdvancedFilters({ filters, onFilterChange }: StudentAdvan
   const [isOpen, setIsOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState<AdvancedFilters>(filters);
 
-  // Fetch classes from the API
-  const { data: classesData } = api.class.getAll.useQuery();
-  const classes = classesData ?? [];
+  // Fetch sections from the API (since students belong to sections)
+  const { data: sectionsData } = api.section.getAll.useQuery({
+    includeClass: true,
+    isActive: true,
+  });
+  const sections = sectionsData ?? [];
 
   // Fetch parents from the API
   const { data: parentsData } = api.parent.getAll.useQuery();
@@ -272,19 +275,19 @@ export function StudentAdvancedFilters({ filters, onFilterChange }: StudentAdvan
         );
 
       case "relation":
-        if (field.id === "classId") {
+        if (field.id === "sectionId") {
           return (
             <Select
               value={condition.value?.toString() || ""}
               onValueChange={(value) => updateCondition(condition.id, { value })}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select class" />
+                <SelectValue placeholder="Select section" />
               </SelectTrigger>
               <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name} - {cls.section}
+                {sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.class.name} - {section.name}
                   </SelectItem>
                 ))}
               </SelectContent>

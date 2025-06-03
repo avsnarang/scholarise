@@ -230,7 +230,7 @@ export const admissionsRouter = createTRPCRouter({
           ...(input.branchId && { branchId: input.branchId }),
         },
         include: {
-          class: true,
+          section: true,
           branch: true,
         },
         orderBy: {

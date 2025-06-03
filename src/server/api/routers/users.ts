@@ -2,9 +2,10 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { Clerk } from '@clerk/clerk-sdk-node';
+import { env } from '@/env';
 
 // Initialize Clerk client
-const secretKey = process.env.CLERK_SECRET_KEY;
+const secretKey = env.CLERK_SECRET_KEY;
 const clerk = Clerk({ secretKey: secretKey || "" });
 
 /**

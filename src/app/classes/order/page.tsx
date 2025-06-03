@@ -18,31 +18,29 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-// Define the Class type
-type ClassWithTeacher = {
+// Define the Class type for ordering
+type ClassForOrdering = {
   id: string;
   name: string;
-  section: string;
+  grade?: number | null;
   isActive: boolean;
   displayOrder?: number;
-  teacher?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
   _count?: {
-    students: number;
+    sections: number;
   };
+  sectionsCount?: number;
 };
 
 // SortableItem component for drag-and-drop
-function SortableItem({ id, classData }: { id: string; classData: ClassWithTeacher }) {
+function SortableItem({ id, classData }: { id: string; classData: ClassForOrdering }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  
+  const sectionsCount = classData._count?.sections || classData.sectionsCount || 0;
   
   return (
     <div ref={setNodeRef} style={style} className="mb-2">
@@ -55,9 +53,9 @@ function SortableItem({ id, classData }: { id: string; classData: ClassWithTeach
           <GripVertical className="h-5 w-5 text-muted-foreground dark:text-[#808080]" />
         </div>
         <div className="flex-1">
-          <div className="font-medium">{classData.name} - {classData.section}</div>
+          <div className="font-medium">{classData.name}</div>
           <div className="text-sm text-muted-foreground dark:text-[#a0aec0]">
-            {classData.teacher ? `Teacher: ${classData.teacher.firstName} ${classData.teacher.lastName}` : "No teacher assigned"}
+            {classData.grade ? `Grade ${classData.grade} • ` : ""}{sectionsCount} section{sectionsCount !== 1 ? 's' : ''}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -67,7 +65,7 @@ function SortableItem({ id, classData }: { id: string; classData: ClassWithTeach
             {classData.isActive ? "Active" : "Inactive"}
           </Badge>
           <div className="w-8 h-8 flex items-center justify-center rounded-full bg-muted dark:bg-[#303030] text-sm font-medium">
-            {classData._count?.students || 0}
+            {sectionsCount}
           </div>
         </div>
       </div>
@@ -81,7 +79,7 @@ export default function ClassOrderPage() {
   const { currentSessionId } = useAcademicSessionContext();
   const { currentBranchId } = useBranchContext();
   
-  const [classes, setClasses] = useState<ClassWithTeacher[]>([]);
+  const [classes, setClasses] = useState<ClassForOrdering[]>([]);
   const [originalOrder, setOriginalOrder] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   
@@ -93,7 +91,7 @@ export default function ClassOrderPage() {
     })
   );
   
-  // Get classes for the current session and branch
+  // Get classes for the current session and branch (without sections, just count)
   const {
     data: classData,
     isLoading,
@@ -103,8 +101,7 @@ export default function ClassOrderPage() {
     { 
       sessionId: currentSessionId || undefined,
       branchId: currentBranchId || undefined,
-      includeTeacher: true,
-      includeStudentCount: true
+      includeSectionCount: true, // This will include _count: { sections: number }
     },
     { 
       enabled: !!currentSessionId && !!currentBranchId
@@ -133,28 +130,7 @@ export default function ClassOrderPage() {
     }
   }, [error, toast]);
   
-  // Note: You'll need to implement this mutation in your API router
-  // In src/server/api/routers/class.ts, add:
-  // updateOrder: protectedProcedure
-  //   .input(z.object({
-  //     updates: z.array(z.object({
-  //       id: z.string(),
-  //       displayOrder: z.number()
-  //     }))
-  //   }))
-  //   .mutation(async ({ ctx, input }) => {
-  //     // Update each class with its new display order
-  //     await Promise.all(
-  //       input.updates.map(update =>
-  //         ctx.prisma.class.update({
-  //           where: { id: update.id },
-  //           data: { displayOrder: update.displayOrder }
-  //         })
-  //       )
-  //     );
-  //     
-  //     return { success: true };
-  //   }),
+  // Update class order mutation
   const { mutate: updateClassOrder, isPending: isSaving } = api.class.updateOrder.useMutation({
     onSuccess: () => {
       toast({
@@ -183,8 +159,8 @@ export default function ClassOrderPage() {
           classData.map(c => ({
             id: c.id,
             name: c.name,
-            section: c.section,
-            displayOrder: (c as any).displayOrder
+            grade: c.grade,
+            displayOrder: c.displayOrder
           }))
         );
         
@@ -194,8 +170,8 @@ export default function ClassOrderPage() {
           let displayOrder = 0;
           try {
             // Try to get display order, falling back to 0 if it doesn't exist or isn't a number
-            displayOrder = typeof (c as any).displayOrder === 'number' ? (c as any).displayOrder : 
-                           (c as any).displayOrder ? Number((c as any).displayOrder) : 0;
+            displayOrder = typeof c.displayOrder === 'number' ? c.displayOrder : 
+                           c.displayOrder ? Number(c.displayOrder) : 0;
             
             // If NaN, use 0
             if (isNaN(displayOrder)) displayOrder = 0;
@@ -203,22 +179,15 @@ export default function ClassOrderPage() {
             console.warn("Error parsing displayOrder, using 0:", e);
           }
           
-          // Create a proper teacher object or undefined
-          const teacherData = c.teacher ? {
-            id: c.teacher.id,
-            firstName: c.teacher.firstName,
-            lastName: c.teacher.lastName
-          } : undefined;
-          
           // Return a complete class object with all necessary fields
           return {
             id: c.id,
             name: c.name,
-            section: c.section,
+            grade: c.grade,
             isActive: c.isActive,
             displayOrder,
-            teacher: teacherData,
-            _count: c._count
+            _count: c._count,
+            sectionsCount: c._count?.sections || 0
           };
         });
         
@@ -233,7 +202,7 @@ export default function ClassOrderPage() {
           });
         }
         
-        // Sort classes by displayOrder first, then by name and section
+        // Sort classes by displayOrder first, then by name
         const sortedClasses = [...mappedClasses].sort((a, b) => {
           // First compare by displayOrder
           const orderA = a.displayOrder || 0;
@@ -244,12 +213,7 @@ export default function ClassOrderPage() {
           }
           
           // If displayOrder is the same, compare by name
-          if (a.name !== b.name) {
-            return a.name.localeCompare(b.name);
-          }
-          
-          // If name is the same, compare by section
-          return a.section.localeCompare(b.section);
+          return a.name.localeCompare(b.name);
         });
         
         console.log("Sorted classes:", sortedClasses);

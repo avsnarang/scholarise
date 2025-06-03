@@ -1,21 +1,44 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { StudentDataTable, type Student } from "./student-data-table"
 
 interface StudentDataTableWrapperProps {
   data: any[] // Using any to accept potentially malformed data
-  onRowSelectionChange?: (selectedRows: string[]) => void
+  onRowSelectionChange?: (selectedIds: string[], isSelectAllActive: boolean) => void
+  pageSize?: number // Added pageSize prop
+  onPageSizeChange?: (value: string) => void // Added onPageSizeChange prop
+  pageCount?: number // Added pageCount prop
+  onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void // Added for sorting
+  currentSortBy?: string // Added for sorting
+  currentSortOrder?: "asc" | "desc" // Added for sorting
+  totalStudentsCount?: number; // Added totalStudentsCount prop
+  // New props for filters from StudentDataTable
+  currentFilters?: Record<string, any>; 
+  currentBranchId?: string | null;
+  currentSessionId?: string | null;
+  currentSearchTerm?: string | null; 
 }
 
 export function StudentDataTableWrapper({ 
   data, 
-  onRowSelectionChange 
+  onRowSelectionChange,
+  pageSize, // Destructure pageSize
+  onPageSizeChange, // Destructure onPageSizeChange
+  pageCount, // Destructure pageCount
+  onSortChange, // Destructure for sorting
+  currentSortBy, // Destructure for sorting
+  currentSortOrder, // Destructure for sorting
+  totalStudentsCount, // Destructure totalStudentsCount
+  // Destructure new filter props
+  currentFilters,
+  currentBranchId,
+  currentSessionId,
+  currentSearchTerm,
 }: StudentDataTableWrapperProps) {
-  const [processedData, setProcessedData] = useState<Student[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const processedData = useMemo(() => {
     try {
       // Transform and validate the input data
       const validatedData = data.map((item: any, index: number): Student => {
@@ -47,9 +70,10 @@ export function StudentDataTableWrapper({
           dateOfBirth: item.dateOfBirth instanceof Date ? 
             item.dateOfBirth : 
             (typeof item.dateOfBirth === 'string' ? new Date(item.dateOfBirth) : new Date()),
-          class: item.class ? {
-            name: item.class.name || '',
-            section: item.class.section || ''
+          class: item.section ? {
+            name: item.section.class?.name || '',
+            section: item.section.name || '',
+            displayOrder: typeof item.section.class?.displayOrder === 'number' ? item.section.class.displayOrder : undefined
           } : undefined,
           parent: item.parent ? {
             fatherName: item.parent.fatherName || undefined,
@@ -64,15 +88,22 @@ export function StudentDataTableWrapper({
         }
       })
 
-      setProcessedData(validatedData)
-      setError(null)
+      setError(null) // Clear error if processing succeeds
+      return validatedData
     } catch (err) {
       console.error('Error processing student data:', err)
       setError(`Failed to process student data: ${err instanceof Error ? err.message : 'Unknown error'}`)
       // Set empty array to avoid crashing the component
-      setProcessedData([])
+      return []
     }
   }, [data])
+
+  // Clear error if data becomes null or undefined, or on unmount
+  useEffect(() => {
+    if (!data) {
+      setError(null);
+    }
+  }, [data]);
 
   if (error) {
     return (
@@ -84,5 +115,20 @@ export function StudentDataTableWrapper({
     )
   }
 
-  return <StudentDataTable data={processedData} onRowSelectionChange={onRowSelectionChange} />
+  return <StudentDataTable 
+    data={processedData} 
+    onRowSelectionChange={onRowSelectionChange} 
+    pageSize={pageSize} 
+    onPageSizeChange={onPageSizeChange} 
+    pageCount={pageCount} 
+    onSortChange={onSortChange}
+    currentSortBy={currentSortBy}
+    currentSortOrder={currentSortOrder}
+    totalStudentsCount={totalStudentsCount}
+    // Pass down new filter props
+    currentFilters={currentFilters}
+    currentBranchId={currentBranchId}
+    currentSessionId={currentSessionId}
+    currentSearchTerm={currentSearchTerm}
+  />
 } 

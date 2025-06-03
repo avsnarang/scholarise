@@ -104,8 +104,10 @@ export const dashboardRouter = createTRPCRouter({
           await ctx.db.student.count({
             where: {
               isActive: true,
-              class: {
-                sessionId: academicSessionId
+              section: {
+                class: {
+                  sessionId: academicSessionId
+                }
               }
             }
           }) : 0;
@@ -115,10 +117,12 @@ export const dashboardRouter = createTRPCRouter({
           await ctx.db.teacher.count({
             where: {
               isActive: true,
-              classes: {
+              sections: {
                 some: {
-                  sessionId: academicSessionId,
-                  isActive: true
+                  class: {
+                    sessionId: academicSessionId,
+                    isActive: true
+                  }
                 }
               }
             }
@@ -132,8 +136,10 @@ export const dashboardRouter = createTRPCRouter({
                 where: {
                   branchId: branch.id,
                   isActive: true,
-                  class: {
-                    sessionId: academicSessionId
+                  section: {
+                    class: {
+                      sessionId: academicSessionId
+                    }
                   }
                 }
               }) : 0;
@@ -157,10 +163,12 @@ export const dashboardRouter = createTRPCRouter({
                 where: {
                   branchId: branch.id,
                   isActive: true,
-                  classes: {
+                  sections: {
                     some: {
-                      sessionId: academicSessionId,
-                      isActive: true
+                      class: {
+                        sessionId: academicSessionId,
+                        isActive: true
+                      }
                     }
                   }
                 }
@@ -207,16 +215,20 @@ export const dashboardRouter = createTRPCRouter({
         // Get class distribution
         let classDistribution: ClassDistributionItem[] = [];
         if (academicSessionId) {
-          const classes = await ctx.db.class.findMany({
+          const sections = await ctx.db.section.findMany({
             where: {
-              sessionId: academicSessionId,
-              isActive: true
+              class: {
+                sessionId: academicSessionId,
+                isActive: true
+              }
             },
-            orderBy: [
-              { displayOrder: 'asc' },
-              { name: 'asc' }
-            ],
             include: {
+              class: {
+                select: {
+                  name: true,
+                  displayOrder: true
+                }
+              },
               _count: {
                 select: {
                   students: {
@@ -229,17 +241,18 @@ export const dashboardRouter = createTRPCRouter({
             }
           });
 
-          // Group classes by name
-          const groupedClasses = classes.reduce((acc, cls) => {
-            if (!acc[cls.name]) {
-              acc[cls.name] = {
+          // Group sections by class name
+          const groupedClasses = sections.reduce((acc, section) => {
+            const className = section.class.name;
+            if (!acc[className]) {
+              acc[className] = {
                 sections: 0,
                 students: 0,
-                displayOrder: cls.displayOrder ?? 0 
+                displayOrder: section.class.displayOrder ?? 0 
               };
             }
-            acc[cls.name]!.sections++;
-            acc[cls.name]!.students += cls._count.students;
+            acc[className]!.sections++;
+            acc[className]!.students += section._count.students;
             return acc;
           }, {} as GroupedClassesAccumulator);
 

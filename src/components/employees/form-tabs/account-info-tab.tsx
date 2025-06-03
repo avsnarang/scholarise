@@ -125,7 +125,6 @@ export function AccountInfoTab({ isEdit = false }: AccountInfoTabProps) {
                 </FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
-                  defaultValue={field.value} 
                   value={field.value || undefined}
                 >
                   <FormControl>

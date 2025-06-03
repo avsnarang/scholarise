@@ -185,7 +185,7 @@ export function AddressTab() {
               <FormItem className="md:col-span-2">
                 <FormLabel>Address</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Street address, apartment, etc." />
+                  <Input {...field} value={field.value || ""} placeholder="Street address, apartment, etc." />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -260,7 +260,7 @@ export function AddressTab() {
               <FormItem>
                 <FormLabel>ZIP/PIN Code</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="110001" />
+                  <Input {...field} value={field.value || ""} placeholder="110001" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -304,7 +304,7 @@ export function AddressTab() {
                 <FormItem className="md:col-span-2">
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Street address, apartment, etc." />
+                    <Input {...field} value={field.value || ""} placeholder="Street address, apartment, etc." />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -379,7 +379,7 @@ export function AddressTab() {
                 <FormItem>
                   <FormLabel>ZIP/PIN Code</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="110001" />
+                    <Input {...field} value={field.value || ""} placeholder="110001" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

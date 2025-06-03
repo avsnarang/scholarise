@@ -34,21 +34,20 @@ export default function ClassDetailPage() {
     data: classData, 
     isLoading 
   } = api.class.getById.useQuery(
-    { id: id, includeStudents: true },
+    { id: id, includeSections: true },
     { enabled: !!id }
   );
   
-  // Get student count
+  // Get students for this class using the section API
   const {
     data: studentCount,
     isLoading: isLoadingStudentCount
-  } = api.class.getStudents.useQuery(
+  } = api.student.getAll.useQuery(
     { 
-      classId: id,
-      sessionId: currentSessionId || undefined
+      sectionId: classData?.sections?.[0]?.id
     },
     { 
-      enabled: !!id && !!currentSessionId
+      enabled: !!classData?.sections?.[0]?.id
     }
   );
   
@@ -56,7 +55,7 @@ export default function ClassDetailPage() {
   useEffect(() => {
     if (studentCount) {
       console.log("Student data loaded:", studentCount);
-      console.log("Number of students:", studentCount.length || 0);
+      console.log("Number of students:", studentCount.items?.length || studentCount.totalCount || 0);
     }
   }, [studentCount]);
 
@@ -116,22 +115,28 @@ export default function ClassDetailPage() {
   }
 
   // Convert the students for the data table
-  const students = studentCount?.map(student => ({
+  const students = studentCount?.items?.map((student: any) => ({
     id: student.id,
     firstName: student.firstName || '',
     lastName: student.lastName || '',
     admissionNumber: student.admissionNumber || '',
     isActive: student.isActive
   })) || [];
+
+  // Get student count from either items length or totalCount
+  const totalStudents = studentCount?.items?.length || studentCount?.totalCount || 0;
   
   // Calculate paginated students based on current page size
   const paginatedStudents = pageSize >= students.length 
     ? students 
     : students.slice(0, pageSize);
+
+  // Get the first section for display purposes
+  const primarySection = classData.sections?.[0];
   
   return (
     <PageWrapper
-      title={`${classData.name} - ${classData.section}`}
+      title={`${classData.name}${primarySection ? ` - ${primarySection.name}` : ''}`}
       subtitle="View and manage class information"
       action={
         <Button
@@ -150,25 +155,25 @@ export default function ClassDetailPage() {
         <div>
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {classData.teacher ? (
-                <>Class Teacher: {classData.teacher.firstName} {classData.teacher.lastName}</>
+              {primarySection?.teacherId ? (
+                <>Class Teacher: Assigned (ID: {primarySection.teacherId})</>
               ) : (
                 <>No class teacher assigned</>
               )}
               {" • "}
               <span className="inline-flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {studentCount?.length || 0}/{classData.capacity} students
-                {classData.capacity > 0 && studentCount && (
+                {totalStudents}/{primarySection?.capacity || 'N/A'} students
+                {primarySection?.capacity && totalStudents && (
                   <span className="inline-flex items-center ml-1">
                     <span className="w-8 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <span 
                         className={`h-full ${
-                          studentCount.length / classData.capacity > 0.9 ? 'bg-red-500' : 
-                          studentCount.length / classData.capacity > 0.75 ? 'bg-amber-500' : 'bg-green-500'
+                          totalStudents / primarySection.capacity > 0.9 ? 'bg-red-500' : 
+                          totalStudents / primarySection.capacity > 0.75 ? 'bg-amber-500' : 'bg-green-500'
                         }`} 
                         style={{ 
-                          width: `${Math.min(Math.round((studentCount.length / classData.capacity) * 100), 100)}%` 
+                          width: `${Math.min(Math.round((totalStudents / primarySection.capacity) * 100), 100)}%` 
                         }}
                       />
                     </span>
@@ -193,7 +198,7 @@ export default function ClassDetailPage() {
             <CardHeader>
               <CardDescription className="dark:text-[#c0c0c0]">Total Students</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
-                {isLoadingStudentCount ? <Skeleton className="h-6 w-10 dark:bg-[#303030]" /> : studentCount?.length || 0}
+                {isLoadingStudentCount ? <Skeleton className="h-6 w-10 dark:bg-[#303030]" /> : totalStudents}
               </CardTitle>
               <CardAction>
                 <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
@@ -205,17 +210,17 @@ export default function ClassDetailPage() {
             <CardFooter className="flex-col items-start gap-1.5 text-sm">
               <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
                 <Users className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
-                {classData.capacity && studentCount !== undefined ? (
+                {primarySection?.capacity && totalStudents !== undefined ? (
                   <span className="flex items-center gap-2">
-                    <span>{studentCount?.length || 0}/{classData.capacity} students ({Math.round((studentCount?.length / classData.capacity) * 100)}%)</span>
+                    <span>{totalStudents}/{primarySection.capacity} students ({Math.round((totalStudents / primarySection.capacity) * 100)}%)</span>
                     <span className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <span 
                         className={`h-full ${
-                          (studentCount.length / classData.capacity) > 0.9 ? 'bg-red-500' : 
-                          (studentCount.length / classData.capacity) > 0.75 ? 'bg-amber-500' : 'bg-green-500'
+                          (totalStudents / primarySection.capacity) > 0.9 ? 'bg-red-500' : 
+                          (totalStudents / primarySection.capacity) > 0.75 ? 'bg-amber-500' : 'bg-green-500'
                         }`} 
                         style={{ 
-                          width: `${Math.min(Math.round((studentCount.length / classData.capacity) * 100), 100)}%` 
+                          width: `${Math.min(Math.round((totalStudents / primarySection.capacity) * 100), 100)}%` 
                         }}
                       />
                     </span>
@@ -327,7 +332,7 @@ export default function ClassDetailPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {studentCount?.length === 0 ? (
+                {studentCount?.items?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-4 text-center">
                     <Users className="h-10 w-10 text-gray-400 dark:text-gray-500" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No students enrolled</h3>

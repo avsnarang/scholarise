@@ -254,7 +254,7 @@ export default function AIConfigurationPage() {
                     <SelectContent>
                       {classes?.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name} {cls.section}
+                          {cls.name} {cls.sections?.[0]?.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

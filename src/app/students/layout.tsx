@@ -11,7 +11,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Set title and description based on the pathname
-    if (pathname.includes("/students/create")) {
+    if (pathname.includes("/students/tc/create")) {
+      setPageTitle("Create Transfer Certificate");
+      setPageDescription("Generate a new transfer certificate");
+      document.title = "Create Transfer Certificate | ScholaRise ERP";
+    } else if (pathname.includes("/students/tc/history")) {
+      setPageTitle("Transfer Certificate History");
+      setPageDescription("View and manage transfer certificate history");
+      document.title = "TC History | ScholaRise ERP";
+    } else if (pathname.includes("/students/tc")) {
+      setPageTitle("Transfer Certificates");
+      setPageDescription("Manage student transfer certificates");
+      document.title = "Transfer Certificates | ScholaRise ERP";
+    } else if (pathname.includes("/students/create")) {
       setPageTitle("Add New Student");
       setPageDescription("Register a new student in ScholaRise ERP");
       document.title = "Add New Student | ScholaRise ERP";

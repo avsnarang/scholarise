@@ -45,9 +45,18 @@ const convertApiToFormValues = (apiData: any) => {
   // Check if user already has a Clerk account
   const hasClerkAccount = !!(apiData.clerkId || apiData.userId);
   
-  // Make sure email and roleId are preserved 
-  const email = apiData.email || apiData.officialEmail || apiData.personalEmail || "";
-  const roleId = apiData.roleId || "";
+  // Extract roleId from userRoles if available
+  const roleId = apiData.userRoles && apiData.userRoles.length > 0 
+    ? apiData.userRoles[0].roleId 
+    : "";
+
+  console.log("Converting API data for edit form:", {
+    hasClerkAccount,
+    officialEmail: apiData.officialEmail,
+    personalEmail: apiData.personalEmail,
+    roleId,
+    userRoles: apiData.userRoles
+  });
 
   return {
     ...apiData,
@@ -67,11 +76,10 @@ const convertApiToFormValues = (apiData: any) => {
     // Make sure to handle all optional fields that might be null
     certifications: apiData.certifications || [],
     subjects: apiData.subjects || [],
-    // Set createUser to true if the user already has a Clerk account
-    createUser: hasClerkAccount || apiData.createUser || false,
-    // Use explicitly provided email and roleId
-    email,
-    password: "", // Empty password field for existing users
+    // Ensure officialEmail and personalEmail are properly mapped
+    officialEmail: apiData.officialEmail || "",
+    personalEmail: apiData.personalEmail || "",
+    password: "", // Empty password field for existing users (will show placeholder text)
     roleId,
   };
 };
@@ -86,21 +94,6 @@ export default function EditTeacherPage() {
     { id: teacherId },
     { enabled: !!teacherId }
   );
-  
-  // If teacher has a clerkId, fetch clerk user data to get email
-  const { data: clerkUserData } = api.users.getByClerkId.useQuery(
-    { clerkId: teacher?.clerkId || "" },
-    { enabled: !!teacher?.clerkId }
-  );
-  
-  // Fetch user roles if clerkId is available to get roleId
-  const { data: userRoles } = api.role.getUserRoles.useQuery(
-    { userId: teacher?.clerkId || "" },
-    { enabled: !!teacher?.clerkId }
-  );
-  
-  // Find the first role ID from userRoles if available
-  const roleId = userRoles && userRoles.length > 0 ? userRoles[0]?.id : "";
   
   // Handle error
   if (error) {
@@ -149,16 +142,7 @@ export default function EditTeacherPage() {
     );
   }
   
-  // Enhance teacher data with clerk user data if available
-  const enhancedTeacherData = {
-    ...teacher,
-    // Use email from clerk user data if available, otherwise use teacher email
-    email: clerkUserData?.emailAddress || teacher.officialEmail || teacher.personalEmail || "",
-    // Add roleId from userRoles
-    roleId: roleId || "",
-  };
-  
-  const formattedTeacherData = convertApiToFormValues(enhancedTeacherData);
+  const formattedTeacherData = convertApiToFormValues(teacher);
   
   return (
     <div className="w-full px-4">

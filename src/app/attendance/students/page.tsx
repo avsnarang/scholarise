@@ -403,7 +403,7 @@ export default function StudentAttendancePage() {
   // Fetch classes with both branch and session filters
   const { data: classes, isLoading: isLoadingClasses } = api.class.getAll.useQuery(
     withSessionFilter(withBranchFilter({ 
-      includeTeacher: true 
+      includeSections: true 
     })),
     { 
       enabled: !!currentBranchId && !!currentSessionId 
@@ -429,12 +429,12 @@ export default function StudentAttendancePage() {
     isLoading: isMarkingAttendance
   } = useBulkMarkStudentAttendance();
 
-  // Set teacher's class as default if they're a class teacher
+  // Set teacher's section as default if they're assigned to sections
   useEffect(() => {
-    if (teacherData && teacherData.classes && teacherData.classes.length > 0 && !selectedClassId) {
-      const firstClass = teacherData.classes[0];
-      if (firstClass?.id) {
-        setSelectedClassId(firstClass.id);
+    if (teacherData && teacherData.sections && teacherData.sections.length > 0 && !selectedClassId) {
+      const firstSection = teacherData.sections[0];
+      if (firstSection?.classId) {
+        setSelectedClassId(firstSection.classId);
       }
     }
   }, [teacherData, selectedClassId]);

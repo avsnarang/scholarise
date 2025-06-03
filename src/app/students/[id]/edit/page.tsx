@@ -77,7 +77,7 @@ export default function EditStudentPage() {
     caste: student.caste || "",
     aadharNumber: student.aadharNumber || "",
     udiseId: student.udiseId || "",
-    classId: student.classId || "",
+    sectionId: student.section?.id || "",
     permanentAddress: student.permanentAddress || "",
     permanentCity: student.permanentCity || "",
     permanentState: student.permanentState || "",

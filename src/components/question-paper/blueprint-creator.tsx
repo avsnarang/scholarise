@@ -198,7 +198,7 @@ export default function BlueprintCreator() {
                       <SelectContent>
                         {classes?.map((cls) => (
                           <SelectItem key={cls.id} value={cls.id}>
-                            {cls.name} {cls.section}
+                            {cls.name} - {cls.sections?.[0]?.name || "No Section"}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -32,13 +32,15 @@ async function main() {
     const classes = await prisma.class.findMany({
       include: {
         branch: true,
-        session: true
+        session: true,
+        sections: true
       }
     });
     console.log(`\nFound ${classes.length} classes:`);
     if (classes.length > 0) {
       classes.forEach(cls => {
-        console.log(`- ${cls.name} ${cls.section}: Branch=${cls.branch.name}, Session=${cls.session.name}`);
+        const sectionNames = cls.sections.map(s => s.name).join(', ');
+        console.log(`- ${cls.name} (sections: ${sectionNames}): Branch=${cls.branch.name}, Session=${cls.session.name}`);
       });
     } else {
       console.log('No classes found in the database');

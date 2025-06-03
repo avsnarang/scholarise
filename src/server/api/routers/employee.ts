@@ -3,7 +3,19 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
 import { createEmployeeUser } from "@/utils/clerk";
-import { Clerk } from "@clerk/clerk-sdk-node";
+import { Clerk } from '@clerk/clerk-sdk-node';
+import { env } from '@/env';
+
+// RBAC Permissions
+const RBAC_PERMISSIONS = {
+  // Employee Management
+  EMPLOYEE_CREATE: 'employee.create',
+  EMPLOYEE_READ: 'employee.read',
+  EMPLOYEE_UPDATE: 'employee.update',
+  EMPLOYEE_DELETE: 'employee.delete',
+  // Employee Multi-Branch Access
+  EMPLOYEE_MULTI_BRANCH_ACCESS: 'employee.multi_branch_access',
+} as const;
 
 // Define types for raw query results
 interface EmployeeCounts {
@@ -18,7 +30,7 @@ interface BranchAccess {
 }
 
 // Initialize Clerk client
-const secretKey = process.env.CLERK_SECRET_KEY;
+const secretKey = env.CLERK_SECRET_KEY;
 const clerk = Clerk({ secretKey: secretKey || "" });
 
 export const employeeRouter = createTRPCRouter({
@@ -772,6 +784,56 @@ export const employeeRouter = createTRPCRouter({
       // Delete employee
       await ctx.db.employee.delete({
         where: { id: input.id },
+      });
+
+      return { success: true };
+    }),
+
+  bulkDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if employees exist and get their Clerk IDs
+      const employees = await ctx.db.employee.findMany({
+        where: {
+          id: {
+            in: input.ids,
+          },
+        },
+        select: {
+          id: true,
+          clerkId: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+
+      if (employees.length !== input.ids.length) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more employees not found",
+        });
+      }
+
+      // Delete Clerk users for employees that have them
+      for (const employee of employees) {
+        if (employee.clerkId) {
+          try {
+            console.log(`Deleting Clerk user for employee ${employee.firstName} ${employee.lastName} (${employee.clerkId})`);
+            await clerk.users.deleteUser(employee.clerkId);
+          } catch (error) {
+            console.error(`Error deleting Clerk user for employee ${employee.id}:`, error);
+            // Don't throw here, just log the error and continue
+          }
+        }
+      }
+
+      // Delete employees from database
+      await ctx.db.employee.deleteMany({
+        where: {
+          id: {
+            in: input.ids,
+          },
+        },
       });
 
       return { success: true };

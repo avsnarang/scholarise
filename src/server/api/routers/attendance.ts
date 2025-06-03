@@ -542,7 +542,7 @@ export const attendanceRouter = createTRPCRouter({
       // Verify the student exists and is in the given class
       const student = await ctx.db.student.findUnique({
         where: { id: studentId },
-        include: { class: true },
+        include: { section: true },
       });
 
       if (!student) {
@@ -552,7 +552,7 @@ export const attendanceRouter = createTRPCRouter({
         });
       }
 
-      if (student.classId !== classId) {
+      if (student.sectionId !== classId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Student does not belong to the specified class",
@@ -580,7 +580,7 @@ export const attendanceRouter = createTRPCRouter({
         return ctx.db.studentAttendance.create({
           data: {
             student: { connect: { id: studentId } },
-            class: { connect: { id: classId } },
+            section: { connect: { id: classId } },
             date: new Date(date.setHours(0, 0, 0, 0)),
             status,
             reason,
@@ -597,28 +597,28 @@ export const attendanceRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { classId, date, attendance, markedById } = input;
 
-      // Verify the class exists
-      const classEntity = await ctx.db.class.findUnique({
+      // Verify the section exists
+      const sectionEntity = await ctx.db.section.findUnique({
         where: { id: classId },
         include: { students: true },
       });
 
-      if (!classEntity) {
+      if (!sectionEntity) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Class not found",
+          message: "Section not found",
         });
       }
 
-      // Get all student IDs in the class
-      const classStudentIds = classEntity.students.map(student => student.id);
+      // Get all student IDs in the section
+      const sectionStudentIds = sectionEntity.students.map((student: any) => student.id);
 
-      // Validate that all provided student IDs belong to the class
+      // Validate that all provided student IDs belong to the section
       for (const record of attendance) {
-        if (!classStudentIds.includes(record.studentId)) {
+        if (!sectionStudentIds.includes(record.studentId)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Student with ID ${record.studentId} does not belong to the specified class`,
+            message: `Student with ID ${record.studentId} does not belong to the specified section`,
           });
         }
       }
@@ -652,7 +652,7 @@ export const attendanceRouter = createTRPCRouter({
             return ctx.db.studentAttendance.create({
               data: {
                 student: { connect: { id: studentId } },
-                class: { connect: { id: classId } },
+                section: { connect: { id: classId } },
                 date: normalizedDate,
                 status,
                 reason,
@@ -724,11 +724,10 @@ export const attendanceRouter = createTRPCRouter({
               admissionNumber: true,
             },
           },
-          class: {
+          section: {
             select: {
               id: true,
               name: true,
-              section: true,
             },
           },
         },
@@ -749,28 +748,26 @@ export const attendanceRouter = createTRPCRouter({
       const { classId, date } = input;
       const normalizedDate = new Date(date.setHours(0, 0, 0, 0));
 
-      // Get all students in the class
-      const classEntity = await ctx.db.class.findUnique({
+      // Verify the section exists
+      const sectionEntity = await ctx.db.section.findUnique({
         where: { id: classId },
-        include: {
-          students: {
-            where: { isActive: true },
-            orderBy: { firstName: "asc" },
-          },
-        },
+        include: { students: true },
       });
 
-      if (!classEntity) {
+      if (!sectionEntity) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Class not found",
+          message: "Section not found",
         });
       }
+
+      // Get all student IDs in the section
+      const sectionStudentIds = sectionEntity.students.map((student: any) => student.id);
 
       // Get existing attendance records for the given date
       const attendanceRecords = await ctx.db.studentAttendance.findMany({
         where: {
-          classId,
+          sectionId: classId,
           date: normalizedDate,
         },
       });
@@ -782,7 +779,7 @@ export const attendanceRouter = createTRPCRouter({
       });
 
       // Combine student data with attendance data
-      const studentAttendance = classEntity.students.map(student => {
+      const studentAttendance = sectionEntity.students.map(student => {
         const attendanceRecord = attendanceMap.get(student.id);
 
         return {
@@ -808,9 +805,8 @@ export const attendanceRouter = createTRPCRouter({
 
       return {
         class: {
-          id: classEntity.id,
-          name: classEntity.name,
-          section: classEntity.section,
+          id: sectionEntity.id,
+          name: sectionEntity.name,
         },
         date: normalizedDate,
         students: studentAttendance,

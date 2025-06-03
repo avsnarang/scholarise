@@ -34,6 +34,7 @@ export function CollectionClassSelector({
     {
       branchId,
       isActive: true,
+      includeSections: true,
     }
   );
 
@@ -55,7 +56,7 @@ export function CollectionClassSelector({
     }
   }, [defaultClassId]);
 
-  // Fetch students for the selected class
+  // Fetch students for the selected section
   const { 
     data: rawStudents = [], 
     isLoading: isLoadingStudents,
@@ -80,9 +81,10 @@ export function CollectionClassSelector({
     setSelectedClassId(value);
   };
 
-  const students = rawStudents.map(student => ({
+  const students = rawStudents.map((student: any) => ({
     ...student,
-    class: student.class ? { name: student.class.name, section: student.class.section } : undefined,
+    rollNumber: student.rollNumber?.toString() || null,
+    class: student.section?.class ? { name: student.section.class.name, section: student.section.name } : undefined,
   }));
 
   return (
@@ -104,11 +106,13 @@ export function CollectionClassSelector({
               <SelectValue placeholder={isLoadingClasses ? "Loading classes..." : "Select a class"} />
             </SelectTrigger>
             <SelectContent>
-              {classes.map((cls) => (
-                <SelectItem key={cls.id} value={cls.id}>
-                  {cls.name} {cls.section}
-                </SelectItem>
-              ))}
+              {classes.flatMap((cls) => 
+                cls.sections?.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {cls.name} - {section.name}
+                  </SelectItem>
+                )) || []
+              )}
             </SelectContent>
           </Select>
         </CardContent>

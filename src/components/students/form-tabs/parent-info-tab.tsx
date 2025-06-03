@@ -35,7 +35,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Father's Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Father's Name" />
+                    <Input {...field} value={field.value || ""} placeholder="Father's Name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -50,7 +50,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -65,7 +65,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Education</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Education" list="education-list" />
+                    <Input {...field} value={field.value || ""} placeholder="Education" list="education-list" />
                   </FormControl>
                   <datalist id="education-list">
                     {educationOptions.map(option => (
@@ -85,7 +85,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Occupation</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Occupation" />
+                    <Input {...field} value={field.value || ""} placeholder="Occupation" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -100,7 +100,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mobile Number" />
+                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +115,22 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Email" type="email" />
+                    <Input {...field} value={field.value || ""} placeholder="Email" type="email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Father's Aadhar Number */}
+            <FormField
+              control={control}
+              name="fatherAadharNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Aadhar Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ""} placeholder="Aadhar Number" maxLength={12} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -136,7 +151,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mother's Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mother's Name" />
+                    <Input {...field} value={field.value || ""} placeholder="Mother's Name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,7 +166,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -166,7 +181,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Education</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Education" list="education-list" />
+                    <Input {...field} value={field.value || ""} placeholder="Education" list="education-list" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +196,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Occupation</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Occupation" />
+                    <Input {...field} value={field.value || ""} placeholder="Occupation" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -196,7 +211,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mobile Number" />
+                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -211,7 +226,22 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Email" type="email" />
+                    <Input {...field} value={field.value || ""} placeholder="Email" type="email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Mother's Aadhar Number */}
+            <FormField
+              control={control}
+              name="motherAadharNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Aadhar Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ""} placeholder="Aadhar Number" maxLength={12} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -232,7 +262,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Guardian's Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Guardian's Name" />
+                    <Input {...field} value={field.value || ""} placeholder="Guardian's Name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -247,7 +277,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -262,7 +292,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Education</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Education" list="education-list" />
+                    <Input {...field} value={field.value || ""} placeholder="Education" list="education-list" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -277,7 +307,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Occupation</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Occupation" />
+                    <Input {...field} value={field.value || ""} placeholder="Occupation" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -292,7 +322,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Mobile Number" />
+                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -307,7 +337,22 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Email" type="email" />
+                    <Input {...field} value={field.value || ""} placeholder="Email" type="email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Guardian's Aadhar Number */}
+            <FormField
+              control={control}
+              name="guardianAadharNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Aadhar Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ""} placeholder="Aadhar Number" maxLength={12} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -328,7 +373,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Parent Anniversary</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -343,7 +388,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Monthly Income</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Monthly Income" />
+                    <Input {...field} value={field.value || ""} placeholder="Monthly Income" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -358,7 +403,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Parent Username</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Parent Username" readOnly />
+                    <Input {...field} value={field.value || ""} placeholder="Parent Username" readOnly />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -373,7 +418,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Parent Password</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Parent Password" type="password" readOnly />
+                    <Input {...field} value={field.value || ""} placeholder="Parent Password" type="password" readOnly />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClassForm } from "@/components/classes/class-form";
+import { CreateClassModal } from "@/components/classes/create-class-modal";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { Loader2, ArrowLeft, GraduationCap, BookOpen, Users } from "lucide-react";
@@ -17,6 +17,7 @@ export default function NewClassPage() {
   const { currentSessionId } = useAcademicSessionContext();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(true);
 
   // Check if we have the required IDs
   if (!currentBranchId || !currentSessionId) {
@@ -104,23 +105,14 @@ export default function NewClassPage() {
           </Card>
         </div>
 
-        {/* Form */}
-        <Card className="dark:bg-[#202020] dark:border-[#303030] border-t-4 border-t-[#00501B] dark:border-t-[#7aad8c] dark:ring-[#7aad8c]/10 ring-[#00501B]/10 focus-within:ring-[#00501B]/20 dark:focus-within:ring-[#7aad8c]/20 hover:shadow-[#00501B]/5 dark:hover:shadow-[#7aad8c]/5">
-          <CardHeader>
-            <CardTitle className="text-xl dark:text-white">Class Information</CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              Fill in the information below to create a new class
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ClassForm
-              branchId={currentBranchId}
-              sessionId={currentSessionId}
-              onSuccess={() => router.push("/classes")}
-              onCancel={() => router.push("/classes")}
-            />
-          </CardContent>
-        </Card>
+        {/* Modal */}
+        <CreateClassModal
+          isOpen={isModalOpen}
+          onClose={() => router.push("/classes")}
+          branchId={currentBranchId}
+          sessionId={currentSessionId}
+          onSuccess={() => router.push("/classes")}
+        />
       </div>
     </PageWrapper>
   );

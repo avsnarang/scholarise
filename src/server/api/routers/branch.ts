@@ -273,30 +273,10 @@ export const branchRouter = createTRPCRouter({
         // First check if the user is an employee
         const employee = await ctx.db.employee.findFirst({
           where: { userId: userId },
-          include: {
-            branchAccess: true,
-          },
         });
 
         if (employee) {
-          // If employee has branchAccess records, return those branches
-          if (employee.branchAccess.length > 0) {
-            const branchIds = employee.branchAccess.map(access => access.branchId);
-            
-            return ctx.db.branch.findMany({
-              where: {
-                id: {
-                  in: branchIds,
-                },
-              },
-              orderBy: [
-                { order: "asc" },
-                { name: "asc" },
-              ],
-            });
-          }
-          
-          // If no specific branch access records, just return their assigned branch
+          // Return the employee's assigned branch
           return ctx.db.branch.findMany({
             where: {
               id: employee.branchId,

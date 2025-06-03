@@ -42,7 +42,7 @@ interface TeacherDataTableProps {
 }
 
 export function TeacherDataTable({ data, onRowSelectionChange }: TeacherDataTableProps) {
-  const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const { toast } = useToast()
   const deleteConfirm = useDeleteConfirm()
   const statusChangeConfirm = useStatusChangeConfirm()
@@ -65,10 +65,14 @@ export function TeacherDataTable({ data, onRowSelectionChange }: TeacherDataTabl
   })
 
   // Handle row selection change
-  const handleRowSelectionChange = (rowIds: string[]) => {
-    setSelectedRows(rowIds)
+  const handleRowSelectionChange = (updater: React.SetStateAction<Record<string, boolean>>) => {
+    setRowSelection(updater)
+    
+    // Extract selected row IDs and call parent callback if provided
     if (onRowSelectionChange) {
-      onRowSelectionChange(rowIds)
+      const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater
+      const selectedRowIds = Object.keys(newSelection).filter(key => newSelection[key])
+      onRowSelectionChange(selectedRowIds)
     }
   }
 
@@ -276,6 +280,8 @@ export function TeacherDataTable({ data, onRowSelectionChange }: TeacherDataTabl
       data={data} 
       searchKey="firstName"
       searchPlaceholder="Search teachers..."
+      rowSelection={rowSelection}
+      onRowSelectionChange={handleRowSelectionChange}
     />
   )
 }

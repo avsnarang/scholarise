@@ -25,7 +25,7 @@ export function QualificationsTab() {
               <FormLabel>Highest Qualification Achieved</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -86,7 +86,7 @@ export function QualificationsTab() {
               <FormLabel>Year of Completion</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>

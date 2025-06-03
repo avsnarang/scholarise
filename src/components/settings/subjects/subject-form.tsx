@@ -26,18 +26,21 @@ import { Loader2 } from "lucide-react";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 
-// Define types for API data
-interface Class {
+// Define types based on actual API response
+interface ClassData {
   id: string;
   name: string;
-  section: string;
   branchId: string;
   sessionId: string;
+  // Note: no section field - sections are separate entities
 }
 
 interface ClassSubject {
   classId: string;
-  class: Class;
+  class: {
+    id: string;
+    name: string;
+  };
 }
 
 // Define the form schema
@@ -65,7 +68,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
 
-  // Fetch all classes for class selection
+  // Get all classes for class selection
   const { data: classesData, isLoading: isLoadingClasses } = api.class.getAll.useQuery(
     { 
       branchId: currentBranchId || undefined, 
@@ -78,10 +81,10 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
   // Use the classes data directly as it's already an array
   const classes = classesData || [];
   
-  // Create class options for multi-select
-  const classOptions = classes.map((cls: Class) => ({
+  // Create class options for multi-select - just show class name since sections are separate
+  const classOptions = classes.map((cls: ClassData) => ({
     value: cls.id,
-    label: `${cls.name} - ${cls.section}`,
+    label: cls.name, // Just the class name, no section
   }));
 
   // Fetch subject data for editing

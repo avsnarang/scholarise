@@ -46,7 +46,7 @@ export function StudentBulkActions({
   });
 
   // Bulk update class mutation
-  const bulkUpdateClassMutation = api.student.bulkUpdateClass.useMutation({
+  const bulkUpdateStudents = api.student.bulkUpdateClass.useMutation({
     onSuccess: () => {
       void utils.student.getAll.invalidate();
       void utils.student.getStats.invalidate();
@@ -83,9 +83,9 @@ export function StudentBulkActions({
     if (selectedStudentIds.length === 0 || !selectedClass) return;
 
     try {
-      await bulkUpdateClassMutation.mutateAsync({
+      await bulkUpdateStudents.mutateAsync({
+        sectionId: selectedClass,
         ids: selectedStudentIds,
-        classId: selectedClass,
       });
     } catch (error) {
       console.error("Error updating student classes:", error);
@@ -136,11 +136,13 @@ export function StudentBulkActions({
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name} - {cls.section}
-                    </SelectItem>
-                  ))}
+                  {classes?.flatMap(cls => 
+                    cls.sections?.map(section => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {cls.name} - {section.name}
+                      </SelectItem>
+                    )) || []
+                  )}
                 </SelectContent>
               </Select>
               <div className="flex justify-end">

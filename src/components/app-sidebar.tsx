@@ -363,6 +363,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
+      title: "Finance",
+      href: "/finance",
+      icon: CreditCard,
+      permissions: navItemPermissions.finance,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/finance",
+          permissions: navItemPermissions.finance,
+        },
+        {
+          title: "Fee Heads",
+          href: "/finance/fee-head",
+          permissions: navItemPermissions.feeHead,
+        },
+        {
+          title: "Fee Terms",
+          href: "/finance/fee-term",
+          permissions: navItemPermissions.feeTerm,
+        },
+        {
+          title: "Classwise Fees",
+          href: "/finance/classwise-fee",
+          permissions: navItemPermissions.classwiseFee,
+        },
+        {
+          title: "Fee Collection",
+          href: "/finance/fee-collection",
+          permissions: navItemPermissions.feeCollection,
+        },
+        {
+          title: "Reports",
+          href: "/finance/reports",
+          permissions: navItemPermissions.financeReports,
+        },
+      ],
+    },
+    {
       title: "Question Papers",
       href: "/question-papers",
       icon: BookOpen,
@@ -460,12 +498,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const secondaryItems = [
     {
-      title: "Fees",
-      href: "/fees",
-      icon: CreditCard,
-      permissions: navItemPermissions.fees,
-    },
-    {
       title: "Reports",
       href: "/reports",
       icon: FileText,
@@ -552,11 +584,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleSignOut = async () => {
     try {
       // Sign out with redirect to login page
-      await signOut({ redirectUrl: "/login" });
+      await signOut({ redirectUrl: "/sign-in" });
     } catch (error) {
       console.error("Error signing out:", error);
       // Fallback: redirect to login page even if there's an error
-      window.location.href = "/login";
+      window.location.href = "/sign-in";
     }
   };
 

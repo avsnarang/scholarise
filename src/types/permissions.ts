@@ -78,6 +78,14 @@ export enum Permission {
   VIEW_FEES = "view_fees",
   MANAGE_FEES = "manage_fees",
   
+  // Finance Module Permissions
+  VIEW_FINANCE_MODULE = "view_finance_module",
+  MANAGE_FEE_HEADS = "manage_fee_heads",
+  MANAGE_FEE_TERMS = "manage_fee_terms",
+  MANAGE_CLASSWISE_FEES = "manage_classwise_fees",
+  COLLECT_FEES = "collect_fees",
+  VIEW_FINANCE_REPORTS = "view_finance_reports",
+  
   // Question Paper permissions
   VIEW_QUESTION_PAPERS = "view_question_papers",
   CREATE_QUESTION_PAPER = "create_question_paper",

@@ -40,7 +40,7 @@ export function OtherInfoTab() {
             <FormItem>
               <FormLabel>Name of Previous School</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Name of Previous School" />
+                <Input {...field} value={field.value || ""} placeholder="Name of Previous School" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -55,7 +55,7 @@ export function OtherInfoTab() {
             <FormItem>
               <FormLabel>Last Class Attended</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Last Class Attended" />
+                <Input {...field} value={field.value || ""} placeholder="Last Class Attended" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -70,7 +70,7 @@ export function OtherInfoTab() {
             <FormItem>
               <FormLabel>Medium of Instruction</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Medium of Instruction" list="medium-list" />
+                <Input {...field} value={field.value || ""} placeholder="Medium of Instruction" list="medium-list" />
               </FormControl>
               <datalist id="medium-list">
                 {mediumOptions.map(option => (
@@ -112,7 +112,7 @@ export function OtherInfoTab() {
             <FormItem>
               <FormLabel>School City</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="School City" />
+                <Input {...field} value={field.value || ""} placeholder="School City" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -127,7 +127,7 @@ export function OtherInfoTab() {
             <FormItem>
               <FormLabel>School State</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="School State" list="school-states-list" />
+                <Input {...field} value={field.value || ""} placeholder="School State" list="school-states-list" />
               </FormControl>
               <datalist id="school-states-list">
                 {indianStates.map(state => (
@@ -148,7 +148,7 @@ export function OtherInfoTab() {
               <FormItem>
                 <FormLabel>Reason for Leaving</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Reason for Leaving" />
+                  <Input {...field} value={field.value || ""} placeholder="Reason for Leaving" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -33,11 +33,11 @@ const subjectOptions = [
 
 interface StudentInfoTabProps {
   branch: any;
-  classes: any[];
+  sections: any[];
   generateSchoolEmail: (admissionNumber: string, branchId: string) => string;
 }
 
-export function StudentInfoTab({ branch, classes, generateSchoolEmail }: StudentInfoTabProps) {
+export function StudentInfoTab({ branch, sections, generateSchoolEmail }: StudentInfoTabProps) {
   const { control, watch, setValue } = useFormContext<StudentFormValues>();
 
   const admissionNumber = watch("admissionNumber");
@@ -56,8 +56,8 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
   const validateAgeForClass = (dateOfBirth: string, classId: string) => {
     if (!dateOfBirth || !classId) return true;
 
-    const selectedClass = classes.find(c => c.id === classId);
-    if (!selectedClass) return true;
+    const selectedSection = sections.find(s => s.id === classId);
+    if (!selectedSection) return true;
 
     const dob = new Date(dateOfBirth);
     const today = new Date();
@@ -74,7 +74,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
     }
 
     // Example age validation logic (adjust based on your requirements)
-    const className = selectedClass.name.toLowerCase();
+    const className = selectedSection.className?.toLowerCase() || "";
     if (className.includes("1st") && age < 6) return false;
     if (className.includes("2nd") && age < 7) return false;
     // Add more class-specific age validations as needed
@@ -97,7 +97,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
                 Admission Number <span className="text-red-500 ml-1">*</span>
               </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Admission Number" />
+                <Input {...field} value={field.value || ""} placeholder="Admission Number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -114,7 +114,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
                 First Name <span className="text-red-500 ml-1">*</span>
               </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="First Name" />
+                <Input {...field} value={field.value || ""} placeholder="First Name" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,32 +131,32 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
                 Last Name <span className="text-red-500 ml-1">*</span>
               </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Last Name" />
+                <Input {...field} value={field.value || ""} placeholder="Last Name" />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Class */}
+        {/* Class & Section */}
         <FormField
           control={control}
           name="classId"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center">
-                Enrollment Class <span className="text-red-500 ml-1">*</span>
+                Class & Section <span className="text-red-500 ml-1">*</span>
               </FormLabel>
               <FormControl>
                 <Combobox
-                  options={classes.map((cls) => ({
-                    value: cls.id,
-                    label: `${cls.name} - ${cls.section}`
+                  options={sections.map((section) => ({
+                    value: section.id,
+                    label: section.displayName || `${section.className} - ${section.name}`
                   }))}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Select Class"
-                  emptyMessage="No classes found."
+                  placeholder="Select Class & Section"
+                  emptyMessage="No sections found."
                 />
               </FormControl>
               <FormMessage />
@@ -307,7 +307,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
               <FormItem>
                 <FormLabel>Specify Gender</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Specify Gender" />
+                  <Input {...field} value={field.value || ""} placeholder="Specify Gender" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -323,7 +323,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>School Email</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="School Email" readOnly />
+                <Input {...field} value={field.value || ""} placeholder="School Email" readOnly />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -338,7 +338,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Personal Email</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Personal Email" type="email" />
+                <Input {...field} value={field.value || ""} placeholder="Personal Email" type="email" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -353,7 +353,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Phone Number" />
+                <Input {...field} value={field.value || ""} placeholder="Phone Number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -368,7 +368,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Caste</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Caste" />
+                <Input {...field} value={field.value || ""} placeholder="Caste" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -383,7 +383,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Religion</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Religion" />
+                <Input {...field} value={field.value || ""} placeholder="Religion" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -398,7 +398,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Nationality</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Nationality" />
+                <Input {...field} value={field.value || ""} placeholder="Nationality" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -413,7 +413,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Aadhar Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Aadhar Number" />
+                <Input {...field} value={field.value || ""} placeholder="Aadhar Number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -428,7 +428,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>UDISE ID</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="UDISE ID" />
+                <Input {...field} value={field.value || ""} placeholder="UDISE ID" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -443,7 +443,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>CBSE-10 Roll Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="CBSE-10 Roll Number" />
+                <Input {...field} value={field.value || ""} placeholder="CBSE-10 Roll Number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -458,7 +458,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>CBSE-12 Roll Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="CBSE-12 Roll Number" />
+                <Input {...field} value={field.value || ""} placeholder="CBSE-12 Roll Number" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -473,7 +473,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Username" readOnly />
+                <Input {...field} value={field.value || ""} placeholder="Username" readOnly />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -488,7 +488,7 @@ export function StudentInfoTab({ branch, classes, generateSchoolEmail }: Student
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Password" type="password" readOnly />
+                <Input {...field} value={field.value || ""} placeholder="Password" type="password" readOnly />
               </FormControl>
               <FormMessage />
             </FormItem>

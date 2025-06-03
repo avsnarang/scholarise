@@ -306,14 +306,18 @@ export function StudentDataTable({
           <Select
             value={table.getState().pagination.pageSize.toString()}
             onValueChange={(value) => {
-              table.setPageSize(Number(value))
+              if (value === "all") {
+                table.setPageSize(data.length);
+              } else {
+                table.setPageSize(Number(value));
+              }
             }}
           >
             <SelectTrigger className="h-8 w-[100px] dark:bg-[#252525] dark:border-[#303030] dark:text-[#e6e6e6]">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent className="dark:bg-[#252525] dark:border-[#303030]">
-              {[5, 10, 25, 50, 100].map((pageSize) => (
+              {[10, 50, 100, 200, 500].map((pageSize) => (
                 <SelectItem 
                   key={pageSize} 
                   value={pageSize.toString()}
@@ -322,6 +326,13 @@ export function StudentDataTable({
                   {pageSize} per page
                 </SelectItem>
               ))}
+              <SelectItem 
+                key="all"
+                value="all"
+                className="dark:text-[#e6e6e6] dark:focus:bg-[#303030]"
+              >
+                All
+              </SelectItem>
             </SelectContent>
           </Select>
           

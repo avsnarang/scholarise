@@ -148,18 +148,22 @@ export const useStudentFilterAdapter = (
   onFilterChange: (filters: AdvancedFilters) => void
 ) => {
   const [uiFilters, setUiFilters] = useState<Filter[]>([]);
-  const { data: classesData } = api.class.getAll.useQuery();
+  // Change to use sections API since students belong to sections
+  const { data: sectionsData } = api.section.getAll.useQuery({
+    includeClass: true,
+    isActive: true,
+  });
 
-  // Update class options when data is available
+  // Update section options when data is available
   useEffect(() => {
-    if (classesData?.length) {
-      studentFilterToOptions[StudentFilterType.CLASS] = classesData.map(cls => ({
-        name: `${cls.name} ${cls.section || ''}`,
+    if (sectionsData?.length) {
+      studentFilterToOptions[StudentFilterType.CLASS] = sectionsData.map(section => ({
+        name: `${section.class.name} - ${section.name}`,
         icon: <School className="size-3.5" />,
-        label: cls.id
+        label: section.id // Use section ID since students belong to sections
       }));
     }
-  }, [classesData]);
+  }, [sectionsData]);
 
   // When advanced filters change, update the UI filters
   useEffect(() => {
@@ -180,13 +184,14 @@ export const useStudentFilterAdapter = (
     filters.conditions.forEach(condition => {
       if (condition.field === "isActive") return; // Already handled above
       
-      if (condition.field === "classId") {
-        const classInfo = classesData?.find(c => c.id === condition.value);
+      // Change from classId to sectionId since students belong to sections
+      if (condition.field === "sectionId" || condition.field === "classId") {
+        const sectionInfo = sectionsData?.find(s => s.id === condition.value);
         newFilters.push({
           id: condition.id,
           type: StudentFilterType.CLASS as any,
           operator: condition.operator === "equals" ? FilterOperator.IS : FilterOperator.IS_NOT,
-          value: [classInfo ? `${classInfo.name} ${classInfo.section || ''}` : condition.value as string]
+          value: [sectionInfo ? `${sectionInfo.class.name} - ${sectionInfo.name}` : condition.value as string]
         });
       }
       
@@ -246,7 +251,7 @@ export const useStudentFilterAdapter = (
     });
     
     setUiFilters(newFilters);
-  }, [filters, classesData]);
+  }, [filters, sectionsData]);
 
   // When UI filters change, convert them back to advanced filters
   const handleUiFilterChange = (newFilters: Filter[]) => {
@@ -261,15 +266,15 @@ export const useStudentFilterAdapter = (
         operator = "equals";
         value = filter.value[0] === "Active";
       }
-      // Class filter
+      // Section filter (changed from class filter)
       else if ((filter.type as any) === StudentFilterType.CLASS) {
-        field = "classId";
+        field = "sectionId"; // Use sectionId since students belong to sections
         operator = filter.operator === FilterOperator.IS ? "equals" : "not_equals";
-        // Find class ID from label or name
-        const classOption = studentFilterToOptions[StudentFilterType.CLASS]?.find(
-          c => c.name === filter.value[0]
+        // Find section ID from label or name
+        const sectionOption = studentFilterToOptions[StudentFilterType.CLASS]?.find(
+          s => s.name === filter.value[0]
         );
-        value = classOption?.label ?? filter.value[0] ?? "";
+        value = sectionOption?.label ?? filter.value[0] ?? "";
       }
       // Gender filter
       else if ((filter.type as any) === StudentFilterType.GENDER) {
