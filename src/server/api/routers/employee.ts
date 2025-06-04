@@ -940,4 +940,290 @@ export const employeeRouter = createTRPCRouter({
         data: { isActive: input.isActive },
       });
     }),
+
+  bulkImport: protectedProcedure
+    .input(z.object({
+      employees: z.array(z.object({
+        // Personal Info
+        firstName: z.string().min(2),
+        lastName: z.string().min(2),
+        middleName: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.enum(["Male", "Female", "Other"]).optional(),
+        bloodGroup: z.string().optional(),
+        maritalStatus: z.string().optional(),
+        nationality: z.string().optional(),
+        religion: z.string().optional(),
+        panNumber: z.string().optional(),
+        aadharNumber: z.string().optional(),
+        
+        // Contact Information
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        country: z.string().optional(),
+        pincode: z.string().optional(),
+        permanentAddress: z.string().optional(),
+        permanentCity: z.string().optional(),
+        permanentState: z.string().optional(),
+        permanentCountry: z.string().optional(),
+        permanentPincode: z.string().optional(),
+        phone: z.string().optional(),
+        alternatePhone: z.string().optional(),
+        personalEmail: z.string().optional(),
+        emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(),
+        emergencyContactRelation: z.string().optional(),
+        
+        // Educational Qualifications
+        qualification: z.string().optional(),
+        specialization: z.string().optional(),
+        professionalQualifications: z.string().optional(),
+        specialCertifications: z.string().optional(),
+        yearOfCompletion: z.string().optional(),
+        institution: z.string().optional(),
+        experience: z.string().optional(),
+        bio: z.string().optional(),
+        
+        // Employment Details
+        employeeCode: z.string().optional(),
+        designation: z.string(),
+        department: z.string().optional(),
+        joinDate: z.string().optional(),
+        reportingManager: z.string().optional(),
+        employeeType: z.string().optional(),
+        previousExperience: z.string().optional(),
+        previousEmployer: z.string().optional(),
+        confirmationDate: z.string().optional(),
+        isActive: z.boolean().optional(),
+        
+        // Salary & Banking Details
+        salaryStructure: z.string().optional(),
+        pfNumber: z.string().optional(),
+        esiNumber: z.string().optional(),
+        uanNumber: z.string().optional(),
+        bankName: z.string().optional(),
+        accountNumber: z.string().optional(),
+        ifscCode: z.string().optional(),
+        
+        // IT & Asset Allocation
+        officialEmail: z.string().optional(),
+        deviceIssued: z.string().optional(),
+        accessCardId: z.string().optional(),
+        softwareLicenses: z.string().optional(),
+        assetReturnStatus: z.string().optional(),
+        
+        // User Account
+        createUser: z.boolean().optional(),
+        email: z.string().optional(),
+        password: z.string().optional(),
+        roleId: z.string().optional(),
+      })),
+      branchId: z.string(),
+      batchSize: z.number().default(10),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { employees, branchId, batchSize } = input;
+      
+      if (!employees || employees.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No employees provided for import",
+        });
+      }
+
+      // Get branch code for reference
+      const branch = await ctx.db.branch.findUnique({
+        where: { id: branchId },
+        select: { code: true }
+      });
+
+      if (!branch) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Branch not found",
+        });
+      }
+
+      const importMessages: string[] = [];
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Process employees in batches
+      const batches = [];
+      for (let i = 0; i < employees.length; i += batchSize) {
+        batches.push(employees.slice(i, i + batchSize));
+      }
+
+      importMessages.push(`[INFO] Processing ${employees.length} employees in ${batches.length} batches of ${batchSize} each`);
+
+      for (const [batchIndex, batch] of batches.entries()) {
+        importMessages.push(`[INFO] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} employees)`);
+
+        try {
+          // Process each employee in the batch
+          const batchResults = await ctx.db.$transaction(async (prisma) => {
+            const processedEmployees = [];
+
+            for (const [index, employeeData] of batch.entries()) {
+              const globalIndex = batchIndex * batchSize + index;
+              const rowNum = globalIndex + 1;
+
+              try {
+                // Parse dates
+                const parseDate = (dateStr: string) => {
+                  if (!dateStr) return null;
+                  const parts = dateStr.split('/');
+                  if (parts.length === 3) {
+                    const day = parseInt(parts[0]!, 10);
+                    const month = parseInt(parts[1]!, 10) - 1;
+                    const year = parseInt(parts[2]!, 10);
+                    return new Date(year, month, day);
+                  }
+                  return null;
+                };
+
+                const dateOfBirth = parseDate(employeeData.dateOfBirth || '');
+                const joinDate = parseDate(employeeData.joinDate || '') || new Date();
+                const confirmationDate = parseDate(employeeData.confirmationDate || '');
+
+                // Check for duplicate employee code
+                if (employeeData.employeeCode) {
+                  const existingEmployee = await prisma.employee.findFirst({
+                    where: {
+                      employeeCode: employeeData.employeeCode,
+                      branchId,
+                    },
+                  });
+
+                  if (existingEmployee) {
+                    importMessages.push(`[ERROR] Row ${rowNum}: Employee with employee code '${employeeData.employeeCode}' already exists`);
+                    errorCount++;
+                    continue;
+                  }
+                }
+
+                // Create Clerk user if requested
+                let clerkUserId: string | null = null;
+                if (employeeData.createUser && employeeData.email && employeeData.password) {
+                  try {
+                    const clerkUser = await clerk.users.createUser({
+                      emailAddress: [employeeData.email],
+                      password: employeeData.password,
+                      firstName: employeeData.firstName,
+                      lastName: employeeData.lastName,
+                    });
+                    clerkUserId = clerkUser.id;
+                    importMessages.push(`[INFO] Row ${rowNum}: Created Clerk user for ${employeeData.firstName} ${employeeData.lastName}`);
+                  } catch (error) {
+                    importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Clerk user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    // Continue without Clerk user
+                  }
+                }
+
+                // Create employee record
+                const employee = await prisma.employee.create({
+                  data: {
+                    // Personal Info
+                    firstName: employeeData.firstName,
+                    lastName: employeeData.lastName,
+                    middleName: employeeData.middleName,
+                    dateOfBirth: dateOfBirth,
+                    gender: employeeData.gender,
+                    bloodGroup: employeeData.bloodGroup,
+                    maritalStatus: employeeData.maritalStatus,
+                    nationality: employeeData.nationality,
+                    religion: employeeData.religion,
+                    panNumber: employeeData.panNumber,
+                    aadharNumber: employeeData.aadharNumber,
+                    
+                    // Contact Information
+                    address: employeeData.address,
+                    city: employeeData.city,
+                    state: employeeData.state,
+                    country: employeeData.country,
+                    pincode: employeeData.pincode,
+                    permanentAddress: employeeData.permanentAddress,
+                    permanentCity: employeeData.permanentCity,
+                    permanentState: employeeData.permanentState,
+                    permanentCountry: employeeData.permanentCountry,
+                    permanentPincode: employeeData.permanentPincode,
+                    phone: employeeData.phone,
+                    alternatePhone: employeeData.alternatePhone,
+                    personalEmail: employeeData.personalEmail,
+                    emergencyContactName: employeeData.emergencyContactName,
+                    emergencyContactPhone: employeeData.emergencyContactPhone,
+                    emergencyContactRelation: employeeData.emergencyContactRelation,
+                    
+                    // Educational Qualifications
+                    qualification: employeeData.qualification,
+                    specialization: employeeData.specialization,
+                    professionalQualifications: employeeData.professionalQualifications,
+                    specialCertifications: employeeData.specialCertifications,
+                    yearOfCompletion: employeeData.yearOfCompletion,
+                    institution: employeeData.institution,
+                    experience: employeeData.experience,
+                    bio: employeeData.bio,
+                    
+                    // Employment Details
+                    employeeCode: employeeData.employeeCode,
+                    designation: employeeData.designation,
+                    department: employeeData.department,
+                    joinDate: joinDate,
+                    reportingManager: employeeData.reportingManager,
+                    employeeType: employeeData.employeeType,
+                    previousExperience: employeeData.previousExperience,
+                    previousEmployer: employeeData.previousEmployer,
+                    confirmationDate: confirmationDate,
+                    isActive: employeeData.isActive ?? true,
+                    
+                    // Salary & Banking Details
+                    salaryStructure: employeeData.salaryStructure,
+                    pfNumber: employeeData.pfNumber,
+                    esiNumber: employeeData.esiNumber,
+                    uanNumber: employeeData.uanNumber,
+                    bankName: employeeData.bankName,
+                    accountNumber: employeeData.accountNumber,
+                    ifscCode: employeeData.ifscCode,
+                    
+                    // IT & Asset Allocation
+                    officialEmail: employeeData.officialEmail,
+                    deviceIssued: employeeData.deviceIssued,
+                    accessCardId: employeeData.accessCardId,
+                    softwareLicenses: employeeData.softwareLicenses,
+                    assetReturnStatus: employeeData.assetReturnStatus,
+                    
+                    // Branch and Clerk ID
+                    branchId: branchId,
+                    clerkId: clerkUserId,
+                  },
+                });
+
+                processedEmployees.push(employee);
+                successCount++;
+                importMessages.push(`[SUCCESS] Row ${rowNum}: Successfully imported ${employeeData.firstName} ${employeeData.lastName}`);
+
+              } catch (error) {
+                errorCount++;
+                importMessages.push(`[ERROR] Row ${rowNum}: Failed to import employee - ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
+            }
+
+            return processedEmployees;
+          });
+
+          importMessages.push(`[INFO] Batch ${batchIndex + 1} completed: ${batchResults.length} employees processed`);
+
+        } catch (error) {
+          importMessages.push(`[ERROR] Batch ${batchIndex + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      importMessages.push(`[SUMMARY] Import completed: ${successCount} successful, ${errorCount} failed`);
+
+      return {
+        count: successCount,
+        importMessages,
+      };
+    }),
 });

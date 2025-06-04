@@ -4,7 +4,8 @@ import { StudentStatsCards } from "@/components/students/student-stats-cards"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 import { StudentDataTable, type Student } from "@/components/students/student-data-table"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, FileDown, FileText } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/utils/api"
 import { useState, useCallback, useEffect, useMemo } from "react"
@@ -17,6 +18,47 @@ import { StudentDataTableWrapper } from "@/components/students/student-data-tabl
 import { StudentFilter } from "@/components/students/student-filter-adapter"
 import { useActionPermissions } from "@/utils/permission-utils"
 import { Permission } from "@/types/permissions"
+
+// Clerk Account Warning Component
+function ClerkAccountWarning() {
+  const { getBranchFilterParam } = useGlobalBranchFilter();
+  
+  const { data: clerkStats } = api.clerkManagement.getClerkAccountStats.useQuery({
+    branchId: getBranchFilterParam(),
+  });
+
+  if (!clerkStats) return null;
+
+  const totalMissing = (clerkStats.students.withoutClerk || 0) + (clerkStats.parents.withoutClerk || 0);
+  
+  if (totalMissing === 0) return null;
+
+  return (
+    <Alert variant="destructive" className="mb-6">
+      <AlertTriangle className="h-4 w-4" />
+      <AlertTitle>Action Required: Missing Authentication Accounts</AlertTitle>
+      <AlertDescription className="mt-2">
+        <p className="mb-2">
+          Some users don't have Clerk authentication accounts and cannot log in to the system:
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-sm mb-3">
+          {clerkStats.students.withoutClerk > 0 && (
+            <li>{clerkStats.students.withoutClerk} student{clerkStats.students.withoutClerk !== 1 ? 's' : ''} missing authentication accounts</li>
+          )}
+          {clerkStats.parents.withoutClerk > 0 && (
+            <li>{clerkStats.parents.withoutClerk} parent{clerkStats.parents.withoutClerk !== 1 ? 's' : ''} missing authentication accounts</li>
+          )}
+        </ul>
+        <Link href="/settings/clerk-accounts">
+          <Button variant="outline" size="sm" className="mt-2">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Manage Clerk Accounts
+          </Button>
+        </Link>
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 export default function StudentsPage() {
   const [filters, setFilters] = useState<AdvancedFilters>({
@@ -232,6 +274,7 @@ export default function StudentsPage() {
         </div>
       }
     >
+      <ClerkAccountWarning />
       <StudentStatsCards sessionId={currentSessionId || undefined} />
 
       <div className="mt-6">

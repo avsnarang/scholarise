@@ -3,6 +3,7 @@
 import { TeacherStatsCards } from "@/components/teachers/teacher-stats-cards"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 import { TeacherDataTable, type Teacher } from "@/components/teachers/teacher-data-table"
+import { TeacherBulkImport } from "@/components/teachers/teacher-bulk-import"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, FileDown } from "lucide-react"
 import Link from "next/link"
@@ -128,12 +129,24 @@ export default function TeachersPage() {
     branchId: getBranchFilterParam()
   });
 
+  // Handle bulk import success
+  const handleBulkImportSuccess = () => {
+    void utils.teacher.getAll.invalidate();
+    void utils.teacher.getStats.invalidate();
+    toast({
+      title: "Import Completed",
+      description: "Teachers have been imported successfully.",
+      variant: "success",
+    });
+  };
+
   return (
     <PageWrapper
       title="Teachers"
       subtitle="Manage all teachers in your institution"
       action={
         <div className="flex gap-2">
+          <TeacherBulkImport onSuccess={handleBulkImportSuccess} />
           <Button variant="glowing-secondary" className="flex items-center gap-1">
             <FileDown className="h-4 w-4" />
             <span>Export</span>

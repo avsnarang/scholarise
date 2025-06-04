@@ -7,12 +7,16 @@ import { FileDown, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/utils/api";
 import { EmployeeDataTable } from "@/components/employees/employee-data-table";
+import { EmployeeBulkImport } from "@/components/employees/employee-bulk-import";
 import type { Employee } from "@/components/employees/employee-data-table";
 import { EmployeeStatsCards } from "@/components/employees/employee-stats-cards";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function EmployeesPage() {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [pageSize, setPageSize] = useState(10);
+  const { toast } = useToast();
+  const utils = api.useContext();
 
   // Helper function to get branch ID from user context or URL
   const getBranchFilterParam = () => {
@@ -75,12 +79,24 @@ export default function EmployeesPage() {
     branchId: getBranchFilterParam()
   });
 
+  // Handle bulk import success
+  const handleBulkImportSuccess = () => {
+    void utils.employee.getAll.invalidate();
+    void utils.employee.getStats.invalidate();
+    toast({
+      title: "Import Completed",
+      description: "Employees have been imported successfully.",
+      variant: "success",
+    });
+  };
+
   return (
     <PageWrapper
       title="Employees"
       subtitle="Manage all employees in your institution"
       action={
         <div className="flex gap-2">
+          <EmployeeBulkImport onSuccess={handleBulkImportSuccess} />
           <Button variant="glowing-secondary" className="flex items-center gap-1">
             <FileDown className="h-4 w-4" />
             <span>Export</span>
