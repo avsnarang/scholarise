@@ -74,9 +74,9 @@ export function getBackgroundServiceStatus() {
   };
 }
 
-// Auto-initialize in server environment
-if (typeof window === 'undefined') {
-  // We're on the server side
+// Auto-initialize in server environment (not in edge runtime)
+if (typeof window === 'undefined' && typeof (globalThis as any).EdgeRuntime === 'undefined') {
+  // We're on the server side but not in edge runtime
   setTimeout(() => {
     initializeBackgroundServices().catch(error => {
       console.error('Failed to auto-initialize background services:', error);

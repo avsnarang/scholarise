@@ -8,9 +8,6 @@ import {
   createParentUser
 } from '@/utils/clerk';
 
-// Import startup to trigger auto-initialization
-import '@/lib/startup';
-
 interface TaskProgress {
   processed: number;
   total: number;

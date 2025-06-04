@@ -367,6 +367,15 @@ export function StudentBulkImport({ onSuccess }: StudentBulkImportProps) {
       return;
     }
 
+    if (!branchId || !currentSessionId) {
+      toast({
+        title: "Missing required data",
+        description: "Branch and session information is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
     try {
       await bulkImportMutation.mutateAsync({
