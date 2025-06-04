@@ -14,6 +14,7 @@ import {
   Bell,
   Shield,
   UserCircle,
+  KeyRound,
 } from "lucide-react";
 
 import {
@@ -95,6 +96,13 @@ const settingsGroups = [
         description: "Configure role-based permissions",
         icon: <Shield className="h-6 w-6" />,
         href: "/settings/roles",
+        disabled: false,
+      },
+      {
+        title: "Clerk Account Management",
+        description: "Manage and retry Clerk authentication accounts",
+        icon: <KeyRound className="h-6 w-6" />,
+        href: "/settings/clerk-accounts",
         disabled: false,
       },
       {

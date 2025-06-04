@@ -30,6 +30,7 @@ import { questionPaperRouter } from "./routers/questionPaper";
 import { moneyCollectionRouter } from "./routers/money-collection";
 import { transferCertificateRouter } from "./routers/transferCertificate";
 import { financeRouter } from "./routers/finance";
+import { clerkManagementRouter } from "./routers/clerk-management";
 
 /**
  * This is the primary router for your server.
@@ -68,6 +69,7 @@ export const appRouter = createTRPCRouter({
   moneyCollection: moneyCollectionRouter,
   transferCertificate: transferCertificateRouter,
   finance: financeRouter,
+  clerkManagement: clerkManagementRouter,
 });
 
 // export type definition of API
