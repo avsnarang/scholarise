@@ -45,6 +45,13 @@ interface UserWithoutClerk {
   email?: string;
   admissionNumber?: string;
   employeeId?: string;
+  // Parent-specific fields
+  fatherName?: string;
+  motherName?: string;
+  guardianName?: string;
+  fatherEmail?: string;
+  motherEmail?: string;
+  guardianEmail?: string;
   branch?: {
     code: string;
     name: string;
@@ -108,6 +115,29 @@ function UserTable({ users, userType, selectedUsers, onSelectionChange, onSelect
       default:
         return { primaryId: "N/A", secondaryInfo: "N/A" };
     }
+  };
+
+  const getDisplayName = (user: UserWithoutClerk) => {
+    if (userType === "parent") {
+      // For parents, use fatherName, motherName, or guardianName
+      const parent = user as any; // Type assertion since we know it's a parent
+      if (parent.fatherName) return parent.fatherName;
+      if (parent.motherName) return parent.motherName;
+      if (parent.guardianName) return parent.guardianName;
+      return "Parent/Guardian";
+    }
+    // For other user types, use firstName and lastName
+    return `${user.firstName} ${user.lastName}`;
+  };
+
+  const getDisplayEmail = (user: UserWithoutClerk) => {
+    if (userType === "parent") {
+      // For parents, check fatherEmail, motherEmail, or guardianEmail
+      const parent = user as any;
+      return parent.fatherEmail || parent.motherEmail || parent.guardianEmail || "No email";
+    }
+    // For other user types, use the email field
+    return user.email || "No email";
   };
 
   if (isLoading) {
@@ -200,7 +230,7 @@ function UserTable({ users, userType, selectedUsers, onSelectionChange, onSelect
                       />
                     </TableCell>
                     <TableCell className="font-medium">
-                      {user.firstName} {user.lastName}
+                      {getDisplayName(user)}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -214,7 +244,7 @@ function UserTable({ users, userType, selectedUsers, onSelectionChange, onSelect
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-muted-foreground">
-                        {user.email || "No email"}
+                        {getDisplayEmail(user)}
                       </div>
                     </TableCell>
                   </TableRow>

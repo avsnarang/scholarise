@@ -318,18 +318,18 @@ async function retryParentClerkCreation(ctx: any, parentId: string, results: any
     if (parent.fatherName) {
       const nameParts = parent.fatherName.trim().split(/\s+/);
       parentFirstName = nameParts[0] || parent.fatherName;
-      parentLastName = nameParts.slice(1).join(' ') || '';
+      parentLastName = nameParts.slice(1).join(' ') || 'TSH'; // Default lastName for single names
     } else if (parent.motherName) {
       const nameParts = parent.motherName.trim().split(/\s+/);
       parentFirstName = nameParts[0] || parent.motherName;
-      parentLastName = nameParts.slice(1).join(' ') || '';
+      parentLastName = nameParts.slice(1).join(' ') || 'TSH'; // Default lastName for single names
     } else if (parent.guardianName) {
       const nameParts = parent.guardianName.trim().split(/\s+/);
       parentFirstName = nameParts[0] || parent.guardianName;
-      parentLastName = nameParts.slice(1).join(' ') || '';
+      parentLastName = nameParts.slice(1).join(' ') || 'TSH'; // Default lastName for single names
     } else {
       parentFirstName = "Parent";
-      parentLastName = "Guardian";
+      parentLastName = "TSH";
     }
 
     const parentUsername = `P${student.admissionNumber}`;
