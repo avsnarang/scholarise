@@ -43,6 +43,16 @@ model Branch {
   locationTypes        LocationType[]
   backgroundTasks      BackgroundTask[]
   emailConfiguration   EmailConfiguration?
+  // Examination relations
+  examTypes            ExamType[]
+  examConfigurations   ExamConfiguration[]
+  examSchedules        ExamSchedule[]
+  seatingPlans         SeatingPlan[]
+  marksEntries         MarksEntry[]
+  assessmentCategories AssessmentCategory[]
+  assessmentConfigs    AssessmentConfiguration[]
+  assessmentMarks      AssessmentMarks[]
+  gradeScales          GradeScale[]
 }
 
 model Student {
@@ -105,6 +115,10 @@ model Student {
   subjects               StudentSubject[]      // Student-Subject enrollments
   transferCertificates   TransferCertificate[] // Transfer certificates for the student
   transportAssignments   TransportAssignment[] // Transport assignments (bus routes)
+  // Examination relations
+  seatingPlans           SeatingPlan[]
+  marksEntries           MarksEntry[]
+  assessmentMarks        AssessmentMarks[]
   
   // Add database indexes for performance
   @@index([branchId, admissionNumber], name: "student_branch_admission_idx")
@@ -320,6 +334,9 @@ model Class {
   blueprints           Blueprint[]
   classwiseFees        ClasswiseFee[]
   moneyCollectionLinks MoneyCollectionClass[] @relation("ClassMoneyCollectionLinks")
+  // Examination relations
+  examConfigurations   ExamConfiguration[]
+  assessmentConfigs    AssessmentConfiguration[]
   
   @@unique([name, branchId, sessionId]) // Ensure unique class names per branch/session
 }
@@ -340,6 +357,9 @@ model Section {
   teacher            Teacher?            @relation(fields: [teacherId], references: [id])
   students           Student[]
   studentAttendances StudentAttendance[]
+  // Examination relations
+  examConfigurations ExamConfiguration[]
+  assessmentConfigs  AssessmentConfiguration[]
 
   // Add database indexes for performance
   @@index([classId, isActive], name: "section_class_active_idx")
@@ -574,6 +594,9 @@ model Subject {
   chapters    Chapter[]
   classes     ClassSubject[]
   students    StudentSubject[]
+  // Examination relations
+  examConfigurations   ExamConfiguration[]
+  assessmentConfigs    AssessmentConfiguration[]
 }
 
 model ClassSubject {
@@ -1609,4 +1632,212 @@ enum TaskLogLevel {
   WARN
   ERROR
   FATAL
+}
+
+// Examination Module Models
+model ExamType {
+  id               String @id @default(cuid())
+  name             String // e.g., "Unit Test", "Mid Term", "Final", "Pre-Board"
+  code             String @unique
+  description      String?
+  isActive         Boolean @default(true)
+  order            Int @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  examSchedules    ExamSchedule[]
+  examConfigurations ExamConfiguration[]
+  
+  @@index([branchId, isActive])
+}
+
+model ExamConfiguration {
+  id               String @id @default(cuid())
+  name             String // e.g., "Class 10 Unit Test 1"
+  examTypeId       String
+  classId          String
+  sectionId        String?
+  subjectId        String
+  maxMarks         Int
+  passingMarks     Int
+  weightage        Float @default(1.0) // For calculating overall percentage
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  examType         ExamType @relation(fields: [examTypeId], references: [id])
+  class            Class @relation(fields: [classId], references: [id])
+  section          Section? @relation(fields: [sectionId], references: [id])
+  subject          Subject @relation(fields: [subjectId], references: [id])
+  examSchedules    ExamSchedule[]
+  marksEntries     MarksEntry[]
+  
+  @@unique([examTypeId, classId, sectionId, subjectId])
+  @@index([branchId, isActive])
+  @@index([classId, sectionId])
+}
+
+model ExamSchedule {
+  id               String @id @default(cuid())
+  examConfigId     String
+  examDate         DateTime
+  startTime        DateTime
+  endTime          DateTime
+  room             String?
+  invigilator      String?
+  instructions     String?
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  examConfig       ExamConfiguration @relation(fields: [examConfigId], references: [id])
+  examType         ExamType @relation(fields: [examTypeId], references: [id])
+  examTypeId       String
+  seatingPlans     SeatingPlan[]
+  
+  @@index([branchId, examDate])
+  @@index([examConfigId])
+}
+
+model SeatingPlan {
+  id               String @id @default(cuid())
+  examScheduleId   String
+  studentId        String
+  seatNumber       String
+  room             String
+  row              Int?
+  column           Int?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  examSchedule     ExamSchedule @relation(fields: [examScheduleId], references: [id])
+  student          Student @relation(fields: [studentId], references: [id])
+  
+  @@unique([examScheduleId, seatNumber, room])
+  @@index([branchId, examScheduleId])
+  @@index([studentId])
+}
+
+model MarksEntry {
+  id               String @id @default(cuid())
+  examConfigId     String
+  studentId        String
+  marksObtained    Float?
+  isAbsent         Boolean @default(false)
+  remarks          String?
+  enteredBy        String // Teacher/Employee ID
+  enteredAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isSubmitted      Boolean @default(false)
+  submittedAt      DateTime?
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  examConfig       ExamConfiguration @relation(fields: [examConfigId], references: [id])
+  student          Student @relation(fields: [studentId], references: [id])
+  
+  @@unique([examConfigId, studentId])
+  @@index([branchId, examConfigId])
+  @@index([studentId])
+  @@index([enteredBy])
+}
+
+// Academic Assessment Categories
+model AssessmentCategory {
+  id               String @id @default(cuid())
+  name             String // e.g., "Subject Enrichment", "Lesson Ending Test", "Project Work"
+  code             String @unique
+  description      String?
+  maxMarks         Int
+  isActive         Boolean @default(true)
+  order            Int @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assessmentConfigs AssessmentConfiguration[]
+  
+  @@index([branchId, isActive])
+}
+
+model AssessmentConfiguration {
+  id               String @id @default(cuid())
+  name             String // e.g., "Debate Competition", "Math Project"
+  categoryId       String
+  classId          String
+  sectionId        String?
+  subjectId        String?
+  maxMarks         Int
+  weightage        Float @default(1.0)
+  dueDate          DateTime?
+  instructions     String?
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category         AssessmentCategory @relation(fields: [categoryId], references: [id])
+  class            Class @relation(fields: [classId], references: [id])
+  section          Section? @relation(fields: [sectionId], references: [id])
+  subject          Subject? @relation(fields: [subjectId], references: [id])
+  assessmentMarks  AssessmentMarks[]
+  
+  @@index([branchId, isActive])
+  @@index([classId, sectionId])
+}
+
+model AssessmentMarks {
+  id               String @id @default(cuid())
+  assessmentConfigId String
+  studentId        String
+  marksObtained    Float?
+  comments         String?
+  submissionDate   DateTime?
+  enteredBy        String // Teacher/Employee ID
+  enteredAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  isSubmitted      Boolean @default(false)
+  submittedAt      DateTime?
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assessmentConfig AssessmentConfiguration @relation(fields: [assessmentConfigId], references: [id])
+  student          Student @relation(fields: [studentId], references: [id])
+  
+  @@unique([assessmentConfigId, studentId])
+  @@index([branchId, assessmentConfigId])
+  @@index([studentId])
+  @@index([enteredBy])
+}
+
+// Grade Configuration for Result Processing
+model GradeScale {
+  id               String @id @default(cuid())
+  name             String // e.g., "CBSE Grading", "ICSE Grading"
+  isDefault        Boolean @default(false)
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  gradeRanges      GradeRange[]
+  
+  @@index([branchId, isActive])
+}
+
+model GradeRange {
+  id               String @id @default(cuid())
+  gradeScaleId     String
+  grade            String // e.g., "A1", "A2", "B1"
+  minPercentage    Float
+  maxPercentage    Float
+  gradePoint       Float?
+  description      String?
+  order            Int @default(0)
+  gradeScale       GradeScale @relation(fields: [gradeScaleId], references: [id], onDelete: Cascade)
+  
+  @@index([gradeScaleId, minPercentage])
 }
