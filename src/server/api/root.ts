@@ -31,6 +31,7 @@ import { moneyCollectionRouter } from "./routers/money-collection";
 import { transferCertificateRouter } from "./routers/transferCertificate";
 import { financeRouter } from "./routers/finance";
 import { clerkManagementRouter } from "./routers/clerk-management";
+import { backgroundTasksRouter } from "./routers/background-tasks";
 
 /**
  * This is the primary router for your server.
@@ -70,6 +71,7 @@ export const appRouter = createTRPCRouter({
   transferCertificate: transferCertificateRouter,
   finance: financeRouter,
   clerkManagement: clerkManagementRouter,
+  backgroundTasks: backgroundTasksRouter,
 });
 
 // export type definition of API

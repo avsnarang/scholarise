@@ -43,14 +43,14 @@ export function TaskProgressDropdown() {
   
   const utils = api.useContext();
   
-  const { data: tasks = [], isLoading } = api.clerkManagement.getAllTasks.useQuery(
+  const { data: tasks = [], isLoading } = api.backgroundTasks.getAllTasks.useQuery(
     undefined,
     {
       refetchInterval: isOpen ? 2000 : 10000,
       refetchIntervalInBackground: false,
       refetchOnMount: true,
       refetchOnWindowFocus: false,
-      placeholderData: (previousData) => previousData,
+      placeholderData: (previousData: Task[] | undefined) => previousData,
     }
   );
 
@@ -58,9 +58,9 @@ export function TaskProgressDropdown() {
     task.status === 'pending' || task.status === 'processing'
   );
 
-  const deleteTaskMutation = api.clerkManagement.deleteTask.useMutation({
+  const deleteTaskMutation = api.backgroundTasks.deleteTask.useMutation({
     onSuccess: () => {
-      utils.clerkManagement.getAllTasks.invalidate();
+      utils.backgroundTasks.getAllTasks.invalidate();
       toast({
         title: "Task removed",
         variant: "default",

@@ -41,6 +41,8 @@ model Branch {
   attendanceLocations  AttendanceLocation[]
   attendanceWindows    AttendanceWindow[]
   locationTypes        LocationType[]
+  backgroundTasks      BackgroundTask[]
+  emailConfiguration   EmailConfiguration?
 }
 
 model Student {
@@ -1489,4 +1491,122 @@ enum QuestionDifficulty {
   EASY
   MEDIUM
   HARD
+}
+
+// Background Tasks and Email Configuration Models
+model BackgroundTask {
+  id              String            @id @default(cuid())
+  taskType        String            // e.g., "BULK_CLERK_CREATION"
+  title           String
+  description     String?
+  status          BackgroundTaskStatus @default(PENDING)
+  
+  // Progress tracking
+  totalItems      Int               @default(0)
+  processedItems  Int               @default(0)
+  failedItems     Int               @default(0)
+  percentage      Float             @default(0)
+  
+  // Task data and results
+  inputData       Json?             // Task input parameters
+  results         Json?             // Task execution results
+  errors          Json[]            @default([])
+  
+  // Timing
+  scheduledAt     DateTime?         // When to run the task
+  startedAt       DateTime?         // When task actually started
+  completedAt     DateTime?         // When task finished
+  estimatedDuration Int?            // Estimated duration in seconds
+  
+  // Metadata
+  createdBy       String?           // User who created the task
+  branchId        String?
+  priority        Int               @default(5) // 1-10 (1 = highest)
+  
+  // System fields
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relationships
+  branch          Branch?           @relation(fields: [branchId], references: [id])
+  executionLogs   TaskExecutionLog[]
+  
+  @@index([status, scheduledAt])
+  @@index([branchId, status])
+  @@index([taskType, status])
+}
+
+model EmailConfiguration {
+  id                String    @id @default(cuid())
+  
+  // SMTP Configuration
+  smtpHost          String?
+  smtpPort          Int?      @default(587)
+  smtpUsername      String?
+  smtpPassword      String?   // Should be encrypted
+  
+  // Email Settings
+  fromEmail         String?
+  fromName          String?   @default("Scholarise System")
+  
+  // Notification Recipients
+  adminEmails       String[]  @default([])
+  
+  // Task Notification Settings
+  notifyOnTaskCompletion   Boolean @default(true)
+  notifyOnTaskFailure      Boolean @default(true)
+  includeTaskDetails       Boolean @default(true)
+  includeErrorLogs         Boolean @default(false)
+  
+  // Email Templates
+  taskCompletionTemplate   String?
+  taskFailureTemplate      String?
+  
+  // Branch-specific or global
+  branchId          String?   @unique
+  isGlobal          Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  
+  // System fields
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relationships
+  branch            Branch?   @relation(fields: [branchId], references: [id])
+  
+  @@index([branchId, isActive])
+}
+
+// Task execution logs for debugging
+model TaskExecutionLog {
+  id              String           @id @default(cuid())
+  taskId          String
+  level           TaskLogLevel     @default(INFO)
+  message         String
+  details         Json?
+  timestamp       DateTime         @default(now())
+  
+  // Relationships
+  task            BackgroundTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  @@index([taskId, timestamp])
+  @@index([level, timestamp])
+}
+
+enum BackgroundTaskStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRY
+}
+
+enum TaskLogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
 }

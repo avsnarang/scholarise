@@ -488,6 +488,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: navItemPermissions.attendanceConfig,
         },
         {
+          title: "Email Configuration",
+          href: "/settings/email-config",
+          permissions: navItemPermissions.settings,
+        },
+        {
+          title: "Background Services",
+          href: "/settings/background-services",
+          permissions: navItemPermissions.settings,
+        },
+        {
           title: "AI Configuration",
           href: "/settings/ai-configuration",
           permissions: navItemPermissions.questionPapers,

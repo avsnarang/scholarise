@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { TaskProgressDropdown } from "@/components/ui/task-progress-dropdown";
 
 interface UserWithoutClerk {
   id: string;
@@ -406,7 +405,6 @@ export default function ClerkAccountsPage() {
                 Back to Settings
               </Button>
             </Link>
-            <TaskProgressDropdown />
             <Button
               onClick={() => void refetch()}
               variant="outline"

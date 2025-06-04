@@ -39,14 +39,14 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
   ];
 
   // Mutation for bulk importing employees
-  const bulkImportMutation = api.employee.bulkImport.useMutation({
-    onSuccess: (data: { count: number; importMessages: string[] }) => {
+  const bulkImportMutation = api.backgroundTasks.createBulkTask.useMutation({
+    onSuccess: (data: { taskId: string }) => {
       toast({
-        title: "Import successful",
-        description: `Successfully processed ${data.count} employees. Check console for details.`,
+        title: "Background task created",
+        description: `Import task started. You can monitor progress in the task dropdown and will receive an email notification when complete.`,
         variant: "success",
       });
-      console.log("Bulk Import Server Messages:", data.importMessages);
+      console.log(`Background task created: ${data.taskId}`);
       setIsOpen(false);
       setFile(null);
       setPreviewData([]);
@@ -55,8 +55,8 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
     },
     onError: (error: { message?: string }) => {
       toast({
-        title: "Import failed",
-        description: error.message || "Failed to import employees",
+        title: "Failed to start import",
+        description: error.message || "Failed to create background import task",
         variant: "destructive",
       });
     },
@@ -323,11 +323,15 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
     setIsUploading(true);
     try {
       await bulkImportMutation.mutateAsync({
-        employees: previewData,
+        type: 'employee',
+        title: `Bulk Employee Import - ${previewData.length} employees`,
+        description: `Importing ${previewData.length} employees from ${file.name}`,
+        items: previewData,
         branchId: currentBranchId,
+        priority: 5
       });
     } catch (error) {
-      console.error("Error importing employees:", error);
+      console.error("Error creating background task:", error);
     } finally {
       setIsUploading(false);
     }

@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { PopupProvider } from "@/components/ui/custom-popup";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
 import { TRPCProvider } from "@/providers/trpc-provider";
+// import { BackgroundServiceInitializer } from "@/components/startup/background-service-initializer";
 import "@/styles/globals.css";
 // Body font
 const montserrat = Montserrat({
@@ -35,6 +36,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <TRPCProvider>
               <PopupProvider>
+                {/* <BackgroundServiceInitializer /> */}
                 {children}
                 <ImprovedToaster />
               </PopupProvider>

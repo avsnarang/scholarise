@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
 import { GlobalSearch } from "@/components/global-search";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TaskProgressDropdown } from "@/components/ui/task-progress-dropdown";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -56,6 +57,11 @@ export function Header({
 
       {/* Right side of header with session selector and theme toggle */}
       <div className="flex items-center gap-3 mr-4">
+        {/* Task Progress Dropdown */}
+        <div className="relative z-[60]">
+          <TaskProgressDropdown />
+        </div>
+        
         {/* Session selector */}
         <div className="relative z-[60]">
           <EnhancedAcademicSessionSelector />
