@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { TaskProgressDropdown } from "@/components/ui/task-progress-dropdown";
 
 interface UserWithoutClerk {
   id: string;
@@ -280,23 +281,16 @@ export default function ClerkAccountsPage() {
   });
 
   // Fetch statistics
-  const { data: statsData, isLoading: isStatsLoading } = api.clerkManagement.getClerkAccountStats.useQuery({
+  const { data: statsData, isLoading: isStatsLoading, refetch: refetchStats } = api.clerkManagement.getClerkAccountStats.useQuery({
     branchId: branch?.id,
   });
 
-  // Retry mutation
-  const retryMutation = api.clerkManagement.retryClerkAccountCreation.useMutation({
-    onMutate: () => {
-      toast({
-        title: "Creating accounts...",
-        description: "This may take a few moments.",
-      });
-    },
+  // Use bulk retry mutation instead of the old one
+  const bulkRetryMutation = api.clerkManagement.startBulkRetry.useMutation({
     onSuccess: (data) => {
       toast({
-        title: "Clerk accounts processed",
-        description: `Successfully created ${data.success.length} accounts. ${data.errors.length} failed.`,
-        variant: data.errors.length === 0 ? "default" : "destructive",
+        title: "Bulk task started",
+        description: data.message,
       });
       void refetch();
       void refetchStats();
@@ -304,14 +298,10 @@ export default function ClerkAccountsPage() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create Clerk accounts",
+        description: error.message || "Failed to start bulk retry task.",
         variant: "destructive",
       });
     },
-  });
-
-  const { refetch: refetchStats } = api.clerkManagement.getClerkAccountStats.useQuery({
-    branchId: branch?.id,
   });
 
   const handleSelectionChange = (userType: string, userId: string, selected: boolean) => {
@@ -349,12 +339,13 @@ export default function ClerkAccountsPage() {
       return;
     }
 
-    await retryMutation.mutateAsync({
+    // Use the new bulk retry endpoint
+    await bulkRetryMutation.mutateAsync({
       userType,
       userIds: selectedForType,
     });
 
-    // Clear selections after successful retry
+    // Clear selections after starting the task
     setSelectedUsers(prev => ({
       ...prev,
       [userTypeMap[userType]]: []
@@ -415,15 +406,15 @@ export default function ClerkAccountsPage() {
                 Back to Settings
               </Button>
             </Link>
+            <TaskProgressDropdown />
             <Button
               onClick={() => void refetch()}
               variant="outline"
-              size="sm"
-              disabled={isLoading}
+              disabled={bulkRetryMutation.isPending}
               className="flex items-center gap-2"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className="h-4 w-4" />
+              Refresh Data
             </Button>
           </div>
         </div>
@@ -539,10 +530,10 @@ export default function ClerkAccountsPage() {
               {selectedUsers.students.length > 0 && (
                 <Button
                   onClick={() => handleRetrySelected("student")}
-                  disabled={retryMutation.isPending}
+                  disabled={bulkRetryMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  {retryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {bulkRetryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Retry Selected ({selectedUsers.students.length})
                 </Button>
               )}
@@ -568,10 +559,10 @@ export default function ClerkAccountsPage() {
               {selectedUsers.parents.length > 0 && (
                 <Button
                   onClick={() => handleRetrySelected("parent")}
-                  disabled={retryMutation.isPending}
+                  disabled={bulkRetryMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  {retryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {bulkRetryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Retry Selected ({selectedUsers.parents.length})
                 </Button>
               )}
@@ -597,10 +588,10 @@ export default function ClerkAccountsPage() {
               {selectedUsers.teachers.length > 0 && (
                 <Button
                   onClick={() => handleRetrySelected("teacher")}
-                  disabled={retryMutation.isPending}
+                  disabled={bulkRetryMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  {retryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {bulkRetryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Retry Selected ({selectedUsers.teachers.length})
                 </Button>
               )}
@@ -626,10 +617,10 @@ export default function ClerkAccountsPage() {
               {selectedUsers.employees.length > 0 && (
                 <Button
                   onClick={() => handleRetrySelected("employee")}
-                  disabled={retryMutation.isPending}
+                  disabled={bulkRetryMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  {retryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {bulkRetryMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Retry Selected ({selectedUsers.employees.length})
                 </Button>
               )}

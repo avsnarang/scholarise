@@ -3,6 +3,58 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { createStudentUser, createParentUser, createTeacherUser, createEmployeeUser } from "@/utils/clerk";
 
+// In-memory task storage (in production, use Redis or database)
+const activeTasks = new Map<string, {
+  id: string;
+  type: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: {
+    processed: number;
+    total: number;
+    percentage: number;
+  };
+  results?: any;
+  startTime: Date;
+  endTime?: Date;
+  estimatedTimeRemaining?: number;
+}>();
+
+// Helper function to update task progress
+async function updateTaskProgress(taskId: string, update: {
+  processed: number;
+  total: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  results?: any;
+}) {
+  const task = activeTasks.get(taskId);
+  if (!task) return;
+
+  const now = new Date();
+  const percentage = Math.round((update.processed / update.total) * 100);
+  
+  // Calculate estimated time remaining
+  let estimatedTimeRemaining: number | undefined;
+  if (update.status === 'processing' && update.processed > 0) {
+    const elapsedMs = now.getTime() - task.startTime.getTime();
+    const avgTimePerItem = elapsedMs / update.processed;
+    const remainingItems = update.total - update.processed;
+    estimatedTimeRemaining = Math.round((avgTimePerItem * remainingItems) / 1000); // in seconds
+  }
+
+  activeTasks.set(taskId, {
+    ...task,
+    status: update.status,
+    progress: {
+      processed: update.processed,
+      total: update.total,
+      percentage
+    },
+    results: update.results,
+    endTime: update.status === 'completed' || update.status === 'failed' ? now : undefined,
+    estimatedTimeRemaining
+  });
+}
+
 export const clerkManagementRouter = createTRPCRouter({
   // Get all users without Clerk IDs
   getUsersWithoutClerkIds: protectedProcedure
@@ -111,33 +163,219 @@ export const clerkManagementRouter = createTRPCRouter({
     .input(z.object({
       userType: z.enum(["student", "parent", "teacher", "employee"]),
       userIds: z.array(z.string()),
+      taskId: z.string().optional(), // For progress tracking
     }))
     .mutation(async ({ ctx, input }) => {
+      const BATCH_SIZE = 10; // Process in smaller batches
+      const DELAY_BETWEEN_USERS = 500; // 500ms delay between each user
+      const DELAY_BETWEEN_BATCHES = 2000; // 2s delay between batches
+      const MAX_RETRIES = 3; // Retry failed operations
+      
       const results = {
         success: [] as string[],
         errors: [] as { id: string; name: string; error: string }[],
+        total: input.userIds.length,
+        processed: 0,
       };
 
-      for (const userId of input.userIds) {
-        try {
-          if (input.userType === "student") {
-            await retryStudentClerkCreation(ctx, userId, results);
-          } else if (input.userType === "parent") {
-            await retryParentClerkCreation(ctx, userId, results);
-          } else if (input.userType === "teacher") {
-            await retryTeacherClerkCreation(ctx, userId, results);
-          } else if (input.userType === "employee") {
-            await retryEmployeeClerkCreation(ctx, userId, results);
+      // Process in batches to avoid overwhelming Clerk API
+      const batches = [];
+      for (let i = 0; i < input.userIds.length; i += BATCH_SIZE) {
+        batches.push(input.userIds.slice(i, i + BATCH_SIZE));
+      }
+
+      console.log(`Processing ${input.userIds.length} ${input.userType}s in ${batches.length} batches`);
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex]!;
+        console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} users)`);
+
+        // Process each user in the batch with delays
+        for (const userId of batch) {
+          let retryCount = 0;
+          let success = false;
+
+          while (retryCount < MAX_RETRIES && !success) {
+            try {
+              if (input.userType === "student") {
+                await retryStudentClerkCreation(ctx, userId, results);
+              } else if (input.userType === "parent") {
+                await retryParentClerkCreation(ctx, userId, results);
+              } else if (input.userType === "teacher") {
+                await retryTeacherClerkCreation(ctx, userId, results);
+              } else if (input.userType === "employee") {
+                await retryEmployeeClerkCreation(ctx, userId, results);
+              }
+
+              success = true;
+              results.processed++;
+              
+              // Update progress if taskId provided
+              if (input.taskId) {
+                await updateTaskProgress(input.taskId, {
+                  processed: results.processed,
+                  total: results.total,
+                  status: 'processing'
+                });
+              }
+
+            } catch (error) {
+              retryCount++;
+              console.error(`Error processing ${input.userType} ${userId} (attempt ${retryCount}/${MAX_RETRIES}):`, error);
+              
+              if (retryCount < MAX_RETRIES) {
+                // Exponential backoff on retries
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+              } else {
+                // Final failure, add to errors
+                results.errors.push({
+                  id: userId,
+                  name: `Unknown ${input.userType}`,
+                  error: error instanceof Error ? error.message : String(error)
+                });
+                results.processed++;
+              }
+            }
           }
 
-          // Add small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error(`Error processing ${input.userType} ${userId}:`, error);
+          // Add delay between users to avoid rate limiting
+          if (batch.indexOf(userId) < batch.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_USERS));
+          }
+        }
+
+        // Add longer delay between batches
+        if (batchIndex < batches.length - 1) {
+          console.log(`Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
 
+      // Update final progress
+      if (input.taskId) {
+        await updateTaskProgress(input.taskId, {
+          processed: results.processed,
+          total: results.total,
+          status: 'completed',
+          results
+        });
+      }
+
+      console.log(`Completed processing: ${results.success.length} successful, ${results.errors.length} failed`);
       return results;
+    }),
+
+  // Task Management Endpoints
+  createTask: protectedProcedure
+    .input(z.object({
+      type: z.string(),
+      total: z.number(),
+      description: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const task = {
+        id: taskId,
+        type: input.type,
+        status: 'pending' as const,
+        progress: {
+          processed: 0,
+          total: input.total,
+          percentage: 0
+        },
+        startTime: new Date(),
+        description: input.description
+      };
+
+      activeTasks.set(taskId, task);
+      return { taskId, task };
+    }),
+
+  getTask: protectedProcedure
+    .input(z.object({ taskId: z.string() }))
+    .query(async ({ input }) => {
+      const task = activeTasks.get(input.taskId);
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found"
+        });
+      }
+      return task;
+    }),
+
+  getAllActiveTasks: protectedProcedure
+    .query(async () => {
+      return Array.from(activeTasks.values())
+        .filter(task => task.status !== 'completed' && task.status !== 'failed')
+        .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    }),
+
+  getAllTasks: protectedProcedure
+    .query(async () => {
+      return Array.from(activeTasks.values())
+        .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    }),
+
+  deleteTask: protectedProcedure
+    .input(z.object({ taskId: z.string() }))
+    .mutation(async ({ input }) => {
+      const deleted = activeTasks.delete(input.taskId);
+      return { deleted };
+    }),
+
+  // Start async bulk retry operation
+  startBulkRetry: protectedProcedure
+    .input(z.object({
+      userType: z.enum(["student", "parent", "teacher", "employee"]),
+      userIds: z.array(z.string()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Create task
+      const taskId = `bulk_retry_${input.userType}_${Date.now()}`;
+      const task = {
+        id: taskId,
+        type: `Bulk Clerk Account Creation - ${input.userType}s`,
+        status: 'pending' as const,
+        progress: {
+          processed: 0,
+          total: input.userIds.length,
+          percentage: 0
+        },
+        startTime: new Date(),
+      };
+
+      activeTasks.set(taskId, task);
+
+      // Start async processing (don't await)
+      setImmediate(async () => {
+        try {
+          await updateTaskProgress(taskId, {
+            processed: 0,
+            total: input.userIds.length,
+            status: 'processing'
+          });
+
+          // Call the existing retry logic with taskId
+          const clerkRouter = clerkManagementRouter.createCaller(ctx);
+          await clerkRouter.retryClerkAccountCreation({
+            userType: input.userType,
+            userIds: input.userIds,
+            taskId
+          });
+        } catch (error) {
+          console.error('Bulk retry task failed:', error);
+          await updateTaskProgress(taskId, {
+            processed: 0,
+            total: input.userIds.length,
+            status: 'failed',
+            results: { error: error instanceof Error ? error.message : String(error) }
+          });
+        }
+      });
+
+      return { taskId, message: `Started bulk retry for ${input.userIds.length} ${input.userType}s` };
     }),
 
   // Get statistics
