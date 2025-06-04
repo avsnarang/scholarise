@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { createStudentUser, createParentUser, createTeacherUser, createEmployeeUser } from "@/utils/clerk";
+import { backgroundTaskService } from "@/services/background-task-service";
 
 // In-memory task storage (in production, use Redis or database)
 const activeTasks = new Map<string, {
@@ -332,48 +333,19 @@ export const clerkManagementRouter = createTRPCRouter({
       userIds: z.array(z.string()),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Create task
-      const taskId = `bulk_retry_${input.userType}_${Date.now()}`;
-      const task = {
-        id: taskId,
-        type: `Bulk Clerk Account Creation - ${input.userType}s`,
-        status: 'pending' as const,
-        progress: {
-          processed: 0,
-          total: input.userIds.length,
-          percentage: 0
+      // Create background task for clerk retry
+      const taskId = await backgroundTaskService.createTask(
+        'BULK_CLERK_RETRY',
+        `Bulk Clerk Account Retry - ${input.userType}s`,
+        `Retrying Clerk account creation for ${input.userIds.length} ${input.userType}s`,
+        {
+          type: input.userType,
+          userIds: input.userIds,
+          operation: 'retry'
         },
-        startTime: new Date(),
-      };
-
-      activeTasks.set(taskId, task);
-
-      // Start async processing (don't await)
-      setImmediate(async () => {
-        try {
-          await updateTaskProgress(taskId, {
-            processed: 0,
-            total: input.userIds.length,
-            status: 'processing'
-          });
-
-          // Call the existing retry logic with taskId
-          const clerkRouter = clerkManagementRouter.createCaller(ctx);
-          await clerkRouter.retryClerkAccountCreation({
-            userType: input.userType,
-            userIds: input.userIds,
-            taskId
-          });
-        } catch (error) {
-          console.error('Bulk retry task failed:', error);
-          await updateTaskProgress(taskId, {
-            processed: 0,
-            total: input.userIds.length,
-            status: 'failed',
-            results: { error: error instanceof Error ? error.message : String(error) }
-          });
-        }
-      });
+        undefined, // branchId will be determined per user
+        ctx.userId
+      );
 
       return { taskId, message: `Started bulk retry for ${input.userIds.length} ${input.userType}s` };
     }),

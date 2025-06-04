@@ -57,23 +57,23 @@ export function StudentBulkImport({ onSuccess }: StudentBulkImportProps) {
 
   // Mutation for bulk importing students
   const bulkImportMutation = api.student.bulkImport.useMutation({
-    onSuccess: (data: { count: number; importMessages: string[] }) => {
+    onSuccess: (data) => {
       toast({
-        title: "Import successful",
-        description: `Successfully processed ${data.count} students. Check console for details.`,
+        title: "Students imported successfully",
+        description: `${data.count} students imported with ${data.errors} errors`,
         variant: "success",
       });
-      console.log("Bulk Import Server Messages:", data.importMessages);
+      console.log("Import messages:", data.importMessages);
       setIsOpen(false);
       setFile(null);
       setPreviewData([]);
       setValidationErrors([]);
       onSuccess();
     },
-    onError: (error: { message?: string }) => {
+    onError: (error) => {
       toast({
-        title: "Import failed",
-        description: error.message || "Failed to import students",
+        title: "Failed to import students",
+        description: error.message || "An error occurred while importing students",
         variant: "destructive",
       });
     },
@@ -358,25 +358,12 @@ export function StudentBulkImport({ onSuccess }: StudentBulkImportProps) {
   };
 
   const handleImport = async () => {
-    if (!file || validationErrors.length > 0 || previewData.length === 0) return;
-
-    if (!branchId) {
+    if (validationErrors.length > 0) {
       toast({
-        title: "Branch not selected",
-        description: "Please select a branch before importing.",
+        title: "Validation errors",
+        description: "Please fix all validation errors before importing",
         variant: "destructive",
       });
-      setIsUploading(false);
-      return;
-    }
-
-    if (!currentSessionId) {
-      toast({
-        title: "Session not selected",
-        description: "Please select an academic session before importing.",
-        variant: "destructive",
-      });
-      setIsUploading(false);
       return;
     }
 
