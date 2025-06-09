@@ -58,6 +58,15 @@ export const rolePermissions: PermissionMap = {
     Permission.VIEW_QUESTION_PAPERS,
     Permission.CREATE_QUESTION_PAPER,
     Permission.MANAGE_QUESTION_PAPERS,
+    Permission.VIEW_EXAMINATIONS,
+    Permission.MANAGE_EXAM_TYPES,
+    Permission.MANAGE_EXAM_CONFIGURATIONS,
+    Permission.MANAGE_EXAM_SCHEDULES,
+    Permission.MANAGE_SEATING_PLANS,
+    Permission.ENTER_MARKS,
+    Permission.MANAGE_ASSESSMENTS,
+    Permission.MANAGE_GRADE_SCALES,
+    Permission.VIEW_EXAM_REPORTS,
     Permission.VIEW_REPORTS,
     Permission.VIEW_SETTINGS,
     Permission.MANAGE_BRANCHES,
@@ -104,6 +113,15 @@ export const rolePermissions: PermissionMap = {
     Permission.VIEW_QUESTION_PAPERS,
     Permission.CREATE_QUESTION_PAPER,
     Permission.MANAGE_QUESTION_PAPERS,
+    Permission.VIEW_EXAMINATIONS,
+    Permission.MANAGE_EXAM_TYPES,
+    Permission.MANAGE_EXAM_CONFIGURATIONS,
+    Permission.MANAGE_EXAM_SCHEDULES,
+    Permission.MANAGE_SEATING_PLANS,
+    Permission.ENTER_MARKS,
+    Permission.MANAGE_ASSESSMENTS,
+    Permission.MANAGE_GRADE_SCALES,
+    Permission.VIEW_EXAM_REPORTS,
     Permission.VIEW_REPORTS,
     Permission.VIEW_SETTINGS,
     Permission.MANAGE_ACADEMIC_SESSIONS,
@@ -120,6 +138,9 @@ export const rolePermissions: PermissionMap = {
     Permission.MANAGE_LEAVE_APPLICATIONS,
     Permission.VIEW_QUESTION_PAPERS,
     Permission.CREATE_QUESTION_PAPER,
+    Permission.VIEW_EXAMINATIONS,
+    Permission.ENTER_MARKS,
+    Permission.VIEW_EXAM_REPORTS,
   ],
   
   [Role.ACCOUNTANT]: [
@@ -199,6 +220,7 @@ export const moduleViewPermissions: Record<string, Permission> = {
   "Reports": Permission.VIEW_REPORTS,
   "Settings": Permission.VIEW_SETTINGS,
   "Finance": Permission.VIEW_FINANCE_MODULE,
+  "Examination": Permission.VIEW_EXAMINATIONS,
   
   // Submodules 
   "Class Students": Permission.MANAGE_CLASS_STUDENTS,
@@ -294,6 +316,9 @@ export const navItemPermissions = {
   leaves: [Permission.VIEW_LEAVES],
   leaveApplications: [Permission.MANAGE_LEAVE_APPLICATIONS],
   leavePolicies: [Permission.MANAGE_LEAVE_POLICIES],
+  
+  // Examination module
+  examination: [Permission.VIEW_EXAMINATIONS],
   
   // Salary module
   salary: [Permission.VIEW_SALARY],

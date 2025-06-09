@@ -25,6 +25,7 @@ import {
   DollarSign,
   BookOpen,
   Plus,
+  ClipboardCheck,
 } from "lucide-react"
 import { useClerk } from "@clerk/nextjs"
 import { type Prisma } from "@prisma/client"
@@ -316,6 +317,59 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Leave Policies",
           href: "/leaves?tab=policies",
           permissions: navItemPermissions.leavePolicies,
+        },
+      ],
+    },
+    {
+      title: "Examination",
+      href: "/examination",
+      icon: ClipboardCheck,
+      permissions: navItemPermissions.examination,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/examination",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Assessment Schemas",
+          href: "/examination/assessment-schemas",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Score Entry",
+          href: "/examination/score-entry",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Results & Analytics",
+          href: "/examination/results-dashboard",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Grade Configuration",
+          href: "/examination/grade-scales",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Exam Scheduling",
+          href: "/examination/schedule",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Seating Plans",
+          href: "/examination/seating-plans",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Traditional Exams",
+          href: "/examination/traditional",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Reports",
+          href: "/examination/reports",
+          permissions: navItemPermissions.examination,
         },
       ],
     },

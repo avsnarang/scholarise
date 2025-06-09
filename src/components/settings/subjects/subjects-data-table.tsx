@@ -37,7 +37,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { DotsHorizontalIcon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
+import { DotsHorizontalIcon, Pencil1Icon, TrashIcon, PlusIcon } from "@radix-ui/react-icons";
+import { BookOpenIcon } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Link from "next/link";
 
@@ -131,6 +132,7 @@ export function SubjectsDataTable() {
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
+          className="border-gray-300"
         />
       ),
       cell: ({ row }) => (
@@ -138,6 +140,7 @@ export function SubjectsDataTable() {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="border-gray-300"
         />
       ),
       enableSorting: false,
@@ -146,21 +149,27 @@ export function SubjectsDataTable() {
     {
       accessorKey: "name",
       header: "Subject Name",
-      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
-    },
-    {
-      accessorKey: "code",
-      header: "CBSE Code",
       cell: ({ row }) => (
-        <div>{row.getValue("code") || <span className="text-gray-400">-</span>}</div>
+        <div className="space-y-1">
+          <div className="font-semibold text-gray-900">{row.getValue("name")}</div>
+          {row.original.code && (
+            <div className="text-xs text-[#00501B] bg-[#00501B]/10 px-2 py-1 rounded-md w-fit">
+              Code: {row.original.code}
+            </div>
+          )}
+        </div>
       ),
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: "Description", 
       cell: ({ row }) => (
-        <div className="max-w-[400px] truncate">
-          {row.getValue("description") || <span className="text-gray-400">No description</span>}
+        <div className="max-w-[300px]">
+          {row.getValue("description") ? (
+            <p className="text-sm text-gray-600 line-clamp-2">{row.getValue("description")}</p>
+          ) : (
+            <span className="text-gray-400 text-sm italic">No description provided</span>
+          )}
         </div>
       ),
     },
@@ -171,9 +180,13 @@ export function SubjectsDataTable() {
         const isActive = row.getValue("isActive");
         return (
           <Badge 
-            variant={isActive ? "default" : "outline"}
-            className={isActive ? "bg-green-500 hover:bg-green-600" : ""}
+            variant={isActive ? "default" : "secondary"}
+            className={isActive 
+              ? "bg-[#00501B]/10 text-[#00501B] hover:bg-[#00501B]/20 border-[#00501B]/20" 
+              : "bg-gray-100 text-gray-600 border-gray-200"
+            }
           >
+            <div className={`w-2 h-2 rounded-full mr-2 ${isActive ? "bg-[#00501B]" : "bg-gray-400"}`} />
             {isActive ? "Active" : "Inactive"}
           </Badge>
         );
@@ -183,44 +196,82 @@ export function SubjectsDataTable() {
       },
     },
     {
+      header: "Classes",
+      cell: ({ row }) => {
+        // You might want to add class count here if available in data
+        return (
+          <div className="text-sm text-gray-500">
+            {/* This would show associated class count if available in the data */}
+            <span className="bg-[#00501B]/10 text-[#00501B] px-2 py-1 rounded-md text-xs">
+              View Classes
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       id: "actions",
+      header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
         const subject = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <DotsHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => router.push(`/settings/subjects/${subject.id}/edit`)}
-                className="cursor-pointer"
-              >
-                <Pencil1Icon className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleToggleStatus(subject)}
-                className="cursor-pointer"
-              >
-                {subject.isActive ? 'Deactivate' : 'Activate'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => confirmDelete(subject)}
-                className="cursor-pointer text-red-600"
-              >
-                <TrashIcon className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/settings/subjects/${subject.id}/edit`)}
+              className="h-8 px-2 text-gray-600 hover:text-[#00501B] hover:bg-[#00501B]/10"
+            >
+              <Pencil1Icon className="h-4 w-4" />
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 text-gray-600 hover:text-[#00501B] hover:bg-[#00501B]/10">
+                  <span className="sr-only">Open menu</span>
+                  <DotsHorizontalIcon className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="text-xs text-gray-500 uppercase tracking-wide">
+                  Actions
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => router.push(`/settings/subjects/${subject.id}/edit`)}
+                  className="cursor-pointer"
+                >
+                  <Pencil1Icon className="mr-2 h-4 w-4" />
+                  Edit Subject
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleToggleStatus(subject)}
+                  className="cursor-pointer"
+                >
+                  {subject.isActive ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 rounded-full bg-gray-400" />
+                      Deactivate
+                    </>
+                  ) : (
+                    <>
+                      <div className="mr-2 h-4 w-4 rounded-full bg-[#00501B]" />
+                      Activate
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => confirmDelete(subject)}
+                  className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
+                >
+                  <TrashIcon className="mr-2 h-4 w-4" />
+                  Delete Subject
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },
@@ -244,23 +295,28 @@ export function SubjectsDataTable() {
   });
 
   if (isLoading) {
-    return <div>Loading subjects...</div>;
+    return (
+      <div className="py-8 text-center text-muted-foreground">
+        Loading subjects...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {/* Filters */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Filter subjects..."
+            placeholder="Search subjects..."
             value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("name")?.setFilterValue(event.target.value)
             }
-            className="max-w-sm"
+            className="max-w-sm focus:border-[#00501B] focus:ring-[#00501B]"
           />
           <select
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-[#00501B] focus:ring-[#00501B]"
             value={(table.getColumn("isActive")?.getFilterValue() as string) ?? "all"}
             onChange={(event) =>
               table.getColumn("isActive")?.setFilterValue(event.target.value)
@@ -271,21 +327,24 @@ export function SubjectsDataTable() {
             <option value="inactive">Inactive</option>
           </select>
         </div>
-        <div className="flex items-center gap-2">
-          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+        
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
-                // Handle bulk delete
+                // Handle bulk actions
               }}
-              className="text-red-600"
+              className="text-red-600 border-red-300 hover:bg-red-50"
             >
-              Delete Selected
+              Delete Selected ({table.getFilteredSelectedRowModel().rows.length})
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
+      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -321,7 +380,19 @@ export function SubjectsDataTable() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No subjects found.
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <BookOpenIcon className="w-8 h-8 text-[#00501B]/60" />
+                    <p className="text-muted-foreground">No subjects found</p>
+                    {!(table.getColumn("name")?.getFilterValue() as string) && 
+                     (table.getColumn("isActive")?.getFilterValue() as string) === "all" && (
+                      <Link href="/settings/subjects/create">
+                        <Button className="bg-[#00501B] hover:bg-[#00501B]/90 text-white" size="sm">
+                          <PlusIcon className="mr-2 h-4 w-4" />
+                          Add Subject
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -329,8 +400,9 @@ export function SubjectsDataTable() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
@@ -360,7 +432,8 @@ export function SubjectsDataTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Subject</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the subject <strong>{subjectToDelete?.name}</strong>? This action cannot be undone and will remove all class and student associations.
+              Are you sure you want to delete the subject <strong>"{subjectToDelete?.name}"</strong>? 
+              This action cannot be undone and will remove all class and student associations.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -28,6 +28,7 @@ import {
 import { Plus, Edit, Trash2, BookOpen } from "lucide-react";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useBranchContext } from "@/hooks/useBranchContext";
 
 interface ExamTypeForm {
   name: string;
@@ -47,13 +48,14 @@ const initialForm: ExamTypeForm = {
 
 export default function ExamTypesPage() {
   const { toast } = useToast();
+  const { currentBranchId } = useBranchContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ExamTypeForm>(initialForm);
 
   // API calls with proper branch filtering
   const { data: examTypes, refetch } = api.examination.getExamTypes.useQuery({
-    branchId: "1", // This should come from branch context in a real app
+    branchId: currentBranchId || undefined,
   });
   const createMutation = api.examination.createExamType.useMutation();
   const updateMutation = api.examination.updateExamType.useMutation();
@@ -75,7 +77,7 @@ export default function ExamTypesPage() {
       } else {
         await createMutation.mutateAsync({
           ...form,
-          branchId: "1", // This should come from branch context
+          branchId: currentBranchId!,
         });
         toast({ 
           title: "Success", 
@@ -133,12 +135,12 @@ export default function ExamTypesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Exam Types</h1>
-          <p className="text-gray-600 mt-2">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Exam Types</h1>
+          <p className="text-muted-foreground">
             Manage different types of examinations (Unit Test, Mid Term, Final, etc.)
           </p>
         </div>

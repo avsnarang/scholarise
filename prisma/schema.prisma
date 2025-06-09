@@ -53,6 +53,10 @@ model Branch {
   assessmentConfigs    AssessmentConfiguration[]
   assessmentMarks      AssessmentMarks[]
   gradeScales          GradeScale[]
+  // Customizable Assessment Engine relations
+  assessmentSchemas    AssessmentSchema[]
+  studentAssessmentScores StudentAssessmentScore[]
+  assessmentPermissions AssessmentPermission[]
 }
 
 model Student {
@@ -119,6 +123,8 @@ model Student {
   seatingPlans           SeatingPlan[]
   marksEntries           MarksEntry[]
   assessmentMarks        AssessmentMarks[]
+  // Customizable Assessment Engine relations
+  studentAssessmentScores StudentAssessmentScore[]
   
   // Add database indexes for performance
   @@index([branchId, admissionNumber], name: "student_branch_admission_idx")
@@ -337,6 +343,8 @@ model Class {
   // Examination relations
   examConfigurations   ExamConfiguration[]
   assessmentConfigs    AssessmentConfiguration[]
+  // Customizable Assessment Engine relations
+  assessmentSchemas    AssessmentSchema[]
   
   @@unique([name, branchId, sessionId]) // Ensure unique class names per branch/session
 }
@@ -597,6 +605,8 @@ model Subject {
   // Examination relations
   examConfigurations   ExamConfiguration[]
   assessmentConfigs    AssessmentConfiguration[]
+  // Customizable Assessment Engine relations
+  assessmentSchemas    AssessmentSchema[]
 }
 
 model ClassSubject {
@@ -1840,4 +1850,165 @@ model GradeRange {
   gradeScale       GradeScale @relation(fields: [gradeScaleId], references: [id], onDelete: Cascade)
   
   @@index([gradeScaleId, minPercentage])
+}
+
+// Customizable Assessment Engine Models
+
+// Assessment Schema (e.g., English Term-1 Schema)
+model AssessmentSchema {
+  id               String @id @default(cuid())
+  name             String // e.g., "English Term-1 Evaluation"
+  term             String // e.g., "Term-1", "Half-Yearly", "Annual"
+  classId          String
+  subjectId        String
+  totalMarks       Int @default(100)
+  isActive         Boolean @default(true)
+  isPublished      Boolean @default(false)
+  createdBy        String // Employee/Teacher ID
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  // JSON field to store selected classes and sections
+  appliedClasses   Json? // Stores array of {classId, sectionId?, className, sectionName?}
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  class            Class @relation(fields: [classId], references: [id])
+  subject          Subject @relation(fields: [subjectId], references: [id])
+  components       AssessmentComponent[]
+  studentScores    StudentAssessmentScore[]
+  permissions      AssessmentPermission[]
+  
+  @@unique([branchId, classId, subjectId, term])
+  @@index([branchId, isActive])
+  @@index([classId, subjectId])
+}
+
+// Assessment Components (e.g., Periodic Test, Multiple Assessment, etc.)
+model AssessmentComponent {
+  id               String @id @default(cuid())
+  name             String // e.g., "Periodic Test", "Multiple Assessment"
+  description      String?
+  assessmentSchemaId String
+  rawMaxScore      Int // Original maximum marks
+  reducedScore     Float // Weighted/reduced marks
+  weightage        Float @default(1.0) // Weight in final calculation
+  formula          String? // Custom formula for calculation
+  order            Int @default(0)
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  assessmentSchema AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  subCriteria      AssessmentSubCriteria[]
+  componentScores  ComponentScore[]
+  
+  @@index([assessmentSchemaId, order])
+}
+
+// Sub-criteria for components (e.g., Individual Activities, Handwriting, etc.)
+model AssessmentSubCriteria {
+  id               String @id @default(cuid())
+  name             String // e.g., "Individual Activities", "Handwriting"
+  description      String?
+  componentId      String
+  maxScore         Int
+  order            Int @default(0)
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  component        AssessmentComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  subCriteriaScores SubCriteriaScore[]
+  
+  @@index([componentId, order])
+}
+
+// Student scores for each assessment schema
+model StudentAssessmentScore {
+  id               String @id @default(cuid())
+  assessmentSchemaId String
+  studentId        String
+  finalScore       Float?
+  finalGrade       String?
+  finalPercentage  Float?
+  isComplete       Boolean @default(false)
+  submittedAt      DateTime?
+  enteredBy        String // Teacher/Employee ID
+  enteredAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assessmentSchema AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  student          Student @relation(fields: [studentId], references: [id])
+  componentScores  ComponentScore[]
+  
+  @@unique([assessmentSchemaId, studentId])
+  @@index([branchId, assessmentSchemaId])
+  @@index([studentId])
+  @@index([enteredBy])
+}
+
+// Student scores for each component
+model ComponentScore {
+  id               String @id @default(cuid())
+  componentId      String
+  studentAssessmentScoreId String
+  rawScore         Float?
+  reducedScore     Float?
+  calculatedScore  Float?
+  isComplete       Boolean @default(false)
+  enteredBy        String // Teacher/Employee ID
+  enteredAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  component        AssessmentComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  studentScore     StudentAssessmentScore @relation(fields: [studentAssessmentScoreId], references: [id], onDelete: Cascade)
+  subCriteriaScores SubCriteriaScore[]
+  
+  @@unique([componentId, studentAssessmentScoreId])
+  @@index([componentId])
+  @@index([studentAssessmentScoreId])
+}
+
+// Student scores for sub-criteria
+model SubCriteriaScore {
+  id               String @id @default(cuid())
+  subCriteriaId    String
+  componentScoreId String
+  score            Float?
+  comments         String?
+  enteredBy        String // Teacher/Employee ID
+  enteredAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  subCriteria      AssessmentSubCriteria @relation(fields: [subCriteriaId], references: [id], onDelete: Cascade)
+  componentScore   ComponentScore @relation(fields: [componentScoreId], references: [id], onDelete: Cascade)
+  
+  @@unique([subCriteriaId, componentScoreId])
+  @@index([subCriteriaId])
+  @@index([componentScoreId])
+}
+
+// Assessment Permissions
+model AssessmentPermission {
+  id               String @id @default(cuid())
+  assessmentSchemaId String?
+  userId           String // Employee/Teacher ID
+  permissionType   AssessmentPermissionType
+  canCreate        Boolean @default(false)
+  canEdit          Boolean @default(false)
+  canView          Boolean @default(true)
+  canDelete        Boolean @default(false)
+  canPublish       Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  branchId         String
+  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  assessmentSchema AssessmentSchema? @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  
+  @@unique([assessmentSchemaId, userId])
+  @@index([branchId, userId])
+  @@index([userId, permissionType])
+}
+
+enum AssessmentPermissionType {
+  ADMIN
+  SUBJECT_COORDINATOR
+  TEACHER
+  VIEW_ONLY
 }

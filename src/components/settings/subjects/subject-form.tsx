@@ -197,13 +197,17 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center">
-                    Subject Name <span className="text-red-500 ml-1">*</span>
+                    Subject Name 
+                    <span className="text-red-500 ml-1">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter subject name" />
+                    <Input 
+                      {...field} 
+                      placeholder="e.g., Mathematics, Physics, English"
+                    />
                   </FormControl>
                   <FormDescription>
-                    The display name of the subject
+                    The display name that will appear throughout the system
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -216,12 +220,17 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CBSE Subject Code</FormLabel>
+                  <FormLabel>
+                    CBSE Subject Code
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter CBSE code" />
+                    <Input 
+                      {...field} 
+                      placeholder="e.g., 041, 042, 301"
+                    />
                   </FormControl>
                   <FormDescription>
-                    The official CBSE code for this subject
+                    Official CBSE code for board examination reporting
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -235,14 +244,19 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>
+                  Description
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     {...field}
-                    placeholder="Enter a brief description of the subject"
-                    className="resize-none min-h-[100px]"
+                    placeholder="Brief description of the subject, its scope, and objectives..."
+                    className="resize-none min-h-[120px]"
                   />
                 </FormControl>
+                <FormDescription>
+                  Provide context about the subject for teachers and administrators
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -254,53 +268,86 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
             name="classIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Associated Classes</FormLabel>
+                <FormLabel>
+                  Associated Classes
+                </FormLabel>
                 <FormControl>
                   <MultiCombobox
                     options={classOptions}
                     selected={field.value || []}
                     onChange={field.onChange}
                     placeholder={classes.length > 0 
-                      ? "Select classes" 
+                      ? "Select classes for this subject" 
                       : "No classes available"}
                     emptyMessage="No classes found."
-                    searchPlaceholder="Search select classes..."
-                    className="w-full"
+                    searchPlaceholder="Search classes..."
+                    className="w-full max-h-32"
                   />
                 </FormControl>
                 <FormDescription>
                   {currentBranchId && currentSessionId 
-                    ? `Showing classes for selected branch and academic session (${classes.length} classes available)`
-                    : "Please select a branch and academic session to filter classes"}
+                    ? `${classes.length} classes available for the selected branch and academic session`
+                    : "Please select a branch and academic session to view available classes"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          {/* Show selected classes preview */}
+          {(form.watch("classIds")?.length || 0) > 0 && (
+            <div className="bg-muted/50 rounded-lg p-3">
+              <div className="text-sm font-medium mb-2">
+                Selected Classes ({form.watch("classIds")?.length || 0})
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1">
+                {form.watch("classIds")?.slice(0, 12).map((classId: string) => {
+                  const className = classOptions.find(c => c.value === classId)?.label;
+                  return (
+                    <Badge key={classId} variant="secondary" className="text-xs px-1.5 py-0.5 justify-center truncate">
+                      {className}
+                    </Badge>
+                  );
+                })}
+                {(form.watch("classIds")?.length || 0) > 12 && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 justify-center border-dashed">
+                    +{(form.watch("classIds")?.length || 0) - 12} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Active Status */}
           <FormField
             control={form.control}
             name="isActive"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Active</FormLabel>
-                  <FormDescription>
-                    Active subjects can be assigned to classes and students
-                  </FormDescription>
+              <FormItem className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="mt-1"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="cursor-pointer">
+                      Active Subject
+                    </FormLabel>
+                    <FormDescription>
+                      Active subjects are available for class assignments and appear in subject selection lists. 
+                      Inactive subjects are hidden from new assignments but preserve existing data.
+                    </FormDescription>
+                  </div>
                 </div>
               </FormItem>
             )}
           />
 
-          <div className="flex justify-end space-x-4 pt-4">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-6 border-t">
             <Button
               type="button"
               variant="outline"
@@ -311,7 +358,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#00501B] hover:bg-[#00501B]/90"
+              variant="glowing"
             >
               {isSubmitting ? (
                 <>

@@ -91,6 +91,17 @@ export enum Permission {
   CREATE_QUESTION_PAPER = "create_question_paper",
   MANAGE_QUESTION_PAPERS = "manage_question_papers",
   
+  // Examination permissions
+  VIEW_EXAMINATIONS = "view_examinations",
+  MANAGE_EXAM_TYPES = "manage_exam_types",
+  MANAGE_EXAM_CONFIGURATIONS = "manage_exam_configurations",
+  MANAGE_EXAM_SCHEDULES = "manage_exam_schedules",
+  MANAGE_SEATING_PLANS = "manage_seating_plans",
+  ENTER_MARKS = "enter_marks",
+  MANAGE_ASSESSMENTS = "manage_assessments",
+  MANAGE_GRADE_SCALES = "manage_grade_scales",
+  VIEW_EXAM_REPORTS = "view_exam_reports",
+  
   // Reports permissions
   VIEW_REPORTS = "view_reports",
   

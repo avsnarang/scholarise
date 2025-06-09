@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import { SubjectsDataTable } from "@/components/settings/subjects/subjects-data-table";
-import { PageHeader } from "@/components/page-header";
-import { PageWrapper } from "@/components/page-wrapper";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusIcon } from "@radix-ui/react-icons";
+import { PlusCircle, FileDown, BookOpen } from "lucide-react";
+import { SubjectStatsCards } from "@/components/settings/subjects/subject-stats-cards";
 
 export const metadata = {
   title: "Subjects Management",
@@ -14,32 +13,39 @@ export const metadata = {
 
 export default function SubjectsPage() {
   return (
-    <PageWrapper className="max-w-full">
-      <PageHeader
-        heading="Subjects Management"
-        description="Manage school subjects and their CBSE codes"
-      >
-        <Link href="/settings/subjects/create">
-          <Button className="bg-[#00501B] hover:bg-[#00501B]/90">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Add Subject
+    <PageWrapper
+      title="Subjects"
+      subtitle="Manage all subjects in your institution"
+      action={
+        <div className="flex gap-2">
+          <Button variant="glowing-secondary" className="flex items-center gap-1">
+            <FileDown className="h-4 w-4" />
+            <span>Export</span>
           </Button>
-        </Link>
-      </PageHeader>
+          <Link href="/settings/subjects/create">
+            <Button variant="glowing" className="flex items-center gap-1">
+              <PlusCircle className="h-4 w-4" />
+              <span>Add Subject</span>
+            </Button>
+          </Link>
+        </div>
+      }
+    >
+      <SubjectStatsCards />
 
-      <Card className="border-t-4 border-t-[#00501B] w-full">
-        <CardHeader className="pb-0">
-          <CardTitle>School Subjects</CardTitle>
-          <CardDescription>
-            View, add, edit or delete subjects and assign them to classes or individual students.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<div>Loading subjects...</div>}>
-            <SubjectsDataTable />
-          </Suspense>
-        </CardContent>
-      </Card>
+      <div className="mt-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-medium">All Subjects</h2>
+        </div>
+
+        <Suspense fallback={
+          <div className="py-8 text-center text-gray-500">
+            Loading subjects...
+          </div>
+        }>
+          <SubjectsDataTable />
+        </Suspense>
+      </div>
     </PageWrapper>
   );
 } 

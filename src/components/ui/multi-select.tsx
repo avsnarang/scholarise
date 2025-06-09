@@ -152,7 +152,9 @@ export const MultiSelect = React.forwardRef<
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState("");
+    const [lastClickedIndex, setLastClickedIndex] = React.useState<number | null>(null);
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
     
     // Update selectedValues when selected prop changes
     React.useEffect(() => {
@@ -160,6 +162,19 @@ export const MultiSelect = React.forwardRef<
         setSelectedValues(selected);
       }
     }, [selected]);
+
+    // Handle scroll events to prevent interference with parent containers
+    React.useEffect(() => {
+      const handleWheel = (e: WheelEvent) => {
+        e.stopPropagation();
+      };
+
+      const scrollContainer = scrollContainerRef.current;
+      if (scrollContainer && isPopoverOpen) {
+        scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+        return () => scrollContainer.removeEventListener('wheel', handleWheel);
+      }
+    }, [isPopoverOpen]);
 
     // Handle input key events for better keyboard navigation
     const handleInputKeyDown = (
@@ -182,6 +197,8 @@ export const MultiSelect = React.forwardRef<
     // Handle search input change
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setSearchQuery(e.target.value);
+      // Reset last clicked index when search changes
+      setLastClickedIndex(null);
     };
 
     // Toggle selection of an option
@@ -193,16 +210,50 @@ export const MultiSelect = React.forwardRef<
       onValueChange(newSelectedValues);
     };
 
+    // Select range of options
+    const selectRange = (startIndex: number, endIndex: number, shouldSelect: boolean) => {
+      const start = Math.min(startIndex, endIndex);
+      const end = Math.max(startIndex, endIndex);
+      const currentOptions = searchQuery ? filteredOptions : options;
+      const rangeValues = currentOptions.slice(start, end + 1).map(option => option.value);
+      
+      let newSelectedValues = [...selectedValues];
+      
+      if (shouldSelect) {
+        // Add all range values that aren't already selected
+        rangeValues.forEach(value => {
+          if (!newSelectedValues.includes(value)) {
+            newSelectedValues.push(value);
+          }
+        });
+      } else {
+        // Remove all range values
+        newSelectedValues = newSelectedValues.filter(value => !rangeValues.includes(value));
+      }
+      
+      setSelectedValues(newSelectedValues);
+      onValueChange(newSelectedValues);
+    };
+
     // Toggle selection directly through DOM
-    const handleDirectClick = (e: React.MouseEvent, optionValue: string) => {
+    const handleDirectClick = (e: React.MouseEvent, optionValue: string, optionIndex: number) => {
       e.preventDefault();
       e.stopPropagation();
       
-      // Close dropdown after selection (optional)
-      // setIsPopoverOpen(false);
+      const currentOptions = searchQuery ? filteredOptions : options;
       
-      // Toggle the option
-      toggleOption(optionValue);
+      // Handle shift+click for range selection
+      if (e.shiftKey && lastClickedIndex !== null) {
+        // Determine if we should select or deselect based on the target item's current state
+        const targetSelected = selectedValues.includes(optionValue);
+        const shouldSelect = !targetSelected;
+        
+        selectRange(lastClickedIndex, optionIndex, shouldSelect);
+      } else {
+        // Normal click - toggle single option
+        toggleOption(optionValue);
+        setLastClickedIndex(optionIndex);
+      }
     };
 
     // Clear all selected values
@@ -253,22 +304,72 @@ export const MultiSelect = React.forwardRef<
       );
     }, [options, searchQuery]);
 
+    // Add custom scrollbar styles
+    React.useEffect(() => {
+      const style = document.createElement('style');
+      style.textContent = `
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgb(209 213 219) transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgb(209 213 219);
+          border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgb(156 163 175);
+        }
+        
+        .dark .custom-scrollbar {
+          scrollbar-color: rgb(107 114 128) transparent;
+        }
+        
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgb(107 114 128);
+        }
+        
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgb(75 85 99);
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }, []);
+
     return (
-      <Popover
-        open={isPopoverOpen}
-        onOpenChange={(open) => {
-          setIsPopoverOpen(open);
-          if (open) {
-            // Reset search when opening
-            setSearchQuery("");
-            // Focus the search input
-            setTimeout(() => {
-              inputRef.current?.focus();
-            }, 100);
-          }
-        }}
-        modal={modalPopover}
-      >
+        <Popover
+          open={isPopoverOpen}
+          onOpenChange={(open) => {
+            setIsPopoverOpen(open);
+            if (open) {
+              // Reset search when opening
+              setSearchQuery("");
+              // Reset last clicked index when opening
+              setLastClickedIndex(null);
+              // Focus the search input
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 100);
+            } else {
+              // Reset last clicked index when closing
+              setLastClickedIndex(null);
+            }
+          }}
+          modal={modalPopover}
+        >
         <PopoverTrigger asChild>
           <Button
             ref={ref}
@@ -355,12 +456,14 @@ export const MultiSelect = React.forwardRef<
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-auto p-0 z-[100] pointer-events-auto"
+          className="w-auto p-0 z-[9999] pointer-events-auto"
           align="start"
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
-          style={{ pointerEvents: 'auto' }}
+          style={{ 
+            pointerEvents: 'auto'
+          }}
         >
-          <div className="max-h-[300px] overflow-y-auto w-full bg-white dark:bg-popover rounded-md border border-gray-200 dark:border-gray-800">
+          <div className="w-full bg-white dark:bg-popover rounded-md border border-gray-200 dark:border-gray-800">
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <input 
@@ -376,7 +479,7 @@ export const MultiSelect = React.forwardRef<
               {filteredOptions.length === 0 && (
                 <div className="py-6 text-center text-sm">No results found.</div>
               )}
-              <div className="overflow-hidden p-1">
+              <div className="p-1">
                 <div
                   className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm"
                   onClick={(e) => {
@@ -397,34 +500,50 @@ export const MultiSelect = React.forwardRef<
                   </div>
                   <span className="text-sm">(Select All)</span>
                 </div>
-                {filteredOptions.map((option) => {
-                  const isSelected = selectedValues.includes(option.value);
-                  return (
-                    <div 
-                      key={option.value}
-                      className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm text-sm"
-                      onClick={(e) => handleDirectClick(e, option.value)}
-                    >
-                      <div
+                <div 
+                  ref={scrollContainerRef}
+                  className="max-h-[200px] overflow-y-auto overscroll-contain custom-scrollbar"
+                  onWheel={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {filteredOptions.map((option, index) => {
+                    const isSelected = selectedValues.includes(option.value);
+                    const isLastClicked = lastClickedIndex === index;
+                    return (
+                      <div 
+                        key={option.value}
                         className={cn(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible"
+                          "flex items-center px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm text-sm select-none",
+                          isLastClicked && "ring-1 ring-primary ring-inset"
                         )}
+                        onClick={(e) => handleDirectClick(e, option.value, index)}
+                        title={`${option.label}${isLastClicked ? ' (Last clicked - Shift+Click to select range)' : ''}`}
                       >
-                        <CheckIcon className="h-4 w-4" />
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </div>
+                        {option.icon && (
+                          <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span>{option.label}</span>
                       </div>
-                      {option.icon && (
-                        <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span>{option.label}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
               <div className="-mx-1 h-px bg-border" />
               <div className="overflow-hidden p-1">
+                <div className="px-2 py-1 text-xs text-muted-foreground text-center">
+                  Hold Shift + Click to select range
+                </div>
                 <div className="flex items-center justify-between">
                   {selectedValues.length > 0 && (
                     <>

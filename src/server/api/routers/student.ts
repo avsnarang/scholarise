@@ -1665,4 +1665,61 @@ export const studentRouter = createTRPCRouter({
       console.log("✅ Final result:", result);
       return result;
     }),
+
+  getByClassAndSection: publicProcedure
+    .input(
+      z.object({
+        classId: z.string(),
+        sectionId: z.string().optional().nullable(),
+        branchId: z.string(),
+        sessionId: z.string().optional().nullable(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { classId, sectionId, branchId, sessionId } = input;
+
+      const whereClause: Prisma.StudentWhereInput = {
+        branchId,
+        isActive: true,
+        ...(sectionId && sectionId !== 'all' ? { sectionId } : {}),
+        ...(sessionId 
+          ? {
+              academicRecords: {
+                some: {
+                  sessionId,
+                  classId,
+                },
+              },
+            }
+          : {
+              section: {
+                classId,
+              },
+            }
+        ),
+      };
+
+      const students = await ctx.db.student.findMany({
+        where: whereClause,
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+          academicRecords: {
+            include: {
+              session: true,
+            },
+          },
+          parent: true,
+        },
+        orderBy: [
+          { rollNumber: 'asc' },
+          { firstName: 'asc' },
+        ],
+      });
+
+      return students;
+    }),
 });
