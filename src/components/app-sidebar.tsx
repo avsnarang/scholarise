@@ -92,6 +92,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     code: string;
   };
 
+  // Define navigation item types
+  interface NavItem {
+    title: string;
+    href: string;
+    icon?: any;
+    permissions: Permission[];
+    children?: NavItem[];
+  }
+
   // Find the selected branch using currentBranchId
   const selectedBranch = React.useMemo(() => {
     // Ensure branches is an array before using find on it
@@ -267,6 +276,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/classes/students",
           permissions: navItemPermissions.classStudents,
         },
+        {
+          title: "Subject Assignments",
+          href: "/classes/assignments",
+          permissions: navItemPermissions.teachers,
+        },
       ],
     },
     {
@@ -332,14 +346,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: navItemPermissions.examination,
         },
         {
-          title: "Assessment Schemas",
-          href: "/examination/assessment-schemas",
+          title: "Configuration",
+          href: "/examination/config",
           permissions: navItemPermissions.examination,
+          children: [
+            {
+              title: "Assessment Schemas",
+              href: "/examination/assessment-schemas",
+              permissions: navItemPermissions.manageAssessments,
+            },
+            {
+              title: "Grade Configuration",
+              href: "/examination/grade-scales",
+              permissions: navItemPermissions.gradeScales,
+            },
+            {
+              title: "Term Configuration",
+              href: "/examination/config/terms",
+              permissions: navItemPermissions.examConfigurations,
+            },
+            {
+              title: "Exam Scheduling",
+              href: "/examination/schedule",
+              permissions: navItemPermissions.examSchedules,
+            },
+            {
+              title: "Seating Plans",
+              href: "/examination/seating-plans",
+              permissions: navItemPermissions.seatingPlans,
+            },
+            {
+              title: "Traditional Exams",
+              href: "/examination/traditional",
+              permissions: navItemPermissions.examTypes,
+            },
+          ],
         },
         {
           title: "Score Entry",
           href: "/examination/score-entry",
-          permissions: navItemPermissions.examination,
+          permissions: navItemPermissions.enterMarks,
         },
         {
           title: "Results & Analytics",
@@ -347,29 +393,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: navItemPermissions.examination,
         },
         {
-          title: "Grade Configuration",
-          href: "/examination/grade-scales",
-          permissions: navItemPermissions.examination,
-        },
-        {
-          title: "Exam Scheduling",
-          href: "/examination/schedule",
-          permissions: navItemPermissions.examination,
-        },
-        {
-          title: "Seating Plans",
-          href: "/examination/seating-plans",
-          permissions: navItemPermissions.examination,
-        },
-        {
-          title: "Traditional Exams",
-          href: "/examination/traditional",
-          permissions: navItemPermissions.examination,
-        },
-        {
           title: "Reports",
           href: "/examination/reports",
-          permissions: navItemPermissions.examination,
+          permissions: navItemPermissions.examReports,
         },
       ],
     },
@@ -430,17 +456,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Fee Heads",
           href: "/finance/fee-head",
-          permissions: navItemPermissions.feeHead,
+          permissions: navItemPermissions.feeHeads,
         },
         {
           title: "Fee Terms",
           href: "/finance/fee-term",
-          permissions: navItemPermissions.feeTerm,
+          permissions: navItemPermissions.feeTerms,
         },
         {
           title: "Classwise Fees",
           href: "/finance/classwise-fee",
-          permissions: navItemPermissions.classwiseFee,
+          permissions: navItemPermissions.classwiseFees,
         },
         {
           title: "Fee Collection",
@@ -479,6 +505,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "All Question Papers",
           href: "/question-papers/list",
           permissions: navItemPermissions.questionPapers,
+        },
+        {
+          title: "Manage Question Papers",
+          href: "/question-papers/manage",
+          permissions: navItemPermissions.manageQuestionPapers,
         },
       ],
     },
@@ -619,6 +650,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               }
               
               return hasChildPermission;
+            }).map(child => {
+              // If the child has grandchildren, filter those too
+              if (child.children) {
+                return {
+                  ...child,
+                  children: child.children.filter((grandchild: any) => {
+                    const hasGrandchildPermission = canAccess(grandchild.permissions);
+                    
+                    // For debugging
+                    if (!hasGrandchildPermission) {
+                      console.log(`Grandchild item ${grandchild.title} (of ${child.title} -> ${item.title}) filtered out: insufficient permissions`);
+                    }
+                    
+                    return hasGrandchildPermission;
+                  })
+                };
+              }
+              return child;
             })
           };
         }
@@ -776,7 +825,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 
                 {!isCollapsed && item.children && item.children.length > 0 && (
                   <div className={`overflow-hidden transition-all duration-200 ${
-                    expandedItems[item.title] ? 'max-h-96' : 'max-h-0'
+                    expandedItems[item.title] ? 'max-h-[500px]' : 'max-h-0'
                   }`}>
                     <SidebarMenuSub>
                       {item.children.map((child) => {
@@ -794,21 +843,77 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           !canAccess([Permission.MARK_ALL_STAFF_ATTENDANCE])) ||
                           (!isEnabled);
 
+                        const hasGrandchildren = child.children && child.children.length > 0;
+
                         return (
-                          <SidebarMenuSubItem key={child.href}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={isActive(child.href)}
-                              className={showDisabled ? 'pointer-events-none opacity-50' : ''}
-                            >
-                              <Link 
-                                href={showDisabled ? "#" : child.href}
-                                onClick={e => showDisabled && e.preventDefault()}
-                              >
-                                <span>{child.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
+                          <div key={child.href}>
+                            <SidebarMenuSubItem>
+                              <div className="relative flex-1">
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isActive(child.href)}
+                                  className={`${hasGrandchildren ? 'pr-8' : ''} ${showDisabled ? 'pointer-events-none opacity-50' : ''}`}
+                                >
+                                  <Link 
+                                    href={showDisabled ? "#" : child.href}
+                                    onClick={e => showDisabled && e.preventDefault()}
+                                  >
+                                    <span>{child.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                                
+                                {hasGrandchildren && (
+                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
+                                    <button
+                                      onClick={(e) => toggleExpand(`${item.title}-${child.title}`, e)}
+                                      className={`
+                                        h-6 w-6 flex items-center justify-center rounded-md 
+                                        hover:bg-sidebar-accent text-sidebar-foreground
+                                        transition-all duration-200
+                                        ${expandedItems[`${item.title}-${child.title}`] ? "bg-sidebar-accent" : ""}
+                                      `}
+                                      aria-label={`Toggle ${child.title} submenu`}
+                                    >
+                                      <ChevronRight 
+                                        className={`h-3 w-3 transition-transform duration-200 ${
+                                          expandedItems[`${item.title}-${child.title}`] ? 'rotate-90' : ''
+                                        }`}
+                                      />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </SidebarMenuSubItem>
+                            
+                            {hasGrandchildren && (
+                              <div className={`overflow-hidden transition-all duration-200 ml-4 ${
+                                expandedItems[`${item.title}-${child.title}`] ? 'max-h-96' : 'max-h-0'
+                              }`}>
+                                <SidebarMenuSub>
+                                  {child.children?.map((grandchild: any) => {
+                                    const grandchildEnabled = isMenuItemEnabled(grandchild.permissions);
+                                    
+                                    return (
+                                      <SidebarMenuSubItem key={grandchild.href}>
+                                        <SidebarMenuSubButton
+                                          asChild
+                                          isActive={isActive(grandchild.href)}
+                                          className={`pl-4 ${!grandchildEnabled ? 'pointer-events-none opacity-50' : ''}`}
+                                        >
+                                          <Link 
+                                            href={!grandchildEnabled ? "#" : grandchild.href}
+                                            onClick={e => !grandchildEnabled && e.preventDefault()}
+                                          >
+                                            <span>{grandchild.title}</span>
+                                          </Link>
+                                        </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                    );
+                                  })}
+                                </SidebarMenuSub>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </SidebarMenuSub>

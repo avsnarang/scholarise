@@ -15,7 +15,7 @@ export const roleRouter = createTRPCRouter({
       include: {
         _count: {
           select: {
-            permissions: true,
+            rolePermissions: true,
             userRoles: true,
           },
         },
@@ -32,7 +32,7 @@ export const roleRouter = createTRPCRouter({
         include: {
           _count: {
             select: {
-              permissions: true,
+              rolePermissions: true,
               userRoles: true,
             },
           },
@@ -54,7 +54,7 @@ export const roleRouter = createTRPCRouter({
       const role = await (ctx.db as any).rbacRole.findUnique({
         where: { id: input.id },
         include: {
-          permissions: {
+          rolePermissions: {
             include: {
               permission: true,
             },
@@ -77,20 +77,18 @@ export const roleRouter = createTRPCRouter({
       return role;
     }),
 
-  // Get user permissions by roleId
+  // Get user permissions by roleId (JSON-based system)
   getUserPermissionsByRoleId: protectedProcedure
     .input(z.object({ roleId: z.string() }))
     .query(async ({ ctx, input }) => {
       try {
-        // Get role with all permissions
+        // Get role with JSON permissions
         const role = await (ctx.db as any).rbacRole.findUnique({
           where: { id: input.roleId },
-          include: {
-            permissions: {
-              include: {
-                permission: true,
-              },
-            },
+          select: {
+            permissions: true,
+            isSystem: true,
+            name: true,
           },
         });
 
@@ -101,10 +99,30 @@ export const roleRouter = createTRPCRouter({
           });
         }
 
-        // Extract permissions from the role
-        const permissions = role.permissions.map((rp: any) => rp.permission.name);
-        
-        return permissions;
+        // If role has JSON permissions, return them directly
+        if (role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0) {
+          return role.permissions;
+        } else {
+          // Fall back to relational table for backward compatibility
+          const roleWithPermissions = await (ctx.db as any).rbacRole.findUnique({
+            where: { id: input.roleId },
+            include: {
+              rolePermissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          });
+
+          if (!roleWithPermissions) {
+            return [];
+          }
+
+          // Extract permissions from the role
+          const permissions = roleWithPermissions.rolePermissions.map((rp: any) => rp.permission.name);
+          return permissions;
+        }
       } catch (error) {
         console.error("Error fetching user permissions by roleId:", error);
         throw new TRPCError({
@@ -243,21 +261,52 @@ export const roleRouter = createTRPCRouter({
     return existingPermissions;
   }),
 
-  // Get permissions for a specific role
+  // Get permissions for a specific role (JSON-based system)
   getRolePermissions: protectedProcedure
     .input(z.object({ roleId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const rolePermissions = await (ctx.db as any).rbacRolePermission.findMany({
-        where: { roleId: input.roleId },
-        include: {
-          permission: true,
+      // First try to get permissions from JSON field
+      const role = await (ctx.db as any).rbacRole.findUnique({
+        where: { id: input.roleId },
+        select: {
+          permissions: true,
+          isSystem: true,
+          name: true,
         },
       });
 
-      return rolePermissions.map((rp: any) => rp.permission);
+      if (!role) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Role not found",
+        });
+      }
+
+      // If role has JSON permissions, use them
+      if (role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0) {
+        // Get permission objects from the permission names stored in JSON
+        const permissions = await (ctx.db as any).rbacPermission.findMany({
+          where: {
+            name: {
+              in: role.permissions,
+            },
+          },
+        });
+        return permissions;
+      } else {
+        // Fall back to relational table for backward compatibility
+        const rolePermissions = await (ctx.db as any).rbacRolePermission.findMany({
+          where: { roleId: input.roleId },
+          include: {
+            permission: true,
+          },
+        });
+
+        return rolePermissions.map((rp: any) => rp.permission);
+      }
     }),
 
-  // Update permissions for a role
+  // Update permissions for a role (JSON-based system)
   updateRolePermissions: protectedProcedure
     .input(
       z.object({
@@ -288,6 +337,29 @@ export const roleRouter = createTRPCRouter({
         });
       }
 
+      // Convert permission IDs to permission names for JSON storage
+      const permissionObjects = await (ctx.db as any).rbacPermission.findMany({
+        where: {
+          id: {
+            in: permissions,
+          },
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      const permissionNames = permissionObjects.map((p: any) => p.name);
+
+      // Update the role with JSON permissions instead of relational tables
+      await (ctx.db as any).rbacRole.update({
+        where: { id: roleId },
+        data: {
+          permissions: permissionNames, // Store as JSON array
+        },
+      });
+
+      // Also maintain the relational table for backward compatibility if needed
       // Delete all existing permissions for this role
       await (ctx.db as any).rbacRolePermission.deleteMany({
         where: { roleId },
@@ -442,13 +514,22 @@ async function fixSystemRoleFlags(db: any) {
 
 // Seed default roles from the Role enum
 async function seedDefaultRoles(db: any) {
-  // Create all standard roles from the Role enum
+  // Create all standard roles from the Role enum with JSON permissions
   for (const role of Object.values(Role)) {
-    await db.rbacRole.create({
-      data: {
+    const permissions = (rolePermissions as any)[role] || [];
+    
+    await db.rbacRole.upsert({
+      where: { name: role },
+      update: {
+        description: getRoleDescription(role),
+        isSystem: true,
+        permissions: permissions, // Store as JSON array
+      },
+      create: {
         name: role,
         description: getRoleDescription(role),
         isSystem: true,
+        permissions: permissions, // Store as JSON array
       },
     });
   }
@@ -467,11 +548,20 @@ async function seedDefaultPermissions(db: any) {
     });
   }
 
-  // For each role, assign the default permissions
+  // For each role, assign the default permissions (both JSON and relational for compatibility)
   const roles = await db.rbacRole.findMany();
   for (const role of roles) {
     if ((rolePermissions as any)[role.name]) {
-      await addPermissionsToRole(db, role.id, (rolePermissions as any)[role.name]);
+      const permissions = (rolePermissions as any)[role.name];
+      
+      // Update the JSON permissions field
+      await db.rbacRole.update({
+        where: { id: role.id },
+        data: { permissions: permissions }
+      });
+      
+      // Also add to relational table for backward compatibility
+      await addPermissionsToRole(db, role.id, permissions);
     }
   }
 }
@@ -567,12 +657,18 @@ function getPermissionCategory(permission: string): string {
   if (permission.startsWith("view_dashboard")) return "Dashboard";
   if (permission.includes("_student") || permission.includes("_admission") || permission.includes("_transfer")) return "Students";
   if (permission.includes("_teacher")) return "Teachers";
+  if (permission.includes("_employee") || permission.includes("_department") || permission.includes("_designation")) return "Employees";
   if (permission.includes("_class")) return "Classes";
   if (permission.includes("_attendance")) return "Attendance";
   if (permission.includes("_leave")) return "Leave Management";
-  if (permission.includes("_transport")) return "Transport";
-  if (permission.includes("_fee")) return "Fees";
+  if (permission.includes("_salary") || permission.includes("_increment") || permission.includes("_payment")) return "Salary Management";
+  if (permission.includes("_transport") || permission.includes("_route") || permission.includes("_stop") || permission.includes("_assignment")) return "Transport";
+  if (permission.includes("_fee") && !permission.includes("_finance")) return "Fees";
+  if (permission.includes("_finance") || permission.includes("fee_head") || permission.includes("fee_term") || permission.includes("classwise_fee") || permission.includes("collect_fee") || permission.includes("finance_report")) return "Finance";
+  if (permission.includes("_question") || permission.includes("question_paper")) return "Question Papers";
+  if (permission.includes("_exam") || permission.includes("_mark") || permission.includes("_assessment") || permission.includes("_grade") || permission.includes("_seating")) return "Examinations";
+  if (permission.includes("_money_collection")) return "Money Collection";
   if (permission.includes("_report")) return "Reports";
-  if (permission.includes("_setting") || permission.includes("_user") || permission.includes("_branch") || permission.includes("_academic") || permission.includes("_subject")) return "Settings";
+  if (permission.includes("_setting") || permission.includes("_user") || permission.includes("_branch") || permission.includes("_academic") || permission.includes("_subject") || permission.includes("_config")) return "Settings";
   return "General";
 } 

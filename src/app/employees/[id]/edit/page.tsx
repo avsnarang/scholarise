@@ -61,30 +61,22 @@ export default function EditEmployeePage() {
     { enabled: !!id } 
   );
 
-  const { data: userRoles, isLoading: isLoadingRoles } = api.role.getUserRoles.useQuery(
-    { userId: id }, 
-    { enabled: !!id }
-  );
-
   // State for the raw data to pass to the form. Type `any`
   const [initialApiData, setInitialApiData] = useState<any | undefined>(undefined);
 
   useEffect(() => {
     if (employee) {
-      let combinedData = { ...employee }; // employee object from API (Dates are Date objects)
-      if (userRoles && userRoles.length > 0 && userRoles[0]?.id) {
-        (combinedData as any).roleId = userRoles[0].id; // Add roleId if available
-      }
-      setInitialApiData(combinedData); // Pass raw combined data
+      // Employee data now includes user account information (email, roleId, createUser)
+      setInitialApiData(employee); // Pass employee data directly
     }
-  }, [employee, userRoles]);
+  }, [employee]);
 
   if (!id) { 
     return <div className="flex h-screen items-center justify-center">Invalid Employee ID.</div>;
   }
   
   // Consolidate loading states
-  const isLoading = isLoadingEmployee || isLoadingRoles;
+  const isLoading = isLoadingEmployee;
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading employee details...</div>;

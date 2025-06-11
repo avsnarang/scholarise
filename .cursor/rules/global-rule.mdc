@@ -4,3 +4,4 @@ globs:
 alwaysApply: true
 ---
 - Always make sure that you're applying the changes requested yourself, not asking the user to apply those changes to the files manually. 
+- Use the pre-built components already available in the 

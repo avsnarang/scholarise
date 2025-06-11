@@ -101,41 +101,47 @@ export function usePermissions() {
   
   // console.log("User roles:", userRoles, "Is super admin:", isSuperAdmin, "Force admin:", forceAdmin);
   
-  // Get custom role permissions by checking metadata or local storage
+  // Get custom role permissions from user's assigned role
+  const { data: userPermissions, isLoading: isLoadingPermissions } = api.role.getUserRoles.useQuery(
+    { userId: user?.id || "" },
+    { 
+      enabled: !!user?.id,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+    }
+  );
+
+  // Get the first role ID for fetching permissions
+  const primaryRoleId = userPermissions && userPermissions.length > 0 ? userPermissions[0]?.id : null;
+
+  // Fetch role permissions using tRPC query hook
+  const { data: rolePermissions } = api.role.getUserPermissionsByRoleId.useQuery(
+    { roleId: primaryRoleId || "" },
+    {
+      enabled: !!primaryRoleId,
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  // Update custom role permissions when role permissions load
   useEffect(() => {
-    // Try to get the role ID from user metadata or localStorage
-    let roleId = "";
-    
-    // Check for roleId in user.publicMetadata first (if it exists)
-    if (user && typeof user === 'object') {
-      const metadata = user as Record<string, any>;
-      if (metadata.publicMetadata && typeof metadata.publicMetadata === 'object') {
-        roleId = metadata.publicMetadata.roleId || "";
-      }
+    if (userPermissions && userPermissions.length > 0) {
+      console.log("User roles found:", userPermissions.map((r: any) => ({ id: r.id, name: r.name })));
     }
-    
-    // Check localStorage for cached role ID if not found in metadata
-    if (!roleId && typeof window !== 'undefined') {
-      roleId = localStorage.getItem('userRoleId') || "";
+
+    if (rolePermissions && Array.isArray(rolePermissions)) {
+      const roleName = userPermissions?.[0]?.name || "Unknown";
+      console.log(`Custom role permissions loaded for role "${roleName}":`, rolePermissions);
+      setCustomRolePermissions(rolePermissions);
+    } else if (userPermissions && userPermissions.length > 0) {
+      // User has roles but no permissions loaded yet
+      console.log("User has roles but permissions not loaded yet");
+    } else {
+      // No user roles found, clear custom permissions
+      console.log("No user roles found, clearing custom permissions");
+      setCustomRolePermissions([]);
     }
-    
-    // If we have a roleId, fetch the permissions
-    if (roleId) {
-      const fetchPermissions = async () => {
-        try {
-          // Use the tRPC client directly to avoid the hooks limitation
-          const client = api.useContext();
-          const permissions = await client.role.getUserPermissionsByRoleId.fetch({ roleId });
-          // console.log("Custom role permissions loaded:", permissions);
-          setCustomRolePermissions(permissions || []);
-        } catch (error) {
-          console.error("Error fetching custom role permissions:", error);
-        }
-      };
-      
-      void fetchPermissions();
-    }
-  }, [user, api]);
+  }, [userPermissions, rolePermissions]);
   
   // Check if a user role has default permissions for the specified permission
   const checkRoleDefaultPermissions = (roles: string[], permission: Permission): boolean => {
@@ -152,21 +158,29 @@ export function usePermissions() {
     userRoles,
     isSuperAdmin,
     forceAdmin,
+    customRolePermissions,
+    isLoadingPermissions,
     
     // Check if user has a specific permission based on custom role or role name
     can: (permission: Permission): boolean => {
       // Super admins have all permissions
-      if (isSuperAdmin) return true;
+      if (isSuperAdmin) {
+        console.log(`Super admin access granted for permission: ${permission}`);
+        return true;
+      }
       
       // First check custom role permissions if available
       if (customRolePermissions.length > 0) {
         const hasCustomPermission = customRolePermissions.includes(permission);
         
-        // if (permission === Permission.VIEW_ATTENDANCE) {
-        //   console.log(`Custom role check for permission ${permission}: ${hasCustomPermission}`);
-        // }
-        
-        if (hasCustomPermission) return true;
+        if (hasCustomPermission) {
+          console.log(`Custom role permission granted for ${permission}. Available permissions: [${customRolePermissions.join(', ')}]`);
+          return true;
+        } else {
+          console.log(`Custom role permission denied for ${permission}. Available permissions: [${customRolePermissions.join(', ')}]`);
+        }
+      } else {
+        console.log(`No custom role permissions loaded for user ${user?.id}`);
       }
       
       // Then check for default permissions based on role type
@@ -176,15 +190,13 @@ export function usePermissions() {
       );
       
       if (hasDefaultPermission) {
-        // console.log(`User has default permission ${permission} based on role`);
+        console.log(`Default permission granted for ${permission} based on roles: [${userRoles.join(', ')}]`);
         return true;
       }
       
       // Fall back to standard permission check
       const result = hasPermission(userRoles, permission);
-      // if (permission === Permission.VIEW_ATTENDANCE) {
-      //   console.log(`Checking ${permission} permission for user roles ${userRoles.join(', ')}: ${result}`);
-      // }
+      console.log(`Standard permission check for ${permission} with roles [${userRoles.join(', ')}]: ${result}`);
       return result;
     },
     
@@ -229,13 +241,15 @@ export function usePermissions() {
     // Check if user has access to a specific route/page
     canAccess: (requiredPermissions: Permission[]): boolean => {
       if (!requiredPermissions || requiredPermissions.length === 0) {
-        // console.log("Empty permissions array - everyone can access");
+        console.log("Empty permissions array - everyone can access");
         return true;
       }
 
+      console.log(`Checking route access for permissions: [${requiredPermissions.join(', ')}]`);
+
       // Super admins (including force admin mode) can access everything
       if (isSuperAdmin) {
-        // console.log(`Super admin access granted for: [${requiredPermissions.join(', ')}]`);
+        console.log(`Super admin access granted for: [${requiredPermissions.join(', ')}]`);
         return true;
       }
       
@@ -243,12 +257,14 @@ export function usePermissions() {
       if (customRolePermissions.length > 0) {
         const hasCustomAccess = requiredPermissions.some(perm => customRolePermissions.includes(perm));
         
-        // if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-        //   console.log(`Custom role check for permissions: ${hasCustomAccess}`);
-        //   console.log(`Custom permissions: [${customRolePermissions.join(", ")}]`);
-        // }
+        console.log(`Custom role check - Required: [${requiredPermissions.join(', ')}], Available: [${customRolePermissions.join(', ')}], Access: ${hasCustomAccess}`);
         
-        if (hasCustomAccess) return true;
+        if (hasCustomAccess) {
+          console.log(`Route access granted via custom role permissions`);
+          return true;
+        }
+      } else {
+        console.log(`No custom role permissions available, user roles: [${userRoles.join(', ')}]`);
       }
       
       // Check if any of the required permissions is a default permission
@@ -257,29 +273,23 @@ export function usePermissions() {
           userRoles.filter(role => typeof role === 'string'),
           perm
         )) {
-          // console.log(`User has default access to ${perm} based on role`);
+          console.log(`Route access granted via default permission: ${perm}`);
           return true;
         }
       }
       
       // Fall back to standard permission check
-      // if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-      //   console.log(`Checking access for permissions: [${requiredPermissions.join(', ')}]`);
-      //   console.log(`Using roles: [${userRoles.join(', ')}]`);
-      // }
+      console.log(`Checking access using standard permission system for roles: [${userRoles.join(', ')}]`);
 
       const result = hasAnyPermission(userRoles, requiredPermissions);
       
-      if (requiredPermissions.includes(Permission.VIEW_ATTENDANCE)) {
-        // console.log(`Access result for [${requiredPermissions.join(', ')}]: ${result}`);
-        
-        // Check each permission individually for detailed debugging
-        requiredPermissions.forEach(perm => {
-          const hasPerm = hasPermission(userRoles, perm);
-          // console.log(`- Permission check for ${perm}: ${hasPerm}`);
-        });
-      }
+      // Detailed debugging for each permission
+      requiredPermissions.forEach(perm => {
+        const hasPerm = hasPermission(userRoles, perm);
+        console.log(`- Permission check for ${perm}: ${hasPerm}`);
+      });
       
+      console.log(`Final route access result: ${result}`);
       return result;
     },
   };

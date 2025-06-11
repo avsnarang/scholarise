@@ -167,19 +167,44 @@ export const employeeFormSchema = z.object({
   
   // User Account
   createUser: z.boolean().default(false),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  password: z.string().optional()
-    .refine(password => !password || password.length >= 8, "Password must be at least 8 characters"),
+  email: z.string().optional().refine((val) => val === "" || !val || z.string().email().safeParse(val).success, "Invalid email format"),
+  password: z.string().optional(),
   roleId: z.string().optional(),
-}).refine((data) => {
-  // If createUser is true, email and role are required
+}).superRefine((data, ctx) => {
+  // If createUser is true, validate email and role
   if (data.createUser) {
-    return !!data.email && !!data.roleId;
+    if (!data.email || data.email.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email is required when creating a user account",
+        path: ["email"],
+      });
+    } else if (!z.string().email().safeParse(data.email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid email format",
+        path: ["email"],
+      });
+    }
+    
+    if (!data.roleId || data.roleId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Role is required when creating a user account",
+        path: ["roleId"],
+      });
+    }
+    
+    // Only validate password length if password is provided
+    // In edit mode, password can be empty (meaning keep existing password)
+    if (data.password && data.password.length > 0 && data.password.length < 8) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Password must be at least 8 characters",
+        path: ["password"],
+      });
+    }
   }
-  return true;
-}, {
-  message: "Email and role are required when creating a user account",
-  path: ["email"],
 });
 
 // Type for the form values
@@ -229,21 +254,102 @@ export function convertApiToFormValues(apiData: any): EmployeeFormValues {
     }
   };
 
+  // Helper function to safely convert null/undefined to empty string
+  const safeString = (value: any): string => {
+    return value == null ? "" : String(value);
+  };
+
   // Check if user already has a Clerk account
   const hasClerkAccount = !!(apiData.clerkId || apiData.userId);
 
+  // Extract roleId from userRoles if available (similar to teacher implementation)
+  const roleId = apiData.userRoles && apiData.userRoles.length > 0 
+    ? apiData.userRoles[0].roleId 
+    : (apiData.roleId || "");
+
+  // Use officialEmail as the login email for existing users (like teachers)
+  const loginEmail = hasClerkAccount 
+    ? (apiData.officialEmail || apiData.email || "")
+    : (apiData.email || "");
+
   return {
-    ...apiData,
+    // Personal Info - ensure no null values
+    firstName: safeString(apiData.firstName),
+    lastName: safeString(apiData.lastName),
+    middleName: safeString(apiData.middleName),
     dateOfBirth: formatDate(apiData.dateOfBirth),
-    joinDate: formatDate(apiData.joinDate),
-    confirmationDate: formatDate(apiData.confirmationDate),
+    gender: apiData.gender || undefined,
+    bloodGroup: safeString(apiData.bloodGroup),
+    maritalStatus: safeString(apiData.maritalStatus),
+    nationality: safeString(apiData.nationality),
+    religion: safeString(apiData.religion),
+    panNumber: safeString(apiData.panNumber),
+    aadharNumber: safeString(apiData.aadharNumber),
+    
+    // Contact Information
+    address: safeString(apiData.address),
+    city: safeString(apiData.city),
+    state: safeString(apiData.state),
+    country: safeString(apiData.country),
+    pincode: safeString(apiData.pincode),
+    permanentAddress: safeString(apiData.permanentAddress),
+    permanentCity: safeString(apiData.permanentCity),
+    permanentState: safeString(apiData.permanentState),
+    permanentCountry: safeString(apiData.permanentCountry),
+    permanentPincode: safeString(apiData.permanentPincode),
+    phone: safeString(apiData.phone),
+    alternatePhone: safeString(apiData.alternatePhone),
+    personalEmail: safeString(apiData.personalEmail),
+    emergencyContactName: safeString(apiData.emergencyContactName),
+    emergencyContactPhone: safeString(apiData.emergencyContactPhone),
+    emergencyContactRelation: safeString(apiData.emergencyContactRelation),
+    
+    // Educational Qualifications
+    qualification: safeString(apiData.qualification),
+    specialization: safeString(apiData.specialization),
+    professionalQualifications: safeString(apiData.professionalQualifications),
+    specialCertifications: safeString(apiData.specialCertifications),
+    yearOfCompletion: safeString(apiData.yearOfCompletion),
+    institution: safeString(apiData.institution),
+    experience: safeString(apiData.experience),
+    bio: safeString(apiData.bio),
     certifications: apiData.certifications || [],
     subjects: apiData.subjects || [],
-    // Set createUser to true if user already has a clerk account
-    createUser: hasClerkAccount || apiData.createUser || false,
-    email: apiData.email || "",
-    password: apiData.password || "",
+    
+    // Employment Details
+    employeeCode: safeString(apiData.employeeCode),
+    designation: safeString(apiData.designation),
+    department: safeString(apiData.department),
+    joinDate: formatDate(apiData.joinDate),
+    reportingManager: safeString(apiData.reportingManager),
+    employeeType: safeString(apiData.employeeType),
+    branch: safeString(apiData.branch),
+    previousExperience: safeString(apiData.previousExperience),
+    previousEmployer: safeString(apiData.previousEmployer),
+    confirmationDate: formatDate(apiData.confirmationDate),
+    isActive: apiData.isActive ?? true,
     branchAccess: apiData.branchAccess || (apiData.branchId ? [apiData.branchId] : []),
-    roleId: apiData.roleId || "",
+    
+    // Salary & Banking Details
+    salaryStructure: safeString(apiData.salaryStructure),
+    pfNumber: safeString(apiData.pfNumber),
+    esiNumber: safeString(apiData.esiNumber),
+    uanNumber: safeString(apiData.uanNumber),
+    bankName: safeString(apiData.bankName),
+    accountNumber: safeString(apiData.accountNumber),
+    ifscCode: safeString(apiData.ifscCode),
+    
+    // IT & Asset Allocation
+    officialEmail: safeString(apiData.officialEmail),
+    deviceIssued: safeString(apiData.deviceIssued),
+    accessCardId: safeString(apiData.accessCardId),
+    softwareLicenses: safeString(apiData.softwareLicenses),
+    assetReturnStatus: safeString(apiData.assetReturnStatus),
+    
+    // User Account
+    createUser: hasClerkAccount || apiData.createUser || false,
+    email: safeString(loginEmail),
+    password: safeString(apiData.password),
+    roleId: safeString(roleId),
   };
 } 

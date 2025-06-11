@@ -283,26 +283,41 @@ export const navItemPermissions = {
   // Students module
   students: [Permission.VIEW_STUDENTS],
   admission: [Permission.MANAGE_ADMISSIONS],
-  moneyCollection: [
-    Permission.VIEW_MONEY_COLLECTION,
-    Permission.CREATE_MONEY_COLLECTION,
-    Permission.EDIT_MONEY_COLLECTION,
-    Permission.DELETE_MONEY_COLLECTION
-  ],
+  moneyCollection: [Permission.VIEW_MONEY_COLLECTION],
+  createMoneyCollection: [Permission.CREATE_MONEY_COLLECTION],
+  editMoneyCollection: [Permission.EDIT_MONEY_COLLECTION],
+  deleteMoneyCollection: [Permission.DELETE_MONEY_COLLECTION],
   transfer: [Permission.MANAGE_TRANSFER_CERTIFICATES],
   
-  // Staff module
+  // Staff module - Teachers
   teachers: [Permission.VIEW_TEACHERS],
   createTeacher: [Permission.CREATE_TEACHER],
+  editTeacher: [Permission.EDIT_TEACHER],
+  deleteTeacher: [Permission.DELETE_TEACHER],
+  
+  // Staff module - Employees
   employees: [Permission.VIEW_EMPLOYEES],
   createEmployee: [Permission.CREATE_EMPLOYEE],
+  editEmployee: [Permission.EDIT_EMPLOYEE],
+  deleteEmployee: [Permission.DELETE_EMPLOYEE],
+  
+  // Staff module - Departments
   departments: [Permission.VIEW_DEPARTMENTS],
   createDepartment: [Permission.CREATE_DEPARTMENT],
+  editDepartment: [Permission.EDIT_DEPARTMENT],
+  deleteDepartment: [Permission.DELETE_DEPARTMENT],
+  
+  // Staff module - Designations
   designations: [Permission.VIEW_DESIGNATIONS],
   createDesignation: [Permission.CREATE_DESIGNATION],
+  editDesignation: [Permission.EDIT_DESIGNATION],
+  deleteDesignation: [Permission.DELETE_DESIGNATION],
   
   // Classes module
   classes: [Permission.VIEW_CLASSES],
+  createClass: [Permission.CREATE_CLASS],
+  editClass: [Permission.EDIT_CLASS],
+  deleteClass: [Permission.DELETE_CLASS],
   classStudents: [Permission.MANAGE_CLASS_STUDENTS],
   
   // Attendance module
@@ -317,8 +332,16 @@ export const navItemPermissions = {
   leaveApplications: [Permission.MANAGE_LEAVE_APPLICATIONS],
   leavePolicies: [Permission.MANAGE_LEAVE_POLICIES],
   
-  // Examination module
+  // Examination module - comprehensive permissions
   examination: [Permission.VIEW_EXAMINATIONS],
+  examTypes: [Permission.MANAGE_EXAM_TYPES],
+  examConfigurations: [Permission.MANAGE_EXAM_CONFIGURATIONS],
+  examSchedules: [Permission.MANAGE_EXAM_SCHEDULES],
+  seatingPlans: [Permission.MANAGE_SEATING_PLANS],
+  enterMarks: [Permission.ENTER_MARKS],
+  manageAssessments: [Permission.MANAGE_ASSESSMENTS],
+  gradeScales: [Permission.MANAGE_GRADE_SCALES],
+  examReports: [Permission.VIEW_EXAM_REPORTS],
   
   // Salary module
   salary: [Permission.VIEW_SALARY],
@@ -335,30 +358,32 @@ export const navItemPermissions = {
   transportAssignments: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
   
   // Question Paper module
-  questionPapers: [
-    Permission.VIEW_QUESTION_PAPERS,
-    Permission.CREATE_QUESTION_PAPER, 
-    Permission.MANAGE_QUESTION_PAPERS,
-  ],
+  questionPapers: [Permission.VIEW_QUESTION_PAPERS],
   createQuestionPaper: [Permission.CREATE_QUESTION_PAPER],
+  manageQuestionPapers: [Permission.MANAGE_QUESTION_PAPERS],
   
-  // Other modules
+  // Finance Module - comprehensive fee management
+  finance: [Permission.VIEW_FINANCE_MODULE],
+  feeHeads: [Permission.MANAGE_FEE_HEADS],
+  feeTerms: [Permission.MANAGE_FEE_TERMS],
+  classwiseFees: [Permission.MANAGE_CLASSWISE_FEES],
+  feeCollection: [Permission.COLLECT_FEES],
+  financeReports: [Permission.VIEW_FINANCE_REPORTS],
+  
+  // Basic Fees (separate from comprehensive Finance module)
   fees: [Permission.VIEW_FEES],
+  manageFees: [Permission.MANAGE_FEES],
+  
+  // Reports module
   reports: [Permission.VIEW_REPORTS],
+  
+  // Settings module
   settings: [Permission.VIEW_SETTINGS],
   branches: [Permission.MANAGE_BRANCHES],
   academicSessions: [Permission.MANAGE_ACADEMIC_SESSIONS],
   subjects: [Permission.MANAGE_SUBJECTS],
   users: [Permission.MANAGE_USERS],
   attendanceConfig: [Permission.MANAGE_ATTENDANCE_CONFIG],
-
-  // Finance Module
-  finance: [Permission.VIEW_FINANCE_MODULE],
-  feeHead: [Permission.MANAGE_FEE_HEADS],
-  feeTerm: [Permission.MANAGE_FEE_TERMS],
-  classwiseFee: [Permission.MANAGE_CLASSWISE_FEES],
-  feeCollection: [Permission.COLLECT_FEES],
-  financeReports: [Permission.VIEW_FINANCE_REPORTS],
 };
 
 // Check if user has a specific permission

@@ -8,7 +8,8 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -56,11 +57,22 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
   const isLastTab = currentTabIndex === tabOrder.length - 1;
 
   // Tab navigation functions
-  const goToNextTab = () => {
+  const goToNextTab = async () => {
     if (!isLastTab) {
-      // This is safe because we've checked that we're not at the last tab
-      const nextTab = tabOrder[currentTabIndex + 1]!;
-      setActiveTab(nextTab);
+      // Trigger validation for current tab before moving to next
+      const isValid = await methods.trigger();
+      if (isValid || !formState.isDirty) {
+        const nextTab = tabOrder[currentTabIndex + 1]!;
+        setActiveTab(nextTab);
+      } else {
+        // Show toast with validation errors
+        toast({
+          title: "Please fix errors before continuing",
+          description: "Complete all required fields on this tab",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
     }
   };
 
@@ -211,9 +223,72 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
     }
   };
 
+  // Handle form validation errors
+  const onInvalid = (errors: any) => {
+    console.log('Form validation errors:', errors);
+    
+    // Count errors and get first error message
+    const errorCount = Object.keys(errors).length;
+    const firstError = Object.values(errors)[0] as any;
+    const errorMessage = firstError?.message || 'Please fill in all required fields';
+    
+    // Show toast with validation errors
+    toast({
+      title: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''}`,
+      description: errorMessage,
+      variant: "destructive",
+      duration: 5000,
+    });
+
+    // Navigate to the tab containing the first error
+    const errorFields = Object.keys(errors);
+    const personalInfoFields = ['firstName', 'lastName'];
+    const contactInfoFields = ['phone', 'address', 'personalEmail'];
+    const qualificationFields = ['qualification', 'specialization'];
+    const employmentFields = ['designation', 'branchAccess'];
+    const accountFields = ['email', 'password', 'roleId'];
+
+    if (errorFields.some(field => personalInfoFields.includes(field))) {
+      setActiveTab('personal-info');
+    } else if (errorFields.some(field => contactInfoFields.includes(field))) {
+      setActiveTab('contact-info');
+    } else if (errorFields.some(field => qualificationFields.includes(field))) {
+      setActiveTab('qualifications');
+    } else if (errorFields.some(field => employmentFields.includes(field))) {
+      setActiveTab('employment');
+    } else if (errorFields.some(field => accountFields.includes(field))) {
+      setActiveTab('account-info');
+    }
+  };
+
+  // Get form state for error display
+  const formState = methods.formState;
+  const hasErrors = Object.keys(formState.errors).length > 0;
+  
+  // Watch form values to provide better validation feedback
+  const watchedValues = methods.watch();
+  const createUser = watchedValues.createUser;
+
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={methods.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
+        {/* Validation Error Summary */}
+        {hasErrors && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Please fix the following errors before submitting:
+              <ul className="mt-2 list-disc list-inside">
+                {Object.entries(formState.errors).map(([field, error]) => (
+                  <li key={field} className="text-sm">
+                    <strong>{field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}:</strong> {(error as any)?.message}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="w-full">
           <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="personal-info" className="rounded-l-md">Personal Info</TabsTrigger>
@@ -270,9 +345,14 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
             </Button>
             
             {isLastTab ? (
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className={hasErrors ? "bg-red-600 hover:bg-red-700" : ""}
+              >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEdit ? "Save Changes" : "Create Employee"}
+                {hasErrors && !isSubmitting && <AlertCircle className="mr-2 h-4 w-4" />}
+                {hasErrors ? "Fix Errors & Submit" : (isEdit ? "Save Changes" : "Create Employee")}
               </Button>
             ) : (
               <Button 

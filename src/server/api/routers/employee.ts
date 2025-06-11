@@ -3,8 +3,13 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
 import { createEmployeeUser } from "@/utils/clerk";
+import { clerkClient } from "@clerk/nextjs/server";
 import { Clerk } from '@clerk/clerk-sdk-node';
 import { env } from '@/env';
+
+// Initialize Clerk client
+const secretKey = env.CLERK_SECRET_KEY;
+const clerk = Clerk({ secretKey: secretKey || "" });
 
 // RBAC Permissions
 const RBAC_PERMISSIONS = {
@@ -29,9 +34,7 @@ interface BranchAccess {
   branchId: string;
 }
 
-// Initialize Clerk client
-const secretKey = env.CLERK_SECRET_KEY;
-const clerk = Clerk({ secretKey: secretKey || "" });
+// Clerk client is imported above and ready to use
 
 export const employeeRouter = createTRPCRouter({
   getStats: publicProcedure
@@ -135,7 +138,29 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
-      return employee;
+      // If employee has a clerkId, fetch user role information (but use stored email)
+      let userRoles: any[] = [];
+      if (employee.clerkId) {
+        try {
+          // Get user role information - similar to teacher implementation
+          userRoles = await ctx.db.userRole.findMany({
+            where: {
+              userId: employee.clerkId,
+              employeeId: employee.id,
+            },
+            include: {
+              role: true,
+            },
+          });
+        } catch (error) {
+          console.error("Error fetching user role info:", error);
+        }
+      }
+
+      return {
+        ...employee,
+        userRoles, // Include userRoles like in teacher implementation
+      };
     }),
 
   create: protectedProcedure
@@ -413,13 +438,28 @@ export const employeeRouter = createTRPCRouter({
             softwareLicenses: input.softwareLicenses,
             assetReturnStatus: input.assetReturnStatus,
             
-            // Add clerkId and roleId if user was created
+            // Add clerkId if user was created
             ...(clerkUserId ? { 
-              clerkId: clerkUserId,
-              roleId: input.roleId 
+              clerkId: clerkUserId
             } : {})
           },
         });
+
+        // Assign role to the user if a clerk user was created and roleId is provided
+        if (clerkUserId && input.roleId) {
+          console.log("Assigning role to employee:", input.roleId);
+          try {
+            await ctx.db.userRole.create({
+              data: {
+                userId: clerkUserId,
+                roleId: input.roleId,
+                employeeId: employee.id,
+              },
+            });
+          } catch (error) {
+            console.error("Error assigning role to employee:", error);
+          }
+        }
 
         // Create branch access records for all selected branches
         if (input.branchAccess.length > 0) {
@@ -551,8 +591,22 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
+      // Get current user role if employee has a clerkId
+      let currentUserRole = null;
+      if (existingEmployee.clerkId) {
+        currentUserRole = await ctx.db.userRole.findFirst({
+          where: {
+            userId: existingEmployee.clerkId,
+            employeeId: existingEmployee.id,
+          },
+          include: {
+            role: true,
+          },
+        });
+      }
+
       // Check if role has been updated
-      const roleChanged = input.roleId !== undefined && input.roleId !== (existingEmployee as Record<string, unknown>).roleId;
+      const roleChanged = input.roleId !== undefined && input.roleId !== currentUserRole?.roleId;
       let roleName = undefined;
       
       // Get the role name if roleId is provided and it's different from the current one
@@ -724,32 +778,36 @@ export const employeeRouter = createTRPCRouter({
         assetReturnStatus: input.assetReturnStatus,
       };
       
-      // Handle the roleId update using raw SQL to avoid type issues
-      let employee;
-      if (input.roleId !== undefined) {
-        // First update all other fields using Prisma
-        employee = await ctx.db.employee.update({
-          where: { id: input.id },
-          data: updateData,
-        });
-        
-        // Then update roleId using raw SQL
-        await ctx.db.$executeRaw`
-          UPDATE "Employee"
-          SET "roleId" = ${input.roleId}
-          WHERE id = ${input.id}
-        `;
-        
-        // Fetch the updated employee to return
-        employee = await ctx.db.employee.findUnique({
-          where: { id: input.id },
-        });
-      } else {
-        // If no roleId update, just use the normal Prisma update
-        employee = await ctx.db.employee.update({
-          where: { id: input.id },
-          data: updateData,
-        });
+      // Update the employee data
+      const employee = await ctx.db.employee.update({
+        where: { id: input.id },
+        data: updateData,
+      });
+
+      // Handle role assignment through UserRole if there's a clerk user and role has changed
+      if (existingEmployee.clerkId && roleChanged) {
+        try {
+          // Remove existing role assignment for this employee
+          if (currentUserRole) {
+            await ctx.db.userRole.delete({
+              where: { id: currentUserRole.id },
+            });
+          }
+
+          // Add new role assignment if a role is specified
+          if (input.roleId) {
+            await ctx.db.userRole.create({
+              data: {
+                userId: existingEmployee.clerkId,
+                roleId: input.roleId,
+                employeeId: existingEmployee.id,
+              },
+            });
+            console.log(`Assigned role ${input.roleId} to employee ${existingEmployee.id}`);
+          }
+        } catch (error) {
+          console.error("Error updating employee role assignment:", error);
+        }
       }
 
       return employee;

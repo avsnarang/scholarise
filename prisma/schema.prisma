@@ -57,6 +57,8 @@ model Branch {
   assessmentSchemas    AssessmentSchema[]
   studentAssessmentScores StudentAssessmentScore[]
   assessmentPermissions AssessmentPermission[]
+  terms                Term[]
+  subjectTeachers      SubjectTeacher[]  // Subject teacher assignments
 }
 
 model Student {
@@ -238,6 +240,7 @@ model Teacher {
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   attendances                StaffAttendance[]
+  subjectAssignments         SubjectTeacher[]  // Subject assignments for examinations
 }
 
 model Employee {
@@ -345,6 +348,7 @@ model Class {
   assessmentConfigs    AssessmentConfiguration[]
   // Customizable Assessment Engine relations
   assessmentSchemas    AssessmentSchema[]
+  subjectTeachers      SubjectTeacher[]  // Subject teacher assignments
   
   @@unique([name, branchId, sessionId]) // Ensure unique class names per branch/session
 }
@@ -365,6 +369,7 @@ model Section {
   teacher            Teacher?            @relation(fields: [teacherId], references: [id])
   students           Student[]
   studentAttendances StudentAttendance[]
+  subjectTeachers    SubjectTeacher[]  // Subject teacher assignments
   // Examination relations
   examConfigurations ExamConfiguration[]
   assessmentConfigs  AssessmentConfiguration[]
@@ -390,6 +395,28 @@ model AcademicSession {
   feeHeads         FeeHead[]         @relation("FeeHeadSession")
   feeTerms         FeeTerm[]         @relation("FeeTermSession")
   moneyCollections MoneyCollection[] @relation("MoneyCollectionSession")
+  terms            Term[]
+}
+
+model Term {
+  id               String          @id @default(cuid())
+  name             String          // e.g., "Term 1", "Mid Term", "Annual"
+  description      String?
+  startDate        DateTime
+  endDate          DateTime
+  order            Int             @default(0)
+  isActive         Boolean         @default(true)
+  isCurrentTerm    Boolean         @default(false)
+  branchId         String
+  sessionId        String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  branch           Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  session          AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@unique([name, branchId, sessionId])
+  @@index([branchId, isActive])
+  @@index([sessionId, order])
 }
 
 model AcademicRecord {
@@ -602,6 +629,7 @@ model Subject {
   chapters    Chapter[]
   classes     ClassSubject[]
   students    StudentSubject[]
+  teachers    SubjectTeacher[]  // Subject teacher assignments
   // Examination relations
   examConfigurations   ExamConfiguration[]
   assessmentConfigs    AssessmentConfiguration[]
@@ -629,6 +657,32 @@ model StudentSubject {
   subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, subjectId])
+}
+
+// New model for Subject Teacher Assignments (for examinations, marks entry, etc.)
+model SubjectTeacher {
+  id        String   @id @default(cuid())
+  teacherId String
+  subjectId String
+  classId   String
+  sectionId String?  // Optional - if null, applies to all sections in the class
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branchId  String
+  
+  // Relations
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  
+  // Ensure unique combinations - one teacher per subject per class-section
+  @@unique([teacherId, subjectId, classId, sectionId])
+  @@index([branchId, isActive])
+  @@index([teacherId, isActive])
+  @@index([classId, subjectId])
 }
 
 model LeavePolicy {
@@ -684,15 +738,16 @@ model LeaveApplication {
 }
 
 model RbacRole {
-  id          String               @id @default(cuid())
-  name        String               @unique
-  description String?
-  isSystem    Boolean              @default(false)
-  isActive    Boolean              @default(true)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  permissions RbacRolePermission[]
-  userRoles   UserRole[]
+  id               String               @id @default(cuid())
+  name             String               @unique
+  description      String?
+  isSystem         Boolean              @default(false)
+  isActive         Boolean              @default(true)
+  permissions      String[]             @default([]) // JSON array of permission names
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  rolePermissions  RbacRolePermission[] @relation("RolePermissionRelation") // Keep for backward compatibility
+  userRoles        UserRole[]
 }
 
 model RbacPermission {
@@ -711,7 +766,7 @@ model RbacRolePermission {
   permissionId String
   createdAt    DateTime       @default(now())
   permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  role         RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role         RbacRole       @relation("RolePermissionRelation", fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
 }

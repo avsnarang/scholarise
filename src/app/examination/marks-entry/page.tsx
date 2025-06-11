@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useBranchContext } from "@/hooks/useBranchContext";
 
 interface StudentMark {
   studentId: string;
@@ -37,6 +39,8 @@ interface StudentMark {
 
 export default function MarksEntryPage() {
   const { toast } = useToast();
+  const { currentBranchId } = useBranchContext();
+  const { isTeacher, teacherId, isAdmin, isSuperAdmin } = useUserRole();
   const [selectedExamConfig, setSelectedExamConfig] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
@@ -44,11 +48,35 @@ export default function MarksEntryPage() {
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Get teacher's subject assignments if user is a teacher
+  const { data: teacherAssignments = [] } = api.subjectTeacher.getByTeacherId.useQuery(
+    { teacherId: teacherId || '' },
+    { enabled: isTeacher && !!teacherId }
+  );
+
   // Fetch data
-  const { data: examConfigs } = api.examination.getExamConfigurations.useQuery();
-  const { data: classes } = api.class.getAll.useQuery();
+  const { data: allExamConfigs } = api.examination.getExamConfigurations.useQuery();
+  const { data: allClasses } = api.class.getAll.useQuery();
   const { data: sections } = api.section.getAll.useQuery();
   const { data: students } = api.student.getAll.useQuery();
+
+  // Filter exam configurations based on teacher assignments for teachers
+  const examConfigs = isTeacher && !isAdmin && !isSuperAdmin 
+    ? allExamConfigs?.filter((config: any) => 
+        teacherAssignments.some((assignment: any) => 
+          assignment.classId === config.classId && 
+          assignment.subjectId === config.subjectId &&
+          (assignment.sectionId === config.sectionId || assignment.sectionId === null)
+        )
+      )
+    : allExamConfigs;
+
+  // Filter classes based on teacher assignments for teachers
+  const classes = isTeacher && !isAdmin && !isSuperAdmin 
+    ? allClasses?.filter((cls: any) => 
+        teacherAssignments.some((assignment: any) => assignment.classId === cls.id)
+      )
+    : allClasses;
   const { data: existingMarks, refetch: refetchMarks } = api.examination.getMarksEntries.useQuery({
     examConfigId: selectedExamConfig || undefined,
   });

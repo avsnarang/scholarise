@@ -18,6 +18,7 @@ import { attendanceLocationRouter } from "@/server/api/routers/attendanceLocatio
 import { attendanceDeviceRouter } from "@/server/api/routers/attendanceDevice";
 import { attendanceWindowRouter } from "@/server/api/routers/attendanceWindow";
 import { subjectRouter } from "@/server/api/routers/subject";
+import { subjectTeacherRouter } from "@/server/api/routers/subjectTeacher";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { leaveRouter } from "./routers/leave";
 import { dashboardRouter } from "@/server/api/routers/dashboard";
@@ -60,6 +61,7 @@ export const appRouter = createTRPCRouter({
   attendanceDevice: attendanceDeviceRouter,
   attendanceWindow: attendanceWindowRouter,
   subject: subjectRouter,
+  subjectTeacher: subjectTeacherRouter,
   leave: leaveRouter,
   dashboard: dashboardRouter,
   salary: salaryRouter,
