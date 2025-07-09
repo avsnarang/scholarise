@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { format, subDays, isToday, isYesterday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameMonth, isSameDay } from "date-fns";
 import { toast } from "sonner";
 import {
-  Calendar,
   CheckCircle2,
   Clock,
   ClipboardCheck,
@@ -27,6 +26,7 @@ import {
   Check, // Added Check import
   X // Added X import
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 
 // Import AttendanceStatus from Prisma rather than defining locally
 import { AttendanceStatus } from "@prisma/client";
@@ -245,7 +245,13 @@ interface ExtendedStudent {
 }
 
 // Create a custom date picker component to address the UI issues
-const ImprovedDatePicker = ({ value, onChange }: { value: Date, onChange: (date: Date) => void }) => {
+interface ImprovedDatePickerProps {
+  value: Date;
+  onChange: (date: Date | undefined) => void;
+  disabled?: boolean;
+}
+
+const ImprovedDatePicker = ({ value, onChange, disabled }: ImprovedDatePickerProps) => {
   const [monthView, setMonthView] = useState(new Date(value));
   const [isOpen, setIsOpen] = useState(false);
 
@@ -276,6 +282,7 @@ const ImprovedDatePicker = ({ value, onChange }: { value: Date, onChange: (date:
           variant="outline"
           className="w-full justify-start text-left font-normal"
           onClick={() => setIsOpen(true)}
+          disabled={disabled}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {format(value, "dd/MM/yyyy")}
@@ -368,10 +375,11 @@ export default function StudentAttendancePage() {
   const canMarkAttendance = isSuperAdmin || can(Permission.MARK_ATTENDANCE) || 
                             can(Permission.MARK_SELF_ATTENDANCE) ||
                             can(Permission.MARK_ALL_STAFF_ATTENDANCE);
+  const canMarkAnyDate = isSuperAdmin || can(Permission.MARK_ATTENDANCE_ANY_DATE);
   
   // State declarations - move isAttendanceAlreadyMarked up here
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
   const [attendanceData, setAttendanceData] = useState<Record<string, AttendanceStatus>>({});
   const [reasonData, setReasonData] = useState<Record<string, string>>({});
@@ -416,12 +424,28 @@ export default function StudentAttendancePage() {
     { enabled: !!teacherId }
   );
 
+  // Filter sections for the dropdown based on user role
+  const dropdownSections = useMemo(() => {
+    if (isSuperAdmin || !isTeacher) {
+      // Admins/Superadmins see all sections from all classes
+      return classes?.flatMap(c => c.sections.map(s => ({ ...s, className: c.name }))) || [];
+    }
+    // Teachers only see their assigned sections
+    return teacherData?.sections || [];
+  }, [classes, teacherData, isTeacher, isSuperAdmin]);
+
+  // Determine if we should fetch attendance data
+  const isReadyToFetchAttendance = !!selectedSectionId;
+
   // Fetch attendance data for selected class and date
   const {
     attendanceData: classAttendance,
     isLoading: isLoadingAttendance,
     refetch: refetchAttendance
-  } = useClassAttendanceByDate(selectedClassId, selectedDate);
+  } = useClassAttendanceByDate(
+    isReadyToFetchAttendance ? selectedSectionId : undefined, 
+    selectedDate
+  );
 
   // Bulk mark attendance mutation
   const {
@@ -431,13 +455,13 @@ export default function StudentAttendancePage() {
 
   // Set teacher's section as default if they're assigned to sections
   useEffect(() => {
-    if (teacherData && teacherData.sections && teacherData.sections.length > 0 && !selectedClassId) {
+    if (teacherData && teacherData.sections && teacherData.sections.length > 0 && !selectedSectionId) {
       const firstSection = teacherData.sections[0];
-      if (firstSection?.classId) {
-        setSelectedClassId(firstSection.classId);
+      if (firstSection?.id) {
+        setSelectedSectionId(firstSection.id);
       }
     }
-  }, [teacherData, selectedClassId]);
+  }, [teacherData, selectedSectionId]);
 
   // Initialize attendance data when class attendance data is loaded
   useEffect(() => {
@@ -484,7 +508,7 @@ export default function StudentAttendancePage() {
 
   // Handle class selection change
   const handleClassChange = (classId: string) => {
-    setSelectedClassId(classId);
+    setSelectedSectionId(classId);
     setAttendanceData({});
     setReasonData({});
     setIsSaved(false);
@@ -577,7 +601,7 @@ export default function StudentAttendancePage() {
       return;
     }
 
-    if (!selectedClassId || !classAttendance) {
+    if (!selectedSectionId || !classAttendance) {
       toast.error("Cannot save: Missing class or attendance data");
       return;
     }
@@ -597,7 +621,7 @@ export default function StudentAttendancePage() {
       // Log data being sent if in debug mode
       if (debugMode) {
         console.log("Saving attendance data:", {
-          classId: selectedClassId,
+          classId: selectedSectionId,
           date: selectedDate,
           attendanceCount: attendanceRecords.length,
           markedById: teacherId
@@ -608,7 +632,7 @@ export default function StudentAttendancePage() {
       await new Promise<void>((resolve, reject) => {
         bulkMarkAttendance(
           {
-            classId: selectedClassId,
+            classId: selectedSectionId,
             date: selectedDate,
             attendance: attendanceRecords,
             markedById: teacherId
@@ -678,9 +702,12 @@ export default function StudentAttendancePage() {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const className = classes?.find(c => c.id === selectedClassId)?.name || "Class";
+    const className = classes?.find(c => c.sections.some(s => s.id === selectedSectionId))?.name || "Class";
+    const sectionName = classes?.flatMap(c => c.sections).find(s => s.id === selectedSectionId)?.name;
+    const downloadFileName = `${className}-${sectionName}_attendance_${format(selectedDate, "yyyy-MM-dd")}.csv`;
+
     link.setAttribute("href", url);
-    link.setAttribute("download", `${className}_attendance_${format(selectedDate, "yyyy-MM-dd")}.csv`);
+    link.setAttribute("download", downloadFileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -758,10 +785,10 @@ export default function StudentAttendancePage() {
 
   // Get current class name
   const currentClassName = useMemo(() => {
-    if (!selectedClassId || !classes) return "";
-    const currentClass = classes.find(c => c.id === selectedClassId);
+    if (!selectedSectionId || !classes) return "";
+    const currentClass = classes.find(c => c.sections.some(s => s.id === selectedSectionId));
     return currentClass ? currentClass.name : "";
-  }, [selectedClassId, classes]);
+  }, [selectedSectionId, classes]);
 
   // Render loading state
   if (isLoadingClasses) {
@@ -809,48 +836,25 @@ export default function StudentAttendancePage() {
               <div>
                 <CardTitle className="text-xl">Attendance Management</CardTitle>
                 <CardDescription>
-                  {selectedClassId ? 
+                  {selectedSectionId ? 
                     `Mark and manage attendance for ${currentClassName}${selectedSectionFilter !== "all" ? ` - Section ${selectedSectionFilter}` : ""}` : 
                     "Select a class to manage attendance"}
                 </CardDescription>
               </div>
-              
-              {/* Show controls only if the user has marking permissions */}
-              {canMarkAttendance && (
-                <div className="flex flex-wrap gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    disabled={!isSaved || !selectedClassId}
-                    onClick={() => setActiveTab("mark")}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Mark Attendance
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    disabled={!classAttendance}
-                    onClick={handleExportData}
-                  >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                  </Button>
-                  <Button 
-                    variant={!isSaved ? "default" : "outline"}
-                    size="sm" 
-                    onClick={() => setSaveDialogOpen(true)}
-                    disabled={isSaved || !selectedClassId || isAttendanceAlreadyMarked || isLoadingAttendance || !classAttendance}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </Button>
+              {canMarkAnyDate && (
+                <div className="flex items-center gap-2 ml-auto md:ml-0">
+                  <QuickDateSelect onChange={handleDateChange} />
+                  <ImprovedDatePicker
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    disabled={!canMarkAnyDate}
+                  />
                 </div>
               )}
             </div>
           </CardHeader>
 
-          {selectedClassId ? (
+          {selectedSectionId ? (
             <>
               <Tabs defaultValue="mark" value={activeTab} onValueChange={setActiveTab} className="px-6">
                 <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-2 mb-4 bg-muted p-1 rounded-lg">
@@ -875,10 +879,22 @@ export default function StudentAttendancePage() {
                     
                       <div className="flex items-center gap-2 ml-auto md:ml-0">
                         <QuickDateSelect onChange={handleDateChange} />
-                        <ImprovedDatePicker
-                          value={selectedDate}
-                          onChange={handleDateChange}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {format(selectedDate, "dd/MM/yyyy")}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={handleDateChange}
+                              disabled={!canMarkAnyDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     
@@ -1254,10 +1270,20 @@ export default function StudentAttendancePage() {
                             <Calendar className="h-4 w-4 mr-2 text-[#00501B] dark:text-[#7aad8c]" />
                             Select Date to View
                           </h4>
-                          <ImprovedDatePicker
-                            value={selectedDate}
-                            onChange={handleDateChange}
-                          />
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-medium">
+                                Select Date to View
+                              </h4>
+                              {canMarkAnyDate && (
+                                <ImprovedDatePicker
+                                  value={selectedDate}
+                                  onChange={handleDateChange}
+                                  disabled={!canMarkAnyDate}
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

@@ -2,22 +2,58 @@
 
 import { StudentStatsCards } from "@/components/students/student-stats-cards"
 import { PageWrapper } from "@/components/layout/page-wrapper"
-import { StudentDataTable, type Student } from "@/components/students/student-data-table"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink } from "lucide-react"
+import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink, Eye, Edit, Trash, UserCheck, UserX, ArrowUpDown, MoreHorizontal } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/utils/api"
 import { useState, useCallback, useEffect, useMemo } from "react"
-import { StudentAdvancedFilters, type AdvancedFilters } from "@/components/students/student-advanced-filters"
 import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter"
 import { StudentBulkImport } from "@/components/students/student-bulk-import"
 import { useToast } from "@/components/ui/use-toast"
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext"
-import { StudentDataTableWrapper } from "@/components/students/student-data-table-wrapper"
-import { StudentFilter } from "@/components/students/student-filter-adapter"
 import { useActionPermissions } from "@/utils/permission-utils"
 import { Permission } from "@/types/permissions"
+import AdvancedDataTable from "@/components/advanced-data-table"
+import type { ColumnDef, Row } from "@tanstack/react-table"
+import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { FilterCategory } from "@/components/ui/advanced-filter"
+import type { Filter as UIFilter } from "@/components/ui/filters"
+import { useRouter } from "next/navigation"
+import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
+
+// Define the Student type
+export type Student = {
+  id: string
+  admissionNumber: string
+  firstName: string
+  lastName: string
+  email?: string
+  phone?: string
+  gender?: string
+  isActive: boolean
+  dateOfBirth: Date
+  class?: {
+    name: string
+    section?: string
+    displayOrder?: number
+  }
+  parent?: {
+    name: string
+    phone: string
+    email: string
+  }
+  rollNumber?: string | null
+}
 
 // Clerk Account Warning Component
 function ClerkAccountWarning() {
@@ -61,79 +97,102 @@ function ClerkAccountWarning() {
 }
 
 export default function StudentsPage() {
-  const [filters, setFilters] = useState<AdvancedFilters>({
-    conditions: [
-      {
-        id: "default-active-filter",
-        field: "isActive",
-        operator: "equals",
-        value: "true",
-      }
-    ],
-    logicOperator: "and",
-  });
-  
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [advancedFilters, setAdvancedFilters] = useState<UIFilter[]>([]);
   const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState<string | undefined>("class");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | undefined>("asc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [cursorHistory, setCursorHistory] = useState<Array<string | undefined>>([undefined]);
 
   const { getBranchFilterParam } = useGlobalBranchFilter();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
+  const router = useRouter();
   const utils = api.useContext();
+  const deleteConfirm = useDeleteConfirm();
+  const statusChangeConfirm = useStatusChangeConfirm();
 
-  const { hasPermission } = useActionPermissions("students");
+  const { hasPermission, canView, canEdit, canDelete } = useActionPermissions("students");
   const canManageTC = hasPermission(Permission.MANAGE_TRANSFER_CERTIFICATES);
+
+  // Convert advanced filters to API format
+  const apiFilters = useMemo(() => {
+    const filters: Record<string, any> = {
+      isActive: "true" // Default filter for active students
+    };
+    
+    advancedFilters.forEach(filter => {
+      const filterType = filter.type as string;
+      const filterValue = filter.value[0];
+      if (filterValue) {
+        filters[filterType] = filterValue;
+      }
+    });
+    
+    return filters;
+  }, [advancedFilters]);
 
   const { data: studentsData, isLoading } = api.student.getAll.useQuery({
     branchId: getBranchFilterParam(),
     sessionId: currentSessionId || undefined,
     limit: pageSize,
-    cursor,
     sortBy,
     sortOrder,
-    filters: filters?.conditions?.reduce((acc, condition) => {
-      if (condition.field && condition.value !== undefined) {
-        acc[condition.field] = condition.value;
-      }
-      return acc;
-    }, {} as Record<string, any>) || undefined
+    filters: apiFilters
   });
 
-  useEffect(() => {
-    utils.student.getAll.invalidate();
-    setCursor(undefined);
-    setCurrentPage(1);
-    setCursorHistory([undefined]);
-  }, [currentSessionId, getBranchFilterParam, utils.student.getAll, sortBy, sortOrder]);
+  // API mutations
+  const deleteStudentMutation = api.student.delete.useMutation({
+    onSuccess: () => {
+      void utils.student.getAll.invalidate()
+      void utils.student.getStats.invalidate()
+      toast({ title: "Student deleted", description: "Student record has been successfully deleted.", variant: "success" });
+    },
+  });
 
-  const pageCount = useMemo(() => {
-    if (studentsData?.totalCount && pageSize > 0) {
-      return Math.ceil(studentsData.totalCount / pageSize);
-    }
-    return 0;
-  }, [studentsData?.totalCount, pageSize]);
+  const updateStudentStatusMutation = api.student.bulkUpdateStatus.useMutation({
+    onSuccess: () => {
+      void utils.student.getAll.invalidate()
+      void utils.student.getStats.invalidate()
+      toast({ title: "Status updated", description: "Student status has been updated successfully.", variant: "success" });
+    },
+  });
 
-  const students: Student[] = (studentsData?.items || []).map((student: any) => {
-    try {
-      if (!student?.firstName || !student?.lastName) {
-        console.warn('Missing required fields in student data:', student);
+  const deleteMultipleStudentsMutation = api.student.bulkDelete.useMutation({
+    onSuccess: (data) => {
+      void utils.student.getAll.invalidate()
+      void utils.student.getStats.invalidate()
+      toast({ 
+        title: "Students Deleted", 
+        description: `${data.count} student(s) have been successfully deleted.`, 
+        variant: "success" 
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Bulk Deletion Failed",
+        description: error.message || "An unexpected error occurred while deleting students.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Transform API data to Student type
+  const students: Student[] = useMemo(() => {
+    return (studentsData?.items || []).map((student: any) => {
+      try {
         return {
-          id: student?.id || 'unknown-id',
-          admissionNumber: student?.admissionNumber || '',
-          firstName: student?.firstName || 'Unknown',
-          lastName: student?.lastName || 'Unknown',
-          email: student?.email || undefined,
-          phone: student?.phone || undefined,
-          gender: student?.gender || undefined,
-          dateOfBirth: student?.dateOfBirth || new Date(),
-          isActive: student?.isActive !== undefined ? student.isActive : true,
+          id: student.id,
+          admissionNumber: student.admissionNumber || '',
+          firstName: student.firstName || 'Unknown',
+          lastName: student.lastName || 'Unknown',
+          email: student.email || undefined,
+          phone: student.phone || undefined,
+          gender: student.gender || undefined,
+          dateOfBirth: student.dateOfBirth || new Date(),
+          isActive: student.isActive !== undefined ? student.isActive : true,
           class: student?.section?.class ? {
             name: student.section.class.name || '',
-            section: student.section.name || ''
+            section: student.section.name || '',
+            displayOrder: student.section.class.displayOrder
           } : undefined,
           parent: student?.parent ? {
             name: student.parent.fatherName || student.parent.motherName || student.parent.guardianName || '',
@@ -142,93 +201,101 @@ export default function StudentsPage() {
           } : undefined,
           rollNumber: student.rollNumber?.toString() || null,
         };
+      } catch (error) {
+        console.error('Error transforming student data:', error, student);
+        return {
+          id: student?.id || `error-${Math.random().toString(36).substr(2, 9)}`,
+          admissionNumber: 'ERROR',
+          firstName: 'Data',
+          lastName: 'Error',
+          dateOfBirth: new Date(),
+          isActive: false,
+          gender: ''
+        };
       }
-      
-      return {
-        ...student,
-        class: student?.section?.class ? {
-          name: student.section.class.name || '',
-          section: student.section.name || ''
-        } : undefined,
-        parent: student.parent ? {
-          name: student.parent.fatherName || student.parent.motherName || student.parent.guardianName || '',
-          phone: student.parent.fatherMobile || student.parent.motherMobile || student.parent.guardianMobile || '',
-          email: student.parent.fatherEmail || student.parent.motherEmail || student.parent.guardianEmail || ''
-        } : undefined,
-        rollNumber: student.rollNumber?.toString() || null,
-      };
-    } catch (error) {
-      console.error('Error transforming student data:', error, student);
-      return {
-        id: student?.id || `error-${Math.random().toString(36).substr(2, 9)}`,
-        admissionNumber: 'ERROR',
-        firstName: 'Data',
-        lastName: 'Error',
-        dateOfBirth: new Date(),
-        isActive: false,
-        gender: ''
-      };
-    }
-  });
+    });
+  }, [studentsData?.items]);
 
-  const handleFilterChange = (newFilters: AdvancedFilters) => {
-    setFilters(newFilters);
-    setCursor(undefined);
-    setCurrentPage(1);
-    setCursorHistory([undefined]);
+  // Helper functions
+  const formatDate = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(new Date(date));
   };
 
-  const handleSortChange = useCallback((newSortBy: string, newSortOrder: "asc" | "desc") => {
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-    setCursor(undefined);
-    setCurrentPage(1);
-    setCursorHistory([undefined]);
-  }, []);
+  const calculateAge = (dateOfBirth: Date): number => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
-  const handlePageSizeChange = useCallback((value: string) => {
-    let newNumericSize;
-    const BACKEND_MAX_LIMIT = 500;
-    if (value === "all") {
-      if (studentsData?.totalCount !== undefined && studentsData.totalCount > 0) {
-        newNumericSize = Math.min(studentsData.totalCount, BACKEND_MAX_LIMIT);
-      } else {
-        newNumericSize = BACKEND_MAX_LIMIT;
+  // Handle student actions
+  const handleStudentAction = (action: string, row: Row<Student>) => {
+    const student = row.original;
+    
+    switch (action) {
+      case 'view':
+        router.push(`/students/${student.id}`);
+        break;
+      case 'edit':
+        router.push(`/students/${student.id}/edit`);
+        break;
+      case 'delete':
+        deleteConfirm(
+          "student",
+          () => {
+            deleteStudentMutation.mutate({ id: student.id });
+          }
+        );
+        break;
+      case 'activate':
+        statusChangeConfirm(
+          "student",
+          true,
+          1,
+          () => {
+            updateStudentStatusMutation.mutate({ 
+              ids: [student.id], 
+              isActive: true 
+            });
+          }
+        );
+        break;
+      case 'deactivate':
+        statusChangeConfirm(
+          "student",
+          false,
+          1,
+          () => {
+            updateStudentStatusMutation.mutate({ 
+              ids: [student.id], 
+              isActive: false 
+            });
+          }
+        );
+        break;
+    }
+  };
+
+  // Handle bulk delete
+  const handleDeleteRows = (selectedRows: Row<Student>[]) => {
+    const studentIds = selectedRows.map(row => row.original.id);
+    deleteConfirm(
+      `${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`,
+      () => {
+        deleteMultipleStudentsMutation.mutate({ ids: studentIds });
       }
-    } else {
-      newNumericSize = parseInt(value, 10);
-    }
-    if (isNaN(newNumericSize) || newNumericSize <= 0) {
-      newNumericSize = 10;
-    } else {
-      newNumericSize = Math.min(newNumericSize, BACKEND_MAX_LIMIT);
-    }
-    newNumericSize = Math.max(1, newNumericSize);
-    console.log("[StudentsPage] handlePageSizeChange - input value:", value, "calculated newNumericSize:", newNumericSize);
-    setPageSize(newNumericSize);
-    setCursor(undefined);
-    setCurrentPage(1);
-    setCursorHistory([undefined]);
-  }, [studentsData?.totalCount]);
+    );
+  };
 
-  const goToNextPage = useCallback(() => {
-    if (studentsData?.nextCursor) {
-      setCursor(studentsData.nextCursor);
-      setCursorHistory(prev => [...prev, studentsData.nextCursor]);
-      setCurrentPage(prev => prev + 1);
-    }
-  }, [studentsData?.nextCursor]);
-
-  const goToPreviousPage = useCallback(() => {
-    if (currentPage > 1) {
-      const newHistory = [...cursorHistory];
-      newHistory.pop();
-      setCursorHistory(newHistory);
-      setCursor(newHistory[newHistory.length - 1]);
-      setCurrentPage(prev => prev - 1);
-    }
-  }, [currentPage, cursorHistory]);
-
+  // Handle bulk import success
   const handleBulkImportSuccess = () => {
     void utils.student.getAll.invalidate();
     void utils.student.getStats.invalidate();
@@ -239,12 +306,218 @@ export default function StudentsPage() {
     });
   };
 
-  // Placeholder for handling row selection changes from StudentDataTableWrapper
-  const handleStudentRowSelection = (selectedIds: string[], isSelectAllActive: boolean) => {
-    // console.log("Selected Student IDs:", selectedIds);
-    // console.log("Is Select All Active:", isSelectAllActive);
-    // Here you would typically update some state to manage selected students for bulk actions on the page
+  // Custom row actions component
+  const StudentRowActions = ({ row }: { row: Row<Student> }) => {
+    const student = row.original;
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          {canView() && (
+            <DropdownMenuItem onClick={() => handleStudentAction('view', row)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+          )}
+          {canEdit() && (
+            <DropdownMenuItem onClick={() => handleStudentAction('edit', row)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          {canEdit() && (
+            <>
+              {student.isActive ? (
+                <DropdownMenuItem onClick={() => handleStudentAction('deactivate', row)}>
+                  <UserX className="mr-2 h-4 w-4" />
+                  Deactivate
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => handleStudentAction('activate', row)}>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Activate
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+          {canDelete() && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => handleStudentAction('delete', row)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
+
+  // Define columns for the data table
+  const columns: ColumnDef<Student>[] = [
+    {
+      accessorKey: "admissionNumber",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-medium"
+        >
+          Admission No.
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("admissionNumber")}</div>
+      ),
+    },
+    {
+      accessorKey: "firstName",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-medium"
+        >
+          Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <div className="flex flex-col">
+            <div className="font-medium">
+              {student.firstName} {student.lastName}
+            </div>
+            {student.email && (
+              <div className="text-sm text-muted-foreground">{student.email}</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "class",
+      header: "Class",
+      cell: ({ row }) => {
+        const classInfo = row.original.class;
+        if (!classInfo) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="font-medium">
+            {classInfo.name}
+            {classInfo.section && ` - ${classInfo.section}`}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "rollNumber",
+      header: "Roll No.",
+      cell: ({ row }) => {
+        const rollNumber = row.getValue("rollNumber") as string;
+        return rollNumber ? (
+          <div className="font-medium">{rollNumber}</div>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
+      },
+    },
+    {
+      accessorKey: "phone",
+      header: "Contact",
+      cell: ({ row }) => {
+        const student = row.original;
+        return (
+          <div className="flex flex-col">
+            {student.phone && (
+              <div className="text-sm">{student.phone}</div>
+            )}
+            {student.parent?.phone && (
+              <div className="text-sm text-muted-foreground">
+                Parent: {student.parent.phone}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "dateOfBirth",
+      header: "Age",
+      cell: ({ row }) => {
+        const dateOfBirth = row.getValue("dateOfBirth") as Date;
+        const age = calculateAge(dateOfBirth);
+        return (
+          <div className="flex flex-col">
+            <div className="font-medium">{age} years</div>
+            <div className="text-sm text-muted-foreground">
+              {formatDate(dateOfBirth)}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "gender",
+      header: "Gender",
+      cell: ({ row }) => {
+        const gender = row.getValue("gender") as string;
+        return gender ? (
+          <Badge variant="outline">{gender}</Badge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
+      },
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => {
+        const isActive = row.getValue("isActive") as boolean;
+        return (
+          <Badge variant={isActive ? "success" : "secondary"}>
+            {isActive ? "Active" : "Inactive"}
+          </Badge>
+        );
+      },
+    },
+  ];
+
+  // Define filter categories for advanced filtering
+  const filterCategories: FilterCategory[][] = [
+    [
+      {
+        name: "Status",
+        icon: <UserCheck className="h-4 w-4" />,
+        options: [
+          { name: "Active", icon: <UserCheck className="h-4 w-4" />, value: "true" },
+          { name: "Inactive", icon: <UserX className="h-4 w-4" />, value: "false" },
+        ]
+      },
+      {
+        name: "Gender",
+        icon: <div className="h-4 w-4 rounded-full bg-blue-500" />,
+        options: [
+          { name: "Male", icon: <div className="h-3 w-3 rounded-full bg-blue-500" /> },
+          { name: "Female", icon: <div className="h-3 w-3 rounded-full bg-pink-500" /> },
+          { name: "Other", icon: <div className="h-3 w-3 rounded-full bg-gray-500" /> },
+        ]
+      }
+    ]
+  ];
 
   return (
     <PageWrapper
@@ -278,71 +551,30 @@ export default function StudentsPage() {
       <StudentStatsCards sessionId={currentSessionId || undefined} />
 
       <div className="mt-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium">All Students</h2>
-          <StudentFilter 
-            filters={filters} 
-            onFilterChange={handleFilterChange} 
-          />
-        </div>
-
-        {isLoading && !studentsData ? (
-          <div className="py-8 text-center text-gray-500">
-            Loading students...
-          </div>
-        ) : students.length === 0 && !isLoading ? (
-          <div className="py-8 text-center text-gray-500">
-            No students found. Try adjusting your filters.
-          </div>
-        ) : (
-          <div>
-            <StudentDataTableWrapper
-              data={studentsData?.items || []}
-              pageSize={pageSize}
-              onPageSizeChange={handlePageSizeChange}
-              pageCount={pageCount}
-              onSortChange={handleSortChange}
-              currentSortBy={sortBy}
-              currentSortOrder={sortOrder}
-              totalStudentsCount={studentsData?.totalCount || 0}
-              onRowSelectionChange={handleStudentRowSelection}
-              currentBranchId={getBranchFilterParam() || null}
-              currentSessionId={currentSessionId || null}
-              currentFilters={filters?.conditions?.reduce((acc, condition) => {
-                if (condition.field && condition.value !== undefined) {
-                  acc[condition.field] = condition.value;
-                }
-                return acc;
-              }, {} as Record<string, any>) || {}}
-              currentSearchTerm={null}
-            />
-            <div className="mt-4 flex items-center justify-end">
-              { (studentsData?.totalCount ?? 0) > 0 && pageCount > 1 && (
-                  <div className="flex items-center gap-2">
-                      <Button 
-                          onClick={goToPreviousPage} 
-                          disabled={currentPage === 1}
-                          variant="outline" 
-                          size="sm"
-                      >
-                          Previous
-                      </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Page {currentPage} of {pageCount}
-                      </span>
-                      <Button 
-                          onClick={goToNextPage} 
-                          disabled={!studentsData?.nextCursor}
-                          variant="outline" 
-                          size="sm"
-                      >
-                          Next
-                      </Button>
-                  </div>
-              )}
-            </div>
-          </div>
-        )}
+        <AdvancedDataTable
+          data={students}
+          columns={columns}
+          title="All Students"
+          description={`Showing ${students.length} of ${studentsData?.totalCount || 0} students`}
+          onAddClick={() => router.push('/students/create')}
+          onDeleteRows={handleDeleteRows}
+          onRowAction={handleStudentAction}
+          addButtonText="Add Student"
+          deleteButtonText="Delete Selected"
+          searchPlaceholder="Search students..."
+          searchColumns={['firstName', 'lastName', 'admissionNumber', 'email']}
+          filterCategories={filterCategories}
+          enableRowSelection={true}
+          enableSearch={true}
+          enableColumnVisibility={true}
+          enablePagination={true}
+          enableAdvancedFilter={true}
+          initialPageSize={pageSize}
+          pageSizeOptions={[5, 10, 25, 50, 100]}
+          customRowActions={(row) => <StudentRowActions row={row} />}
+          onFiltersChange={setAdvancedFilters}
+          className="mt-4"
+        />
       </div>
     </PageWrapper>
   )

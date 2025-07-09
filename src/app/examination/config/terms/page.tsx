@@ -20,22 +20,17 @@ import { Calendar, Plus, Edit, Trash2, MoreHorizontal, AlertCircle, CheckCircle2
 import { useTerms, type Term, type CreateTermData, type UpdateTermData } from "@/hooks/useTerms";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
+import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { format } from "date-fns";
 
 export default function TermConfigPage() {
   const { currentBranchId } = useBranchContext();
+  const { currentSessionId } = useAcademicSessionContext();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [deleteTermId, setDeleteTermId] = useState<string | null>(null);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Fetch academic sessions for the dropdown
-  const { data: sessions = [] } = api.academicSession.getAll.useQuery(
-    {},
-    { enabled: !!currentBranchId }
-  );
 
   const {
     terms,
@@ -49,7 +44,7 @@ export default function TermConfigPage() {
     deleteTerm,
     isDeleting,
     deleteError,
-  } = useTerms(selectedSessionId);
+  } = useTerms(currentSessionId ?? undefined);
 
   // Filter terms based on search
   const filteredTerms = terms.filter(term =>
@@ -116,7 +111,7 @@ export default function TermConfigPage() {
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
             className="bg-[#00501B] hover:bg-[#00501B]/90"
-            disabled={!selectedSessionId}
+            disabled={!currentSessionId}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Term
@@ -127,23 +122,6 @@ export default function TermConfigPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Label htmlFor="session-select" className="text-sm font-medium">
-                  Academic Session
-                </Label>
-                <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select academic session" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sessions.map((session: any) => (
-                      <SelectItem key={session.id} value={session.id}>
-                        {session.name} ({format(new Date(session.startDate), 'yyyy')}-{format(new Date(session.endDate), 'yyyy')})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="flex-1 relative">
                 <Label htmlFor="search" className="text-sm font-medium">
                   Search Terms
@@ -200,13 +178,13 @@ export default function TermConfigPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {!selectedSessionId ? (
+            {!currentSessionId ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Select Academic Session</h3>
+                  <h3 className="text-lg font-semibold mb-2">No Academic Session Selected</h3>
                   <p className="text-muted-foreground mb-4">
-                    Please select an academic session to view and manage terms.
+                    Please select an academic session from the header to view and manage terms.
                   </p>
                 </div>
               </div>
@@ -334,7 +312,7 @@ export default function TermConfigPage() {
           }
         }}
         term={selectedTerm}
-        sessionId={selectedSessionId}
+        sessionId={currentSessionId ?? ""}
         onSubmit={(data) => selectedTerm ? handleUpdateTerm(data as UpdateTermData) : handleCreateTerm(data as CreateTermData)}
         isSubmitting={isCreating || isUpdating}
       />
@@ -419,9 +397,7 @@ function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
-            {term ? 'Edit Term' : 'Create New Term'}
-          </DialogTitle>
+          <DialogTitle>{term ? 'Edit Term' : 'Create Term'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -430,7 +406,7 @@ function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmi
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Term 1, Mid Term, Annual"
+              placeholder="e.g., First Term"
               required
             />
           </div>
@@ -441,8 +417,7 @@ function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmi
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Brief description of the term"
-              rows={3}
+              placeholder="Add a description for this term"
             />
           </div>
 
@@ -457,7 +432,6 @@ function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmi
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="endDate">End Date</Label>
               <Input

@@ -264,8 +264,13 @@ export const employeeRouter = createTRPCRouter({
         
         // Create a Clerk user account if requested
         let clerkUserId = null;
-        if (input.createUser && input.email && input.password) {
-          console.log("Attempting to create Clerk user for employee");
+        if (
+          input.createUser &&
+          input.email &&
+          input.password &&
+          process.env.NODE_ENV === "production"
+        ) {
+          console.log("Attempting to create Clerk user for employee in production");
           try {
             // Generate a username from the email
             const email = input.email || '';
@@ -352,10 +357,11 @@ export const employeeRouter = createTRPCRouter({
             });
           }
         } else {
-          console.log("Skipping Clerk user creation as conditions not met:", {
+          console.log("Skipping Clerk user creation as conditions not met or not in production:", {
             createUser: input.createUser,
             hasEmail: !!input.email,
             hasPassword: !!input.password,
+            isProduction: process.env.NODE_ENV === "production",
           });
         }
 

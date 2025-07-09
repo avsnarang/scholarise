@@ -18,7 +18,7 @@ export interface ClassAttendanceData {
   class: {
     id: string;
     name: string;
-    section: string;
+    section?: string;
   };
   date: Date;
   students: {
@@ -98,9 +98,9 @@ export function useStudentAttendance(
 }
 
 // Hook for getting class attendance by date
-export function useClassAttendanceByDate(classId?: string, date: Date = new Date()) {
+export function useClassAttendanceByDate(classId: string | undefined, date: Date = new Date()) {
   const { data, isLoading, error, refetch } = api.attendance.getClassAttendanceByDate.useQuery(
-    { classId: classId || "", date },
+    { classId: classId!, date },
     { 
       staleTime: 60 * 1000, // 1 minute
       enabled: !!classId

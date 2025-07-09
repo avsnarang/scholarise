@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBranchContext } from '@/hooks/useBranchContext';
+import { useAcademicSessionContext } from '@/hooks/useAcademicSessionContext';
 
 interface Term {
   id: string;
@@ -47,17 +48,21 @@ interface UpdateTermData {
 
 export function useTerms(sessionId?: string) {
   const { currentBranchId } = useBranchContext();
+  const { currentSessionId } = useAcademicSessionContext();
   const queryClient = useQueryClient();
 
+  // Use the provided sessionId or fall back to the current session from context
+  const effectiveSessionId = sessionId || currentSessionId;
+
   const { data: terms = [], isLoading, error } = useQuery({
-    queryKey: ['terms', currentBranchId, sessionId],
+    queryKey: ['terms', currentBranchId, effectiveSessionId],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (currentBranchId) {
         params.append('branchId', currentBranchId);
       }
-      if (sessionId) {
-        params.append('sessionId', sessionId);
+      if (effectiveSessionId) {
+        params.append('sessionId', effectiveSessionId);
       }
       
       const response = await fetch(`/api/terms?${params}`);
@@ -66,7 +71,7 @@ export function useTerms(sessionId?: string) {
       }
       return response.json() as Promise<Term[]>;
     },
-    enabled: !!currentBranchId,
+    enabled: !!currentBranchId && !!effectiveSessionId,
   });
 
   const createTermMutation = useMutation({
@@ -81,6 +86,7 @@ export function useTerms(sessionId?: string) {
         body: JSON.stringify({
           ...data,
           branchId: currentBranchId,
+          sessionId: effectiveSessionId,
         }),
       });
 

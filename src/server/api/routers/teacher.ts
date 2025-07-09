@@ -352,8 +352,13 @@ export const teacherRouter = createTRPCRouter({
         
         // Create a Clerk user account if requested
         let clerkUserId = null;
-        if (input.createUser && input.officialEmail && input.password) {
-          console.log("Attempting to create Clerk user for teacher using official email");
+        if (
+          input.createUser &&
+          input.officialEmail &&
+          input.password &&
+          process.env.NODE_ENV === "production"
+        ) {
+          console.log("Attempting to create Clerk user for teacher using official email in production");
           try {
             // Get branch code for Clerk user creation
             const branch = await ctx.db.branch.findUnique({
@@ -446,10 +451,11 @@ export const teacherRouter = createTRPCRouter({
             });
           }
         } else {
-          console.log("Skipping Clerk user creation as conditions not met:", {
+          console.log("Skipping Clerk user creation as conditions not met or not in production:", {
             createUser: input.createUser,
             hasOfficialEmail: !!input.officialEmail,
             hasPassword: !!input.password,
+            isProduction: process.env.NODE_ENV === "production",
           });
         }
 
