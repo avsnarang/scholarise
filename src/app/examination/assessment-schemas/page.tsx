@@ -57,7 +57,7 @@ export default function AssessmentSchemasPage() {
   );
 
   // Filter schemas based on search term
-  const filteredSchemas = schemas.filter((schema: any) =>
+  const filteredSchemas = (schemas || []).filter((schema: any) =>
     schema.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     schema.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
     schema.class?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,11 +65,11 @@ export default function AssessmentSchemasPage() {
   );
 
   // Calculate stats
-  const totalSchemas = schemas.length;
-  const publishedSchemas = schemas.filter((s: any) => s.isPublished).length;
-  const draftSchemas = schemas.filter((s: any) => s.isActive && !s.isPublished).length;
-  const protectedSchemas = schemas.filter((s: any) => hasStudentScores(s)).length;
-  const totalComponents = schemas.reduce((acc: number, schema: any) => acc + (schema.components?.length || 0), 0);
+  const totalSchemas = (schemas || []).length;
+  const publishedSchemas = (schemas || []).filter((s: any) => s.isPublished).length;
+  const draftSchemas = (schemas || []).filter((s: any) => s.isActive && !s.isPublished).length;
+  const protectedSchemas = (schemas || []).filter((s: any) => hasStudentScores(s)).length;
+  const totalComponents = (schemas || []).reduce((acc: number, schema: any) => acc + (schema.components?.length || 0), 0);
 
   const handleCreateSchema = async (data: any) => {
     try {
@@ -163,7 +163,7 @@ export default function AssessmentSchemasPage() {
 
   // Check if schema has student scores (is protected)
   const hasStudentScores = (schema: any) => {
-    return schema._count?.studentScores > 0;
+    return schema?._count?.studentScores > 0;
   };
 
   // Get protection badge for schemas with scores
