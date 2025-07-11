@@ -45,6 +45,19 @@ export default function AssessmentSchemasPage() {
     deleteError
   } = useAssessmentSchemas();
   
+  // Early return for safety - prevent any operations if essential data is missing
+  if (!currentBranchId && !isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Branch Required</h3>
+          <p className="text-muted-foreground">Please select a branch to view assessment schemas.</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Fetch classes and subjects for the form
   const { data: classes = [] } = api.class.getAll.useQuery(
     { branchId: currentBranchId || undefined, includeSections: true },
@@ -56,20 +69,67 @@ export default function AssessmentSchemasPage() {
     { enabled: !!currentBranchId }
   );
 
-  // Filter schemas based on search term
-  const filteredSchemas = (schemas || []).filter((schema: any) =>
-    schema.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    schema.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    schema.class?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    schema.subject?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safe array initialization - ensure schemas is always an array
+  const safeSchemas = Array.isArray(schemas) ? schemas : [];
 
-  // Calculate stats
-  const totalSchemas = (schemas || []).length;
-  const publishedSchemas = (schemas || []).filter((s: any) => s.isPublished).length;
-  const draftSchemas = (schemas || []).filter((s: any) => s.isActive && !s.isPublished).length;
-  const protectedSchemas = (schemas || []).filter((s: any) => hasStudentScores(s)).length;
-  const totalComponents = (schemas || []).reduce((acc: number, schema: any) => acc + (schema.components?.length || 0), 0);
+  // Filter schemas based on search term with comprehensive safety checks
+  const filteredSchemas = safeSchemas.filter((schema: any) => {
+    if (!schema || typeof schema !== 'object') return false;
+    
+    const searchLower = (searchTerm || '').toLowerCase();
+    if (!searchLower) return true;
+    
+    try {
+      return (
+        (schema.name || '').toLowerCase().includes(searchLower) ||
+        (schema.term || '').toLowerCase().includes(searchLower) ||
+        (schema.class?.name || '').toLowerCase().includes(searchLower) ||
+        (schema.subject?.name || '').toLowerCase().includes(searchLower)
+      );
+    } catch (error) {
+      console.warn('Error filtering schema:', error);
+      return false;
+    }
+  });
+
+  // Calculate stats with comprehensive safety checks
+  const totalSchemas = safeSchemas.length;
+  const publishedSchemas = safeSchemas.filter((s: any) => {
+    try {
+      return s && typeof s === 'object' && s.isPublished === true;
+    } catch (error) {
+      console.warn('Error checking published schema:', error);
+      return false;
+    }
+  }).length;
+  
+  const draftSchemas = safeSchemas.filter((s: any) => {
+    try {
+      return s && typeof s === 'object' && s.isActive === true && s.isPublished !== true;
+    } catch (error) {
+      console.warn('Error checking draft schema:', error);
+      return false;
+    }
+  }).length;
+  
+  const protectedSchemas = safeSchemas.filter((s: any) => {
+    try {
+      return hasStudentScores(s);
+    } catch (error) {
+      console.warn('Error checking protected schema:', error);
+      return false;
+    }
+  }).length;
+  
+  const totalComponents = safeSchemas.reduce((acc: number, schema: any) => {
+    try {
+      const componentCount = Array.isArray(schema?.components) ? schema.components.length : 0;
+      return acc + componentCount;
+    } catch (error) {
+      console.warn('Error counting components:', error);
+      return acc;
+    }
+  }, 0);
 
   const handleCreateSchema = async (data: any) => {
     try {
@@ -90,18 +150,36 @@ export default function AssessmentSchemasPage() {
   };
 
   const handleEditSchema = (schema: any) => {
-    if (hasStudentScores(schema)) {
+    if (!schema) {
       toast({
-        title: "Cannot Edit Schema",
-        description: `This schema has ${schema._count.studentScores} student scores and cannot be edited.`,
+        title: "Error",
+        description: "Schema not found.",
         variant: "destructive",
       });
       return;
     }
     
-    const schemaCopy = JSON.parse(JSON.stringify(schema));
-    setSelectedSchema(schemaCopy);
-    setIsEditDialogOpen(true);
+    if (hasStudentScores(schema)) {
+      const scoreCount = schema._count?.studentScores || 0;
+      toast({
+        title: "Cannot Edit Schema",
+        description: `This schema has ${scoreCount} student scores and cannot be edited.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const schemaCopy = JSON.parse(JSON.stringify(schema));
+      setSelectedSchema(schemaCopy);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to prepare schema for editing.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateSchema = async (data: any) => {
@@ -163,29 +241,35 @@ export default function AssessmentSchemasPage() {
 
   // Check if schema has student scores (is protected)
   const hasStudentScores = (schema: any) => {
-    return schema?._count?.studentScores > 0;
+    if (!schema || !schema._count || typeof schema._count.studentScores !== 'number') {
+      return false;
+    }
+    return schema._count.studentScores > 0;
   };
 
   // Get protection badge for schemas with scores
   const getProtectionBadge = (schema: any) => {
-    if (hasStudentScores(schema)) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="destructive" className="text-xs">
-                <Shield className="h-3 w-3 mr-1" />
-                Protected
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Cannot edit or delete - has {schema._count.studentScores} student score(s)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+    if (!schema || !hasStudentScores(schema)) {
+      return null;
     }
-    return null;
+    
+    const scoreCount = schema._count?.studentScores || 0;
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="destructive" className="text-xs">
+              <Shield className="h-3 w-3 mr-1" />
+              Protected
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Cannot edit or delete - has {scoreCount} student score(s)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   return (
@@ -395,7 +479,9 @@ export default function AssessmentSchemasPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSchemas.map((schema: any) => (
+                  {Array.isArray(filteredSchemas) && filteredSchemas.map((schema: any) => {
+                    if (!schema || typeof schema !== 'object') return null;
+                    return (
                     <TableRow key={schema.id} className="hover:bg-muted/50">
                       <TableCell>
                         <div className="space-y-1">
@@ -527,7 +613,8 @@ export default function AssessmentSchemasPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

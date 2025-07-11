@@ -138,7 +138,7 @@ export function ComponentScoreEntry({
   }, [hasSubCriteria, component.subCriteria]);
 
   // Filter students based on search query
-  const filteredStudents = students.filter(student => {
+  const filteredStudents = (students || []).filter(student => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -153,7 +153,7 @@ export function ComponentScoreEntry({
     const initialScores: Record<string, string> = {};
     const initialSubScores: Record<string, Record<string, string>> = {};
     
-    students.forEach(student => {
+    (students || []).forEach(student => {
       const existingScore = existingScores.find(score => 
         score.studentId === student.id && 
         (score.componentId === component.id || (!score.componentId && component.id === "main"))
@@ -223,43 +223,47 @@ export function ComponentScoreEntry({
 
   // Enhanced class statistics
   const enhancedClassStats = useMemo(() => {
-    const totalStudents = students.length;
-    const completedStudents = students.filter(student => {
+    const studentList = students || [];
+    const totalStudents = studentList.length;
+    const completedStudents = studentList.filter(student => {
       const status = getStudentCompletionStatus(student.id);
       return status.isComplete && status.isValid;
     }).length;
     
-    const partiallyCompletedStudents = students.filter(student => {
+    const partiallyCompletedStudents = studentList.filter(student => {
       const status = getStudentCompletionStatus(student.id);
       return !status.isComplete && !status.isEmpty;
     }).length;
     
-    const pendingStudents = students.filter(student => {
+    const pendingStudents = studentList.filter(student => {
       const status = getStudentCompletionStatus(student.id);
       return status.isEmpty;
     }).length;
     
-    const averageScore = students.length > 0 ? students.reduce((sum, student) => {
+    const averageScore = studentList.length > 0 ? studentList.reduce((sum, student) => {
       const score = parseFloat(calculateTotalScore(student.id) || "0");
       return sum + score;
-    }, 0) / students.length : 0;
+    }, 0) / studentList.length : 0;
     
     // Calculate scaled average if applicable
     const scaledAverageScore = component.rawMaxScore && component.maxScore !== component.rawMaxScore 
       ? (averageScore / component.rawMaxScore) * component.maxScore
       : averageScore;
     
+    const studentScores = studentList.map(s => parseFloat(calculateTotalScore(s.id) || "0"));
+    const validScores = studentScores.filter(s => s > 0);
+    
     return {
       totalStudents,
       completedStudents,
       partiallyCompletedStudents,
       pendingStudents,
-      completionRate: Math.round((completedStudents / totalStudents) * 100),
-      partialCompletionRate: Math.round((partiallyCompletedStudents / totalStudents) * 100),
+      completionRate: totalStudents > 0 ? Math.round((completedStudents / totalStudents) * 100) : 0,
+      partialCompletionRate: totalStudents > 0 ? Math.round((partiallyCompletedStudents / totalStudents) * 100) : 0,
       averageScore: Math.round(averageScore * 10) / 10,
       scaledAverageScore: Math.round(scaledAverageScore * 10) / 10,
-      highestScore: Math.max(...students.map(s => parseFloat(calculateTotalScore(s.id) || "0"))),
-      lowestScore: Math.min(...students.map(s => parseFloat(calculateTotalScore(s.id) || "0")).filter(s => s > 0))
+      highestScore: validScores.length > 0 ? Math.max(...validScores) : 0,
+      lowestScore: validScores.length > 0 ? Math.min(...validScores) : 0
     };
   }, [students, getStudentCompletionStatus, calculateTotalScore, component.rawMaxScore, component.maxScore]);
 
@@ -304,7 +308,7 @@ export function ComponentScoreEntry({
 
     if (hasSubCriteria) {
       // For sub-criteria assessments, collect data from subCriteriaScores
-      students.forEach(student => {
+      (students || []).forEach(student => {
         const studentSubScores = subCriteriaScores[student.id];
         if (!studentSubScores) return;
         
