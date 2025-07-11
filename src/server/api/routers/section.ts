@@ -126,12 +126,12 @@ export const sectionRouter = createTRPCRouter({
         },
       });
 
-      // If student count is requested, transform the result
+      // If student count is requested, add studentCount field while preserving _count
       if (input?.includeStudentCount) {
         return sections.map(section => ({
           ...section,
           studentCount: (section as any)._count?.students || 0,
-          _count: undefined,
+          // Keep _count property for backward compatibility
         }));
       }
 

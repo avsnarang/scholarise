@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
+import { AssessmentCalculator } from '@/lib/assessment-calculator';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,6 +36,10 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      orderBy: [
+        { student: { rollNumber: 'asc' } },
+        { student: { firstName: 'asc' } },
+      ],
     });
 
     return NextResponse.json(scores);
@@ -44,6 +49,85 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch assessment scores' },
       { status: 500 }
     );
+  }
+}
+
+async function recalculateFinalScores(studentAssessmentKeys: string[], userId: string) {
+  const assessmentCalculator = new AssessmentCalculator();
+  
+  for (const studentAssessmentKey of studentAssessmentKeys) {
+    const [studentId, assessmentSchemaId] = studentAssessmentKey.split('-');
+    
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Fetch complete assessment schema
+        const schema = await tx.assessmentSchema.findUnique({
+          where: { id: assessmentSchemaId },
+          include: {
+            components: {
+              include: {
+                subCriteria: true,
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        });
+
+        if (!schema) return;
+
+        // Fetch all component scores for this student
+        const studentAssessmentScore = await tx.studentAssessmentScore.findFirst({
+          where: {
+            studentId,
+            assessmentSchemaId,
+          },
+          include: {
+            componentScores: {
+              include: {
+                subCriteriaScores: true,
+              },
+            },
+          },
+        });
+
+        if (!studentAssessmentScore) return;
+
+        // Transform component scores to match calculator interface
+        const componentScores = studentAssessmentScore.componentScores.map(cs => ({
+          componentId: cs.componentId,
+          rawScore: cs.rawScore || 0,
+          reducedScore: cs.reducedScore || cs.rawScore || 0,
+          calculatedScore: cs.calculatedScore || cs.rawScore || 0,
+          subCriteriaScores: cs.subCriteriaScores.map(scs => ({
+            subCriteriaId: scs.subCriteriaId,
+            score: scs.score || 0,
+          })),
+        }));
+
+        // Calculate final assessment scores
+        const calculationResult = assessmentCalculator.calculateAssessment(schema as any, componentScores as any);
+        const finalGrade = assessmentCalculator.calculateGrade(calculationResult.finalPercentage);
+
+        // Update student assessment score with calculated values
+        await tx.studentAssessmentScore.update({
+          where: { id: studentAssessmentScore.id },
+          data: {
+            finalScore: calculationResult.finalScore,
+            finalPercentage: calculationResult.finalPercentage,
+            finalGrade: finalGrade,
+            isComplete: calculationResult.finalScore > 0,
+            enteredBy: userId,
+            updatedAt: new Date(),
+          },
+        });
+      }, {
+        timeout: 10000, // 10 seconds for individual final score calculations
+      });
+
+    } catch (calculationError) {
+      console.error(`Error calculating final scores for student ${studentId}:`, calculationError);
+      // Continue with other students even if one fails
+    }
   }
 }
 
@@ -60,102 +144,154 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Expected array of score data' }, { status: 400 });
     }
 
-    // Save scores in a transaction
-    const results = await prisma.$transaction(async (tx) => {
-      const savedScores = [];
+    // Process in batches to avoid long transactions
+    const BATCH_SIZE = 10;
+    const batches = [];
+    for (let i = 0; i < data.length; i += BATCH_SIZE) {
+      batches.push(data.slice(i, i + BATCH_SIZE));
+    }
 
-      for (const scoreData of data) {
-        const {
-          studentId,
-          assessmentSchemaId,
-          componentScores,
-          enteredBy,
-        } = scoreData;
+    const allSavedScores = [];
+    const studentsToRecalculate = new Set<string>();
 
-        // Find or create student assessment score
-        let studentScore = await tx.studentAssessmentScore.findFirst({
-          where: {
+    // Process each batch
+    for (const batch of batches) {
+      const results = await prisma.$transaction(async (tx) => {
+        const savedScores = [];
+
+        for (const scoreData of batch) {
+          const {
             studentId,
             assessmentSchemaId,
-          },
-        });
+            componentId,
+            marksObtained,
+            comments,
+            branchId,
+          } = scoreData;
 
-        if (studentScore) {
-          studentScore = await tx.studentAssessmentScore.update({
-            where: { id: studentScore.id },
-            data: {
-              enteredBy: enteredBy || userId,
-              updatedAt: new Date(),
-            },
-          });
-        } else {
-          studentScore = await tx.studentAssessmentScore.create({
-            data: {
+          if (!branchId) {
+            throw new Error('branchId is required');
+          }
+
+          // Track students that need final score recalculation
+          studentsToRecalculate.add(`${studentId}-${assessmentSchemaId}`);
+
+          // Find or create student assessment score record
+          let studentScore = await tx.studentAssessmentScore.findFirst({
+            where: {
               studentId,
               assessmentSchemaId,
-              enteredBy: enteredBy || userId,
-              branchId: 'temp', // This should be passed from the request
+            },
+            include: {
+              componentScores: true,
             },
           });
-        }
 
-        // Delete existing component scores to replace them
-        await tx.componentScore.deleteMany({
-          where: {
-            studentAssessmentScoreId: studentScore.id,
-          },
-        });
-
-        // Create new component scores
-        if (componentScores && componentScores.length > 0) {
-          for (const componentScore of componentScores) {
-            const {
-              componentId,
-              rawScore,
-              calculatedScore,
-              subCriteriaScores,
-            } = componentScore;
-
-            const newComponentScore = await tx.componentScore.create({
+          if (!studentScore) {
+            // Create new student assessment score
+            studentScore = await tx.studentAssessmentScore.create({
               data: {
-                studentAssessmentScoreId: studentScore.id,
-                componentId,
-                rawScore: rawScore ? Number(rawScore) : null,
-                calculatedScore: calculatedScore ? Number(calculatedScore) : null,
-                enteredBy: enteredBy || userId,
+                studentId,
+                assessmentSchemaId,
+                enteredBy: userId,
+                branchId,
+              },
+              include: {
+                componentScores: true,
               },
             });
+          }
 
-            // Create sub-criteria scores
-            if (subCriteriaScores && subCriteriaScores.length > 0) {
-              for (const subScore of subCriteriaScores) {
-                const {
-                  subCriteriaId,
-                  score,
-                  comments,
-                } = subScore;
+          // Handle component score
+          if (componentId) {
+            const existingComponentScore = studentScore.componentScores.find(
+              cs => cs.componentId === componentId
+            );
+            
+            let componentScore;
+            if (existingComponentScore) {
+              componentScore = await tx.componentScore.update({
+                where: { id: existingComponentScore.id },
+                data: {
+                  rawScore: Number(marksObtained),
+                  calculatedScore: Number(marksObtained),
+                  enteredBy: userId,
+                  updatedAt: new Date(),
+                },
+              });
+            } else {
+              componentScore = await tx.componentScore.create({
+                data: {
+                  studentAssessmentScoreId: studentScore.id,
+                  componentId,
+                  rawScore: Number(marksObtained),
+                  calculatedScore: Number(marksObtained),
+                  enteredBy: userId,
+                },
+              });
+            }
 
-                await tx.subCriteriaScore.create({
-                  data: {
-                    componentScoreId: newComponentScore.id,
+            // Handle sub-criteria scores if provided
+            if (scoreData.subCriteriaScores && typeof scoreData.subCriteriaScores === 'object') {
+              for (const [subCriteriaId, subScore] of Object.entries(scoreData.subCriteriaScores)) {
+                const numericSubScore = Number(subScore);
+                if (isNaN(numericSubScore)) continue;
+
+                // Check if sub-criteria score already exists
+                const existingSubScore = await tx.subCriteriaScore.findFirst({
+                  where: {
                     subCriteriaId,
-                    score: score ? Number(score) : 0,
-                    comments: comments || null,
-                    enteredBy: enteredBy || userId,
+                    componentScoreId: componentScore.id,
                   },
                 });
+
+                if (existingSubScore) {
+                  await tx.subCriteriaScore.update({
+                    where: { id: existingSubScore.id },
+                    data: {
+                      score: numericSubScore,
+                      enteredBy: userId,
+                      updatedAt: new Date(),
+                    },
+                  });
+                } else {
+                  await tx.subCriteriaScore.create({
+                    data: {
+                      subCriteriaId,
+                      componentScoreId: componentScore.id,
+                      score: numericSubScore,
+                      enteredBy: userId,
+                    },
+                  });
+                }
               }
             }
           }
+
+          savedScores.push(studentScore);
         }
 
-        savedScores.push(studentScore);
-      }
+        return savedScores;
+      }, {
+        timeout: 15000, // 15 seconds for batch processing
+      });
 
-      return savedScores;
-    });
+      allSavedScores.push(...results);
+    }
 
-    return NextResponse.json(results);
+    // Recalculate final scores separately (outside the main transaction)
+    // This prevents the main transaction from timing out
+    if (studentsToRecalculate.size > 0) {
+      // Run this in the background to avoid blocking the response
+      setImmediate(() => {
+        recalculateFinalScores(Array.from(studentsToRecalculate), userId)
+          .catch(error => {
+            console.error('Error in background final score calculation:', error);
+          });
+      });
+    }
+
+    return NextResponse.json(allSavedScores);
   } catch (error) {
     console.error('Error saving assessment scores:', error);
     return NextResponse.json(

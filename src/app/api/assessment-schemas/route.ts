@@ -347,14 +347,28 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Check if schema exists
+    // Check if schema exists and get related data
     const existingSchema = await db.assessmentSchema.findUnique({
       where: { id: schemaId },
-      include: { components: { include: { subCriteria: true } } }
+      include: { 
+        components: { include: { subCriteria: true } },
+        studentScores: true
+      }
     });
 
     if (!existingSchema) {
       return NextResponse.json({ error: 'Assessment schema not found' }, { status: 404 });
+    }
+
+    // Check if there are any student scores - prevent editing if scores exist
+    if (existingSchema.studentScores.length > 0) {
+      return NextResponse.json(
+        { 
+          error: 'Cannot edit assessment schema with existing student scores. Please remove all scores first.',
+          hasScores: true
+        },
+        { status: 400 }
+      );
     }
 
     // Parse and validate class-section selections (same as create)

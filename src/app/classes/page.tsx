@@ -114,7 +114,7 @@ export default function ClassesPage() {
     },
     teacher: section.teacher,
     _count: section._count,
-    studentCount: section._count?.students
+    studentCount: section.studentCount || section._count?.students || 0
   })) || [];
 
   // Delete section mutation

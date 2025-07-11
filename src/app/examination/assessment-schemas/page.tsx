@@ -1,23 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Settings, Loader2, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen, Target, Calculator, Hash, AlertCircle, Loader2, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AssessmentSchemaBuilder } from '@/components/assessment/AssessmentSchemaBuilder';
 import { useAssessmentSchemas } from '@/hooks/useAssessmentSchemas';
 import { api } from '@/utils/api';
 import { useBranchContext } from '@/hooks/useBranchContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ViewSchemaDialog } from '@/components/assessment/ViewSchemaDialog';
+import { EditSchemaDialog } from '@/components/assessment/EditSchemaDialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function AssessmentSchemasPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -28,6 +29,7 @@ export default function AssessmentSchemasPage() {
   const [deleteSchemaId, setDeleteSchemaId] = useState<string | null>(null);
   
   const { currentBranchId } = useBranchContext();
+  const { toast } = useToast();
   
   const { 
     schemas, 
@@ -62,29 +64,43 @@ export default function AssessmentSchemasPage() {
     schema.subject?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Helper function to format applied classes back to classIds format for editing
-  const formatAppliedClassesToClassIds = (schema: any) => {
-    if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
-      return schema.appliedClasses.map((applied: any) => 
-        applied.sectionId 
-          ? `${applied.classId}-${applied.sectionId}` 
-          : applied.classId
-      );
-    }
-    return [schema.classId];
-  };
+  // Calculate stats
+  const totalSchemas = schemas.length;
+  const publishedSchemas = schemas.filter((s: any) => s.isPublished).length;
+  const draftSchemas = schemas.filter((s: any) => s.isActive && !s.isPublished).length;
+  const protectedSchemas = schemas.filter((s: any) => hasStudentScores(s)).length;
+  const totalComponents = schemas.reduce((acc: number, schema: any) => acc + (schema.components?.length || 0), 0);
 
   const handleCreateSchema = async (data: any) => {
     try {
       await createSchema(data);
       setIsCreateDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Assessment schema created successfully",
+      });
     } catch (error) {
       console.error('Failed to create schema:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create assessment schema",
+        variant: "destructive",
+      });
     }
   };
 
   const handleEditSchema = (schema: any) => {
-    setSelectedSchema(schema);
+    if (hasStudentScores(schema)) {
+      toast({
+        title: "Cannot Edit Schema",
+        description: `This schema has ${schema._count.studentScores} student scores and cannot be edited.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const schemaCopy = JSON.parse(JSON.stringify(schema));
+    setSelectedSchema(schemaCopy);
     setIsEditDialogOpen(true);
   };
 
@@ -95,13 +111,23 @@ export default function AssessmentSchemasPage() {
       await updateSchema({ id: selectedSchema.id, data });
       setIsEditDialogOpen(false);
       setSelectedSchema(null);
+      toast({
+        title: "Success",
+        description: "Assessment schema updated successfully",
+      });
     } catch (error) {
       console.error('Failed to update schema:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update assessment schema",
+        variant: "destructive",
+      });
     }
   };
 
   const handleViewSchema = (schema: any) => {
-    setSelectedSchema(schema);
+    const schemaCopy = JSON.parse(JSON.stringify(schema));
+    setSelectedSchema(schemaCopy);
     setIsViewDialogOpen(true);
   };
 
@@ -109,14 +135,25 @@ export default function AssessmentSchemasPage() {
     try {
       await deleteSchema(schemaId);
       setDeleteSchemaId(null);
+      toast({
+        title: "Success",
+        description: "Assessment schema deleted successfully",
+      });
     } catch (error) {
       console.error('Failed to delete schema:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete assessment schema",
+        variant: "destructive",
+      });
     }
   };
 
+
+
   const getStatusBadge = (schema: any) => {
     if (schema.isPublished) {
-      return <Badge variant="default" className="bg-green-100 text-green-800">Published</Badge>;
+      return <Badge variant="default">Published</Badge>;
     } else if (schema.isActive) {
       return <Badge variant="secondary">Draft</Badge>;
     } else {
@@ -124,90 +161,198 @@ export default function AssessmentSchemasPage() {
     }
   };
 
+  // Check if schema has student scores (is protected)
+  const hasStudentScores = (schema: any) => {
+    return schema._count?.studentScores > 0;
+  };
+
+  // Get protection badge for schemas with scores
+  const getProtectionBadge = (schema: any) => {
+    if (hasStudentScores(schema)) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="destructive" className="text-xs">
+                <Shield className="h-3 w-3 mr-1" />
+                Protected
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Cannot edit or delete - has {schema._count.studentScores} student score(s)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Assessment Schemas</h1>
-          <p className="text-muted-foreground">
-            Create and manage customizable assessment evaluation schemas
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Assessment Schemas</h1>
+            <p className="text-muted-foreground">Create and manage assessment evaluation configurations</p>
+          </div>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Schema
+          </Button>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="w-fit">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Schema
-        </Button>
+
+        {/* Stats Cards */}
+        <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+          <Card className="@container/card" data-slot="card">
+            <CardHeader>
+              <CardDescription>Total Schemas</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {totalSchemas.toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-col items-start gap-1.5 text-sm pt-0">
+              <div className="line-clamp-1 flex gap-2 font-medium">
+                <FileText className="size-4 text-primary" />
+                Assessment Schemas
+              </div>
+              <div className="text-muted-foreground">
+                Total assessment configurations
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="@container/card" data-slot="card">
+            <CardHeader>
+              <CardDescription>Published</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {publishedSchemas.toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-col items-start gap-1.5 text-sm pt-0">
+              <div className="line-clamp-1 flex gap-2 font-medium">
+                <Target className="size-4 text-green-600" />
+                Live Schemas
+              </div>
+              <div className="text-muted-foreground">
+                {totalSchemas > 0
+                  ? `${Math.round((publishedSchemas / totalSchemas) * 100)}% of total schemas`
+                  : "No schemas found"}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="@container/card" data-slot="card">
+            <CardHeader>
+              <CardDescription>Protected Schemas</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {protectedSchemas.toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-col items-start gap-1.5 text-sm pt-0">
+              <div className="line-clamp-1 flex gap-2 font-medium">
+                <Shield className="size-4 text-red-600" />
+                With Student Scores
+              </div>
+              <div className="text-muted-foreground">
+                {totalSchemas > 0
+                  ? `${Math.round((protectedSchemas / totalSchemas) * 100)}% cannot be edited`
+                  : "No protected schemas"}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="@container/card" data-slot="card">
+            <CardHeader>
+              <CardDescription>Total Components</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {totalComponents.toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-col items-start gap-1.5 text-sm pt-0">
+              <div className="line-clamp-1 flex gap-2 font-medium">
+                <Calculator className="size-4 text-purple-600" />
+                Assessment Parts
+              </div>
+              <div className="text-muted-foreground">
+                {totalSchemas > 0
+                  ? `Average ${Math.round(totalComponents / totalSchemas)} per schema`
+                  : "No components found"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search schemas by name, term, class, or subject..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" className="w-fit">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Error Alerts */}
-      {createError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Create Error: {createError.message}
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {updateError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Update Error: {updateError.message}
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {deleteError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Delete Error: {deleteError.message}
-          </AlertDescription>
-        </Alert>
+      {(createError || updateError || deleteError) && (
+        <div className="space-y-2">
+          {createError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Create Error: {createError.message}</AlertDescription>
+            </Alert>
+          )}
+          {updateError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Update Error: {updateError.message}</AlertDescription>
+            </Alert>
+          )}
+          {deleteError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Delete Error: {deleteError.message}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       )}
 
-      {/* Table */}
+      {/* Search and Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Assessment Schemas ({filteredSchemas.length})
-          </CardTitle>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Assessment Schemas
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {filteredSchemas.length} of {totalSchemas} schemas
+              </p>
+            </div>
+            
+            {/* Search */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search schemas..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
+        
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <Skeleton className="h-10 w-10 rounded" />
                     <div className="space-y-2 flex-1">
                       <Skeleton className="h-4 w-[250px]" />
-                      <Skeleton className="h-4 w-[200px]" />
+                      <Skeleton className="h-3 w-[200px]" />
                     </div>
+                    <Skeleton className="h-8 w-20" />
                   </div>
                 ))}
               </div>
@@ -215,7 +360,7 @@ export default function AssessmentSchemasPage() {
           ) : filteredSchemas.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">
                   {searchTerm ? 'No matching schemas found' : 'No Assessment Schemas'}
                 </h3>
@@ -234,76 +379,88 @@ export default function AssessmentSchemasPage() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="border-t">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
                     <TableHead className="w-[300px]">Schema</TableHead>
-                    <TableHead>Class</TableHead>
+                    <TableHead>Applied To</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Term</TableHead>
-                    <TableHead>Components</TableHead>
-                    <TableHead>Total Marks</TableHead>
+                    <TableHead className="text-center">Components</TableHead>
+                    <TableHead className="text-center">Total Marks</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSchemas.map((schema: any) => (
-                    <TableRow key={schema.id}>
-                      <TableCell className="font-medium">
+                    <TableRow key={schema.id} className="hover:bg-muted/50">
+                      <TableCell>
                         <div className="space-y-1">
-                          <div className="font-semibold">{schema.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            ID: {schema.id.slice(0, 8)}...
+                          <div className="font-medium">{schema.name}</div>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {schema.id.slice(0, 8)}...
                           </div>
                         </div>
                       </TableCell>
+                      
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            {schema.class?.name || 'N/A'}
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm">{schema.class?.name || 'N/A'}</span>
                           </div>
                           {schema.appliedClasses && Array.isArray(schema.appliedClasses) && schema.appliedClasses.length > 1 && (
                             <div className="text-xs text-muted-foreground">
-                              +{schema.appliedClasses.length - 1} more
+                              +{schema.appliedClasses.length - 1} more classes
                             </div>
                           )}
                         </div>
                       </TableCell>
+                      
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-muted-foreground" />
-                          {schema.subject?.name || 'N/A'}
+                          <BookOpen className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{schema.subject?.name || 'N/A'}</span>
                         </div>
                       </TableCell>
+                      
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {schema.term}
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{schema.term}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {schema.components?.length || 0} components
+                      
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-xs">
+                          {schema.components?.length || 0}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono">
-                        {schema.totalMarks}
+                      
+                      <TableCell className="text-center">
+                        <span className="font-mono text-sm font-medium">{schema.totalMarks}</span>
                       </TableCell>
+                      
                       <TableCell>
-                        {getStatusBadge(schema)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(schema)}
+                          {getProtectionBadge(schema)}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(schema.createdAt).toLocaleDateString()}
+                      
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(schema.createdAt).toLocaleDateString()}
+                        </div>
                       </TableCell>
+                      
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -312,22 +469,60 @@ export default function AssessmentSchemasPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                                        <DropdownMenuItem 
-              onClick={() => handleEditSchema(schema)}
-              disabled={isUpdating || isDeleting}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
+                            {hasStudentScores(schema) ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <DropdownMenuItem disabled className="cursor-not-allowed">
+                                        <Edit className="mr-2 h-4 w-4 opacity-50" />
+                                        <span className="opacity-50">Edit</span>
+                                        <Lock className="ml-2 h-3 w-3 opacity-50" />
+                                      </DropdownMenuItem>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left">
+                                    <p>Cannot edit - schema has {schema._count.studentScores} student score(s)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <DropdownMenuItem 
+                                onClick={() => handleEditSchema(schema)}
+                                disabled={isUpdating || isDeleting}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                                        <DropdownMenuItem 
-              onClick={() => setDeleteSchemaId(schema.id)}
-              className="text-destructive focus:text-destructive"
-              disabled={isUpdating || isDeleting}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
+                            {hasStudentScores(schema) ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <DropdownMenuItem disabled className="cursor-not-allowed">
+                                        <Trash2 className="mr-2 h-4 w-4 opacity-50" />
+                                        <span className="opacity-50">Delete</span>
+                                        <Lock className="ml-2 h-3 w-3 opacity-50" />
+                                      </DropdownMenuItem>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left">
+                                    <p>Cannot delete - schema has {schema._count.studentScores} student score(s)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <DropdownMenuItem 
+                                onClick={() => setDeleteSchemaId(schema.id)}
+                                className="text-destructive focus:text-destructive"
+                                disabled={isUpdating || isDeleting}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -341,223 +536,91 @@ export default function AssessmentSchemasPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto overscroll-contain">
-          <DialogHeader>
-            <DialogTitle>Create Assessment Schema</DialogTitle>
-          </DialogHeader>
-          <div className="pr-2">
-            <AssessmentSchemaBuilder
-                              classes={classes || []}
-                subjects={Array.isArray(subjects) ? subjects : subjects?.items || []}
-                onSave={handleCreateSchema}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Schema Details
-            </DialogTitle>
-          </DialogHeader>
-          {selectedSchema && (
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                  <p className="font-semibold">{selectedSchema.name}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Term</Label>
-                  <p>{selectedSchema.term}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Applied Classes & Sections</Label>
-                  {selectedSchema.appliedClasses && Array.isArray(selectedSchema.appliedClasses) ? (
-                    <div className="space-y-2">
-                      {selectedSchema.appliedClasses.map((item: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{item.className}</span>
-                          {item.sectionName && (
-                            <>
-                              <span className="text-muted-foreground">-</span>
-                              <span className="text-sm">{item.sectionName}</span>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>{selectedSchema.class?.name || 'N/A'}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Subject</Label>
-                  <p>{selectedSchema.subject?.name || 'N/A'}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Total Marks</Label>
-                  <p className="font-mono">{selectedSchema.totalMarks}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  {getStatusBadge(selectedSchema)}
-                </div>
-              </div>
-
-              {/* Components */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Assessment Components</h3>
-                <div className="space-y-4">
-                  {selectedSchema.components?.map((component: any, index: number) => (
-                    <Card key={component.id}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base">{component.name}</CardTitle>
-                        {component.description && (
-                          <p className="text-sm text-muted-foreground">{component.description}</p>
-                        )}
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Raw Max Score</Label>
-                            <p className="font-mono">{component.rawMaxScore}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reduced Score</Label>
-                            <p className="font-mono">{component.reducedScore}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Weightage</Label>
-                            <p className="font-mono">{component.weightage}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Order</Label>
-                            <p className="font-mono">{component.order}</p>
-                          </div>
-                        </div>
-                        
-                        {component.formula && (
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Formula</Label>
-                            <code className="block mt-1 p-2 bg-muted rounded text-sm font-mono">
-                              {component.formula}
-                            </code>
-                          </div>
-                        )}
-
-                        {component.subCriteria && component.subCriteria.length > 0 && (
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-criteria</Label>
-                            <div className="mt-2 space-y-2">
-                              {component.subCriteria.map((sub: any) => (
-                                <div key={sub.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                                  <span className="text-sm">{sub.name}</span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {sub.maxScore} marks
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              {/* Metadata */}
-              <div className="pt-4 border-t space-y-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+      {isCreateDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/50" 
+            onClick={() => setIsCreateDialogOpen(false)}
+          />
+          <div className="relative bg-background rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden z-10 border">
+            <div className="border-b bg-background px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Plus className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <Label className="text-xs">Created</Label>
-                    <p>{new Date(selectedSchema.createdAt).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Last Updated</Label>
-                    <p>{new Date(selectedSchema.updatedAt).toLocaleString()}</p>
+                    <h2 className="text-lg font-semibold">Create Assessment Schema</h2>
+                    <p className="text-sm text-muted-foreground">Set up a new assessment schema configuration</p>
                   </div>
                 </div>
+                <button 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-        if (!isUpdating) {
-          setIsEditDialogOpen(open);
-          if (!open) setSelectedSchema(null);
-        }
-      }}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto overscroll-contain">
-          <DialogHeader>
-            <DialogTitle>
-              Edit Assessment Schema
-              {isUpdating && <span className="ml-2 text-sm text-muted-foreground">(Updating...)</span>}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="pr-2">
-            {selectedSchema && (
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-6">
               <AssessmentSchemaBuilder
-                initialData={{
-                  name: selectedSchema.name,
-                  term: selectedSchema.term,
-                  classIds: formatAppliedClassesToClassIds(selectedSchema),
-                  subjectId: selectedSchema.subjectId,
-                  totalMarks: selectedSchema.totalMarks,
-                  components: selectedSchema.components?.map((comp: any) => ({
-                    name: comp.name,
-                    description: comp.description || '',
-                    rawMaxScore: comp.rawMaxScore,
-                    reducedScore: comp.reducedScore,
-                    weightage: comp.weightage,
-                    formula: comp.formula || '',
-                    order: comp.order,
-                    subCriteria: comp.subCriteria?.map((sub: any) => ({
-                      name: sub.name,
-                      description: sub.description || '',
-                      maxScore: sub.maxScore,
-                      order: sub.order
-                    })) || []
-                  })) || []
-                }}
                 classes={classes || []}
                 subjects={Array.isArray(subjects) ? subjects : subjects?.items || []}
-                onSave={handleUpdateSchema}
+                onSave={handleCreateSchema}
               />
-            )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
+      
+      {/* View Dialog */}
+      <ViewSchemaDialog
+        isOpen={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+        schema={selectedSchema}
+      />
+
+      {/* Edit Dialog */}
+      <EditSchemaDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!isUpdating) {
+            setIsEditDialogOpen(open);
+            if (!open) setSelectedSchema(null);
+          }
+        }}
+        schema={selectedSchema}
+        onUpdate={handleUpdateSchema}
+        classes={classes || []}
+        subjects={Array.isArray(subjects) ? subjects : subjects?.items || []}
+      />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteSchemaId} onOpenChange={() => setDeleteSchemaId(null)}>
+      <AlertDialog open={!!deleteSchemaId} onOpenChange={(open) => !open && setDeleteSchemaId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the assessment schema
-              and remove all associated data.
+            <AlertDialogTitle>Delete Assessment Schema</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete this assessment schema? This action cannot be undone.
+              </p>
+              {deleteSchemaId && (
+                <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                  <strong>Note:</strong> This schema will be permanently deleted along with all its components and configurations.
+                  Student scores will remain in the system but will lose their schema reference.
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteSchemaId && handleDeleteSchema(deleteSchemaId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => handleDeleteSchema(deleteSchemaId!)}
               disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete Schema
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

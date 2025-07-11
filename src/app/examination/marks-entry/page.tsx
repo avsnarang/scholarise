@@ -58,7 +58,10 @@ export default function MarksEntryPage() {
   const { data: allExamConfigs } = api.examination.getExamConfigurations.useQuery();
   const { data: allClasses } = api.class.getAll.useQuery();
   const { data: sections } = api.section.getAll.useQuery();
-  const { data: students } = api.student.getAll.useQuery();
+  const { data: students } = api.student.getAll.useQuery({
+    branchId: currentBranchId || undefined,
+    limit: 500 // Set a high limit to get all students in the branch
+  });
 
   // Filter exam configurations based on teacher assignments for teachers
   const examConfigs = isTeacher && !isAdmin && !isSuperAdmin 

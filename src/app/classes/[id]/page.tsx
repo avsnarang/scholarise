@@ -44,7 +44,8 @@ export default function ClassDetailPage() {
     isLoading: isLoadingStudentCount
   } = api.student.getAll.useQuery(
     { 
-      sectionId: classData?.sections?.[0]?.id
+      sectionId: classData?.sections?.[0]?.id,
+      limit: 500 // Set a high limit to get all students in the class
     },
     { 
       enabled: !!classData?.sections?.[0]?.id
