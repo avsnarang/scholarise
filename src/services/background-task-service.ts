@@ -72,7 +72,7 @@ export class BackgroundTaskService {
     console.log('Starting background task processing...');
 
     try {
-      while (true) {
+      while (this.isProcessing) {
         // Get the next pending task with highest priority
         const task = await db.backgroundTask.findFirst({
           where: {
@@ -85,8 +85,9 @@ export class BackgroundTaskService {
         });
 
         if (!task) {
-          console.log('No pending tasks found. Stopping processor.');
-          break;
+          // No tasks found, wait before checking again
+          await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+          continue;
         }
 
         await this.processTask(task.id);
@@ -884,6 +885,14 @@ export class BackgroundTaskService {
     });
 
     await this.logTaskExecution(taskId, 'INFO', 'Task cancelled by user');
+  }
+
+  // Method to stop the processing
+  async stopProcessing() {
+    if (this.isProcessing) {
+      console.log('Stopping background task processing...');
+      this.isProcessing = false;
+    }
   }
 
   // Method to restart the processing (useful for cron jobs or startup)

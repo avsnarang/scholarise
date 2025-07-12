@@ -43,7 +43,7 @@ export function TaskProgressDropdown() {
   
   const utils = api.useContext();
   
-  const { data: tasks = [], isLoading } = api.backgroundTasks.getAllTasks.useQuery(
+  const { data: tasks = [], isLoading, error } = api.backgroundTasks.getAllTasks.useQuery(
     undefined,
     {
       refetchInterval: isOpen ? 2000 : 10000,
@@ -51,12 +51,20 @@ export function TaskProgressDropdown() {
       refetchOnMount: true,
       refetchOnWindowFocus: false,
       placeholderData: (previousData: Task[] | undefined) => previousData,
+      retry: (failureCount, error) => {
+        // Only retry on network errors, not on actual API errors
+        if (failureCount >= 3) return false;
+        return true;
+      },
     }
   );
 
   const activeTasks = tasks.filter((task: Task) => 
     task.status === 'pending' || task.status === 'processing'
   );
+
+  const hasError = !!error;
+  const showError = hasError && !isLoading;
 
   const deleteTaskMutation = api.backgroundTasks.deleteTask.useMutation({
     onSuccess: () => {
@@ -96,7 +104,9 @@ export function TaskProgressDropdown() {
   };
 
   const formatProgress = (task: Task) => {
-    return `${task.progress.processed}/${task.progress.total}`;
+    const processed = task.progress?.processed || 0;
+    const total = task.progress?.total || 0;
+    return `${processed}/${total}`;
   };
 
   const handleExport = (task: Task) => {
@@ -160,7 +170,25 @@ export function TaskProgressDropdown() {
 
         {/* Task List */}
         <ScrollArea className="max-h-80">
-          {tasks.length === 0 ? (
+          {isLoading ? (
+            <div className="p-6 text-center">
+              <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Loading tasks...</p>
+            </div>
+          ) : showError ? (
+            <div className="p-6 text-center">
+              <X className="h-8 w-8 mx-auto mb-2 text-red-500" />
+              <p className="text-sm text-red-600 mb-2">Failed to load tasks</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.location.reload()}
+                className="text-xs"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : tasks.length === 0 ? (
             <div className="p-6 text-center">
               <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">No tasks</p>
@@ -215,10 +243,10 @@ export function TaskProgressDropdown() {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span>{formatProgress(task)}</span>
-                            <span>{task.progress.percentage}%</span>
+                            <span>{Math.round(task.progress?.percentage || 0)}%</span>
                           </div>
                           <Progress 
-                            value={task.progress.percentage} 
+                            value={task.progress?.percentage || 0} 
                             className="h-1.5" 
                           />
                         </div>

@@ -36,7 +36,7 @@ async function performInitialization() {
     isInitialized = true;
     console.log('Background services initialized successfully');
     
-    // Set up periodic health check (every 5 minutes)
+    // Set up periodic health check (every 10 minutes)
     if (typeof setInterval !== 'undefined') {
       setInterval(async () => {
         try {
@@ -47,7 +47,7 @@ async function performInitialization() {
         } catch (error) {
           console.error('Error in background service health check:', error);
         }
-      }, 5 * 60 * 1000); // 5 minutes
+      }, 10 * 60 * 1000); // 10 minutes
     }
     
   } catch (error) {

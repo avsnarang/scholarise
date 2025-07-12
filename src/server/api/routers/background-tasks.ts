@@ -59,21 +59,48 @@ export const backgroundTasksRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const tasks = await backgroundTaskService.getAllTasks(input?.branchId);
       
-      // Transform to match the existing interface
-      return tasks.map((task: BackgroundTask): TaskResponse => ({
-        id: task.id,
-        type: task.title,
-        status: task.status.toLowerCase() as 'pending' | 'processing' | 'completed' | 'failed',
-        progress: {
-          processed: task.processedItems,
-          total: task.totalItems,
-          percentage: task.percentage
-        },
-        results: task.results,
-        startTime: task.startedAt || task.createdAt,
-        endTime: task.completedAt || undefined,
-        description: task.description || undefined
-      }));
+      // Transform to match the existing interface with proper status mapping
+      return tasks.map((task: BackgroundTask): TaskResponse => {
+        let uiStatus: 'pending' | 'processing' | 'completed' | 'failed';
+        
+        // Map database enum values to UI expected values
+        switch (task.status) {
+          case 'PENDING':
+          case 'QUEUED':
+            uiStatus = 'pending';
+            break;
+          case 'RUNNING':
+            uiStatus = 'processing';
+            break;
+          case 'COMPLETED':
+            uiStatus = 'completed';
+            break;
+          case 'FAILED':
+          case 'CANCELLED':
+            uiStatus = 'failed';
+            break;
+          case 'RETRY':
+            uiStatus = 'pending';
+            break;
+          default:
+            uiStatus = 'pending';
+        }
+        
+        return {
+          id: task.id,
+          type: task.title,
+          status: uiStatus,
+          progress: {
+            processed: task.processedItems,
+            total: task.totalItems,
+            percentage: task.percentage
+          },
+          results: task.results,
+          startTime: task.startedAt || task.createdAt,
+          endTime: task.completedAt || undefined,
+          description: task.description || undefined
+        };
+      });
     }),
 
   // Get task details with logs
