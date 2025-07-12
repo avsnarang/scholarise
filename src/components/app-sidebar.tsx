@@ -363,22 +363,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {
               title: "Term Configuration",
               href: "/examination/config/terms",
-              permissions: navItemPermissions.examConfigurations,
-            },
-            {
-              title: "Exam Scheduling",
-              href: "/examination/schedule",
-              permissions: navItemPermissions.examSchedules,
-            },
-            {
-              title: "Seating Plans",
-              href: "/examination/seating-plans",
-              permissions: navItemPermissions.seatingPlans,
-            },
-            {
-              title: "Traditional Exams",
-              href: "/examination/traditional",
-              permissions: navItemPermissions.examTypes,
+              permissions: navItemPermissions.terms,
             },
           ],
         },

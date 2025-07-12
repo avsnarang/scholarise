@@ -334,10 +334,7 @@ export const navItemPermissions = {
   
   // Examination module - comprehensive permissions
   examination: [Permission.VIEW_EXAMINATIONS],
-  examTypes: [Permission.MANAGE_EXAM_TYPES],
-  examConfigurations: [Permission.MANAGE_EXAM_CONFIGURATIONS],
-  examSchedules: [Permission.MANAGE_EXAM_SCHEDULES],
-  seatingPlans: [Permission.MANAGE_SEATING_PLANS],
+
   enterMarks: [Permission.ENTER_MARKS],
   manageAssessments: [Permission.MANAGE_ASSESSMENTS],
   gradeScales: [Permission.MANAGE_GRADE_SCALES],

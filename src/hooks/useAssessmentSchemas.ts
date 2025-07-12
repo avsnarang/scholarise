@@ -107,6 +107,33 @@ export function useAssessmentSchemas() {
     },
   });
 
+  const updateSchemaStatusMutation = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: 'set-draft' | 'set-published' | 'freeze-marks' }) => {
+      console.log('Updating schema status:', id, action);
+      
+      const response = await fetch(`/api/assessment-schemas?id=${id}&action=${action}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Status Update API Error:', error);
+        throw new Error(error.error || error.details || 'Failed to update assessment schema status');
+      }
+
+      const result = await response.json();
+      console.log('Status Update Success:', result);
+      return result;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch schemas
+      queryClient.invalidateQueries({ queryKey: ['assessment-schemas'] });
+    },
+  });
+
   const deleteSchemaMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log('Deleting schema:', id);
@@ -141,6 +168,9 @@ export function useAssessmentSchemas() {
     updateSchema: updateSchemaMutation.mutate,
     isUpdating: updateSchemaMutation.isPending,
     updateError: updateSchemaMutation.error,
+    updateSchemaStatus: updateSchemaStatusMutation.mutate,
+    isUpdatingStatus: updateSchemaStatusMutation.isPending,
+    updateStatusError: updateSchemaStatusMutation.error,
     deleteSchema: deleteSchemaMutation.mutate,
     isDeleting: deleteSchemaMutation.isPending,
     deleteError: deleteSchemaMutation.error,

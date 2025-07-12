@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/server/db';
 import { auth } from '@clerk/nextjs/server';
 import { AssessmentCalculator } from '@/lib/assessment-calculator';
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Assessment schema ID is required' }, { status: 400 });
     }
 
-    const scores = await prisma.studentAssessmentScore.findMany({
+    const scores = await db.studentAssessmentScore.findMany({
       where: {
         assessmentSchemaId,
         ...(studentId && { studentId }),
@@ -59,7 +59,7 @@ async function recalculateFinalScores(studentAssessmentKeys: string[], userId: s
     const [studentId, assessmentSchemaId] = studentAssessmentKey.split('-');
     
     try {
-      await prisma.$transaction(async (tx) => {
+      await db.$transaction(async (tx) => {
         // Fetch complete assessment schema
         const schema = await tx.assessmentSchema.findUnique({
           where: { id: assessmentSchemaId },
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     // Process each batch
     for (const batch of batches) {
-      const results = await prisma.$transaction(async (tx) => {
+      const results = await db.$transaction(async (tx) => {
         const savedScores = [];
 
         for (const scoreData of batch) {
@@ -176,6 +176,71 @@ export async function POST(request: NextRequest) {
           // Track students that need final score recalculation
           studentsToRecalculate.add(`${studentId}-${assessmentSchemaId}`);
 
+          // Get the assessment schema with components to validate max scores
+          const assessmentSchema = await tx.assessmentSchema.findUnique({
+            where: { id: assessmentSchemaId },
+            include: {
+              components: {
+                include: {
+                  subCriteria: true,
+                },
+              },
+            },
+          });
+
+          if (!assessmentSchema) {
+            throw new Error(`Assessment schema not found: ${assessmentSchemaId}`);
+          }
+
+          // Find the specific component to validate against
+          let targetComponent = null;
+          if (componentId) {
+            targetComponent = assessmentSchema.components.find(c => c.id === componentId);
+            if (!targetComponent) {
+              throw new Error(`Component not found: ${componentId}`);
+            }
+          }
+
+          // Validate main component score doesn't exceed maximum
+          if (componentId && targetComponent && marksObtained != null) {
+            if (marksObtained > targetComponent.rawMaxScore) {
+              throw new Error(
+                `Score ${marksObtained} for component "${targetComponent.name}" exceeds maximum allowed ${targetComponent.rawMaxScore} marks`
+              );
+            }
+            if (marksObtained < 0) {
+              throw new Error(
+                `Score ${marksObtained} for component "${targetComponent.name}" cannot be negative`
+              );
+            }
+          }
+
+          // Validate sub-criteria scores if provided
+          if (scoreData.subCriteriaScores && typeof scoreData.subCriteriaScores === 'object') {
+            for (const [subCriteriaId, subScore] of Object.entries(scoreData.subCriteriaScores)) {
+              const numericSubScore = Number(subScore);
+              if (isNaN(numericSubScore)) continue;
+
+              // Find the sub-criteria to validate against
+              const subCriteria = targetComponent?.subCriteria.find(sc => sc.id === subCriteriaId);
+              if (!subCriteria) {
+                throw new Error(`Sub-criteria not found: ${subCriteriaId}`);
+              }
+
+              // Validate sub-criteria score doesn't exceed maximum
+              if (numericSubScore > subCriteria.maxScore) {
+                throw new Error(
+                  `Score ${numericSubScore} for sub-criteria "${subCriteria.name}" exceeds maximum allowed ${subCriteria.maxScore} marks`
+                );
+              }
+              if (numericSubScore < 0) {
+                throw new Error(
+                  `Score ${numericSubScore} for sub-criteria "${subCriteria.name}" cannot be negative`
+                );
+              }
+            }
+          }
+
           // Find or create student assessment score record
           let studentScore = await tx.studentAssessmentScore.findFirst({
             where: {
@@ -189,13 +254,15 @@ export async function POST(request: NextRequest) {
 
           if (!studentScore) {
             // Create new student assessment score
+            const createData: any = {
+              studentId,
+              assessmentSchemaId,
+              enteredBy: userId,
+              branchId,
+            };
+            
             studentScore = await tx.studentAssessmentScore.create({
-              data: {
-                studentId,
-                assessmentSchemaId,
-                enteredBy: userId,
-                branchId,
-              },
+              data: createData,
               include: {
                 componentScores: true,
               },
@@ -203,7 +270,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Handle component score
-          if (componentId) {
+          if (componentId && studentScore) {
             const existingComponentScore = studentScore.componentScores.find(
               cs => cs.componentId === componentId
             );
@@ -268,7 +335,9 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          savedScores.push(studentScore);
+          if (studentScore) {
+            savedScores.push(studentScore as any);
+          }
         }
 
         return savedScores;
@@ -296,6 +365,97 @@ export async function POST(request: NextRequest) {
     console.error('Error saving assessment scores:', error);
     return NextResponse.json(
       { error: 'Failed to save assessment scores' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const studentId = searchParams.get('studentId');
+    const assessmentSchemaId = searchParams.get('assessmentSchemaId');
+    const componentId = searchParams.get('componentId');
+
+    if (!studentId || !assessmentSchemaId) {
+      return NextResponse.json(
+        { error: 'studentId and assessmentSchemaId are required' },
+        { status: 400 }
+      );
+    }
+
+    await db.$transaction(async (tx) => {
+      // Find the student assessment score
+      const studentScore = await tx.studentAssessmentScore.findFirst({
+        where: {
+          studentId,
+          assessmentSchemaId,
+        },
+        include: {
+          componentScores: {
+            include: {
+              subCriteriaScores: true,
+            },
+          },
+        },
+      });
+
+      if (!studentScore) {
+        throw new Error('Student assessment score not found');
+      }
+
+      if (componentId) {
+        // Remove specific component score
+        const componentScore = studentScore.componentScores.find(cs => cs.componentId === componentId);
+        if (componentScore) {
+          // Delete sub-criteria scores first
+          await tx.subCriteriaScore.deleteMany({
+            where: {
+              componentScoreId: componentScore.id,
+            },
+          });
+
+          // Delete component score
+          await tx.componentScore.delete({
+            where: { id: componentScore.id },
+          });
+        }
+      } else {
+        // Remove all scores for this student and assessment
+        // Delete all sub-criteria scores
+        const componentScoreIds = studentScore.componentScores.map(cs => cs.id);
+        if (componentScoreIds.length > 0) {
+          await tx.subCriteriaScore.deleteMany({
+            where: {
+              componentScoreId: { in: componentScoreIds },
+            },
+          });
+
+          // Delete all component scores
+          await tx.componentScore.deleteMany({
+            where: {
+              studentAssessmentScoreId: studentScore.id,
+            },
+          });
+        }
+
+        // Delete the main student assessment score
+        await tx.studentAssessmentScore.delete({
+          where: { id: studentScore.id },
+        });
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Score removed successfully' });
+  } catch (error) {
+    console.error('Error removing assessment score:', error);
+    return NextResponse.json(
+      { error: 'Failed to remove assessment score' },
       { status: 500 }
     );
   }

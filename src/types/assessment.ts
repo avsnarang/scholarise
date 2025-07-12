@@ -10,7 +10,7 @@ export interface AppliedClass {
 export interface AssessmentSchema {
   id: string;
   name: string;
-  term: string;
+  termId: string;
   classId: string;
   subjectId: string;
   totalMarks: number;
@@ -23,6 +23,7 @@ export interface AssessmentSchema {
   appliedClasses?: AppliedClass[]; // JSON field storing class-section selections
   components: AssessmentComponent[];
   studentScores?: StudentAssessmentScore[];
+  term?: { id: string; name: string; description?: string }; // Related term data
 }
 
 export interface AssessmentComponent {
@@ -68,6 +69,10 @@ export interface StudentAssessmentScore {
   enteredAt: Date;
   updatedAt: Date;
   branchId: string;
+  // Attendance tracking fields
+  attendanceStatus: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'LEAVE';
+  attendanceReason?: string;
+  attendanceNotes?: string;
   componentScores: ComponentScore[];
 }
 
@@ -121,7 +126,7 @@ export enum AssessmentPermissionType {
 // Form types for creating/editing schemas
 export interface CreateAssessmentSchemaInput {
   name: string;
-  term: string;
+  termId: string;
   classIds: string[];
   subjectId: string;
   totalMarks: number;

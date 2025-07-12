@@ -5,13 +5,8 @@ import { PageWrapper } from "@/components/layout/page-wrapper";
 import {
   Calendar,
   ClipboardCheck,
-  Settings,
   FileText,
-  Users,
-  Clock,
   BarChart3,
-  BookOpen,
-  MapPin,
   Target,
 } from "lucide-react";
 
@@ -51,33 +46,7 @@ const examinationGroups = [
       },
     ],
   },
-  {
-    title: "Exam Management",
-    description: "Schedule exams and manage seating arrangements",
-    items: [
-      {
-        title: "Exam Scheduling",
-        description: "Schedule traditional exams and set timetables",
-        icon: <Clock className="h-6 w-6" />,
-        href: "/examination/schedule",
-        disabled: false,
-      },
-      {
-        title: "Seating Plans",
-        description: "Create and manage exam seating arrangements",
-        icon: <MapPin className="h-6 w-6" />,
-        href: "/examination/seating-plans",
-        disabled: false,
-      },
-      {
-        title: "Traditional Exams",
-        description: "Manage traditional examination system",
-        icon: <BookOpen className="h-6 w-6" />,
-        href: "/examination/traditional",
-        disabled: false,
-      },
-    ],
-  },
+
   {
     title: "Score & Results",
     description: "Enter scores, view results, and generate reports",

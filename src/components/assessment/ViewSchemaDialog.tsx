@@ -100,7 +100,7 @@ export function ViewSchemaDialog({ schema, isOpen, onOpenChange }: { schema: any
                     <Label className="text-sm font-medium">Term</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{schema.term}</span>
+                      <span>{schema.termRelation?.name || schema.term}</span>
                     </div>
                   </div>
                   <div>

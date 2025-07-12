@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -18,7 +18,11 @@ import {
   Clock,
   GraduationCap,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  CheckCircle2,
+  Snowflake,
+  FilePen
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -95,16 +99,9 @@ function ScoreEntryContent() {
       )
     : allSections;
 
-  // Fetch assessment configurations using tRPC
-  const { data: assessmentConfigurations = [], isLoading: configsLoading } = api.examination.getAssessmentConfigurations.useQuery(
-    { 
-      branchId: currentBranchId || undefined,
-      classId: selectedClassId || undefined,
-      sectionId: selectedSectionId === "all" ? undefined : selectedSectionId || undefined,
-      isActive: true 
-    },
-    { enabled: !!currentBranchId && !!selectedClassId }
-  );
+  // Legacy assessment configurations no longer available
+  const assessmentConfigurations: any[] = [];
+  const configsLoading = false;
 
   // Fetch assessment schemas using direct API call
   const [assessmentSchemas, setAssessmentSchemas] = useState<any[]>([]);
@@ -177,6 +174,18 @@ function ScoreEntryContent() {
 
   const isLoadingAssessments = schemasLoading || configsLoading;
 
+  // Helper function to get schema status
+  const getSchemaStatus = (schema: any) => {
+    if (!schema.isPublished && schema.isActive) {
+      return 'draft';
+    } else if (schema.isPublished && schema.isActive) {
+      return 'published';
+    } else if (schema.isPublished && !schema.isActive) {
+      return 'frozen';
+    }
+    return 'inactive';
+  };
+
   // Filter schemas by teacher's subjects if user is a teacher
   const availableSchemas = isTeacher && !isAdmin && !isSuperAdmin && selectedClassId
     ? allAssessments.filter((schema: any) => {
@@ -186,9 +195,14 @@ function ScoreEntryContent() {
           (selectedSectionId === "all" || !assignment.sectionId || assignment.sectionId === selectedSectionId)
         );
         
-        return hasAssignment;
+        // For teachers, exclude draft schemas (they should only see published and frozen)
+        const schemaStatus = getSchemaStatus(schema);
+        return hasAssignment && (schemaStatus === 'published' || schemaStatus === 'frozen');
       })
-    : allAssessments;
+    : allAssessments.filter((schema: any) => {
+        // For admins, show all schemas
+        return true;
+      });
 
   // Fetch students for selected class and section
   const { data: studentsData, isLoading: studentsLoading } = api.student.getAll.useQuery(
@@ -456,10 +470,10 @@ function ScoreEntryContent() {
 
   if (!currentBranchId || !currentSessionId) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#00501B]">Assessment Score Entry</h1>
-          <p className="mt-2 text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Assessment Score Entry</h1>
+          <p className="text-sm text-muted-foreground">
             Enter and manage student assessment scores
           </p>
         </div>
@@ -475,31 +489,28 @@ function ScoreEntryContent() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#00501B]">Assessment Score Entry</h1>
-        <p className="mt-2 text-gray-500">
-          Enter and manage student assessment scores
-        </p>
+    <div className="space-y-4">
+      {/* Compact Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Assessment Score Entry</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter and manage student assessment scores
+          </p>
+        </div>
       </div>
 
-      {/* Assessment Configuration Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Assessment Configuration
-          </CardTitle>
-          <CardDescription>
-            Configure your assessment parameters to begin score entry
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Class Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Class</Label>
+      {/* Minimalist Assessment Configuration */}
+      <div className="bg-background border border-border rounded-lg">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Assessment Configuration</h2>
+        </div>
+        
+        <div className="p-6">
+          {/* Enhanced Dropdown Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Class</label>
               <Select
                 value={selectedClassId}
                 onValueChange={(value) => {
@@ -509,15 +520,15 @@ function ScoreEntryContent() {
                   setActiveComponentTab("");
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
+                <SelectTrigger className="h-12 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20 hover:bg-muted/70 transition-colors">
+                  <SelectValue placeholder="Select class" className="font-medium" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border border-border shadow-md">
+                <SelectContent className="bg-background border border-border shadow-lg">
                   {classesLoading ? (
                     <SelectItem value="loading" disabled>Loading...</SelectItem>
                   ) : (
                     classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id} className="cursor-pointer hover:bg-accent">
+                      <SelectItem key={cls.id} value={cls.id}>
                         {cls.name}
                       </SelectItem>
                     ))
@@ -526,9 +537,8 @@ function ScoreEntryContent() {
               </Select>
             </div>
 
-            {/* Section Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Section</Label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Section</label>
               <Select
                 value={selectedSectionId}
                 onValueChange={(value) => {
@@ -538,17 +548,17 @@ function ScoreEntryContent() {
                 }}
                 disabled={!selectedClassId}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
+                <SelectTrigger className="h-12 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20 hover:bg-muted/70 transition-colors disabled:opacity-50">
+                  <SelectValue placeholder="Select section" className="font-medium" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border border-border shadow-md">
+                <SelectContent className="bg-background border border-border shadow-lg">
                   {sectionsLoading ? (
                     <SelectItem value="loading" disabled>Loading...</SelectItem>
                   ) : (
                     <>
-                      <SelectItem value="all" className="cursor-pointer hover:bg-accent">All Sections</SelectItem>
+                      <SelectItem value="all">All Sections</SelectItem>
                       {sections.map((section) => (
-                        <SelectItem key={section.id} value={section.id} className="cursor-pointer hover:bg-accent">
+                        <SelectItem key={section.id} value={section.id}>
                           {section.name}
                         </SelectItem>
                       ))}
@@ -558,9 +568,8 @@ function ScoreEntryContent() {
               </Select>
             </div>
 
-            {/* Assessment Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Assessment</Label>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Assessment</label>
               <Select
                 value={selectedSchemaId}
                 onValueChange={(value) => {
@@ -569,17 +578,54 @@ function ScoreEntryContent() {
                 }}
                 disabled={!selectedClassId || !selectedSectionId}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assessment" />
+                <SelectTrigger className="h-12 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20 hover:bg-muted/70 transition-colors disabled:opacity-50">
+                  <SelectValue placeholder="Select assessment" className="font-medium">
+                    {selectedSchema && (
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex-1">
+                          <div className="font-medium text-foreground">{selectedSchema.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {selectedSchema.subject?.name} • {selectedSchema.type === 'schema' ? selectedSchema.totalMarks : selectedSchema.maxMarks} marks
+                          </div>
+                        </div>
+                        {getSchemaStatus(selectedSchema) === 'published' && (
+                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 ml-2">
+                            Published
+                          </Badge>
+                        )}
+                        {getSchemaStatus(selectedSchema) === 'frozen' && (
+                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200 ml-2">
+                            Frozen
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-background border border-border shadow-md">
+                <SelectContent className="bg-background border border-border shadow-lg">
                   {isLoadingAssessments ? (
                     <SelectItem value="loading" disabled>Loading...</SelectItem>
                   ) : (
                     availableSchemas.map((schema: any) => (
-                      <SelectItem key={schema.id} value={schema.id} className="cursor-pointer hover:bg-accent">
+                      <SelectItem 
+                        key={schema.id} 
+                        value={schema.id}
+                        data-status={getSchemaStatus(schema)}
+                      >
                         <div className="py-1">
-                          <div className="font-medium text-sm">{schema.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{schema.name}</span>
+                            {getSchemaStatus(schema) === 'frozen' && (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                                Frozen
+                              </Badge>
+                            )}
+                            {getSchemaStatus(schema) === 'published' && (
+                              <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                                Published
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {schema.subject?.name} • {schema.type === 'schema' ? schema.totalMarks : schema.maxMarks} marks
                           </div>
@@ -592,66 +638,73 @@ function ScoreEntryContent() {
             </div>
           </div>
 
-          {/* Assessment Summary */}
+          {/* Enhanced Assessment Summary */}
           {selectedSchema && (
-            <div className="pt-4 border-t">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <BookOpen className="h-3 w-3" />
-                  {selectedSchema.subject?.name}
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {selectedSchema.category?.name || selectedSchema.term}
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {studentsInClass.length} students
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <GraduationCap className="h-3 w-3" />
-                  Max: {selectedSchema.type === 'schema' ? selectedSchema.totalMarks : selectedSchema.maxMarks} marks
-                </Badge>
-                
-                <Button 
-                  variant="ghost" 
-                  onClick={resetForm}
-                  size="sm"
-                  className="ml-auto"
-                >
-                  Clear All
-                </Button>
-              </div>
-
-              {/* Progress Indicator */}
-              {existingScores.length > 0 && (
-                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800 dark:text-green-200">Score Entry Progress</span>
+            <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-1 h-16 bg-primary rounded-full"></div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-semibold text-foreground">{selectedSchema.name}</h3>
+                        {getSchemaStatus(selectedSchema) === 'published' && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                            Published
+                          </div>
+                        )}
+                        {getSchemaStatus(selectedSchema) === 'frozen' && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                            <Snowflake className="h-3 w-3" />
+                            Frozen
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground">
+                        <span className="font-medium">{selectedSchema.subject?.name}</span>
+                        <span className="mx-2">•</span>
+                        <span>{selectedSchema.type === 'schema' ? selectedSchema.totalMarks : selectedSchema.maxMarks} marks</span>
+                        {getSchemaStatus(selectedSchema) === 'frozen' && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span className="text-amber-600 font-medium">Read-only mode</span>
+                          </>
+                        )}
+                      </div>
+                      {selectedSchema.components && selectedSchema.components.length > 0 && (
+                        <div className="text-sm text-muted-foreground mt-2">
+                          {selectedSchema.components.length} component{selectedSchema.components.length !== 1 ? 's' : ''} configured
+                        </div>
+                      )}
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                      {Math.round((existingScores.length / studentsInClass.length) * 100)}% complete
-                    </Badge>
                   </div>
-                  <div className="w-full bg-green-100 dark:bg-green-900 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${studentsInClass.length > 0 ? (existingScores.length / studentsInClass.length) * 100 : 0}%` 
-                      }}
-                    />
+                  
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-foreground">{studentsInClass.length}</div>
+                    <div className="text-sm text-muted-foreground">students</div>
                   </div>
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                    {existingScores.length} of {studentsInClass.length} students completed
-                  </p>
                 </div>
-              )}
+                
+                {/* Enhanced Frozen Alert */}
+                {getSchemaStatus(selectedSchema) === 'frozen' && (
+                  <div className="mt-4 p-4 bg-amber-50/80 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                        <Snowflake className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-amber-800">Assessment Frozen</div>
+                        <div className="text-xs text-amber-700">This assessment is locked and can only be viewed. No changes can be made to scores.</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Score Entry Section */}
       {selectedSchema ? (
@@ -674,48 +727,63 @@ function ScoreEntryContent() {
           </Card>
         ) : studentsInClass.length > 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
                 Score Entry: {selectedSchema.name}
               </CardTitle>
-              <CardDescription>
-                Enter scores for this assessment
-              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {/* Check if assessment schema has components */}
               {selectedSchema.type === 'schema' && selectedSchema.components && selectedSchema.components.length > 0 ? (
-                // Multi-component assessment with tabs
-                <Tabs 
-                  value={activeComponentTab || selectedSchema.components[0]?.id} 
-                  onValueChange={setActiveComponentTab}
-                  className="w-full"
-                >
-                  <div className="border-b px-6">
-                    <TabsList className="bg-transparent h-12 p-0">
-                      {selectedSchema.components.map((component: any) => (
-                        <TabsTrigger 
-                          key={component.id} 
-                          value={component.id}
-                          className="data-[state=active]:bg-background data-[state=active]:shadow-sm border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
-                        >
-                          <span>{component.name}</span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            ({component.rawMaxScore || component.maxScore})
-                          </span>
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
+                // Multi-component assessment with material tabs
+                <div className="w-full">
+                  {/* Material Tab Navigation */}
+                  <div className="border-b border-border bg-background">
+                    <div className="flex">
+                      {selectedSchema.components.map((component: any, index: number) => {
+                        const isActive = (activeComponentTab || selectedSchema.components[0]?.id) === component.id;
+                        return (
+                          <button
+                            key={component.id}
+                            onClick={() => setActiveComponentTab(component.id)}
+                            className={`
+                              relative flex-1 px-6 py-4 text-sm font-medium transition-all duration-200 
+                              border-b-2 text-center
+                              ${isActive 
+                                ? 'text-primary border-primary bg-primary/5' 
+                                : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30'
+                              }
+                            `}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{component.name}</span>
+                              <span className={`
+                                text-xs px-2 py-0.5 rounded-full
+                                ${isActive 
+                                  ? 'bg-primary/20 text-primary' 
+                                  : 'bg-muted text-muted-foreground'
+                                }
+                              `}>
+                                {component.rawMaxScore || component.maxScore}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   
                   {selectedSchema.components.map((component: any) => (
-                    <TabsContent key={component.id} value={component.id} className="m-0">
+                    <div 
+                      key={component.id} 
+                      className={`${(activeComponentTab || selectedSchema.components[0]?.id) === component.id ? 'block' : 'hidden'}`}
+                    >
                       <ComponentScoreEntry
                         schema={{
                           id: selectedSchema.id,
                           name: selectedSchema.name,
-                          term: selectedSchema.term,
+                          term: selectedSchema.termRelation?.name || selectedSchema.term,
                           classId: selectedSchema.classId,
                           subjectId: selectedSchema.subjectId || "",
                           totalMarks: selectedSchema.totalMarks,
@@ -736,18 +804,19 @@ function ScoreEntryContent() {
                         }))}
                         existingScores={componentScores[component.id] || []}
                         onSave={(scores) => handleSaveScoresForComponent(component.id, scores)}
+                        onRefresh={() => refreshComponentScores(component.id)}
                         branchId={currentBranchId || ""}
-                      />
-                    </TabsContent>
+                        />
+                    </div>
                   ))}
-                </Tabs>
+                </div>
               ) : (
                 // Single component assessment or assessment configuration
                 <ComponentScoreEntry
                   schema={{
                     id: selectedSchema.id,
                     name: selectedSchema.name,
-                    term: selectedSchema.type === 'schema' ? selectedSchema.term : (selectedSchema.category?.name || "Assessment"),
+                                          term: selectedSchema.type === 'schema' ? (selectedSchema.termRelation?.name || selectedSchema.term) : (selectedSchema.category?.name || "Assessment"),
                     classId: selectedSchema.classId,
                     subjectId: selectedSchema.subjectId || "",
                     totalMarks: selectedSchema.type === 'schema' ? selectedSchema.totalMarks : selectedSchema.maxMarks,
@@ -773,6 +842,7 @@ function ScoreEntryContent() {
                   }))}
                   existingScores={componentScores["main"] || []}
                   onSave={(scores) => handleSaveScoresForComponent("main", scores)}
+                  onRefresh={() => refreshComponentScores("main")}
                   branchId={currentBranchId || ""}
                 />
               )}
@@ -780,12 +850,12 @@ function ScoreEntryContent() {
           </Card>
         ) : (
           <Card>
-            <CardContent className="flex items-center justify-center py-16">
+            <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
-                <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Students Found</h3>
-                <p className="text-muted-foreground max-w-md">
-                  No students found for the selected class and section. Please check your selection or contact administration.
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Students Found</h3>
+                <p className="text-muted-foreground text-sm max-w-md">
+                  No students found for the selected class and section. Please check your selection.
                 </p>
               </div>
             </CardContent>
@@ -793,12 +863,12 @@ function ScoreEntryContent() {
         )
       ) : (
         <Card>
-          <CardContent className="flex items-center justify-center py-16">
+          <CardContent className="flex items-center justify-center py-12">
             <div className="text-center">
-              <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-              <h3 className="text-xl font-semibold mb-3">Ready to Begin</h3>
-              <p className="text-muted-foreground mb-4 max-w-md">
-                Select a class, section, and assessment above to start entering scores for your students.
+              <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Ready to Begin</h3>
+              <p className="text-muted-foreground text-sm mb-4 max-w-md">
+                Select a class, section, and assessment above to start entering scores.
               </p>
               {isLoadingAssessments && (
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">

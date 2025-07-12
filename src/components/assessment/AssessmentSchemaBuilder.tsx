@@ -25,7 +25,7 @@ import type { CreateAssessmentSchemaInput, AssessmentSchemaTemplate } from '@/ty
 // Validation schema
 const assessmentSchemaSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  term: z.string().min(1, 'Term is required'),
+  termId: z.string().min(1, 'Term is required'),
   classIds: z.array(z.string()).min(1, 'At least one Class & Section is required'),
   subjectId: z.string().min(1, 'Subject is required'),
   totalMarks: z.number().min(1, 'Total marks must be positive'),
@@ -50,6 +50,7 @@ interface AssessmentSchemaBuilderProps {
   initialData?: CreateAssessmentSchemaInput;
   classes: Array<{ id: string; name: string; sections?: Array<{ id: string; name: string }> }>;
   subjects: Array<{ id: string; name: string }>;
+  terms: Array<{ id: string; name: string; description?: string }>;
   onSave: (data: CreateAssessmentSchemaInput) => Promise<void>;
   onPreview?: (data: CreateAssessmentSchemaInput) => void;
 }
@@ -58,6 +59,7 @@ export function AssessmentSchemaBuilder({
   initialData,
   classes,
   subjects,
+  terms,
   onSave,
   onPreview
 }: AssessmentSchemaBuilderProps) {
@@ -69,7 +71,7 @@ export function AssessmentSchemaBuilder({
     resolver: zodResolver(assessmentSchemaSchema),
     defaultValues: initialData || {
       name: '',
-      term: '',
+      termId: '',
       classIds: [],
       subjectId: '',
       totalMarks: 100,
@@ -160,7 +162,11 @@ export function AssessmentSchemaBuilder({
 
   const loadTemplate = useCallback((template: AssessmentSchemaTemplate) => {
     form.setValue('name', `${template.subject} ${template.term}`);
-    form.setValue('term', template.term);
+    // Find the term ID by name for the template
+    const termMatch = terms.find(t => t.name === template.term);
+    if (termMatch) {
+      form.setValue('termId', termMatch.id);
+    }
     form.setValue('totalMarks', template.totalMarks);
     
     const components = template.components.map((comp, index) => ({
@@ -180,7 +186,7 @@ export function AssessmentSchemaBuilder({
     }));
 
     form.setValue('components', components);
-  }, [form]);
+  }, [form, terms]);
 
   // Sample templates
   const templates: AssessmentSchemaTemplate[] = [
@@ -321,14 +327,27 @@ export function AssessmentSchemaBuilder({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="term">Term</Label>
-                  <Input
-                    id="term"
-                    placeholder="e.g., Term-1, Half-Yearly"
-                    {...form.register('term')}
+                  <Label htmlFor="termId">Term</Label>
+                  <Controller
+                    name="termId"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select term" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md">
+                          {terms.map((term) => (
+                            <SelectItem key={term.id} value={term.id}>
+                              {term.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
-                  {form.formState.errors.term && (
-                    <p className="text-sm text-destructive">{form.formState.errors.term.message}</p>
+                  {form.formState.errors.termId && (
+                    <p className="text-sm text-destructive">{form.formState.errors.termId.message}</p>
                   )}
                 </div>
 

@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       include: {
         class: true,
         subject: true,
+        termRelation: true,
         components: {
           include: {
             subCriteria: true,
@@ -27,11 +28,6 @@ export async function GET(request: NextRequest) {
           orderBy: { order: 'asc' },
         },
         permissions: true,
-        _count: {
-          select: {
-            studentScores: true,
-          },
-        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -58,7 +54,7 @@ export async function POST(request: NextRequest) {
     
     const {
       name,
-      term,
+      termId,
       classIds,
       subjectId,
       branchId,
@@ -69,9 +65,9 @@ export async function POST(request: NextRequest) {
     } = data;
 
     // Validate required fields
-    if (!name || !term || !classIds || !Array.isArray(classIds) || classIds.length === 0 || !subjectId || !branchId) {
+    if (!name || !termId || !classIds || !Array.isArray(classIds) || classIds.length === 0 || !subjectId || !branchId) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, term, classIds, subjectId, branchId' },
+        { error: 'Missing required fields: name, termId, classIds, subjectId, branchId' },
         { status: 400 }
       );
     }
@@ -178,7 +174,7 @@ export async function POST(request: NextRequest) {
         branchId,
         classId: primaryClassId,
         subjectId,
-        term,
+        term: String(termId),
       },
     });
 
@@ -190,7 +186,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that all required fields are present
-    if (!primaryClassId || !subjectId || !branchId || !name || !term) {
+    if (!primaryClassId || !subjectId || !branchId || !name || !termId) {
       return NextResponse.json(
         { error: 'Missing required fields for database operation' },
         { status: 400 }
@@ -203,7 +199,7 @@ export async function POST(request: NextRequest) {
       const newSchema = await tx.assessmentSchema.create({
         data: {
           name: String(name),
-          term: String(term),
+          term: String(termId), // term field stores the Term ID as foreign key
           classId: String(primaryClassId),
           subjectId: String(subjectId),
           branchId: String(branchId),
@@ -270,6 +266,7 @@ export async function POST(request: NextRequest) {
       include: {
         class: true,
         subject: true,
+        termRelation: true,
         components: {
           include: {
             subCriteria: true,
@@ -329,7 +326,7 @@ export async function PATCH(request: NextRequest) {
     
     const {
       name,
-      term,
+      termId,
       classIds,
       subjectId,
       branchId,
@@ -340,9 +337,9 @@ export async function PATCH(request: NextRequest) {
     } = data;
 
     // Validate required fields
-    if (!name || !term || !classIds || !Array.isArray(classIds) || classIds.length === 0 || !subjectId || !branchId) {
+    if (!name || !termId || !classIds || !Array.isArray(classIds) || classIds.length === 0 || !subjectId || !branchId) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, term, classIds, subjectId, branchId' },
+        { error: 'Missing required fields: name, termId, classIds, subjectId, branchId' },
         { status: 400 }
       );
     }
@@ -351,8 +348,7 @@ export async function PATCH(request: NextRequest) {
     const existingSchema = await db.assessmentSchema.findUnique({
       where: { id: schemaId },
       include: { 
-        components: { include: { subCriteria: true } },
-        studentScores: true
+        components: { include: { subCriteria: true } }
       }
     });
 
@@ -360,8 +356,17 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Assessment schema not found' }, { status: 404 });
     }
 
+    // Check if there are any student scores by checking ComponentScore records
+    const componentScoreCount = await db.componentScore.count({
+      where: {
+        component: {
+          assessmentSchemaId: schemaId
+        }
+      }
+    });
+
     // Check if there are any student scores - prevent editing if scores exist
-    if (existingSchema.studentScores.length > 0) {
+    if (componentScoreCount > 0) {
       return NextResponse.json(
         { 
           error: 'Cannot edit assessment schema with existing student scores. Please remove all scores first.',
@@ -457,7 +462,7 @@ export async function PATCH(request: NextRequest) {
         where: { id: schemaId },
         data: {
           name: String(name),
-          term: String(term),
+          term: String(termId), // term field stores the Term ID as foreign key
           classId: String(primaryClassId),
           subjectId: String(subjectId),
           branchId: String(branchId),
@@ -575,6 +580,120 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const schemaId = searchParams.get('id');
+    const action = searchParams.get('action');
+
+    if (!schemaId) {
+      return NextResponse.json({ error: 'Schema ID is required' }, { status: 400 });
+    }
+
+    if (!action || !['set-draft', 'set-published', 'freeze-marks'].includes(action)) {
+      return NextResponse.json({ 
+        error: 'Valid action is required: set-draft, set-published, freeze-marks' 
+      }, { status: 400 });
+    }
+
+    // Check if schema exists
+    const existingSchema = await db.assessmentSchema.findUnique({
+      where: { id: schemaId },
+      include: {
+        components: true,
+      },
+    });
+
+    if (!existingSchema) {
+      return NextResponse.json({ error: 'Assessment schema not found' }, { status: 404 });
+    }
+
+    // Handle different status actions using existing fields creatively:
+    // Draft: isActive=true, isPublished=false (not visible to teachers)
+    // Published: isActive=true, isPublished=true (visible and editable)  
+    // Frozen: isActive=false, isPublished=true (visible but not editable)
+    let updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    switch (action) {
+      case 'set-draft':
+        // Set to draft - not visible to teachers in marks entry
+        updateData.isActive = true;
+        updateData.isPublished = false;
+        break;
+
+      case 'set-published':
+        // Set to published - visible to teachers and allows marks entry
+        updateData.isActive = true;
+        updateData.isPublished = true;
+        break;
+
+      case 'freeze-marks':
+        // Freeze marks entry - visible to teachers but no marks entry allowed
+        // Use isActive=false to indicate frozen state while keeping isPublished=true
+        if (!existingSchema.isPublished) {
+          return NextResponse.json({ 
+            error: 'Schema must be published before marks entry can be frozen' 
+          }, { status: 400 });
+        }
+        updateData.isActive = false;
+        updateData.isPublished = true;
+        break;
+    }
+
+    // Update the schema
+    const updatedSchema = await db.assessmentSchema.update({
+      where: { id: schemaId },
+      data: updateData,
+    });
+
+    // Fetch the updated schema with all relations
+    const schemaWithRelations = await db.assessmentSchema.findUnique({
+      where: { id: schemaId },
+      include: {
+        class: true,
+        subject: true,
+        termRelation: true,
+        components: {
+          include: {
+            subCriteria: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      message: `Assessment schema status updated successfully`,
+      schema: schemaWithRelations,
+      action: action,
+    });
+
+  } catch (error) {
+    console.error('Error updating assessment schema status:', error);
+    
+    let errorMessage = 'Failed to update assessment schema status';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return NextResponse.json(
+      { 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -593,7 +712,6 @@ export async function DELETE(request: NextRequest) {
     const existingSchema = await db.assessmentSchema.findUnique({
       where: { id: schemaId },
       include: {
-        studentScores: true,
         components: {
           include: {
             subCriteria: true,
@@ -607,8 +725,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Assessment schema not found' }, { status: 404 });
     }
 
-    // Check if there are any student scores - might want to prevent deletion if scores exist
-    if (existingSchema.studentScores.length > 0) {
+    // Check if there are any component scores - prevent deletion if scores exist
+    const hasComponentScores = existingSchema.components.some(component => 
+      component.componentScores.length > 0
+    );
+
+    if (hasComponentScores) {
       return NextResponse.json(
         { 
           error: 'Cannot delete assessment schema with existing student scores. Please remove all scores first.',

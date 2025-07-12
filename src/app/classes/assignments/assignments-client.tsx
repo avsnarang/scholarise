@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter, CardAction } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PageWrapper } from "@/components/layout/page-wrapper";
 import { 
   Plus, 
   Edit, 
@@ -27,7 +28,13 @@ import {
   GraduationCap,
   ChevronDown,
   Filter,
-  X
+  X,
+  TrendingUp,
+  PlusCircle,
+  FileDown,
+  UserCheck,
+  BadgeCheck,
+  Settings
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -621,7 +628,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
   const [teacherId, setTeacherId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [classId, setClassId] = useState("");
-  const [sectionId, setSectionId] = useState("");
+  const [sectionId, setSectionId] = useState("all");
   const [isActive, setIsActive] = useState(true);
 
   // Fetch data for dropdowns
@@ -691,7 +698,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
     setTeacherId("");
     setSubjectId("");
     setClassId("");
-    setSectionId("");
+    setSectionId("all");
     setIsActive(true);
   };
 
@@ -701,7 +708,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
       setTeacherId(assignment.teacherId);
       setSubjectId(assignment.subjectId);
       setClassId(assignment.classId);
-      setSectionId(assignment.sectionId || "");
+      setSectionId(assignment.sectionId || "all");
       setIsActive(assignment.isActive);
     } else {
       resetForm();
@@ -724,7 +731,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
       teacherId,
       subjectId,
       classId,
-      sectionId: sectionId || null,
+      sectionId: sectionId === "all" ? null : sectionId,
       isActive,
       branchId: currentBranchId,
     };
@@ -784,7 +791,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
             <Label htmlFor="class">Class *</Label>
             <Select value={classId} onValueChange={(value) => {
               setClassId(value);
-              setSectionId(""); // Reset section when class changes
+              setSectionId("all"); // Reset section when class changes
             }} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
@@ -806,7 +813,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
                 <SelectValue placeholder="Select section (leave empty for all sections)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All sections</SelectItem>
+                <SelectItem value="all">All sections</SelectItem>
                 {sections.map((section) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.name}

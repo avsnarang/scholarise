@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { assessmentCalculator } from '@/lib/assessment-calculator';
+import { useDefaultGradeScale } from '@/hooks/useGradeScales';
 import type { AssessmentSchema } from '@/types/assessment';
 
 interface ResultsDashboardProps {
@@ -20,6 +21,9 @@ interface ResultsDashboardProps {
 export function ResultsDashboard({ schema, studentScores, students }: ResultsDashboardProps) {
   const [selectedView, setSelectedView] = useState('overview');
   const [selectedComponent, setSelectedComponent] = useState<string>('all');
+  
+  // Get the default grade scale for the branch
+  const { defaultGradeScale, isLoading: gradeScaleLoading } = useDefaultGradeScale();
 
   // Calculate results for all students
   const calculatedResults = useMemo(() => {
@@ -36,14 +40,14 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
     });
   }, [schema, studentScores, students]);
 
-  // Generate class summary
+  // Generate class summary with grade scale
   const classSummary = useMemo(() => {
-    return assessmentCalculator.generateClassSummary(schema, studentScores);
-  }, [schema, studentScores]);
+    return assessmentCalculator.generateClassSummary(schema, studentScores, defaultGradeScale);
+  }, [schema, studentScores, defaultGradeScale]);
 
   // Grade distribution data for pie chart
   const gradeDistributionData = useMemo(() => {
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0', '#ffb347'];
+    const colors = ['#00501B', '#A65A20', '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0', '#ffb347'];
     return Object.entries(classSummary.gradeDistribution).map(([grade, count], index) => ({
       name: grade,
       value: count,
@@ -74,10 +78,31 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
     return sortedResults.slice(0, bottomCount);
   }, [calculatedResults]);
 
+  // Helper function to get grade for a percentage
+  const getGradeForPercentage = (percentage: number) => {
+    return assessmentCalculator.calculateGrade(percentage, defaultGradeScale);
+  };
+
+  // Helper function to get grade info with description
+  const getGradeInfoForPercentage = (percentage: number) => {
+    return assessmentCalculator.calculateGradeWithPoint(percentage, defaultGradeScale);
+  };
+
   const handleExportResults = () => {
     // In a real app, this would generate and download a report
     console.log('Exporting results...', calculatedResults);
   };
+
+  // Show loading state if grade scale is still loading
+  if (gradeScaleLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">Loading grade configuration...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,6 +111,11 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
           <h2 className="text-2xl font-bold">Assessment Results</h2>
           <p className="text-muted-foreground">
             {schema.name} - {calculatedResults.length} students evaluated
+            {defaultGradeScale && (
+              <span className="ml-2 text-sm">
+                • Using <strong>{defaultGradeScale.name}</strong> grade scale
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -134,7 +164,7 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
               {classSummary.averageScore.toFixed(1)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {classSummary.averagePercentage.toFixed(1)}% of total marks
+              {classSummary.averagePercentage.toFixed(1)}% • Grade: {getGradeForPercentage(classSummary.averagePercentage)}
             </p>
           </CardContent>
         </Card>
@@ -184,6 +214,11 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
             <Card>
               <CardHeader>
                 <CardTitle>Grade Distribution</CardTitle>
+                {defaultGradeScale && (
+                  <p className="text-sm text-muted-foreground">
+                    Based on {defaultGradeScale.name}
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -205,6 +240,25 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
+                
+                {/* Grade Scale Legend */}
+                {defaultGradeScale && defaultGradeScale.gradeRanges && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-medium">Grade Scale Reference</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {defaultGradeScale.gradeRanges
+                        .sort((a: any, b: any) => b.minPercentage - a.minPercentage)
+                        .map((range: any) => (
+                          <div key={range.id} className="flex justify-between">
+                            <span className="font-medium">{range.grade}:</span>
+                            <span className="text-muted-foreground">
+                              {range.minPercentage}%-{range.maxPercentage}%
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -220,7 +274,7 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
                     <XAxis dataKey="component" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="average" fill="#8884d8" />
+                    <Bar dataKey="average" fill="#00501B" />
                     <Bar dataKey="maximum" fill="#e0e0e0" opacity={0.3} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -236,27 +290,30 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {topPerformers.map((student, index) => (
-                    <div key={student.studentId} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center">
-                          {index + 1}
-                        </Badge>
-                        <div>
-                          <div className="font-medium">{student.studentName}</div>
-                          {student.rollNumber && (
-                            <div className="text-sm text-muted-foreground">Roll: {student.rollNumber}</div>
-                          )}
+                  {topPerformers.map((student, index) => {
+                    const gradeInfo = getGradeInfoForPercentage(student.finalPercentage || 0);
+                    return (
+                      <div key={student.studentId} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center">
+                            {index + 1}
+                          </Badge>
+                          <div>
+                            <div className="font-medium">{student.studentName}</div>
+                            {student.rollNumber && (
+                              <div className="text-sm text-muted-foreground">Roll: {student.rollNumber}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold">{student.finalScore?.toFixed(1)}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.finalPercentage?.toFixed(1)}% • {gradeInfo.grade}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold">{student.finalScore?.toFixed(1)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {student.finalPercentage?.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -267,22 +324,25 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {studentsNeedingAttention.map((student) => (
-                    <div key={student.studentId} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{student.studentName}</div>
-                        {student.rollNumber && (
-                          <div className="text-sm text-muted-foreground">Roll: {student.rollNumber}</div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-orange-600">{student.finalScore?.toFixed(1)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {student.finalPercentage?.toFixed(1)}%
+                  {studentsNeedingAttention.map((student) => {
+                    const gradeInfo = getGradeInfoForPercentage(student.finalPercentage || 0);
+                    return (
+                      <div key={student.studentId} className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{student.studentName}</div>
+                          {student.rollNumber && (
+                            <div className="text-sm text-muted-foreground">Roll: {student.rollNumber}</div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-orange-600">{student.finalScore?.toFixed(1)}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.finalPercentage?.toFixed(1)}% • {gradeInfo.grade}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -310,31 +370,40 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
                     </tr>
                   </thead>
                   <tbody>
-                    {calculatedResults.map((result) => (
-                      <tr key={result.studentId} className="border-b hover:bg-muted/50">
-                        <td className="p-2 font-medium">{result.studentName}</td>
-                        <td className="p-2">{result.rollNumber || '-'}</td>
-                        {result.componentScores?.map((compScore, index) => (
-                          <td key={index} className="text-center p-2">
-                            {compScore.calculatedScore?.toFixed(1) || 0}
+                    {calculatedResults.map((result) => {
+                      const gradeInfo = getGradeInfoForPercentage(result.finalPercentage || 0);
+                      return (
+                        <tr key={result.studentId} className="border-b hover:bg-muted/50">
+                          <td className="p-2 font-medium">{result.studentName}</td>
+                          <td className="p-2">{result.rollNumber || '-'}</td>
+                          {result.componentScores?.map((compScore, index) => (
+                            <td key={index} className="text-center p-2">
+                              {compScore.calculatedScore?.toFixed(1) || 0}
+                            </td>
+                          ))}
+                          <td className="text-center p-2 font-bold">
+                            {result.finalScore?.toFixed(1) || 0}
                           </td>
-                        ))}
-                        <td className="text-center p-2 font-bold">
-                          {result.finalScore?.toFixed(1) || 0}
-                        </td>
-                        <td className="text-center p-2">
-                          {result.finalPercentage?.toFixed(1) || 0}%
-                        </td>
-                        <td className="text-center p-2">
-                          <Badge variant={
-                            (result.finalPercentage || 0) >= 75 ? 'default' :
-                            (result.finalPercentage || 0) >= 50 ? 'secondary' : 'destructive'
-                          }>
-                            {assessmentCalculator.calculateGrade(result.finalPercentage || 0)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="text-center p-2">
+                            {result.finalPercentage?.toFixed(1) || 0}%
+                          </td>
+                          <td className="text-center p-2">
+                            <Badge 
+                              variant={
+                                (result.finalPercentage || 0) >= 75 ? 'default' :
+                                (result.finalPercentage || 0) >= 50 ? 'secondary' : 'destructive'
+                              }
+                              title={gradeInfo.description}
+                            >
+                              {gradeInfo.grade}
+                              {gradeInfo.gradePoint && (
+                                <span className="ml-1 text-xs">({gradeInfo.gradePoint})</span>
+                              )}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -367,7 +436,7 @@ export function ResultsDashboard({ schema, studentScores, students }: ResultsDas
                       
                       <div className="w-full bg-muted rounded-full h-2">
                         <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          className="bg-[#00501B] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${Math.min(componentPercentage, 100)}%` }}
                         />
                       </div>

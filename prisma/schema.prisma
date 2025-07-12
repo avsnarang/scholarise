@@ -9,161 +9,156 @@ datasource db {
 }
 
 model Branch {
-  id                   String                 @id @default(cuid())
-  name                 String
-  code                 String                 @unique
-  address              String?
-  city                 String?
-  state                String?
-  country              String?
-  phone                String?
-  email                String?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  order                Int                    @default(0)
-  admissionLeads       AdmissionLead[]
-  chapters             Chapter[]
-  classes              Class[]
-  classwiseFees        ClasswiseFee[]
-  departments          Department[]
-  designations         Designation[]
-  employees            Employee[]
-  employeeBranchAccess EmployeeBranchAccess[]
-  feeCollections       FeeCollection[]
-  feeHeads             FeeHead[]
-  feeTerms             FeeTerm[]
-  leavePolicies        LeavePolicy[]
-  moneyCollections     MoneyCollection[]
-  students             Student[]
-  teachers             Teacher[]
-  routes               TransportRoute[]
-  attendanceDevices    AttendanceDevice[]
-  attendanceLocations  AttendanceLocation[]
-  attendanceWindows    AttendanceWindow[]
-  locationTypes        LocationType[]
-  backgroundTasks      BackgroundTask[]
-  emailConfiguration   EmailConfiguration?
-  // Examination relations
-  examTypes            ExamType[]
-  examConfigurations   ExamConfiguration[]
-  examSchedules        ExamSchedule[]
-  seatingPlans         SeatingPlan[]
-  marksEntries         MarksEntry[]
-  assessmentCategories AssessmentCategory[]
-  assessmentConfigs    AssessmentConfiguration[]
-  assessmentMarks      AssessmentMarks[]
-  gradeScales          GradeScale[]
-  // Customizable Assessment Engine relations
-  assessmentSchemas    AssessmentSchema[]
+  id                      String                    @id @default(cuid())
+  name                    String
+  code                    String                    @unique
+  address                 String?
+  city                    String?
+  state                   String?
+  country                 String?
+  phone                   String?
+  email                   String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  order                   Int                       @default(0)
+  admissionLeads          AdmissionLead[]
+  AssessmentCategory      AssessmentCategory[]
+  AssessmentConfiguration AssessmentConfiguration[]
+  AssessmentMarks         AssessmentMarks[]
+  assessmentPermissions   AssessmentPermission[]
+  assessmentSchemas       AssessmentSchema[]
+  backgroundTasks         BackgroundTask[]
+  chapters                Chapter[]
+  classes                 Class[]
+  classwiseFees           ClasswiseFee[]
+  departments             Department[]
+  designations            Designation[]
+  emailConfiguration      EmailConfiguration?
+  employees               Employee[]
+  employeeBranchAccess    EmployeeBranchAccess[]
+  ExamConfiguration       ExamConfiguration[]
+  ExamSchedule            ExamSchedule[]
+  ExamType                ExamType[]
+  feeCollections          FeeCollection[]
+  feeHeads                FeeHead[]
+  feeTerms                FeeTerm[]
+  gradeScales             GradeScale[]
+  leavePolicies           LeavePolicy[]
+  MarksEntry              MarksEntry[]
+  moneyCollections        MoneyCollection[]
+  SeatingPlan             SeatingPlan[]
+  students                Student[]
   studentAssessmentScores StudentAssessmentScore[]
-  assessmentPermissions AssessmentPermission[]
-  terms                Term[]
-  subjectTeachers      SubjectTeacher[]  // Subject teacher assignments
+  subjectTeachers         SubjectTeacher[]
+  teachers                Teacher[]
+  terms                   Term[]
+  routes                  TransportRoute[]
+  attendanceDevices       AttendanceDevice[]
+  attendanceLocations     AttendanceLocation[]
+  attendanceWindows       AttendanceWindow[]
+  locationTypes           LocationType[]
 }
 
 model Student {
-  id                     String                @id @default(cuid())
-  admissionNumber        String                @unique
-  firstName              String
-  lastName               String
-  dateOfBirth            DateTime
-  gender                 String
-  address                String?
-  phone                  String?
-  email                  String?
-  personalEmail          String?
-  bloodGroup             String?
-  religion               String?
-  nationality            String?
-  caste                  String?
-  aadharNumber           String?
-  udiseId                String?
-  joinDate               DateTime              @default(now())
-  dateOfAdmission        DateTime?
-  rollNumber             Int?                  @db.SmallInt
-  isActive               Boolean               @default(true)
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  branchId               String
-  parentId               String?
-  username               String?
-  password               String?
-  permanentAddress       String?
-  permanentCity          String?
-  permanentState         String?
-  permanentCountry       String?
-  permanentZipCode       String?
-  correspondenceAddress  String?
-  correspondenceCity     String?
-  correspondenceState    String?
-  correspondenceCountry  String?
-  correspondenceZipCode  String?
-  previousSchool         String?
-  lastClassAttended      String?
-  mediumOfInstruction    String?
-  recognisedByStateBoard Boolean?
-  schoolCity             String?
-  schoolState            String?
-  reasonForLeaving       String?
-  clerkId                String?
-  cbse10RollNumber       String?
-  cbse12RollNumber       String?
-  sectionId              String?
-  academicRecords        AcademicRecord[]
-  feeCollections         FeeCollection[]
-  moneyCollectionItems   MoneyCollectionItem[]
-  branch                 Branch                @relation(fields: [branchId], references: [id])
-  parent                 Parent?               @relation(fields: [parentId], references: [id])
-  section                Section?              @relation(fields: [sectionId], references: [id])
-  studentAttendance      StudentAttendance[]
-  studentSiblings        StudentSibling[]      @relation("StudentToSibling")
-  siblingRelationships   StudentSibling[]      @relation("SiblingToStudent")
-  subjects               StudentSubject[]      // Student-Subject enrollments
-  transferCertificates   TransferCertificate[] // Transfer certificates for the student
-  transportAssignments   TransportAssignment[] // Transport assignments (bus routes)
-  // Examination relations
-  seatingPlans           SeatingPlan[]
-  marksEntries           MarksEntry[]
-  assessmentMarks        AssessmentMarks[]
-  // Customizable Assessment Engine relations
+  id                      String                   @id @default(cuid())
+  admissionNumber         String                   @unique
+  firstName               String
+  lastName                String
+  dateOfBirth             DateTime
+  gender                  String
+  address                 String?
+  phone                   String?
+  email                   String?
+  personalEmail           String?
+  bloodGroup              String?
+  religion                String?
+  nationality             String?
+  caste                   String?
+  aadharNumber            String?
+  udiseId                 String?
+  joinDate                DateTime                 @default(now())
+  dateOfAdmission         DateTime?
+  rollNumber              Int?                     @db.SmallInt
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  branchId                String
+  parentId                String?
+  username                String?
+  password                String?
+  permanentAddress        String?
+  permanentCity           String?
+  permanentState          String?
+  permanentCountry        String?
+  permanentZipCode        String?
+  correspondenceAddress   String?
+  correspondenceCity      String?
+  correspondenceState     String?
+  correspondenceCountry   String?
+  correspondenceZipCode   String?
+  previousSchool          String?
+  lastClassAttended       String?
+  mediumOfInstruction     String?
+  recognisedByStateBoard  Boolean?
+  schoolCity              String?
+  schoolState             String?
+  reasonForLeaving        String?
+  clerkId                 String?
+  cbse10RollNumber        String?
+  cbse12RollNumber        String?
+  sectionId               String?
+  academicRecords         AcademicRecord[]
+  AssessmentMarks         AssessmentMarks[]
+  feeCollections          FeeCollection[]
+  MarksEntry              MarksEntry[]
+  moneyCollectionItems    MoneyCollectionItem[]
+  SeatingPlan             SeatingPlan[]
+  branch                  Branch                   @relation(fields: [branchId], references: [id])
+  parent                  Parent?                  @relation(fields: [parentId], references: [id])
+  section                 Section?                 @relation(fields: [sectionId], references: [id])
   studentAssessmentScores StudentAssessmentScore[]
-  
-  // Add database indexes for performance
-  @@index([branchId, admissionNumber], name: "student_branch_admission_idx")
-  @@index([branchId, isActive], name: "student_branch_active_idx")
-  @@index([sectionId, isActive], name: "student_section_active_idx")
-  @@index([admissionNumber, branchId], name: "student_admission_branch_idx")
+  siblingRelationships    StudentSibling[]         @relation("SiblingToStudent")
+  studentSiblings         StudentSibling[]         @relation("StudentToSibling")
+  subjects                StudentSubject[]
+  transferCertificates    TransferCertificate[]
+  transportAssignments    TransportAssignment[]
+  studentAttendance       StudentAttendance[]
+
+  @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
+  @@index([branchId, isActive], map: "student_branch_active_idx")
+  @@index([sectionId, isActive], map: "student_section_active_idx")
+  @@index([admissionNumber, branchId], map: "student_admission_branch_idx")
 }
 
 model Parent {
-  id                 String    @id @default(cuid())
-  fatherName         String?
-  fatherDob          DateTime?
-  fatherEducation    String?
-  fatherOccupation   String?
-  fatherMobile       String?
-  fatherEmail        String?
-  fatherAadharNumber String?
-  motherName         String?
-  motherDob          DateTime?
-  motherEducation    String?
-  motherOccupation   String?
-  motherMobile       String?
-  motherEmail        String?
-  motherAadharNumber String?
-  guardianName       String?
-  guardianDob        DateTime?
-  guardianEducation  String?
-  guardianOccupation String?
-  guardianMobile     String?
-  guardianEmail      String?
+  id                   String    @id @default(cuid())
+  fatherName           String?
+  fatherDob            DateTime?
+  fatherEducation      String?
+  fatherOccupation     String?
+  fatherMobile         String?
+  fatherEmail          String?
+  motherName           String?
+  motherDob            DateTime?
+  motherEducation      String?
+  motherOccupation     String?
+  motherMobile         String?
+  motherEmail          String?
+  guardianName         String?
+  guardianDob          DateTime?
+  guardianEducation    String?
+  guardianOccupation   String?
+  guardianMobile       String?
+  guardianEmail        String?
+  parentAnniversary    DateTime?
+  monthlyIncome        String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  clerkId              String?
+  fatherAadharNumber   String?
   guardianAadharNumber String?
-  parentAnniversary  DateTime?
-  monthlyIncome      String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  clerkId            String?
-  students           Student[]
+  motherAadharNumber   String?
+  students             Student[]
 }
 
 model Teacher {
@@ -235,12 +230,12 @@ model Teacher {
   leaveApplications          LeaveApplication[]
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
+  sections                   Section[]
+  subjectAssignments         SubjectTeacher[]
   branch                     Branch             @relation(fields: [branchId], references: [id])
-  sections                   Section[]          // Teachers are assigned to sections
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   attendances                StaffAttendance[]
-  subjectAssignments         SubjectTeacher[]  // Subject assignments for examinations
 }
 
 model Employee {
@@ -324,60 +319,52 @@ model Employee {
 }
 
 model Class {
-  id                   String                 @id @default(cuid())
-  name                 String
-  isActive             Boolean                @default(true)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  branchId             String
-  sessionId            String
-  displayOrder         Int                    @default(0)
-  description          String?
-  grade                Int?
-  
-  // Relations
-  branch               Branch                 @relation(fields: [branchId], references: [id])
-  session              AcademicSession        @relation(fields: [sessionId], references: [id])
-  sections             Section[]              // One class can have multiple sections
-  subjects             ClassSubject[]
-  blueprints           Blueprint[]
-  classwiseFees        ClasswiseFee[]
-  moneyCollectionLinks MoneyCollectionClass[] @relation("ClassMoneyCollectionLinks")
-  // Examination relations
-  examConfigurations   ExamConfiguration[]
-  assessmentConfigs    AssessmentConfiguration[]
-  // Customizable Assessment Engine relations
-  assessmentSchemas    AssessmentSchema[]
-  subjectTeachers      SubjectTeacher[]  // Subject teacher assignments
-  
-  @@unique([name, branchId, sessionId]) // Ensure unique class names per branch/session
+  id                      String                    @id @default(cuid())
+  name                    String
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  branchId                String
+  sessionId               String
+  displayOrder            Int                       @default(0)
+  description             String?
+  grade                   Int?
+  AssessmentConfiguration AssessmentConfiguration[]
+  assessmentSchemas       AssessmentSchema[]
+  blueprints              Blueprint[]
+  branch                  Branch                    @relation(fields: [branchId], references: [id])
+  session                 AcademicSession           @relation(fields: [sessionId], references: [id])
+  subjects                ClassSubject[]
+  classwiseFees           ClasswiseFee[]
+  ExamConfiguration       ExamConfiguration[]
+  moneyCollectionLinks    MoneyCollectionClass[]    @relation("ClassMoneyCollectionLinks")
+  sections                Section[]
+  subjectTeachers         SubjectTeacher[]
+
+  @@unique([name, branchId, sessionId])
 }
 
 model Section {
-  id                 String              @id @default(cuid())
-  name               String
-  capacity           Int                 @default(30)
-  isActive           Boolean             @default(true)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  classId            String
-  teacherId          String?
-  displayOrder       Int                 @default(0)
-  
-  // Relations
-  class              Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
-  teacher            Teacher?            @relation(fields: [teacherId], references: [id])
-  students           Student[]
-  studentAttendances StudentAttendance[]
-  subjectTeachers    SubjectTeacher[]  // Subject teacher assignments
-  // Examination relations
-  examConfigurations ExamConfiguration[]
-  assessmentConfigs  AssessmentConfiguration[]
+  id                      String                    @id @default(cuid())
+  name                    String
+  capacity                Int                       @default(30)
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  classId                 String
+  teacherId               String?
+  displayOrder            Int                       @default(0)
+  AssessmentConfiguration AssessmentConfiguration[]
+  ExamConfiguration       ExamConfiguration[]
+  class                   Class                     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher                 Teacher?                  @relation(fields: [teacherId], references: [id])
+  students                Student[]
+  subjectTeachers         SubjectTeacher[]
+  studentAttendances      StudentAttendance[]
 
-  // Add database indexes for performance
-  @@index([classId, isActive], name: "section_class_active_idx")
-  @@index([isActive, displayOrder], name: "section_active_display_idx")
   @@unique([name, classId])
+  @@index([classId, isActive], map: "section_class_active_idx")
+  @@index([isActive, displayOrder], map: "section_active_display_idx")
 }
 
 model AcademicSession {
@@ -399,21 +386,22 @@ model AcademicSession {
 }
 
 model Term {
-  id               String          @id @default(cuid())
-  name             String          // e.g., "Term 1", "Mid Term", "Annual"
+  id               String             @id @default(cuid())
+  name             String
   description      String?
   startDate        DateTime
   endDate          DateTime
-  order            Int             @default(0)
-  isActive         Boolean         @default(true)
-  isCurrentTerm    Boolean         @default(false)
+  order            Int                @default(0)
+  isActive         Boolean            @default(true)
+  isCurrentTerm    Boolean            @default(false)
   branchId         String
   sessionId        String
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  branch           Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  session          AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  assessmentSchemas AssessmentSchema[] @relation("termRelation")
+  branch           Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  session          AcademicSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@unique([name, branchId, sessionId])
   @@index([branchId, isActive])
   @@index([sessionId, order])
@@ -619,22 +607,20 @@ model StudentAttendance {
 }
 
 model Subject {
-  id          String           @id @default(cuid())
-  name        String
-  code        String?
-  description String?
-  isActive    Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  chapters    Chapter[]
-  classes     ClassSubject[]
-  students    StudentSubject[]
-  teachers    SubjectTeacher[]  // Subject teacher assignments
-  // Examination relations
-  examConfigurations   ExamConfiguration[]
-  assessmentConfigs    AssessmentConfiguration[]
-  // Customizable Assessment Engine relations
-  assessmentSchemas    AssessmentSchema[]
+  id                      String                    @id @default(cuid())
+  name                    String
+  code                    String?
+  description             String?
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  AssessmentConfiguration AssessmentConfiguration[]
+  assessmentSchemas       AssessmentSchema[]
+  chapters                Chapter[]
+  classes                 ClassSubject[]
+  ExamConfiguration       ExamConfiguration[]
+  students                StudentSubject[]
+  teachers                SubjectTeacher[]
 }
 
 model ClassSubject {
@@ -659,26 +645,22 @@ model StudentSubject {
   @@unique([studentId, subjectId])
 }
 
-// New model for Subject Teacher Assignments (for examinations, marks entry, etc.)
 model SubjectTeacher {
   id        String   @id @default(cuid())
   teacherId String
   subjectId String
   classId   String
-  sectionId String?  // Optional - if null, applies to all sections in the class
+  sectionId String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   branchId  String
-  
-  // Relations
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
   section   Section? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
-  // Ensure unique combinations - one teacher per subject per class-section
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
   @@unique([teacherId, subjectId, classId, sectionId])
   @@index([branchId, isActive])
   @@index([teacherId, isActive])
@@ -738,16 +720,16 @@ model LeaveApplication {
 }
 
 model RbacRole {
-  id               String               @id @default(cuid())
-  name             String               @unique
-  description      String?
-  isSystem         Boolean              @default(false)
-  isActive         Boolean              @default(true)
-  permissions      String[]             @default([]) // JSON array of permission names
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  rolePermissions  RbacRolePermission[] @relation("RolePermissionRelation") // Keep for backward compatibility
-  userRoles        UserRole[]
+  id              String               @id @default(cuid())
+  name            String               @unique
+  description     String?
+  isSystem        Boolean              @default(false)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  permissions     String[]             @default([])
+  rolePermissions RbacRolePermission[] @relation("RolePermissionRelation")
+  userRoles       UserRole[]
 }
 
 model RbacPermission {
@@ -1472,6 +1454,412 @@ model FeeCollectionItem {
   feeHead         FeeHead       @relation(fields: [feeHeadId], references: [id])
 }
 
+model BackgroundTask {
+  id                String               @id @default(cuid())
+  taskType          String
+  title             String
+  description       String?
+  status            BackgroundTaskStatus @default(PENDING)
+  totalItems        Int                  @default(0)
+  processedItems    Int                  @default(0)
+  failedItems       Int                  @default(0)
+  percentage        Float                @default(0)
+  inputData         Json?
+  results           Json?
+  errors            Json[]               @default([])
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  estimatedDuration Int?
+  createdBy         String?
+  branchId          String?
+  priority          Int                  @default(5)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  branch            Branch?              @relation(fields: [branchId], references: [id])
+  executionLogs     TaskExecutionLog[]
+
+  @@index([status, scheduledAt])
+  @@index([branchId, status])
+  @@index([taskType, status])
+}
+
+model EmailConfiguration {
+  id                     String   @id @default(cuid())
+  smtpHost               String?
+  smtpPort               Int?     @default(587)
+  smtpUsername           String?
+  smtpPassword           String?
+  fromEmail              String?
+  fromName               String?  @default("Scholarise System")
+  adminEmails            String[] @default([])
+  notifyOnTaskCompletion Boolean  @default(true)
+  notifyOnTaskFailure    Boolean  @default(true)
+  includeTaskDetails     Boolean  @default(true)
+  includeErrorLogs       Boolean  @default(false)
+  taskCompletionTemplate String?
+  taskFailureTemplate    String?
+  branchId               String?  @unique
+  isGlobal               Boolean  @default(false)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  branch                 Branch?  @relation(fields: [branchId], references: [id])
+
+  @@index([branchId, isActive])
+}
+
+model TaskExecutionLog {
+  id        String         @id @default(cuid())
+  taskId    String
+  level     TaskLogLevel   @default(INFO)
+  message   String
+  details   Json?
+  timestamp DateTime       @default(now())
+  task      BackgroundTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, timestamp])
+  @@index([level, timestamp])
+}
+
+model GradeScale {
+  id          String       @id @default(cuid())
+  name        String
+  isDefault   Boolean      @default(false)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  branchId    String
+  gradeRanges GradeRange[]
+  branch      Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId, isActive])
+}
+
+model GradeRange {
+  id            String     @id @default(cuid())
+  gradeScaleId  String
+  grade         String
+  minPercentage Float
+  maxPercentage Float
+  gradePoint    Float?
+  description   String?
+  order         Int        @default(0)
+  gradeScale    GradeScale @relation(fields: [gradeScaleId], references: [id], onDelete: Cascade)
+
+  @@index([gradeScaleId, minPercentage])
+}
+
+model AssessmentSchema {
+  id                    String                   @id @default(cuid())
+  name                  String
+  term                  String
+  classId               String
+  subjectId             String
+  totalMarks            Int                      @default(100)
+  isActive              Boolean                  @default(true)
+  isPublished           Boolean                  @default(false)
+  createdBy             String
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  branchId              String
+  appliedClasses        Json?
+  components            AssessmentComponent[]
+  permissions           AssessmentPermission[]
+  studentAssessmentScores StudentAssessmentScore[]
+  branch                Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  class                 Class                    @relation(fields: [classId], references: [id])
+  subject               Subject                  @relation(fields: [subjectId], references: [id])
+  termRelation          Term                     @relation("termRelation", fields: [term], references: [id])
+
+  @@unique([branchId, classId, subjectId, term])
+  @@index([branchId, isActive])
+  @@index([classId, subjectId])
+}
+
+model AssessmentComponent {
+  id                 String                  @id @default(cuid())
+  name               String
+  description        String?
+  assessmentSchemaId String
+  rawMaxScore        Int
+  reducedScore       Float
+  weightage          Float                   @default(1.0)
+  formula            String?
+  order              Int                     @default(0)
+  isActive           Boolean                 @default(true)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  assessmentSchema   AssessmentSchema        @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  subCriteria        AssessmentSubCriteria[]
+  componentScores    ComponentScore[]
+
+  @@index([assessmentSchemaId, order])
+}
+
+model AssessmentSubCriteria {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  componentId       String
+  maxScore          Int
+  order             Int                 @default(0)
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  component         AssessmentComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  subCriteriaScores SubCriteriaScore[]
+
+  @@index([componentId, order])
+}
+
+model StudentAssessmentScore {
+  id                 String           @id @default(cuid())
+  studentId          String
+  assessmentSchemaId String
+  finalScore         Float?
+  finalGrade         String?
+  finalPercentage    Float?
+  isComplete         Boolean          @default(false)
+  submittedAt        DateTime?
+  enteredBy          String
+  enteredAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  branchId           String
+  componentScores    ComponentScore[]
+  assessmentSchema   AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  branch             Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  student            Student          @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, assessmentSchemaId])
+  @@index([studentId])
+  @@index([enteredBy])
+  @@index([assessmentSchemaId])
+}
+
+model ComponentScore {
+  id                       String                 @id @default(cuid())
+  componentId              String
+  studentAssessmentScoreId String
+  rawScore                 Float?
+  reducedScore             Float?
+  calculatedScore          Float?
+  isComplete               Boolean                @default(false)
+  enteredBy                String
+  enteredAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  component                AssessmentComponent    @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  studentScore             StudentAssessmentScore @relation(fields: [studentAssessmentScoreId], references: [id], onDelete: Cascade)
+  subCriteriaScores        SubCriteriaScore[]
+
+  @@unique([componentId, studentAssessmentScoreId])
+  @@index([componentId])
+  @@index([studentAssessmentScoreId])
+}
+
+model SubCriteriaScore {
+  id               String                @id @default(cuid())
+  subCriteriaId    String
+  componentScoreId String
+  score            Float?
+  comments         String?
+  enteredBy        String
+  enteredAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  componentScore   ComponentScore        @relation(fields: [componentScoreId], references: [id], onDelete: Cascade)
+  subCriteria      AssessmentSubCriteria @relation(fields: [subCriteriaId], references: [id], onDelete: Cascade)
+
+  @@unique([subCriteriaId, componentScoreId])
+  @@index([subCriteriaId])
+  @@index([componentScoreId])
+}
+
+model AssessmentPermission {
+  id                 String                   @id @default(cuid())
+  assessmentSchemaId String?
+  userId             String
+  permissionType     AssessmentPermissionType
+  canCreate          Boolean                  @default(false)
+  canEdit            Boolean                  @default(false)
+  canView            Boolean                  @default(true)
+  canDelete          Boolean                  @default(false)
+  canPublish         Boolean                  @default(false)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  branchId           String
+  assessmentSchema   AssessmentSchema?        @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
+  branch             Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentSchemaId, userId])
+  @@index([branchId, userId])
+  @@index([userId, permissionType])
+}
+
+model AssessmentCategory {
+  id                      String                    @id
+  name                    String
+  code                    String                    @unique
+  description             String?
+  maxMarks                Int
+  isActive                Boolean                   @default(true)
+  order                   Int                       @default(0)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  branchId                String
+  Branch                  Branch                    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  AssessmentConfiguration AssessmentConfiguration[]
+
+  @@index([branchId, isActive])
+}
+
+model AssessmentConfiguration {
+  id                 String             @id
+  name               String
+  categoryId         String
+  classId            String
+  sectionId          String?
+  subjectId          String?
+  maxMarks           Int
+  weightage          Float              @default(1.0)
+  dueDate            DateTime?
+  instructions       String?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  branchId           String
+  Branch             Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  AssessmentCategory AssessmentCategory @relation(fields: [categoryId], references: [id])
+  Class              Class              @relation(fields: [classId], references: [id])
+  Section            Section?           @relation(fields: [sectionId], references: [id])
+  Subject            Subject?           @relation(fields: [subjectId], references: [id])
+  AssessmentMarks    AssessmentMarks[]
+
+  @@index([branchId, isActive])
+  @@index([classId, sectionId])
+}
+
+model AssessmentMarks {
+  id                      String                  @id
+  assessmentConfigId      String
+  studentId               String
+  marksObtained           Float?
+  comments                String?
+  submissionDate          DateTime?
+  enteredBy               String
+  enteredAt               DateTime                @default(now())
+  updatedAt               DateTime
+  isSubmitted             Boolean                 @default(false)
+  submittedAt             DateTime?
+  branchId                String
+  AssessmentConfiguration AssessmentConfiguration @relation(fields: [assessmentConfigId], references: [id])
+  Branch                  Branch                  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  Student                 Student                 @relation(fields: [studentId], references: [id])
+
+  @@unique([assessmentConfigId, studentId])
+  @@index([branchId, assessmentConfigId])
+  @@index([enteredBy])
+  @@index([studentId])
+}
+
+model ExamConfiguration {
+  id           String         @id
+  name         String
+  classId      String
+  sectionId    String?
+  subjectId    String
+  maxMarks     Int
+  passingMarks Int
+  weightage    Float          @default(1.0)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  branchId     String
+  Branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  Class        Class          @relation(fields: [classId], references: [id])
+  Section      Section?       @relation(fields: [sectionId], references: [id])
+  Subject      Subject        @relation(fields: [subjectId], references: [id])
+  ExamSchedule ExamSchedule[]
+  MarksEntry   MarksEntry[]
+
+  @@index([branchId, isActive])
+  @@index([classId, sectionId])
+}
+
+model ExamSchedule {
+  id                String            @id
+  examConfigId      String
+  examDate          DateTime
+  startTime         DateTime
+  endTime           DateTime
+  room              String?
+  invigilator       String?
+  instructions      String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  branchId          String
+  Branch            Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  ExamConfiguration ExamConfiguration @relation(fields: [examConfigId], references: [id])
+
+  @@index([branchId, examDate])
+  @@index([examConfigId])
+}
+
+model ExamType {
+  id          String   @id
+  name        String
+  code        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  branchId    String
+  Branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId, isActive])
+}
+
+model MarksEntry {
+  id                String            @id
+  examConfigId      String
+  studentId         String
+  marksObtained     Float?
+  isAbsent          Boolean           @default(false)
+  remarks           String?
+  enteredBy         String
+  enteredAt         DateTime          @default(now())
+  updatedAt         DateTime
+  isSubmitted       Boolean           @default(false)
+  submittedAt       DateTime?
+  branchId          String
+  Branch            Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  ExamConfiguration ExamConfiguration @relation(fields: [examConfigId], references: [id])
+  Student           Student           @relation(fields: [studentId], references: [id])
+
+  @@unique([examConfigId, studentId])
+  @@index([branchId, examConfigId])
+  @@index([enteredBy])
+  @@index([studentId])
+}
+
+model SeatingPlan {
+  id         String   @id
+  studentId  String
+  seatNumber String
+  room       String
+  row        Int?
+  column     Int?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  branchId   String
+  Branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  Student    Student  @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+}
+
 enum AttendanceType {
   IN
   OUT
@@ -1581,106 +1969,6 @@ enum QuestionDifficulty {
   HARD
 }
 
-// Background Tasks and Email Configuration Models
-model BackgroundTask {
-  id              String            @id @default(cuid())
-  taskType        String            // e.g., "BULK_CLERK_CREATION"
-  title           String
-  description     String?
-  status          BackgroundTaskStatus @default(PENDING)
-  
-  // Progress tracking
-  totalItems      Int               @default(0)
-  processedItems  Int               @default(0)
-  failedItems     Int               @default(0)
-  percentage      Float             @default(0)
-  
-  // Task data and results
-  inputData       Json?             // Task input parameters
-  results         Json?             // Task execution results
-  errors          Json[]            @default([])
-  
-  // Timing
-  scheduledAt     DateTime?         // When to run the task
-  startedAt       DateTime?         // When task actually started
-  completedAt     DateTime?         // When task finished
-  estimatedDuration Int?            // Estimated duration in seconds
-  
-  // Metadata
-  createdBy       String?           // User who created the task
-  branchId        String?
-  priority        Int               @default(5) // 1-10 (1 = highest)
-  
-  // System fields
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
-  // Relationships
-  branch          Branch?           @relation(fields: [branchId], references: [id])
-  executionLogs   TaskExecutionLog[]
-  
-  @@index([status, scheduledAt])
-  @@index([branchId, status])
-  @@index([taskType, status])
-}
-
-model EmailConfiguration {
-  id                String    @id @default(cuid())
-  
-  // SMTP Configuration
-  smtpHost          String?
-  smtpPort          Int?      @default(587)
-  smtpUsername      String?
-  smtpPassword      String?   // Should be encrypted
-  
-  // Email Settings
-  fromEmail         String?
-  fromName          String?   @default("Scholarise System")
-  
-  // Notification Recipients
-  adminEmails       String[]  @default([])
-  
-  // Task Notification Settings
-  notifyOnTaskCompletion   Boolean @default(true)
-  notifyOnTaskFailure      Boolean @default(true)
-  includeTaskDetails       Boolean @default(true)
-  includeErrorLogs         Boolean @default(false)
-  
-  // Email Templates
-  taskCompletionTemplate   String?
-  taskFailureTemplate      String?
-  
-  // Branch-specific or global
-  branchId          String?   @unique
-  isGlobal          Boolean   @default(false)
-  isActive          Boolean   @default(true)
-  
-  // System fields
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  // Relationships
-  branch            Branch?   @relation(fields: [branchId], references: [id])
-  
-  @@index([branchId, isActive])
-}
-
-// Task execution logs for debugging
-model TaskExecutionLog {
-  id              String           @id @default(cuid())
-  taskId          String
-  level           TaskLogLevel     @default(INFO)
-  message         String
-  details         Json?
-  timestamp       DateTime         @default(now())
-  
-  // Relationships
-  task            BackgroundTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  
-  @@index([taskId, timestamp])
-  @@index([level, timestamp])
-}
-
 enum BackgroundTaskStatus {
   PENDING
   QUEUED
@@ -1697,368 +1985,6 @@ enum TaskLogLevel {
   WARN
   ERROR
   FATAL
-}
-
-// Examination Module Models
-model ExamType {
-  id               String @id @default(cuid())
-  name             String // e.g., "Unit Test", "Mid Term", "Final", "Pre-Board"
-  code             String @unique
-  description      String?
-  isActive         Boolean @default(true)
-  order            Int @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  examSchedules    ExamSchedule[]
-  examConfigurations ExamConfiguration[]
-  
-  @@index([branchId, isActive])
-}
-
-model ExamConfiguration {
-  id               String @id @default(cuid())
-  name             String // e.g., "Class 10 Unit Test 1"
-  examTypeId       String
-  classId          String
-  sectionId        String?
-  subjectId        String
-  maxMarks         Int
-  passingMarks     Int
-  weightage        Float @default(1.0) // For calculating overall percentage
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  examType         ExamType @relation(fields: [examTypeId], references: [id])
-  class            Class @relation(fields: [classId], references: [id])
-  section          Section? @relation(fields: [sectionId], references: [id])
-  subject          Subject @relation(fields: [subjectId], references: [id])
-  examSchedules    ExamSchedule[]
-  marksEntries     MarksEntry[]
-  
-  @@unique([examTypeId, classId, sectionId, subjectId])
-  @@index([branchId, isActive])
-  @@index([classId, sectionId])
-}
-
-model ExamSchedule {
-  id               String @id @default(cuid())
-  examConfigId     String
-  examDate         DateTime
-  startTime        DateTime
-  endTime          DateTime
-  room             String?
-  invigilator      String?
-  instructions     String?
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  examConfig       ExamConfiguration @relation(fields: [examConfigId], references: [id])
-  examType         ExamType @relation(fields: [examTypeId], references: [id])
-  examTypeId       String
-  seatingPlans     SeatingPlan[]
-  
-  @@index([branchId, examDate])
-  @@index([examConfigId])
-}
-
-model SeatingPlan {
-  id               String @id @default(cuid())
-  examScheduleId   String
-  studentId        String
-  seatNumber       String
-  room             String
-  row              Int?
-  column           Int?
-  notes            String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  examSchedule     ExamSchedule @relation(fields: [examScheduleId], references: [id])
-  student          Student @relation(fields: [studentId], references: [id])
-  
-  @@unique([examScheduleId, seatNumber, room])
-  @@index([branchId, examScheduleId])
-  @@index([studentId])
-}
-
-model MarksEntry {
-  id               String @id @default(cuid())
-  examConfigId     String
-  studentId        String
-  marksObtained    Float?
-  isAbsent         Boolean @default(false)
-  remarks          String?
-  enteredBy        String // Teacher/Employee ID
-  enteredAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  isSubmitted      Boolean @default(false)
-  submittedAt      DateTime?
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  examConfig       ExamConfiguration @relation(fields: [examConfigId], references: [id])
-  student          Student @relation(fields: [studentId], references: [id])
-  
-  @@unique([examConfigId, studentId])
-  @@index([branchId, examConfigId])
-  @@index([studentId])
-  @@index([enteredBy])
-}
-
-// Academic Assessment Categories
-model AssessmentCategory {
-  id               String @id @default(cuid())
-  name             String // e.g., "Subject Enrichment", "Lesson Ending Test", "Project Work"
-  code             String @unique
-  description      String?
-  maxMarks         Int
-  isActive         Boolean @default(true)
-  order            Int @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  assessmentConfigs AssessmentConfiguration[]
-  
-  @@index([branchId, isActive])
-}
-
-model AssessmentConfiguration {
-  id               String @id @default(cuid())
-  name             String // e.g., "Debate Competition", "Math Project"
-  categoryId       String
-  classId          String
-  sectionId        String?
-  subjectId        String?
-  maxMarks         Int
-  weightage        Float @default(1.0)
-  dueDate          DateTime?
-  instructions     String?
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  category         AssessmentCategory @relation(fields: [categoryId], references: [id])
-  class            Class @relation(fields: [classId], references: [id])
-  section          Section? @relation(fields: [sectionId], references: [id])
-  subject          Subject? @relation(fields: [subjectId], references: [id])
-  assessmentMarks  AssessmentMarks[]
-  
-  @@index([branchId, isActive])
-  @@index([classId, sectionId])
-}
-
-model AssessmentMarks {
-  id               String @id @default(cuid())
-  assessmentConfigId String
-  studentId        String
-  marksObtained    Float?
-  comments         String?
-  submissionDate   DateTime?
-  enteredBy        String // Teacher/Employee ID
-  enteredAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  isSubmitted      Boolean @default(false)
-  submittedAt      DateTime?
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  assessmentConfig AssessmentConfiguration @relation(fields: [assessmentConfigId], references: [id])
-  student          Student @relation(fields: [studentId], references: [id])
-  
-  @@unique([assessmentConfigId, studentId])
-  @@index([branchId, assessmentConfigId])
-  @@index([studentId])
-  @@index([enteredBy])
-}
-
-// Grade Configuration for Result Processing
-model GradeScale {
-  id               String @id @default(cuid())
-  name             String // e.g., "CBSE Grading", "ICSE Grading"
-  isDefault        Boolean @default(false)
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  gradeRanges      GradeRange[]
-  
-  @@index([branchId, isActive])
-}
-
-model GradeRange {
-  id               String @id @default(cuid())
-  gradeScaleId     String
-  grade            String // e.g., "A1", "A2", "B1"
-  minPercentage    Float
-  maxPercentage    Float
-  gradePoint       Float?
-  description      String?
-  order            Int @default(0)
-  gradeScale       GradeScale @relation(fields: [gradeScaleId], references: [id], onDelete: Cascade)
-  
-  @@index([gradeScaleId, minPercentage])
-}
-
-// Customizable Assessment Engine Models
-
-// Assessment Schema (e.g., English Term-1 Schema)
-model AssessmentSchema {
-  id               String @id @default(cuid())
-  name             String // e.g., "English Term-1 Evaluation"
-  term             String // e.g., "Term-1", "Half-Yearly", "Annual"
-  classId          String
-  subjectId        String
-  totalMarks       Int @default(100)
-  isActive         Boolean @default(true)
-  isPublished      Boolean @default(false)
-  createdBy        String // Employee/Teacher ID
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  // JSON field to store selected classes and sections
-  appliedClasses   Json? // Stores array of {classId, sectionId?, className, sectionName?}
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  class            Class @relation(fields: [classId], references: [id])
-  subject          Subject @relation(fields: [subjectId], references: [id])
-  components       AssessmentComponent[]
-  studentScores    StudentAssessmentScore[]
-  permissions      AssessmentPermission[]
-  
-  @@unique([branchId, classId, subjectId, term])
-  @@index([branchId, isActive])
-  @@index([classId, subjectId])
-}
-
-// Assessment Components (e.g., Periodic Test, Multiple Assessment, etc.)
-model AssessmentComponent {
-  id               String @id @default(cuid())
-  name             String // e.g., "Periodic Test", "Multiple Assessment"
-  description      String?
-  assessmentSchemaId String
-  rawMaxScore      Int // Original maximum marks
-  reducedScore     Float // Weighted/reduced marks
-  weightage        Float @default(1.0) // Weight in final calculation
-  formula          String? // Custom formula for calculation
-  order            Int @default(0)
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  assessmentSchema AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
-  subCriteria      AssessmentSubCriteria[]
-  componentScores  ComponentScore[]
-  
-  @@index([assessmentSchemaId, order])
-}
-
-// Sub-criteria for components (e.g., Individual Activities, Handwriting, etc.)
-model AssessmentSubCriteria {
-  id               String @id @default(cuid())
-  name             String // e.g., "Individual Activities", "Handwriting"
-  description      String?
-  componentId      String
-  maxScore         Int
-  order            Int @default(0)
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  component        AssessmentComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  subCriteriaScores SubCriteriaScore[]
-  
-  @@index([componentId, order])
-}
-
-// Student scores for each assessment schema
-model StudentAssessmentScore {
-  id               String @id @default(cuid())
-  assessmentSchemaId String
-  studentId        String
-  finalScore       Float?
-  finalGrade       String?
-  finalPercentage  Float?
-  isComplete       Boolean @default(false)
-  submittedAt      DateTime?
-  enteredBy        String // Teacher/Employee ID
-  enteredAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  assessmentSchema AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
-  student          Student @relation(fields: [studentId], references: [id])
-  componentScores  ComponentScore[]
-  
-  @@unique([assessmentSchemaId, studentId])
-  @@index([branchId, assessmentSchemaId])
-  @@index([studentId])
-  @@index([enteredBy])
-}
-
-// Student scores for each component
-model ComponentScore {
-  id               String @id @default(cuid())
-  componentId      String
-  studentAssessmentScoreId String
-  rawScore         Float?
-  reducedScore     Float?
-  calculatedScore  Float?
-  isComplete       Boolean @default(false)
-  enteredBy        String // Teacher/Employee ID
-  enteredAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  component        AssessmentComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  studentScore     StudentAssessmentScore @relation(fields: [studentAssessmentScoreId], references: [id], onDelete: Cascade)
-  subCriteriaScores SubCriteriaScore[]
-  
-  @@unique([componentId, studentAssessmentScoreId])
-  @@index([componentId])
-  @@index([studentAssessmentScoreId])
-}
-
-// Student scores for sub-criteria
-model SubCriteriaScore {
-  id               String @id @default(cuid())
-  subCriteriaId    String
-  componentScoreId String
-  score            Float?
-  comments         String?
-  enteredBy        String // Teacher/Employee ID
-  enteredAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  subCriteria      AssessmentSubCriteria @relation(fields: [subCriteriaId], references: [id], onDelete: Cascade)
-  componentScore   ComponentScore @relation(fields: [componentScoreId], references: [id], onDelete: Cascade)
-  
-  @@unique([subCriteriaId, componentScoreId])
-  @@index([subCriteriaId])
-  @@index([componentScoreId])
-}
-
-// Assessment Permissions
-model AssessmentPermission {
-  id               String @id @default(cuid())
-  assessmentSchemaId String?
-  userId           String // Employee/Teacher ID
-  permissionType   AssessmentPermissionType
-  canCreate        Boolean @default(false)
-  canEdit          Boolean @default(false)
-  canView          Boolean @default(true)
-  canDelete        Boolean @default(false)
-  canPublish       Boolean @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  branchId         String
-  branch           Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  assessmentSchema AssessmentSchema? @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
-  
-  @@unique([assessmentSchemaId, userId])
-  @@index([branchId, userId])
-  @@index([userId, permissionType])
 }
 
 enum AssessmentPermissionType {

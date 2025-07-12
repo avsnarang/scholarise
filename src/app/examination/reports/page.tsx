@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -21,33 +20,32 @@ import {
   Target,
   Award,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  BookOpen,
+  Layers
 } from "lucide-react";
 import { api } from "@/utils/api";
+import { useBranchContext } from "@/hooks/useBranchContext";
+import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
 
 export default function ExaminationReportsPage() {
-  const [selectedExamConfig, setSelectedExamConfig] = useState<string>("");
+  const { currentBranchId } = useBranchContext();
+  const [selectedSchema, setSelectedSchema] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
-  const [selectedExamType, setSelectedExamType] = useState<string>("");
-
-  // Fetch data
-  const { data: examConfigs } = api.examination.getExamConfigurations.useQuery();
+  
+  // Fetch assessment schemas data
+  const { schemas, isLoading: schemasLoading } = useAssessmentSchemas();
   const { data: classes } = api.class.getAll.useQuery();
-  const { data: examTypes } = api.examination.getExamTypes.useQuery();
-  
-  // Fetch report data
-  const { data: examReport } = api.examination.getExamReport.useQuery(
-    { examConfigId: selectedExamConfig },
-    { enabled: !!selectedExamConfig }
-  );
-  
-  const { data: classPerformance } = api.examination.getClassPerformance.useQuery(
-    { 
-      classId: selectedClass,
-      examTypeId: selectedExamType || undefined 
-    },
-    { enabled: !!selectedClass }
-  );
+  const { data: gradeScales } = api.examination.getGradeScales.useQuery({ 
+    branchId: currentBranchId || undefined,
+    isActive: true 
+  });
+
+  // Calculate metrics
+  const totalSchemas = schemas?.length || 0;
+  const publishedSchemas = schemas?.filter((schema: any) => schema.isPublished)?.length || 0;
+  const schemasWithScores = schemas?.filter((schema: any) => schema._count?.studentScores > 0)?.length || 0;
+  const totalGradeScales = gradeScales?.length || 0;
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = "text-gray-900" }: {
     title: string;
@@ -83,21 +81,13 @@ export default function ExaminationReportsPage() {
     </Card>
   );
 
-  const getGradeColor = (percentage: number) => {
-    if (percentage >= 90) return "text-green-600 bg-green-50";
-    if (percentage >= 80) return "text-blue-600 bg-blue-50";
-    if (percentage >= 70) return "text-yellow-600 bg-yellow-50";
-    if (percentage >= 60) return "text-orange-600 bg-orange-50";
-    return "text-red-600 bg-red-50";
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Examination Reports</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Assessment Reports</h1>
         <p className="text-gray-600 mt-2">
-          View detailed exam reports and analytics
+          View detailed assessment reports and analytics for the modern assessment system
         </p>
       </div>
 
@@ -106,28 +96,28 @@ export default function ExaminationReportsPage() {
         <CardHeader>
           <CardTitle>Report Filters</CardTitle>
           <CardDescription>
-            Select criteria to generate reports
+            Select criteria to generate assessment reports
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="examConfig">Exam Configuration</Label>
-              <Select value={selectedExamConfig} onValueChange={setSelectedExamConfig}>
+              <Label htmlFor="schema">Assessment Schema</Label>
+              <Select value={selectedSchema} onValueChange={setSelectedSchema}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select exam configuration" />
+                  <SelectValue placeholder="Select assessment schema" />
                 </SelectTrigger>
                 <SelectContent>
-                  {examConfigs?.map((config: any) => (
-                    <SelectItem key={config.id} value={config.id}>
-                      {config.name} - {config.class.name} {config.section?.name} - {config.subject.name}
+                  {schemas?.map((schema: any) => (
+                    <SelectItem key={schema.id} value={schema.id}>
+                      {schema.name} - {schema.subject?.name} - {schema.class?.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="class">Class Performance</Label>
+              <Label htmlFor="class">Class Analysis</Label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select class" />
@@ -141,292 +131,197 @@ export default function ExaminationReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="examType">Exam Type Filter</Label>
-              <Select value={selectedExamType || "ALL_EXAM_TYPES"} onValueChange={(value) => setSelectedExamType(value === "ALL_EXAM_TYPES" ? "" : value)}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by exam type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL_EXAM_TYPES">All Exam Types</SelectItem>
-                  {examTypes?.map((type: any) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="exam-report" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="exam-report">Exam Report</TabsTrigger>
-          <TabsTrigger value="class-performance">Class Performance</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="schema-details">Schema Details</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        {/* Exam Report Tab */}
-        <TabsContent value="exam-report" className="space-y-6">
-          {examReport ? (
-            <>
-              {/* Exam Details */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>{examReport.examConfig.name}</CardTitle>
-                      <CardDescription>
-                        {examReport.examConfig.examType.name} - {examReport.examConfig.subject.name} - 
-                        {examReport.examConfig.class.name}
-                        {examReport.examConfig.section && ` ${examReport.examConfig.section.name}`}
-                      </CardDescription>
-                    </div>
-                    <Button>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Report
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Maximum Marks</p>
-                      <p className="text-2xl font-bold">{examReport.examConfig.maxMarks}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Passing Marks</p>
-                      <p className="text-2xl font-bold">{examReport.examConfig.passingMarks}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Weightage</p>
-                      <p className="text-2xl font-bold">{examReport.examConfig.weightage}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Pass Percentage</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {examReport.statistics.passPercentage.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <StatCard
+              title="Assessment Schemas"
+              value={totalSchemas}
+              subtitle="Total created"
+              icon={Layers}
+            />
+            <StatCard
+              title="Published Schemas"
+              value={publishedSchemas}
+              subtitle="Ready for scoring"
+              icon={CheckCircle}
+              color="text-green-600"
+            />
+            <StatCard
+              title="With Score Data"
+              value={schemasWithScores}
+              subtitle="Have student scores"
+              icon={Target}
+              color="text-blue-600"
+            />
+            <StatCard
+              title="Grade Scales"
+              value={totalGradeScales}
+              subtitle="Configured"
+              icon={Award}
+              color="text-purple-600"
+            />
+          </div>
 
-              {/* Statistics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <StatCard
-                  title="Total Students"
-                  value={examReport.statistics.totalStudents}
-                  subtitle="Registered for exam"
-                  icon={Users}
-                />
-                <StatCard
-                  title="Students Appeared"
-                  value={examReport.statistics.appeared}
-                  subtitle={`${examReport.statistics.absent} absent`}
-                  icon={CheckCircle}
-                  color="text-green-600"
-                />
-                <StatCard
-                  title="Students Passed"
-                  value={examReport.statistics.passed}
-                  subtitle={`${examReport.statistics.failed} failed`}
-                  icon={Award}
-                  color="text-blue-600"
-                />
-                <StatCard
-                  title="Average Score"
-                  value={examReport.statistics.average.toFixed(1)}
-                  subtitle={`Highest: ${examReport.statistics.highest}, Lowest: ${examReport.statistics.lowest}`}
-                  icon={Target}
-                  color="text-purple-600"
-                />
-              </div>
+          {/* Assessment Schemas Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Assessment Schemas Overview</CardTitle>
+              <CardDescription>
+                Summary of all assessment schemas in the system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Schema Name</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Term</TableHead>
+                    <TableHead>Total Marks</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Components</TableHead>
+                    <TableHead>Student Scores</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schemas?.map((schema: any) => (
+                    <TableRow key={schema.id}>
+                      <TableCell className="font-medium">{schema.name}</TableCell>
+                      <TableCell>{schema.subject?.name || "-"}</TableCell>
+                      <TableCell>{schema.class?.name || "-"}</TableCell>
+                                                      <TableCell>{schema.termRelation?.name || schema.term}</TableCell>
+                      <TableCell>{schema.totalMarks}</TableCell>
+                      <TableCell>
+                        <Badge variant={schema.isPublished ? "default" : "secondary"}>
+                          {schema.isPublished ? "Published" : "Draft"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{schema.components?.length || 0}</TableCell>
+                      <TableCell>{schema._count?.studentScores || 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {(!schemas || schemas.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No assessment schemas found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              {/* Grade Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Grade Distribution</CardTitle>
-                  <CardDescription>
-                    Performance breakdown by grade ranges
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { grade: "A+ (90-100%)", min: 90, max: 100, color: "bg-green-500" },
-                      { grade: "A (80-89%)", min: 80, max: 89, color: "bg-blue-500" },
-                      { grade: "B (70-79%)", min: 70, max: 79, color: "bg-yellow-500" },
-                      { grade: "C (60-69%)", min: 60, max: 69, color: "bg-orange-500" },
-                      { grade: "D (Below 60%)", min: 0, max: 59, color: "bg-red-500" },
-                    ].map((gradeRange) => {
-                      const count = examReport.examConfig.marksEntries.filter((entry: any) => {
-                        if (entry.isAbsent || !entry.marksObtained) return false;
-                        const percentage = (entry.marksObtained / examReport.examConfig.maxMarks) * 100;
-                        return percentage >= gradeRange.min && percentage <= gradeRange.max;
-                      }).length;
-                      const percentage = examReport.statistics.appeared > 0 ? 
-                        (count / examReport.statistics.appeared) * 100 : 0;
+        {/* Schema Details Tab */}
+        <TabsContent value="schema-details" className="space-y-6">
+          {selectedSchema ? (
+            (() => {
+              const schema = schemas?.find((s: any) => s.id === selectedSchema);
+              if (!schema) return null;
 
-                      return (
-                        <div key={gradeRange.grade} className="flex items-center space-x-4">
-                          <div className="w-24 text-sm font-medium">{gradeRange.grade}</div>
-                          <div className="flex-1">
-                            <Progress value={percentage} className="h-3" />
-                          </div>
-                          <div className="w-16 text-sm text-right">
-                            {count} ({percentage.toFixed(1)}%)
-                          </div>
+              return (
+                <>
+                  {/* Schema Info */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle>{schema.name}</CardTitle>
+                          <CardDescription>
+                                                                  {schema.subject?.name} - {schema.class?.name} - {schema.termRelation?.name || schema.term}
+                          </CardDescription>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+                        <Button>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Details
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Total Marks</p>
+                          <p className="text-2xl font-bold">{schema.totalMarks}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Components</p>
+                          <p className="text-2xl font-bold">{schema.components?.length || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Student Scores</p>
+                          <p className="text-2xl font-bold">{schema._count?.studentScores || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Status</p>
+                          <Badge variant={schema.isPublished ? "default" : "secondary"} className="text-lg px-3 py-1">
+                            {schema.isPublished ? "Published" : "Draft"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Student Results */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Student Results</CardTitle>
-                  <CardDescription>
-                    Individual student performance details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student Name</TableHead>
-                        <TableHead>Admission No.</TableHead>
-                        <TableHead>Marks Obtained</TableHead>
-                        <TableHead>Percentage</TableHead>
-                        <TableHead>Grade</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Remarks</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {examReport.examConfig.marksEntries
-                        .sort((a: any, b: any) => (b.marksObtained || 0) - (a.marksObtained || 0))
-                        .map((entry: any) => {
-                          const percentage = entry.marksObtained ? 
-                            (entry.marksObtained / examReport.examConfig.maxMarks) * 100 : 0;
-                          const isPassed = entry.marksObtained && 
-                            entry.marksObtained >= examReport.examConfig.passingMarks;
-
-                          return (
-                            <TableRow key={entry.id}>
-                              <TableCell className="font-medium">
-                                {entry.student.firstName} {entry.student.lastName}
-                              </TableCell>
-                              <TableCell>{entry.student.admissionNumber}</TableCell>
-                              <TableCell>
-                                {entry.isAbsent ? "AB" : entry.marksObtained || "-"}
-                                {!entry.isAbsent && ` / ${examReport.examConfig.maxMarks}`}
-                              </TableCell>
-                              <TableCell>
-                                {entry.isAbsent ? "AB" : `${percentage.toFixed(1)}%`}
-                              </TableCell>
-                              <TableCell>
-                                {entry.isAbsent ? (
-                                  <Badge variant="secondary">Absent</Badge>
-                                ) : (
-                                  <Badge className={getGradeColor(percentage)}>
-                                    {percentage >= 90 ? "A+" : 
-                                     percentage >= 80 ? "A" :
-                                     percentage >= 70 ? "B" :
-                                     percentage >= 60 ? "C" : "D"}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {entry.isAbsent ? (
-                                  <Badge variant="secondary">Absent</Badge>
-                                ) : (
-                                  <Badge variant={isPassed ? "default" : "destructive"}>
-                                    {isPassed ? "Pass" : "Fail"}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">
-                                {entry.remarks || "-"}
-                              </TableCell>
+                  {/* Components */}
+                  {schema.components && schema.components.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Assessment Components</CardTitle>
+                        <CardDescription>
+                          Breakdown of assessment components and weightings
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Component</TableHead>
+                              <TableHead>Raw Max Score</TableHead>
+                              <TableHead>Reduced Score</TableHead>
+                              <TableHead>Weightage</TableHead>
+                              <TableHead>Order</TableHead>
+                              <TableHead>Sub-criteria</TableHead>
                             </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </>
+                          </TableHeader>
+                          <TableBody>
+                            {schema.components.map((component: any) => (
+                              <TableRow key={component.id}>
+                                <TableCell className="font-medium">{component.name}</TableCell>
+                                <TableCell>{component.rawMaxScore}</TableCell>
+                                <TableCell>{component.reducedScore}</TableCell>
+                                <TableCell>{component.weightage}</TableCell>
+                                <TableCell>{component.order}</TableCell>
+                                <TableCell>{component.subCriteria?.length || 0}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              );
+            })()
           ) : (
             <Card>
               <CardContent className="text-center py-12">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Select Exam Configuration</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Select Assessment Schema</h3>
                 <p className="text-gray-600">
-                  Choose an exam configuration to view detailed report.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Class Performance Tab */}
-        <TabsContent value="class-performance" className="space-y-6">
-          {classPerformance && classPerformance.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Class Performance Summary</CardTitle>
-                <CardDescription>
-                  Subject-wise performance analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Exam Type</TableHead>
-                      <TableHead>Max Marks</TableHead>
-                      <TableHead>Students</TableHead>
-                      <TableHead>Average</TableHead>
-                      <TableHead>Highest</TableHead>
-                      <TableHead>Lowest</TableHead>
-                      <TableHead>Pass Rate</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {classPerformance.map((performance: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{performance.subject}</TableCell>
-                        <TableCell>{performance.examType}</TableCell>
-                        <TableCell>{performance.maxMarks}</TableCell>
-                        <TableCell>{performance.totalStudents}</TableCell>
-                        <TableCell>{performance.average.toFixed(1)}</TableCell>
-                        <TableCell>{performance.highest}</TableCell>
-                        <TableCell>{performance.lowest}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Progress value={performance.passPercentage} className="h-2 w-16" />
-                            <span className="text-sm">{performance.passPercentage.toFixed(1)}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Select Class</h3>
-                <p className="text-gray-600">
-                  Choose a class to view performance analysis.
+                  Choose an assessment schema to view detailed information.
                 </p>
               </CardContent>
             </Card>
@@ -438,21 +333,29 @@ export default function ExaminationReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Quick Stats</CardTitle>
+                <CardTitle>System Overview</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total Exam Configurations</span>
-                    <span className="font-semibold">{examConfigs?.length || 0}</span>
+                    <span className="text-sm text-gray-600">Total Assessment Schemas</span>
+                    <span className="font-semibold">{totalSchemas}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Active Exam Types</span>
-                    <span className="font-semibold">{examTypes?.filter((t: any) => t.isActive).length || 0}</span>
+                    <span className="text-sm text-gray-600">Published Schemas</span>
+                    <span className="font-semibold">{publishedSchemas}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Schemas with Data</span>
+                    <span className="font-semibold">{schemasWithScores}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Total Classes</span>
                     <span className="font-semibold">{classes?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Grade Scales</span>
+                    <span className="font-semibold">{totalGradeScales}</span>
                   </div>
                 </div>
               </CardContent>
@@ -467,16 +370,23 @@ export default function ExaminationReportsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Database Connection</span>
+                      <span className="text-sm">Assessment Engine</span>
                     </div>
-                    <Badge variant="default">Healthy</Badge>
+                    <Badge variant="default">Active</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">API Status</span>
+                      <span className="text-sm">Grade Calculation</span>
                     </div>
-                    <Badge variant="default">Active</Badge>
+                    <Badge variant="default">Ready</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Score Entry</span>
+                    </div>
+                    <Badge variant="default">Operational</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -489,6 +399,51 @@ export default function ExaminationReportsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Progress Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Implementation Progress</CardTitle>
+              <CardDescription>
+                Assessment system implementation status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Assessment Schema Creation</span>
+                    <span>{totalSchemas > 0 ? "100%" : "0%"}</span>
+                  </div>
+                  <Progress value={totalSchemas > 0 ? 100 : 0} className="h-2" />
+                </div>
+                
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Schema Publishing</span>
+                    <span>{totalSchemas > 0 ? Math.round((publishedSchemas / totalSchemas) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={totalSchemas > 0 ? (publishedSchemas / totalSchemas) * 100 : 0} className="h-2" />
+                </div>
+                
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Score Data Collection</span>
+                    <span>{totalSchemas > 0 ? Math.round((schemasWithScores / totalSchemas) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={totalSchemas > 0 ? (schemasWithScores / totalSchemas) * 100 : 0} className="h-2" />
+                </div>
+                
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Grade Scale Setup</span>
+                    <span>{totalGradeScales > 0 ? "100%" : "0%"}</span>
+                  </div>
+                  <Progress value={totalGradeScales > 0 ? 100 : 0} className="h-2" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

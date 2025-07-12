@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen, Target, Calculator, Hash, AlertCircle, Loader2, Lock, Shield } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen, Target, Calculator, Hash, AlertCircle, Loader2, Lock, Shield, FileCheck, FilePen, Snowflake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AssessmentSchemaBuilder } from '@/components/assessment/AssessmentSchemaBuilder';
 import { useAssessmentSchemas } from '@/hooks/useAssessmentSchemas';
 import { api } from '@/utils/api';
 import { useBranchContext } from '@/hooks/useBranchContext';
+import { useAcademicSessionContext } from '@/hooks/useAcademicSessionContext';
+import { useTerms } from '@/hooks/useTerms';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ViewSchemaDialog } from '@/components/assessment/ViewSchemaDialog';
@@ -29,6 +31,7 @@ export default function AssessmentSchemasPage() {
   const [deleteSchemaId, setDeleteSchemaId] = useState<string | null>(null);
   
   const { currentBranchId } = useBranchContext();
+  const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
   
   const { 
@@ -40,6 +43,9 @@ export default function AssessmentSchemasPage() {
     updateSchema,
     isUpdating,
     updateError,
+    updateSchemaStatus,
+    isUpdatingStatus,
+    updateStatusError,
     deleteSchema,
     isDeleting,
     deleteError
@@ -69,6 +75,9 @@ export default function AssessmentSchemasPage() {
     { enabled: !!currentBranchId }
   );
 
+  // Fetch terms for the current session
+  const { terms } = useTerms(currentSessionId || undefined);
+
   // Safe array initialization - ensure schemas is always an array
   const safeSchemas = Array.isArray(schemas) ? schemas : [];
 
@@ -82,7 +91,7 @@ export default function AssessmentSchemasPage() {
     try {
       return (
         (schema.name || '').toLowerCase().includes(searchLower) ||
-        (schema.term || '').toLowerCase().includes(searchLower) ||
+        (schema.termRelation?.name || schema.term || '').toLowerCase().includes(searchLower) ||
         (schema.class?.name || '').toLowerCase().includes(searchLower) ||
         (schema.subject?.name || '').toLowerCase().includes(searchLower)
       );
@@ -227,16 +236,69 @@ export default function AssessmentSchemasPage() {
     }
   };
 
+  // Helper function to get schema status
+  const getSchemaStatus = (schema: any) => {
+    if (!schema.isPublished && schema.isActive) {
+      return 'draft';
+    } else if (schema.isPublished && schema.isActive) {
+      return 'published';
+    } else if (schema.isPublished && !schema.isActive) {
+      return 'frozen';
+    }
+    return 'inactive';
+  };
 
+  // Handle status change
+  const handleStatusChange = async (schemaId: string, action: 'set-draft' | 'set-published' | 'freeze-marks') => {
+    try {
+      await updateSchemaStatus({ id: schemaId, action });
+      
+      const statusMessages = {
+        'set-draft': 'Schema set to draft',
+        'set-published': 'Schema published',
+        'freeze-marks': 'Marks entry frozen'
+      };
+      
+      toast({
+        title: "Success",
+        description: statusMessages[action],
+      });
+    } catch (error) {
+      console.error('Failed to update schema status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update schema status",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (schema: any) => {
-    if (schema.isPublished) {
-      return <Badge variant="default">Published</Badge>;
-    } else if (schema.isActive) {
-      return <Badge variant="secondary">Draft</Badge>;
-    } else {
-      return <Badge variant="outline">Inactive</Badge>;
+    const status = getSchemaStatus(schema);
+    
+    switch (status) {
+      case 'draft':
+        return <Badge variant="outline" className="text-orange-600 border-orange-600">Draft</Badge>;
+      case 'published':
+        return <Badge variant="default" className="bg-green-600">Published</Badge>;
+      case 'frozen':
+        return <Badge variant="secondary" className="text-blue-600 border-blue-600">Frozen</Badge>;
+      default:
+        return <Badge variant="outline">Inactive</Badge>;
     }
+  };
+
+  // Check if schema can change status
+  const canChangeToStatus = (schema: any, targetStatus: string) => {
+    const currentStatus = getSchemaStatus(schema);
+    const hasScores = hasStudentScores(schema);
+    
+    // Can't change status if schema has student scores (except freeze/unfreeze)
+    if (hasScores && targetStatus !== 'frozen' && currentStatus !== 'frozen') {
+      return false;
+    }
+    
+    return true;
   };
 
   // Check if schema has student scores (is protected)
@@ -269,6 +331,98 @@ export default function AssessmentSchemasPage() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+    );
+  };
+
+  // Helper function to render status change options
+  const renderStatusChangeOptions = (schema: any) => {
+    const currentStatus = getSchemaStatus(schema);
+    const hasScores = hasStudentScores(schema);
+    
+    return (
+      <>
+        {/* Set to Draft */}
+        {currentStatus !== 'draft' && (
+          hasScores ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <DropdownMenuItem disabled className="cursor-not-allowed">
+                      <FilePen className="mr-2 h-4 w-4 opacity-50" />
+                      <span className="opacity-50">Set Draft</span>
+                      <Lock className="ml-2 h-3 w-3 opacity-50" />
+                    </DropdownMenuItem>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Cannot set to draft - schema has {schema._count.studentScores} student score(s)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <DropdownMenuItem 
+              onClick={() => handleStatusChange(schema.id, 'set-draft')}
+              disabled={isUpdatingStatus}
+            >
+              <FilePen className="mr-2 h-4 w-4" />
+              Set Draft
+            </DropdownMenuItem>
+          )
+        )}
+
+        {/* Set to Published */}
+        {currentStatus !== 'published' && (
+          hasScores ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <DropdownMenuItem disabled className="cursor-not-allowed">
+                      <FileCheck className="mr-2 h-4 w-4 opacity-50" />
+                      <span className="opacity-50">Publish</span>
+                      <Lock className="ml-2 h-3 w-3 opacity-50" />
+                    </DropdownMenuItem>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Cannot publish - schema has {schema._count.studentScores} student score(s)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <DropdownMenuItem 
+              onClick={() => handleStatusChange(schema.id, 'set-published')}
+              disabled={isUpdatingStatus}
+            >
+              <FileCheck className="mr-2 h-4 w-4" />
+              Publish
+            </DropdownMenuItem>
+          )
+        )}
+
+        {/* Freeze Marks */}
+        {currentStatus === 'published' && (
+          <DropdownMenuItem 
+            onClick={() => handleStatusChange(schema.id, 'freeze-marks')}
+            disabled={isUpdatingStatus}
+          >
+            <Snowflake className="mr-2 h-4 w-4" />
+            Freeze Marks
+          </DropdownMenuItem>
+        )}
+
+        {/* Unfreeze Marks (Set back to Published) */}
+        {currentStatus === 'frozen' && (
+          <DropdownMenuItem 
+            onClick={() => handleStatusChange(schema.id, 'set-published')}
+            disabled={isUpdatingStatus}
+          >
+            <FileCheck className="mr-2 h-4 w-4" />
+            Unfreeze & Publish
+          </DropdownMenuItem>
+        )}
+      </>
     );
   };
 
@@ -370,7 +524,7 @@ export default function AssessmentSchemasPage() {
       </div>
 
       {/* Error Alerts */}
-      {(createError || updateError || deleteError) && (
+      {(createError || updateError || updateStatusError || deleteError) && (
         <div className="space-y-2">
           {createError && (
             <Alert variant="destructive">
@@ -382,6 +536,12 @@ export default function AssessmentSchemasPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>Update Error: {updateError.message}</AlertDescription>
+            </Alert>
+          )}
+          {updateStatusError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Status Update Error: {updateStatusError.message}</AlertDescription>
             </Alert>
           )}
           {deleteError && (
@@ -516,7 +676,7 @@ export default function AssessmentSchemasPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{schema.term}</span>
+                          <span className="text-sm">{schema.termRelation?.name || schema.term}</span>
                         </div>
                       </TableCell>
                       
@@ -555,6 +715,8 @@ export default function AssessmentSchemasPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
+                            
+                            {/* Edit Option */}
                             {hasStudentScores(schema) ? (
                               <TooltipProvider>
                                 <Tooltip>
@@ -575,13 +737,22 @@ export default function AssessmentSchemasPage() {
                             ) : (
                               <DropdownMenuItem 
                                 onClick={() => handleEditSchema(schema)}
-                                disabled={isUpdating || isDeleting}
+                                disabled={isUpdating || isDeleting || isUpdatingStatus}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
                             )}
+
                             <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                            
+                            {/* Status Change Options based on current status */}
+                            {renderStatusChangeOptions(schema)}
+
+                            <DropdownMenuSeparator />
+                            
+                            {/* Delete Option */}
                             {hasStudentScores(schema) ? (
                               <TooltipProvider>
                                 <Tooltip>
@@ -603,7 +774,7 @@ export default function AssessmentSchemasPage() {
                               <DropdownMenuItem 
                                 onClick={() => setDeleteSchemaId(schema.id)}
                                 className="text-destructive focus:text-destructive"
-                                disabled={isUpdating || isDeleting}
+                                disabled={isUpdating || isDeleting || isUpdatingStatus}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
@@ -653,6 +824,7 @@ export default function AssessmentSchemasPage() {
               <AssessmentSchemaBuilder
                 classes={classes || []}
                 subjects={Array.isArray(subjects) ? subjects : subjects?.items || []}
+                terms={terms || []}
                 onSave={handleCreateSchema}
               />
             </div>
@@ -680,6 +852,7 @@ export default function AssessmentSchemasPage() {
         onUpdate={handleUpdateSchema}
         classes={classes || []}
         subjects={Array.isArray(subjects) ? subjects : subjects?.items || []}
+        terms={terms || []}
       />
 
       {/* Delete Confirmation Dialog */}

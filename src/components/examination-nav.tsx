@@ -6,10 +6,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  CalendarDays,
   ClipboardList,
-  Users,
-  BookOpen,
   FileText,
   TrendingUp,
   BarChart3,
@@ -65,30 +62,7 @@ const navigationItems = [
     colorVariant: "secondary" as const,
     count: null,
   },
-  {
-    title: "Exam Scheduling",
-    href: "/examination/schedule",
-    icon: CalendarDays,
-    description: "Schedule exams",
-    colorVariant: "primary" as const,
-    count: null,
-  },
-  {
-    title: "Seating Plans",
-    href: "/examination/seating-plans",
-    icon: Users,
-    description: "Seating arrangements",
-    colorVariant: "secondary" as const,
-    count: null,
-  },
-  {
-    title: "Traditional Exams",
-    href: "/examination/traditional",
-    icon: BookOpen,
-    description: "Legacy exam features",
-    colorVariant: "primary" as const,
-    count: null,
-  },
+
   {
     title: "Reports",
     href: "/examination/reports",

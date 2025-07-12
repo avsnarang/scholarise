@@ -11,6 +11,7 @@ interface EditSchemaDialogProps {
   onUpdate: (data: any) => Promise<void>;
   classes: any[];
   subjects: any[];
+  terms: any[];
 }
 
 export function EditSchemaDialog({ 
@@ -20,6 +21,7 @@ export function EditSchemaDialog({
   onUpdate,
   classes,
   subjects,
+  terms,
 }: EditSchemaDialogProps) {
   const initialDataForEdit = React.useMemo(() => {
     if (!schema) return null;
@@ -81,6 +83,7 @@ export function EditSchemaDialog({
             initialData={initialDataForEdit}
             classes={classes}
             subjects={subjects}
+            terms={terms}
             onSave={onUpdate}
           />
         </div>

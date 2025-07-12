@@ -204,14 +204,43 @@ export class AssessmentCalculator {
   }
 
   /**
+   * Calculate grade with grade point if available
+   * @param percentage - The percentage score
+   * @param gradeScale - Grade scale configuration
+   * @returns Grade object with grade and optional grade point
+   */
+  calculateGradeWithPoint(percentage: number, gradeScale?: any): { grade: string; gradePoint?: number; description?: string } {
+    // Default CBSE-style grading if no custom scale provided
+    if (!gradeScale) {
+      const grade = this.calculateGrade(percentage);
+      return { grade };
+    }
+
+    // Use custom grade scale
+    for (const range of gradeScale.gradeRanges || []) {
+      if (percentage >= range.minPercentage && percentage <= range.maxPercentage) {
+        return {
+          grade: range.grade,
+          gradePoint: range.gradePoint || undefined,
+          description: range.description || undefined
+        };
+      }
+    }
+
+    return { grade: 'N/A' };
+  }
+
+  /**
    * Generate assessment summary for a class
    * @param schema - Assessment schema
    * @param allStudentScores - All student scores for the assessment
+   * @param gradeScale - Optional grade scale for grade distribution
    * @returns Summary statistics
    */
   generateClassSummary(
     schema: AssessmentSchema,
-    allStudentScores: any[]
+    allStudentScores: any[],
+    gradeScale?: any
   ): {
     totalStudents: number;
     averageScore: number;
@@ -251,8 +280,8 @@ export class AssessmentCalculator {
       summary.highestScore = Math.max(summary.highestScore, result.finalScore);
       summary.lowestScore = Math.min(summary.lowestScore, result.finalScore);
 
-      // Grade distribution
-      const grade = this.calculateGrade(result.finalPercentage);
+      // Grade distribution using provided grade scale
+      const grade = this.calculateGrade(result.finalPercentage, gradeScale);
       summary.gradeDistribution[grade] = (summary.gradeDistribution[grade] || 0) + 1;
 
       // Component averages
