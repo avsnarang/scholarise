@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useBranchContext } from "@/hooks/useBranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
 import { PersonalInfoTab } from "./form-tabs/personal-info-tab";
@@ -151,7 +152,11 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
   };
 
   // Fetch all branches for the branch selector
-  const { data: branches = [] } = api.branch.getAll.useQuery();
+  // Get branches - superadmins see all, others see only their assigned branches
+  const { isSuperAdmin } = usePermissions();
+  const { data: branches = [] } = isSuperAdmin 
+    ? api.branch.getAll.useQuery()
+    : api.branch.getUserBranches.useQuery();
 
   // Dynamic schema based on editing mode
   const dynamicTeacherFormSchema = teacherFormSchema.refine((data) => {

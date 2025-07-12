@@ -309,15 +309,32 @@ export const branchRouter = createTRPCRouter({
         // First check if the user is an employee
         const employee = await ctx.db.employee.findFirst({
           where: { userId: userId },
+          include: {
+            branchAccessRecords: {
+              include: {
+                branch: true,
+              },
+            },
+          },
         });
 
         if (employee) {
-          // Return the employee's assigned branch
-          return ctx.db.branch.findMany({
-            where: {
-              id: employee.branchId,
-            },
-          });
+          // Check if employee has multi-branch access
+          if (employee.branchAccessRecords && employee.branchAccessRecords.length > 0) {
+            // Return all branches the employee has access to
+            return employee.branchAccessRecords.map(access => access.branch);
+          } else {
+            // Return the employee's primary assigned branch
+            return ctx.db.branch.findMany({
+              where: {
+                id: employee.branchId,
+              },
+              orderBy: [
+                { order: "asc" },
+                { name: "asc" },
+              ],
+            });
+          }
         }
         
         // Check if the user is a teacher
@@ -331,6 +348,10 @@ export const branchRouter = createTRPCRouter({
             where: {
               id: teacher.branchId,
             },
+            orderBy: [
+              { order: "asc" },
+              { name: "asc" },
+            ],
           });
         }
         
@@ -343,10 +364,20 @@ export const branchRouter = createTRPCRouter({
         });
         
         const isSuperAdmin = userRoles.some(
-          userRole => userRole.role.name === "Super Admin" || userRole.role.isSystem
+          userRole => userRole.role.name === "Super Admin" || 
+                     userRole.role.name === "SUPER_ADMIN" ||
+                     userRole.role.name === "super_admin" ||
+                     userRole.role.isSystem
         );
         
-        if (isSuperAdmin) {
+        // Also check Clerk metadata for superadmin status
+        const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+        const isSuperAdminFromClerk = userMetadata?.role === 'super_admin' || 
+          userMetadata?.roles?.includes('super_admin') ||
+          userMetadata?.roles?.includes('Super Admin') ||
+          userMetadata?.roles?.includes('SuperAdmin');
+        
+        if (isSuperAdmin || isSuperAdminFromClerk) {
           // Super admins can access all branches
           return ctx.db.branch.findMany({
             orderBy: [

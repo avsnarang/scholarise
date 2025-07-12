@@ -10,8 +10,8 @@ interface BranchSelectorProps {
 export function BranchSelector({ onBranchSelect, defaultBranchId }: BranchSelectorProps) {
   const [selectedBranch, setSelectedBranch] = useState<string>(defaultBranchId || "");
 
-  // This is a real API call
-  const { data: branches, isLoading } = api.branch.getAll.useQuery();
+  // Get user-specific branches
+  const { data: branches, isLoading } = api.branch.getUserBranches.useQuery();
 
   useEffect(() => {
     if (branches && branches.length > 0 && !selectedBranch) {

@@ -13,6 +13,7 @@ import { Loader2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useBranchContext } from "@/hooks/useBranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { 
   employeeFormSchema, 
   type EmployeeFormValues,
@@ -120,7 +121,11 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
   });
 
   // Get all branches for the dropdown
-  const { data: branches = [] } = api.branch.getAll.useQuery();
+  // Get branches - superadmins see all, others see only their assigned branches
+  const { isSuperAdmin } = usePermissions();
+  const { data: branches = [] } = isSuperAdmin 
+    ? api.branch.getAll.useQuery()
+    : api.branch.getUserBranches.useQuery();
 
   // Prepare initial data
   const formattedInitialData = initialData ? convertApiToFormValues(initialData) : undefined;

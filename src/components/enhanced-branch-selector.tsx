@@ -27,7 +27,7 @@ export function EnhancedBranchSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, error } = api.branch.getAll.useQuery();
+  const { data, isLoading, error } = api.branch.getUserBranches.useQuery();
 
   // Safely convert data to array
   const branches: Branch[] = Array.isArray(data) ? data : [];

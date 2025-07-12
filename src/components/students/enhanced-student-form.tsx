@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/utils/api";
 import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/use-toast";
 import { StudentInfoTab } from "./form-tabs/student-info-tab";
 import { AddressTab } from "./form-tabs/address-tab";
@@ -216,11 +217,22 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
     },
   });
 
-  // Get branches for branch code validation with caching
-  const { data: branches, isLoading: branchesLoading } = api.branch.getAll.useQuery(undefined, {
+  // Get branches - superadmins see all, others see only their assigned branches
+  const { isSuperAdmin } = usePermissions();
+  const allBranchesQuery = api.branch.getAll.useQuery(undefined, {
     gcTime: 10 * 60 * 1000, // 10 minutes
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isSuperAdmin,
   });
+  const userBranchesQuery = api.branch.getUserBranches.useQuery(undefined, {
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !isSuperAdmin,
+  });
+  
+  const { data: branches, isLoading: branchesLoading } = isSuperAdmin 
+    ? allBranchesQuery 
+    : userBranchesQuery;
 
   // Get sections with optimized caching
   const { data: sections } = api.section.getSectionsForImport.useQuery(

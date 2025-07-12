@@ -39,13 +39,13 @@ export function BranchSelect({
 }: BranchSelectProps) {
   const [open, setOpen] = useState(false);
 
-  // Get branches ordered by the custom order field with better error handling
+  // Get user-specific branches ordered by the custom order field with better error handling
   const {
     data: branches,
     isLoading,
     error,
     refetch
-  } = api.branch.getAll.useQuery(undefined, {
+  } = api.branch.getUserBranches.useQuery(undefined, {
     retry: 3,
     retryDelay: 1000
   });

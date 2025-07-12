@@ -34,12 +34,12 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Get all branches
+  // Get user-specific branches
   const {
     data: branches = [],
     isLoading: isBranchesLoading,
     error: branchesError,
-  } = api.branch.getAll.useQuery(undefined, {
+  } = api.branch.getUserBranches.useQuery(undefined, {
     retry: 3,
     retryDelay: 1000,
   });

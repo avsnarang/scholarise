@@ -79,8 +79,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const isCollapsed = state === "collapsed";
   const { signOut } = useClerk();
 
-  // Fetch branches from API
-  const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getAll.useQuery();
+  // Fetch user-specific branches from API
+  const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getUserBranches.useQuery();
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
   const { user } = useAuth();
   const { canAccess, isSuperAdmin, can } = usePermissions();
@@ -747,8 +747,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 ) : (
                   // Ensure branches is an array before using map
                   (Array.isArray(branches) ? branches : [])
-                    // Filter out headquarters branch for non-superadmins
-                    .filter(branch => branch.id !== 'headquarters' || effectiveIsSuperAdmin)
                     .map((branch: Branch) => (
                       <DropdownMenuItem
                         key={branch.id}

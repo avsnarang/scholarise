@@ -333,7 +333,7 @@ const data = {
 // Branch Switcher component that uses real API data
 function BranchSwitcher() {
   const { isMobile } = useSidebar();
-  const { data: branches = [], isLoading } = api.branch.getAll.useQuery();
+  const { data: branches = [], isLoading } = api.branch.getUserBranches.useQuery();
   const [activeBranch, setActiveBranch] = useState<any>(null);
 
   // Set the first branch as active when data loads
