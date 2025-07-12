@@ -338,17 +338,32 @@ export default function ClerkAccountsPage() {
       return;
     }
 
-    // Use the new bulk retry endpoint
-    await bulkRetryMutation.mutateAsync({
-      userType,
-      userIds: selectedForType,
-    });
+    // Prevent multiple submissions
+    if (bulkRetryMutation.isPending) {
+      toast({
+        title: "Task already in progress",
+        description: "Please wait for the current task to complete.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Clear selections after starting the task
-    setSelectedUsers(prev => ({
-      ...prev,
-      [userTypeMap[userType]]: []
-    }));
+    try {
+      // Use the new bulk retry endpoint
+      await bulkRetryMutation.mutateAsync({
+        userType,
+        userIds: selectedForType,
+      });
+
+      // Clear selections after starting the task
+      setSelectedUsers(prev => ({
+        ...prev,
+        [userTypeMap[userType]]: []
+      }));
+    } catch (error) {
+      // Error is already handled in the mutation's onError
+      console.error("Failed to start bulk retry:", error);
+    }
   };
 
   const StatCard = ({ title, total, withClerk, withoutClerk, percentage, icon: Icon, isLoading }: any) => (

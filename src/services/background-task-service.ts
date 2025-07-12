@@ -35,6 +35,18 @@ export class BackgroundTaskService {
     createdBy?: string,
     priority: number = 5
   ): Promise<string> {
+    // Calculate total items based on task type and input data structure
+    let totalItems = 0;
+    if (taskType === 'BULK_CLERK_CREATION' && inputData?.items) {
+      totalItems = inputData.items.length;
+    } else if (taskType === 'BULK_CLERK_RETRY' && inputData?.userIds) {
+      totalItems = inputData.userIds.length;
+    } else if (inputData?.items) {
+      totalItems = inputData.items.length;
+    } else if (inputData?.userIds) {
+      totalItems = inputData.userIds.length;
+    }
+
     const task = await db.backgroundTask.create({
       data: {
         taskType,
@@ -44,15 +56,15 @@ export class BackgroundTaskService {
         branchId,
         createdBy,
         priority,
-        totalItems: inputData?.items?.length || 0,
+        totalItems,
         status: 'PENDING'
       }
     });
 
-    console.log(`Created background task: ${task.id} - ${title}`);
+    console.log(`Created background task: ${task.id} - ${title} (${totalItems} items)`);
     
     // Log task creation
-    await this.logTaskExecution(task.id, 'INFO', `Task created: ${title}`);
+    await this.logTaskExecution(task.id, 'INFO', `Task created: ${title} with ${totalItems} items`);
     
     // Start processing immediately if not already processing
     if (!this.isProcessing) {

@@ -333,6 +333,34 @@ export const clerkManagementRouter = createTRPCRouter({
       userIds: z.array(z.string()),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Validate input
+      if (!input.userIds || input.userIds.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No user IDs provided for retry operation"
+        });
+      }
+
+      // Check for existing pending retry tasks for the same user type to prevent duplicates
+      const existingTask = await ctx.db.backgroundTask.findFirst({
+        where: {
+          taskType: 'BULK_CLERK_RETRY',
+          status: { in: ['PENDING', 'RUNNING'] },
+          title: `Bulk Clerk Account Retry - ${input.userType}s`,
+          createdBy: ctx.userId,
+          createdAt: {
+            gte: new Date(Date.now() - 5 * 60 * 1000) // Within last 5 minutes
+          }
+        }
+      });
+
+      if (existingTask) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `A bulk retry task for ${input.userType}s is already in progress. Please wait for it to complete.`
+        });
+      }
+
       // Create background task for clerk retry
       const taskId = await backgroundTaskService.createTask(
         'BULK_CLERK_RETRY',
