@@ -899,6 +899,57 @@ export class BackgroundTaskService {
     await this.logTaskExecution(taskId, 'INFO', 'Task cancelled by user');
   }
 
+  async pauseTask(taskId: string) {
+    const task = await db.backgroundTask.findUnique({
+      where: { id: taskId }
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    if (!['PENDING', 'RUNNING'].includes(task.status)) {
+      throw new Error('Cannot pause task in current state');
+    }
+
+    await db.backgroundTask.update({
+      where: { id: taskId },
+      data: {
+        status: 'PAUSED'
+      }
+    });
+
+    await this.logTaskExecution(taskId, 'INFO', 'Task paused by user');
+  }
+
+  async resumeTask(taskId: string) {
+    const task = await db.backgroundTask.findUnique({
+      where: { id: taskId }
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    if (task.status !== 'PAUSED') {
+      throw new Error('Cannot resume task that is not paused');
+    }
+
+    await db.backgroundTask.update({
+      where: { id: taskId },
+      data: {
+        status: 'PENDING'
+      }
+    });
+
+    await this.logTaskExecution(taskId, 'INFO', 'Task resumed by user');
+
+    // Restart processing if not already running
+    if (!this.isProcessing) {
+      this.startProcessing();
+    }
+  }
+
   // Method to stop the processing
   async stopProcessing() {
     if (this.isProcessing) {

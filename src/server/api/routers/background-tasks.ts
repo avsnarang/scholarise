@@ -25,7 +25,7 @@ const emailConfigSchema = z.object({
 interface TaskResponse {
   id: string;
   type: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'paused';
   progress: {
     processed: number;
     total: number;
@@ -61,7 +61,7 @@ export const backgroundTasksRouter = createTRPCRouter({
       
       // Transform to match the existing interface with proper status mapping
       return tasks.map((task: BackgroundTask): TaskResponse => {
-        let uiStatus: 'pending' | 'processing' | 'completed' | 'failed';
+        let uiStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'paused';
         
         // Map database enum values to UI expected values
         switch (task.status) {
@@ -71,6 +71,9 @@ export const backgroundTasksRouter = createTRPCRouter({
             break;
           case 'RUNNING':
             uiStatus = 'processing';
+            break;
+          case 'PAUSED':
+            uiStatus = 'paused';
             break;
           case 'COMPLETED':
             uiStatus = 'completed';
@@ -157,6 +160,26 @@ export const backgroundTasksRouter = createTRPCRouter({
     }))
     .mutation(async ({ input }) => {
       await backgroundTaskService.cancelTask(input.taskId);
+      return { success: true };
+    }),
+
+  // Pause a running task
+  pauseTask: protectedProcedure
+    .input(z.object({
+      taskId: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      await backgroundTaskService.pauseTask(input.taskId);
+      return { success: true };
+    }),
+
+  // Resume a paused task
+  resumeTask: protectedProcedure
+    .input(z.object({
+      taskId: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      await backgroundTaskService.resumeTask(input.taskId);
       return { success: true };
     }),
 
