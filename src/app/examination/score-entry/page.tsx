@@ -186,23 +186,35 @@ function ScoreEntryContent() {
     return 'inactive';
   };
 
-  // Filter schemas by teacher's subjects if user is a teacher
-  const availableSchemas = isTeacher && !isAdmin && !isSuperAdmin && selectedClassId
+  // Backend already filters schemas for teachers, so we just need to filter by selected class/section
+  const availableSchemas = selectedClassId
     ? allAssessments.filter((schema: any) => {
-        const hasAssignment = teacherAssignments.some((assignment: any) => 
-          assignment.classId === selectedClassId && 
-          assignment.subjectId === schema.subjectId &&
-          (selectedSectionId === "all" || !assignment.sectionId || assignment.sectionId === selectedSectionId)
-        );
+        // Check if schema applies to the selected class
+        if (schema.classId === selectedClassId) {
+          // Check if schema applies to the selected section (if specific section is selected)
+          if (selectedSectionId && selectedSectionId !== "all") {
+            if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
+              return schema.appliedClasses.some((appliedClass: any) => 
+                appliedClass.classId === selectedClassId &&
+                (!appliedClass.sectionId || appliedClass.sectionId === selectedSectionId)
+              );
+            }
+            return true; // If no appliedClasses, assume it applies to all sections
+          }
+          return true; // If "all" sections selected or no section specified
+        }
         
-        // For teachers, exclude draft schemas (they should only see published and frozen)
-        const schemaStatus = getSchemaStatus(schema);
-        return hasAssignment && (schemaStatus === 'published' || schemaStatus === 'frozen');
+        // Check appliedClasses for multi-class schemas
+        if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
+          return schema.appliedClasses.some((appliedClass: any) => 
+            appliedClass.classId === selectedClassId &&
+            (selectedSectionId === "all" || !appliedClass.sectionId || appliedClass.sectionId === selectedSectionId)
+          );
+        }
+        
+        return false;
       })
-    : allAssessments.filter((schema: any) => {
-        // For admins, show all schemas
-        return true;
-      });
+    : allAssessments;
 
   // Fetch students for selected class and section
   const { data: studentsData, isLoading: studentsLoading } = api.student.getAll.useQuery(

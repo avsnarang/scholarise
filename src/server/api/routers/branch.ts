@@ -121,8 +121,44 @@ export const branchRouter = createTRPCRouter({
         });
       }
 
+      // If creating headquarters, use special ID
+      const branchData = input.code === 'HQ' && input.name === 'Headquarters' 
+        ? { ...input, id: 'headquarters' }
+        : input;
+
       return ctx.db.branch.create({
-        data: input,
+        data: branchData,
+      });
+    }),
+
+  createHeadquarters: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      // Check if headquarters already exists
+      const existingHQ = await ctx.db.branch.findUnique({
+        where: { id: 'headquarters' },
+      });
+
+      if (existingHQ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Headquarters branch already exists.",
+        });
+      }
+
+      // Create headquarters with predefined values
+      return ctx.db.branch.create({
+        data: {
+          id: 'headquarters',
+          name: 'Headquarters',
+          code: 'HQ',
+          address: 'Main Office',
+          city: 'Central City',
+          state: 'Central State',
+          country: 'Country',
+          phone: '+91 98169 00056',
+          email: 'info@tsh.edu.in',
+          order: 0,
+        },
       });
     }),
 

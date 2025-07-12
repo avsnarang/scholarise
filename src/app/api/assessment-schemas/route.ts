@@ -13,26 +13,128 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const branchId = searchParams.get('branchId');
 
-    const schemas = await db.assessmentSchema.findMany({
-      where: {
-        ...(branchId && { branchId }),
-      },
-      include: {
-        class: true,
-        subject: true,
-        termRelation: true,
-        components: {
-          include: {
-            subCriteria: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-        permissions: true,
-      },
-      orderBy: { createdAt: 'desc' },
+    // Check if user is a teacher by looking up their teacher record
+    const teacher = await db.teacher.findFirst({
+      where: { clerkId: userId },
+      select: { id: true, branchId: true }
     });
 
-    return NextResponse.json(schemas);
+    // Check if user is a superadmin (assuming they have a user record with superadmin role)
+    const userMetadata = await db.userRole.findFirst({
+      where: { userId: userId },
+      include: { role: true }
+    });
+
+    const isSuperAdmin = userMetadata?.role?.name === 'SuperAdmin' || userMetadata?.role?.name === 'SUPER_ADMIN';
+
+    let schemas;
+
+    if (teacher && !isSuperAdmin) {
+      // If user is a teacher (and not superadmin), filter by their subject assignments
+      const teacherAssignments = await db.subjectTeacher.findMany({
+        where: {
+          teacherId: teacher.id,
+          isActive: true,
+        },
+        select: {
+          subjectId: true,
+          classId: true,
+          sectionId: true,
+        },
+      });
+
+      if (teacherAssignments.length === 0) {
+        return NextResponse.json([]);
+      }
+
+      // Get unique subject IDs and class IDs from teacher assignments
+      const assignedSubjectIds = [...new Set(teacherAssignments.map(a => a.subjectId))];
+      const assignedClassIds = [...new Set(teacherAssignments.map(a => a.classId))];
+
+      schemas = await db.assessmentSchema.findMany({
+        where: {
+          ...(branchId && { branchId }),
+          // Filter by subjects the teacher is assigned to
+          subjectId: { in: assignedSubjectIds },
+          // Filter by classes the teacher is assigned to
+          classId: { in: assignedClassIds },
+          // Only show published or frozen schemas to teachers
+          OR: [
+            { isPublished: true, isActive: true },
+            { isPublished: true, isActive: false },
+          ],
+        },
+        include: {
+          class: true,
+          subject: true,
+          termRelation: true,
+          components: {
+            include: {
+              subCriteria: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          permissions: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Further filter schemas based on section assignments
+      const filteredSchemas = schemas.filter(schema => {
+        // Check if the teacher is assigned to this specific class-subject combination
+        const hasAssignment = teacherAssignments.some(assignment => 
+          assignment.subjectId === schema.subjectId && 
+          assignment.classId === schema.classId
+        );
+
+        if (!hasAssignment) return false;
+
+        // Check appliedClasses for multi-class schemas
+        if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
+          return schema.appliedClasses.some((appliedClass: any) => {
+            const classAssignments = teacherAssignments.filter(a => 
+              a.classId === appliedClass.classId && 
+              a.subjectId === schema.subjectId
+            );
+
+            return classAssignments.some(assignment => {
+              // If schema applies to specific section, check if teacher is assigned to that section
+              if (appliedClass.sectionId) {
+                return assignment.sectionId === appliedClass.sectionId || assignment.sectionId === null;
+              }
+              // If schema applies to all sections, teacher just needs to be assigned to the class
+              return true;
+            });
+          });
+        }
+
+        return true;
+      });
+
+      return NextResponse.json(filteredSchemas);
+    } else {
+      // If user is not a teacher or is a superadmin, show all schemas
+      schemas = await db.assessmentSchema.findMany({
+        where: {
+          ...(branchId && { branchId }),
+        },
+        include: {
+          class: true,
+          subject: true,
+          termRelation: true,
+          components: {
+            include: {
+              subCriteria: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          permissions: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return NextResponse.json(schemas);
+    }
   } catch (error) {
     console.error('Error fetching assessment schemas:', error);
     return NextResponse.json(

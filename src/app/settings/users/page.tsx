@@ -95,7 +95,7 @@ const getRoleBadgeColor = (role: string) => {
 
 export default function UsersPage() {
   return (
-    <RouteGuard requiredPermissions={[Permission.MANAGE_USERS]}>
+    <RouteGuard requiredPermissions={[Permission.MANAGE_ROLES]}>
       <PageWrapper>
         <UserManagement />
       </PageWrapper>
@@ -198,14 +198,14 @@ function UserManagement() {
   };
 
   // Mutation for assigning roles
-  const assignRoleMutation = api.role.assignRoleToUser.useMutation({
+  const assignRoleMutation = api.role.assignRole.useMutation({
     onSuccess: () => {
       toast({
         title: "Role updated",
         description: "User role has been updated successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error updating role",
         description: error.message,
@@ -223,7 +223,7 @@ function UserManagement() {
     });
     
     // Find the role name to update the UI
-    const role = roles.find((r: RoleType) => r.id === roleId);
+    const role = roles.find((r: any) => r.id === roleId);
     if (role) {
       setUsers(
         users.map((user) =>
@@ -313,7 +313,7 @@ function UserManagement() {
                         All roles
                         {!selectedRole && <Check className="h-4 w-4" />}
                       </CommandItem>
-                      {roles.map((role: RoleType) => (
+                      {roles.map((role: any) => (
                         <CommandItem
                           key={role.id}
                           onSelect={() => setSelectedRole(role.id)}
@@ -444,7 +444,7 @@ function UserManagement() {
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Roles</SelectLabel>
-                              {roles.map((role: RoleType) => (
+                              {roles.map((role: any) => (
                                 <SelectItem key={role.id} value={role.id}>
                                   <div className="flex items-center">
                                     <Badge variant="outline" className={`${getRoleBadgeColor(role.name)} text-xs font-normal mr-2`}>

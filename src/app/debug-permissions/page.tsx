@@ -13,9 +13,9 @@ export default function DebugPermissionsPage() {
   const { user } = useAuth();
   const {
     userRoles,
+    userPermissions,
     isSuperAdmin,
     forceAdmin,
-    customRolePermissions,
     isLoadingPermissions,
     can,
     canAccess,
@@ -31,7 +31,7 @@ export default function DebugPermissionsPage() {
     Permission.VIEW_STUDENTS,
     Permission.VIEW_TEACHERS,
     Permission.VIEW_EMPLOYEES,
-    Permission.MANAGE_USERS,
+    Permission.MANAGE_ROLES,
     Permission.CREATE_STUDENT,
     Permission.EDIT_STUDENT,
     Permission.VIEW_CLASSES,
@@ -55,7 +55,7 @@ export default function DebugPermissionsPage() {
     const routes = [
       { name: "Attendance", permissions: [Permission.VIEW_ATTENDANCE] },
       { name: "Students", permissions: [Permission.VIEW_STUDENTS] },
-      { name: "User Management", permissions: [Permission.MANAGE_USERS] },
+      { name: "User Management", permissions: [Permission.MANAGE_ROLES] },
       { name: "Create Student", permissions: [Permission.CREATE_STUDENT] },
     ];
 
@@ -97,17 +97,17 @@ export default function DebugPermissionsPage() {
           </CardContent>
         </Card>
 
-        {/* Custom Role Permissions */}
+        {/* User Permissions */}
         <Card>
           <CardHeader>
-            <CardTitle>Custom Role Permissions</CardTitle>
+            <CardTitle>User Permissions</CardTitle>
           </CardHeader>
           <CardContent>
-            {customRolePermissions.length > 0 ? (
+            {userPermissions.length > 0 ? (
               <div className="space-y-2">
-                <p><strong>Count:</strong> {customRolePermissions.length}</p>
+                <p><strong>Count:</strong> {userPermissions.length}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {customRolePermissions.map((permission) => (
+                  {userPermissions.map((permission: string) => (
                     <Badge key={permission} variant="outline" className="text-xs">
                       {permission.replace(/_/g, " ")}
                     </Badge>
@@ -115,7 +115,7 @@ export default function DebugPermissionsPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">No custom role permissions loaded</p>
+              <p className="text-muted-foreground">No user permissions loaded</p>
             )}
           </CardContent>
         </Card>
@@ -205,9 +205,9 @@ export default function DebugPermissionsPage() {
               </div>
               
               <div>
-                <h4 className="font-semibold">Custom Role Permissions Array:</h4>
+                <h4 className="font-semibold">User Permissions Array:</h4>
                 <pre className="text-xs bg-muted p-2 rounded overflow-auto">
-                  {JSON.stringify(customRolePermissions, null, 2)}
+                  {JSON.stringify(userPermissions, null, 2)}
                 </pre>
               </div>
             </div>

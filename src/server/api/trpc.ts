@@ -27,6 +27,13 @@ import { withBranchFilter } from "@/utils/branch-filter";
 interface CreateContextOptions {
   userId: string | null;
   auth: any;
+  user?: {
+    id: string;
+    role?: string;
+    roles?: string[];
+    isHQ?: boolean;
+    branchId?: string;
+  } | null;
 }
 
 /**
@@ -53,6 +60,7 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
   return {
     userId: opts.userId,
     auth: opts.auth,
+    user: opts.user,
     db,
   };
 };

@@ -81,10 +81,45 @@ export default function BranchesPage() {
     },
   });
 
+  const createHeadquartersMutation = api.branch.createHeadquarters.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Headquarters created",
+        description: "The headquarters branch has been created successfully.",
+        variant: "success",
+      });
+      void refetchBranches();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create headquarters. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handlers
   const handleAddBranch = () => {
     setSelectedBranch(null);
     setIsFormModalOpen(true);
+  };
+
+  const handleCreateHeadquarters = () => {
+    // Check if headquarters already exists
+    const headquartersExists = branches?.some(branch => branch.id === 'headquarters' || branch.code === 'HQ');
+    
+    if (headquartersExists) {
+      toast({
+        title: "Headquarters already exists",
+        description: "A headquarters branch has already been created.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create headquarters using the dedicated mutation
+    createHeadquartersMutation.mutate();
   };
 
   const handleEditBranch = (branch: any) => {
@@ -140,6 +175,15 @@ export default function BranchesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={handleCreateHeadquarters}
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-50 clickable"
+              disabled={createHeadquartersMutation.isPending}
+            >
+              <Building className="mr-2 h-4 w-4" />
+              {createHeadquartersMutation.isPending ? "Creating..." : "Create Headquarters"}
+            </Button>
             <Button
               onClick={handleAddBranch}
               className="bg-[#00501B] hover:bg-[#00501B]/90 text-white clickable"

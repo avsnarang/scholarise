@@ -18,7 +18,8 @@ export default async function MoneyCollectionPage() {
   const caller = createCaller({ 
     db, 
     auth: {}, 
-    userId: null 
+    userId: null,
+    user: null
   });
   const moneyCollections = await caller.moneyCollection.getAll() as unknown as MoneyCollectionWithRelations[];
   

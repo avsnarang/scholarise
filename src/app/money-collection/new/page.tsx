@@ -11,7 +11,7 @@ export default async function NewMoneyCollectionPage() {
   const cookieStore = await cookies();
   const branchId = cookieStore.get("currentBranchId")?.value || "";
   
-  const caller = createCaller({ db, auth: {}, userId: null });
+  const caller = createCaller({ db, auth: {}, userId: null, user: null });
   const branches = await caller.branch.getAll();
   
   // Get active classes for the current branch

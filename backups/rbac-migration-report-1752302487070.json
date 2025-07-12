@@ -1,0 +1,111 @@
+{
+  "migration": {
+    "timestamp": "2025-07-12T06:41:27.070Z",
+    "success": 8,
+    "warnings": 4,
+    "errors": 0
+  },
+  "logs": [
+    {
+      "timestamp": "2025-07-12T06:41:24.081Z",
+      "step": "BACKUP",
+      "status": "success",
+      "message": "Starting backup of existing RBAC data..."
+    },
+    {
+      "timestamp": "2025-07-12T06:41:25.590Z",
+      "step": "BACKUP",
+      "status": "success",
+      "message": "Backup completed successfully",
+      "data": {
+        "backupPath": "/Users/voyager/Developer/scholarise/backups/rbac-migration-1752302484081.json",
+        "roles": 9,
+        "permissions": 0,
+        "rolePermissions": 0,
+        "userRoles": 7
+      }
+    },
+    {
+      "timestamp": "2025-07-12T06:41:25.590Z",
+      "step": "MIGRATE_PERMISSIONS",
+      "status": "success",
+      "message": "Starting migration of role permissions..."
+    },
+    {
+      "timestamp": "2025-07-12T06:41:25.590Z",
+      "step": "MIGRATE_PERMISSIONS",
+      "status": "success",
+      "message": "Role permissions migration completed"
+    },
+    {
+      "timestamp": "2025-07-12T06:41:25.590Z",
+      "step": "SEED_DEFAULTS",
+      "status": "success",
+      "message": "Seeding default system roles..."
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.508Z",
+      "step": "SEED_DEFAULTS",
+      "status": "success",
+      "message": "Default roles seeded successfully"
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.508Z",
+      "step": "VALIDATE",
+      "status": "success",
+      "message": "Validating migration..."
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.747Z",
+      "step": "VALIDATE",
+      "status": "warning",
+      "message": "Role has no permissions",
+      "data": {
+        "roleId": "cmbeq879u000i7iy0gl09zcxq",
+        "roleName": "principal"
+      }
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.747Z",
+      "step": "VALIDATE",
+      "status": "warning",
+      "message": "Role has no permissions",
+      "data": {
+        "roleId": "cmbeq87mz000k7iy0avtj31vf",
+        "roleName": "accountant"
+      }
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.747Z",
+      "step": "VALIDATE",
+      "status": "warning",
+      "message": "Role has no permissions",
+      "data": {
+        "roleId": "cmbeq87tl000l7iy0ac0bmfjw",
+        "roleName": "receptionist"
+      }
+    },
+    {
+      "timestamp": "2025-07-12T06:41:26.747Z",
+      "step": "VALIDATE",
+      "status": "warning",
+      "message": "Role has no permissions",
+      "data": {
+        "roleId": "cmbeq87zw000m7iy0syedbk25",
+        "roleName": "transport_manager"
+      }
+    },
+    {
+      "timestamp": "2025-07-12T06:41:27.070Z",
+      "step": "VALIDATE",
+      "status": "success",
+      "message": "Migration validation completed",
+      "data": {
+        "totalRoles": 9,
+        "totalUserRoles": 7,
+        "rolesWithPermissions": 5
+      }
+    }
+  ],
+  "backupPath": "/Users/voyager/Developer/scholarise/backups/rbac-migration-1752302484081.json"
+}

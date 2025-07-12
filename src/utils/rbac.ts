@@ -55,9 +55,21 @@ export const rolePermissions: PermissionMap = {
     Permission.MANAGE_TRANSPORT_ASSIGNMENTS,
     Permission.VIEW_FEES,
     Permission.MANAGE_FEES,
+    Permission.VIEW_REPORTS,
+    Permission.VIEW_SETTINGS,
+    Permission.MANAGE_ROLES,
+    // Finance Module Permissions for Admin
+    Permission.VIEW_FINANCE_MODULE,
+    Permission.MANAGE_FEE_HEADS,
+    Permission.MANAGE_FEE_TERMS,
+    Permission.MANAGE_CLASSWISE_FEES,
+    Permission.COLLECT_FEES,
+    Permission.VIEW_FINANCE_REPORTS,
+    // Question Papers
     Permission.VIEW_QUESTION_PAPERS,
     Permission.CREATE_QUESTION_PAPER,
     Permission.MANAGE_QUESTION_PAPERS,
+    // Examinations
     Permission.VIEW_EXAMINATIONS,
     Permission.MANAGE_EXAM_TYPES,
     Permission.MANAGE_EXAM_CONFIGURATIONS,
@@ -67,20 +79,10 @@ export const rolePermissions: PermissionMap = {
     Permission.MANAGE_ASSESSMENTS,
     Permission.MANAGE_GRADE_SCALES,
     Permission.VIEW_EXAM_REPORTS,
-    Permission.VIEW_REPORTS,
-    Permission.VIEW_SETTINGS,
+    // System
     Permission.MANAGE_BRANCHES,
     Permission.MANAGE_ACADEMIC_SESSIONS,
     Permission.MANAGE_SUBJECTS,
-    Permission.MANAGE_USERS,
-    Permission.MANAGE_ATTENDANCE_CONFIG,
-    // Finance Module Permissions for Admin
-    Permission.VIEW_FINANCE_MODULE,
-    Permission.MANAGE_FEE_HEADS,
-    Permission.MANAGE_FEE_TERMS,
-    Permission.MANAGE_CLASSWISE_FEES,
-    Permission.COLLECT_FEES,
-    Permission.VIEW_FINANCE_REPORTS,
   ],
   
   [Role.PRINCIPAL]: [
@@ -221,6 +223,7 @@ export const moduleViewPermissions: Record<string, Permission> = {
   "Settings": Permission.VIEW_SETTINGS,
   "Finance": Permission.VIEW_FINANCE_MODULE,
   "Examination": Permission.VIEW_EXAMINATIONS,
+  "RBAC Settings": Permission.MANAGE_ROLES,
   
   // Submodules 
   "Class Students": Permission.MANAGE_CLASS_STUDENTS,
@@ -240,8 +243,8 @@ export const moduleViewPermissions: Record<string, Permission> = {
   "Branches": Permission.MANAGE_BRANCHES,
   "Academic Sessions": Permission.MANAGE_ACADEMIC_SESSIONS,
   "Subjects": Permission.MANAGE_SUBJECTS,
-  "Users": Permission.MANAGE_USERS,
-  "User Roles": Permission.MANAGE_USERS,
+  "Users": Permission.MANAGE_ROLES,
+  "User Roles": Permission.MANAGE_ROLES,
   "Attendance Configuration": Permission.MANAGE_ATTENDANCE_CONFIG,
   
   // Submodules for Question Papers
@@ -339,6 +342,7 @@ export const navItemPermissions = {
   manageAssessments: [Permission.MANAGE_ASSESSMENTS],
   gradeScales: [Permission.MANAGE_GRADE_SCALES],
   examReports: [Permission.VIEW_EXAM_REPORTS],
+  terms: [Permission.MANAGE_ACADEMIC_SESSIONS],
   
   // Salary module
   salary: [Permission.VIEW_SALARY],
@@ -379,7 +383,7 @@ export const navItemPermissions = {
   branches: [Permission.MANAGE_BRANCHES],
   academicSessions: [Permission.MANAGE_ACADEMIC_SESSIONS],
   subjects: [Permission.MANAGE_SUBJECTS],
-  users: [Permission.MANAGE_USERS],
+  users: [Permission.MANAGE_ROLES],
   attendanceConfig: [Permission.MANAGE_ATTENDANCE_CONFIG],
 };
 

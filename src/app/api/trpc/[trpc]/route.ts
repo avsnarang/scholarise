@@ -21,20 +21,23 @@ async function handleRequest(req: NextRequest) {
   const user = await currentUser();
   const userId = user?.id || null;
 
-  // Make sure database is initialized before creating the context
-  if (!db) {
-    console.error("Database connection is not initialized");
-  }
-
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
     createContext: () => {
+      // Create context with proper user ID, metadata, and database connection
       return {
         userId,
         auth: { userId },
-        db,  // Ensure db is passed correctly
+        user: user ? {
+          id: user.id,
+          role: user.publicMetadata?.role as string,
+          roles: user.publicMetadata?.roles as string[],
+          isHQ: user.publicMetadata?.isHQ as boolean,
+          branchId: user.publicMetadata?.branchId as string,
+        } : null,
+        db,
       };
     },
     onError:

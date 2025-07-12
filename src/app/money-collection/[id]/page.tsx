@@ -17,7 +17,8 @@ export default async function MoneyCollectionDetailPage({ params }: PageProps) {
     const caller = createCaller({ 
       db, 
       auth: {}, 
-      userId: null 
+      userId: null,
+      user: null
     });
     
     const moneyCollection = await caller.moneyCollection.getById({

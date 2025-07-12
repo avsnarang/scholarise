@@ -87,6 +87,13 @@ export enum Permission {
   COLLECT_FEES = "collect_fees",
   VIEW_FINANCE_REPORTS = "view_finance_reports",
   
+  // System permissions
+  MANAGE_ROLES = "manage_roles",
+  MANAGE_BRANCHES = "manage_branches",
+  MANAGE_ACADEMIC_SESSIONS = "manage_academic_sessions",
+  MANAGE_SUBJECTS = "manage_subjects",
+  MANAGE_ATTENDANCE_CONFIG = "manage_attendance_config",
+  
   // Question Paper permissions
   VIEW_QUESTION_PAPERS = "view_question_papers",
   CREATE_QUESTION_PAPER = "create_question_paper",
@@ -108,11 +115,6 @@ export enum Permission {
   
   // Settings permissions
   VIEW_SETTINGS = "view_settings",
-  MANAGE_BRANCHES = "manage_branches",
-  MANAGE_ACADEMIC_SESSIONS = "manage_academic_sessions",
-  MANAGE_SUBJECTS = "manage_subjects",
-  MANAGE_USERS = "manage_users",
-  MANAGE_ATTENDANCE_CONFIG = "manage_attendance_config",
 }
 
 // Define user roles

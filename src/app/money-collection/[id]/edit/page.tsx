@@ -23,7 +23,7 @@ export default async function EditMoneyCollectionPage({ params }: PageProps) {
     const branchIdCookie = cookieStore.get("currentBranchId");
     const branchId = branchIdCookie?.value || "";
     
-    const caller = createCaller({ db, auth: {}, userId: null });
+    const caller = createCaller({ db, auth: {}, userId: null, user: null });
     const moneyCollection = await caller.moneyCollection.getById({
       id,
     });

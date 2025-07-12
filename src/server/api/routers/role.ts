@@ -2,673 +2,662 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { Permission, Role } from "@/types/permissions";
-import { rolePermissions } from "@/utils/rbac";
+import { rbacService } from "@/services/rbac-service";
 
 /**
  * Router for managing RBAC roles and permissions
  */
 export const roleRouter = createTRPCRouter({
-  // Get all roles with their permission counts
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    // First check if we have any roles in the database
-    const existingRoles = await (ctx.db as any).rbacRole.findMany({
-      include: {
-        _count: {
-          select: {
-            rolePermissions: true,
-            userRoles: true,
-          },
-        },
-      },
-      orderBy: { name: "asc" },
-    });
+  // Get all roles
+  getAll: protectedProcedure
+    .input(z.object({ branchId: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      return rbacService.getAllRoles(input?.branchId);
+    }),
 
-    // If no roles exist, seed the database with default roles
-    if (existingRoles.length === 0) {
-      await seedDefaultRoles(ctx.db);
-      
-      // Fetch again after seeding
-      return await (ctx.db as any).rbacRole.findMany({
-        include: {
-          _count: {
-            select: {
-              rolePermissions: true,
-              userRoles: true,
-            },
-          },
-        },
-        orderBy: { name: "asc" },
-      });
-    } else {
-      // If roles exist, check if we need to update system role flags
-      await fixSystemRoleFlags(ctx.db);
-    }
-
-    return existingRoles;
-  }),
-
-  // Get a specific role with all its permissions
+  // Get a specific role by ID
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const role = await (ctx.db as any).rbacRole.findUnique({
-        where: { id: input.id },
-        include: {
-          rolePermissions: {
-            include: {
-              permission: true,
-            },
-          },
-          _count: {
-            select: {
-              userRoles: true,
-            },
-          },
-        },
-      });
-
+    .query(async ({ input }) => {
+      const role = await rbacService.getRole(input.id);
       if (!role) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Role not found",
         });
       }
-
       return role;
-    }),
-
-  // Get user permissions by roleId (JSON-based system)
-  getUserPermissionsByRoleId: protectedProcedure
-    .input(z.object({ roleId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      try {
-        // Get role with JSON permissions
-        const role = await (ctx.db as any).rbacRole.findUnique({
-          where: { id: input.roleId },
-          select: {
-            permissions: true,
-            isSystem: true,
-            name: true,
-          },
-        });
-
-        if (!role) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Role not found",
-          });
-        }
-
-        // If role has JSON permissions, return them directly
-        if (role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0) {
-          return role.permissions;
-        } else {
-          // Fall back to relational table for backward compatibility
-          const roleWithPermissions = await (ctx.db as any).rbacRole.findUnique({
-            where: { id: input.roleId },
-            include: {
-              rolePermissions: {
-                include: {
-                  permission: true,
-                },
-              },
-            },
-          });
-
-          if (!roleWithPermissions) {
-            return [];
-          }
-
-          // Extract permissions from the role
-          const permissions = roleWithPermissions.rolePermissions.map((rp: any) => rp.permission.name);
-          return permissions;
-        }
-      } catch (error) {
-        console.error("Error fetching user permissions by roleId:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to retrieve permissions",
-        });
-      }
     }),
 
   // Create a new role
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string().min(1),
+        name: z.string().min(1, "Role name is required"),
         description: z.string().optional(),
-        copyFromRoleId: z.string().optional(),
+        permissions: z.array(z.nativeEnum(Permission)),
+        branchId: z.string().optional(),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      try {
-        // Create the new role
-        const newRole = await (ctx.db as any).rbacRole.create({
-          data: {
-            name: input.name,
-            description: input.description || "",
-            isSystem: false,
-          },
-        });
-
-        // If copying permissions from another role
-        if (input.copyFromRoleId) {
-          await copyRolePermissions(ctx.db, input.copyFromRoleId, newRole.id);
-        }
-
-        return newRole;
-      } catch (error: any) {
-        if (error.code === "P2002") {
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can create roles)
+      const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId, userMetadata);
+      
+      if (!isSuperAdmin) {
+        // Check if user has permission to create roles
+        const canManageRoles = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.MANAGE_ROLES,
+          undefined,
+          userMetadata
+        );
+        
+        if (!canManageRoles) {
           throw new TRPCError({
-            code: "CONFLICT",
-            message: "A role with this name already exists",
+            code: "FORBIDDEN",
+            message: "You don't have permission to create roles",
           });
         }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "An error occurred while creating the role",
-          cause: error,
-        });
-      }
-    }),
-
-  // Update a role
-  update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string().min(1).optional(),
-        description: z.string().optional(),
-        isActive: z.boolean().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-
-      // Check if role exists
-      const role = await (ctx.db as any).rbacRole.findUnique({
-        where: { id },
-      });
-
-      if (!role) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Role not found",
-        });
       }
 
-      // Prevent modification of system roles (except for description and isActive)
-      if (role.isSystem && input.name) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Cannot modify name of system roles",
-        });
-      }
-
-      return (ctx.db as any).rbacRole.update({
-        where: { id },
-        data,
+      return rbacService.createRole(input.name, input.permissions, {
+        description: input.description,
+        branchId: input.branchId,
       });
     }),
 
-  // Delete a role
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      // Check if role exists and is not a system role
-      const role = await (ctx.db as any).rbacRole.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!role) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Role not found",
-        });
-      }
-
-      if (role.isSystem) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Cannot delete system roles",
-        });
-      }
-
-      // Delete the role (cascade will delete role permissions)
-      return (ctx.db as any).rbacRole.delete({
-        where: { id: input.id },
-      });
-    }),
-
-  // Get all permissions 
-  getAllPermissions: protectedProcedure.query(async ({ ctx }) => {
-    // First check if we have any permissions in the database
-    const existingPermissions = await (ctx.db as any).rbacPermission.findMany({
-      orderBy: { name: "asc" },
-    });
-
-    // If no permissions exist, seed the database with default permissions
-    if (existingPermissions.length === 0) {
-      await seedDefaultPermissions(ctx.db);
-      
-      // Fetch again after seeding
-      return await (ctx.db as any).rbacPermission.findMany({
-        orderBy: { name: "asc" },
-      });
-    }
-
-    return existingPermissions;
-  }),
-
-  // Get permissions for a specific role (JSON-based system)
-  getRolePermissions: protectedProcedure
-    .input(z.object({ roleId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      // First try to get permissions from JSON field
-      const role = await (ctx.db as any).rbacRole.findUnique({
-        where: { id: input.roleId },
-        select: {
-          permissions: true,
-          isSystem: true,
-          name: true,
-        },
-      });
-
-      if (!role) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Role not found",
-        });
-      }
-
-      // If role has JSON permissions, use them
-      if (role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0) {
-        // Get permission objects from the permission names stored in JSON
-        const permissions = await (ctx.db as any).rbacPermission.findMany({
-          where: {
-            name: {
-              in: role.permissions,
-            },
-          },
-        });
-        return permissions;
-      } else {
-        // Fall back to relational table for backward compatibility
-        const rolePermissions = await (ctx.db as any).rbacRolePermission.findMany({
-          where: { roleId: input.roleId },
-          include: {
-            permission: true,
-          },
-        });
-
-        return rolePermissions.map((rp: any) => rp.permission);
-      }
-    }),
-
-  // Update permissions for a role (JSON-based system)
-  updateRolePermissions: protectedProcedure
+  // Update role permissions
+  updatePermissions: protectedProcedure
     .input(
       z.object({
         roleId: z.string(),
-        permissions: z.array(z.string()),
+        permissions: z.array(z.nativeEnum(Permission)),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      const { roleId, permissions } = input;
-
-      // Check if role exists
-      const role = await (ctx.db as any).rbacRole.findUnique({
-        where: { id: roleId },
-      });
-
-      if (!role) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Role not found",
-        });
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can update roles)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Check if user has permission to manage roles
+        const canManageRoles = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.MANAGE_ROLES
+        );
+        
+        if (!canManageRoles) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to update roles",
+          });
+        }
       }
 
-      // For system roles, prevent removing all permissions
-      if (role.isSystem && permissions.length === 0) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Cannot remove all permissions from system roles",
-        });
-      }
-
-      // Convert permission IDs to permission names for JSON storage
-      const permissionObjects = await (ctx.db as any).rbacPermission.findMany({
-        where: {
-          id: {
-            in: permissions,
-          },
-        },
-        select: {
-          name: true,
-        },
-      });
-
-      const permissionNames = permissionObjects.map((p: any) => p.name);
-
-      // Update the role with JSON permissions instead of relational tables
-      await (ctx.db as any).rbacRole.update({
-        where: { id: roleId },
-        data: {
-          permissions: permissionNames, // Store as JSON array
-        },
-      });
-
-      // Also maintain the relational table for backward compatibility if needed
-      // Delete all existing permissions for this role
-      await (ctx.db as any).rbacRolePermission.deleteMany({
-        where: { roleId },
-      });
-
-      // Add the new permissions
-      if (permissions.length > 0) {
-        // Create role permissions directly using the provided permission IDs
-        const rolePermissions = permissions.map((permissionId) => ({
-          roleId,
-          permissionId,
-        }));
-
-        // Use createMany for efficient bulk creation
-        await (ctx.db as any).rbacRolePermission.createMany({
-          data: rolePermissions,
-          skipDuplicates: true,
-        });
-      }
-
+      await rbacService.updateRolePermissions(input.roleId, input.permissions);
       return { success: true };
     }),
 
-  // Assign role to a user
-  assignRoleToUser: protectedProcedure
+  // Get user roles
+  getUserRoles: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can view anyone's roles)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (isSuperAdmin) {
+        const userRoles = await rbacService.getUserRoles(input.userId);
+        // Get role details for each role
+        const rolesWithDetails = await Promise.all(
+          userRoles.map(async (userRole) => {
+            const roleDetails = await rbacService.getRole(userRole.roleId);
+            return {
+              ...userRole,
+              role: roleDetails
+            };
+          })
+        );
+        return rolesWithDetails;
+      }
+      
+      // Users can only see their own roles unless they have permission to view others
+      const canViewOtherUsers = await rbacService.hasPermission(
+        ctx.userId,
+        Permission.VIEW_EMPLOYEES
+      );
+      
+      if (input.userId !== ctx.userId && !canViewOtherUsers) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have permission to view other users' roles",
+        });
+      }
+
+      const userRoles = await rbacService.getUserRoles(input.userId);
+      // Get role details for each role
+      const rolesWithDetails = await Promise.all(
+        userRoles.map(async (userRole) => {
+          const roleDetails = await rbacService.getRole(userRole.roleId);
+          return {
+            ...userRole,
+            role: roleDetails
+          };
+        })
+      );
+      return rolesWithDetails;
+    }),
+
+  // Get user permissions
+  getUserPermissions: protectedProcedure
+    .input(z.object({ 
+      userId: z.string(),
+      branchId: z.string().optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can view anyone's permissions)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (isSuperAdmin) {
+        return rbacService.getUserPermissions(input.userId, input.branchId);
+      }
+      
+      // Users can only see their own permissions unless they have permission to view others
+      const canViewOtherUsers = await rbacService.hasPermission(
+        ctx.userId,
+        Permission.VIEW_EMPLOYEES
+      );
+      
+      if (input.userId !== ctx.userId && !canViewOtherUsers) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have permission to view other users' permissions",
+        });
+      }
+
+      return rbacService.getUserPermissions(input.userId, input.branchId);
+    }),
+
+  // Assign role to user
+  assignRole: protectedProcedure
     .input(
       z.object({
         userId: z.string(),
         roleId: z.string(),
+        branchId: z.string().optional(),
         teacherId: z.string().optional(),
         employeeId: z.string().optional(),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      const { userId, roleId, teacherId, employeeId } = input;
-
-      try {
-        // Check if role exists
-        const role = await (ctx.db as any).rbacRole.findUnique({
-          where: { id: roleId },
-        });
-
-        if (!role) {
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can assign roles)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Check if user has permission to manage roles
+        const canManageRoles = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.MANAGE_ROLES
+        );
+        
+        if (!canManageRoles) {
           throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Role not found",
+            code: "FORBIDDEN",
+            message: "You don't have permission to assign roles",
           });
         }
-
-        // Check if the user already has this role
-        const existingRole = await (ctx.db as any).userRole.findFirst({
-          where: {
-            userId,
-            roleId,
-          },
-        });
-
-        if (existingRole) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "User already has this role",
-          });
-        }
-
-        // Create the role assignment
-        const userRole = await (ctx.db as any).userRole.create({
-          data: {
-            userId,
-            roleId,
-            teacherId,
-            employeeId,
-          },
-        });
-
-        return { success: true, userRole };
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to assign role to user",
-          cause: error,
-        });
       }
+
+      await rbacService.assignRole(input.userId, input.roleId, {
+        branchId: input.branchId,
+        teacherId: input.teacherId,
+        employeeId: input.employeeId,
+      });
+
+      return { success: true };
     }),
 
-  // Remove role from a user
-  removeRoleFromUser: protectedProcedure
+  // Remove role from user
+  removeRole: protectedProcedure
     .input(
       z.object({
         userId: z.string(),
         roleId: z.string(),
+        branchId: z.string().optional(),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      try {
-        // Remove role from user
-        await (ctx.db as any).userRole.deleteMany({
-          where: {
-            userId: input.userId,
-            roleId: input.roleId,
-          },
-        });
-
-        return { success: true };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to remove role from user",
-          cause: error,
-        });
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can remove roles)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Check if user has permission to manage roles
+        const canManageRoles = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.MANAGE_ROLES
+        );
+        
+        if (!canManageRoles) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to remove roles",
+          });
+        }
       }
+
+      await rbacService.removeRole(input.userId, input.roleId, input.branchId);
+      return { success: true };
     }),
 
-  // Get roles assigned to a user
-  getUserRoles: protectedProcedure
+  // Check if user has permission
+  hasPermission: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        permission: z.nativeEnum(Permission),
+        branchId: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can check anyone's permissions)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Users can only check their own permissions unless they have permission to view others
+        const canViewOtherUsers = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_EMPLOYEES
+        );
+        
+        if (input.userId !== ctx.userId && !canViewOtherUsers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to check other users' permissions",
+          });
+        }
+      }
+
+      return rbacService.hasPermission(input.userId, input.permission, input.branchId);
+    }),
+
+  // Check if user has any of the specified permissions
+  hasAnyPermission: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        permissions: z.array(z.nativeEnum(Permission)),
+        branchId: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can check anyone's permissions)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Users can only check their own permissions unless they have permission to view others
+        const canViewOtherUsers = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_EMPLOYEES
+        );
+        
+        if (input.userId !== ctx.userId && !canViewOtherUsers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to check other users' permissions",
+          });
+        }
+      }
+
+      return rbacService.hasAnyPermission(input.userId, input.permissions, input.branchId);
+    }),
+
+  // Check if user has all of the specified permissions
+  hasAllPermissions: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        permissions: z.array(z.nativeEnum(Permission)),
+        branchId: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can check anyone's permissions)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Users can only check their own permissions unless they have permission to view others
+        const canViewOtherUsers = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_EMPLOYEES
+        );
+        
+        if (input.userId !== ctx.userId && !canViewOtherUsers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to check other users' permissions",
+          });
+        }
+      }
+
+      return rbacService.hasAllPermissions(input.userId, input.permissions, input.branchId);
+    }),
+
+  // Check if user has a specific role
+  hasRole: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        roleName: z.string(),
+        branchId: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can check anyone's roles)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Users can only check their own roles unless they have permission to view others
+        const canViewOtherUsers = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_EMPLOYEES
+        );
+        
+        if (input.userId !== ctx.userId && !canViewOtherUsers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to check other users' roles",
+          });
+        }
+      }
+
+      return rbacService.hasRole(input.userId, input.roleName, input.branchId);
+    }),
+
+  // Check if user is super admin
+  isSuperAdmin: protectedProcedure
     .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      try {
-        const userRoles = await (ctx.db as any).userRole.findMany({
-          where: { userId: input.userId },
-          include: {
-            role: true,
-          },
-        });
+    .query(async ({ input, ctx }) => {
+      // Check if user is super admin first (super admins can check anyone's admin status)
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+      
+      if (!isSuperAdmin) {
+        // Users can only check their own super admin status unless they have permission to view others
+        const canViewOtherUsers = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_EMPLOYEES
+        );
+        
+        if (input.userId !== ctx.userId && !canViewOtherUsers) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to check other users' admin status",
+          });
+        }
+      }
 
-        return userRoles.map((ur: any) => ur.role);
-      } catch (error) {
+      return rbacService.isSuperAdmin(input.userId);
+    }),
+
+  // Get all available permissions
+  getAllPermissions: protectedProcedure.query(async ({ ctx }) => {
+    // Check if user is super admin first (super admins can view all permissions)
+    const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+    const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId, userMetadata);
+    
+    if (!isSuperAdmin) {
+      // Check if user has permission to view permissions
+      const canViewPermissions = await rbacService.hasPermission(
+        ctx.userId,
+        Permission.MANAGE_ROLES,
+        undefined,
+        userMetadata
+      );
+      
+      if (!canViewPermissions) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to retrieve user roles",
-          cause: error,
+          code: "FORBIDDEN",
+          message: "You don't have permission to view permissions",
         });
       }
-    }),
+    }
+
+    return Object.values(Permission).map(permission => ({
+      name: permission,
+      description: getPermissionDescription(permission),
+      category: getPermissionCategory(permission),
+    }));
+  }),
+
+  // Seed default roles
+  seedDefaultRoles: protectedProcedure.mutation(async ({ ctx }) => {
+    // Only super admins can seed default roles
+    const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+    
+    if (!isSuperAdmin) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Only super admins can seed default roles",
+      });
+    }
+
+    await rbacService.seedDefaultRoles();
+    return { success: true };
+  }),
+
+  // Clear RBAC cache
+  clearCache: protectedProcedure.mutation(async ({ ctx }) => {
+    // Only super admins can clear cache
+    const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId);
+    
+    if (!isSuperAdmin) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Only super admins can clear the cache",
+      });
+    }
+
+    rbacService.clearCache();
+    return { success: true };
+  }),
 });
 
 // Helper functions
+function getPermissionDescription(permission: Permission): string {
+  const descriptions: Record<Permission, string> = {
+    [Permission.VIEW_DASHBOARD]: "View dashboard and analytics",
+    [Permission.VIEW_STUDENTS]: "View student information",
+    [Permission.CREATE_STUDENT]: "Create new student records",
+    [Permission.EDIT_STUDENT]: "Edit existing student records",
+    [Permission.DELETE_STUDENT]: "Delete student records",
+    [Permission.MANAGE_ADMISSIONS]: "Manage student admissions",
+    [Permission.MANAGE_TRANSFER_CERTIFICATES]: "Manage transfer certificates",
+    [Permission.VIEW_MONEY_COLLECTION]: "View money collection records",
+    [Permission.CREATE_MONEY_COLLECTION]: "Create money collection records",
+    [Permission.EDIT_MONEY_COLLECTION]: "Edit money collection records",
+    [Permission.DELETE_MONEY_COLLECTION]: "Delete money collection records",
+    [Permission.VIEW_TEACHERS]: "View teacher information",
+    [Permission.CREATE_TEACHER]: "Create new teacher records",
+    [Permission.EDIT_TEACHER]: "Edit existing teacher records",
+    [Permission.DELETE_TEACHER]: "Delete teacher records",
+    [Permission.VIEW_EMPLOYEES]: "View employee information",
+    [Permission.CREATE_EMPLOYEE]: "Create new employee records",
+    [Permission.EDIT_EMPLOYEE]: "Edit existing employee records",
+    [Permission.DELETE_EMPLOYEE]: "Delete employee records",
+    [Permission.VIEW_DEPARTMENTS]: "View department information",
+    [Permission.CREATE_DEPARTMENT]: "Create new departments",
+    [Permission.EDIT_DEPARTMENT]: "Edit existing departments",
+    [Permission.DELETE_DEPARTMENT]: "Delete departments",
+    [Permission.VIEW_DESIGNATIONS]: "View designation information",
+    [Permission.CREATE_DESIGNATION]: "Create new designations",
+    [Permission.EDIT_DESIGNATION]: "Edit existing designations",
+    [Permission.DELETE_DESIGNATION]: "Delete designations",
+    [Permission.VIEW_CLASSES]: "View class information",
+    [Permission.CREATE_CLASS]: "Create new classes",
+    [Permission.EDIT_CLASS]: "Edit existing classes",
+    [Permission.DELETE_CLASS]: "Delete classes",
+    [Permission.MANAGE_CLASS_STUDENTS]: "Manage students in classes",
+    [Permission.VIEW_ATTENDANCE]: "View attendance records",
+    [Permission.MARK_ATTENDANCE]: "Mark attendance for students",
+    [Permission.MARK_ATTENDANCE_ANY_DATE]: "Mark attendance for any date",
+    [Permission.MARK_SELF_ATTENDANCE]: "Mark own attendance",
+    [Permission.MARK_ALL_STAFF_ATTENDANCE]: "Mark attendance for all staff",
+    [Permission.VIEW_ATTENDANCE_REPORTS]: "View attendance reports",
+    [Permission.VIEW_LEAVES]: "View leave applications",
+    [Permission.MANAGE_LEAVE_APPLICATIONS]: "Manage leave applications",
+    [Permission.MANAGE_LEAVE_POLICIES]: "Manage leave policies",
+    [Permission.VIEW_SALARY]: "View salary information",
+    [Permission.MANAGE_SALARY_STRUCTURES]: "Manage salary structures",
+    [Permission.MANAGE_TEACHER_SALARIES]: "Manage teacher salaries",
+    [Permission.MANAGE_EMPLOYEE_SALARIES]: "Manage employee salaries",
+    [Permission.MANAGE_SALARY_INCREMENTS]: "Manage salary increments",
+    [Permission.PROCESS_SALARY_PAYMENTS]: "Process salary payments",
+    [Permission.VIEW_TRANSPORT]: "View transport information",
+    [Permission.MANAGE_TRANSPORT_ROUTES]: "Manage transport routes",
+    [Permission.MANAGE_TRANSPORT_STOPS]: "Manage transport stops",
+    [Permission.MANAGE_TRANSPORT_ASSIGNMENTS]: "Manage transport assignments",
+    [Permission.VIEW_FEES]: "View fee information",
+    [Permission.MANAGE_FEES]: "Manage fee structures",
+    [Permission.VIEW_QUESTION_PAPERS]: "View question papers",
+    [Permission.CREATE_QUESTION_PAPER]: "Create question papers",
+    [Permission.MANAGE_QUESTION_PAPERS]: "Manage question papers",
+    [Permission.VIEW_EXAMINATIONS]: "View examination information",
+    [Permission.MANAGE_EXAM_TYPES]: "Manage exam types",
+    [Permission.MANAGE_EXAM_CONFIGURATIONS]: "Manage exam configurations",
+    [Permission.MANAGE_EXAM_SCHEDULES]: "Manage exam schedules",
+    [Permission.MANAGE_SEATING_PLANS]: "Manage seating plans",
+    [Permission.ENTER_MARKS]: "Enter examination marks",
+    [Permission.MANAGE_ASSESSMENTS]: "Manage assessments",
+    [Permission.MANAGE_GRADE_SCALES]: "Manage grade scales",
+    [Permission.VIEW_EXAM_REPORTS]: "View examination reports",
+    [Permission.VIEW_REPORTS]: "View system reports",
+    [Permission.VIEW_SETTINGS]: "View system settings",
+    [Permission.MANAGE_BRANCHES]: "Manage branches",
+    [Permission.MANAGE_ACADEMIC_SESSIONS]: "Manage academic sessions",
+    [Permission.MANAGE_SUBJECTS]: "Manage subjects",
+    [Permission.MANAGE_ATTENDANCE_CONFIG]: "Manage attendance configuration",
+    [Permission.VIEW_FINANCE_MODULE]: "View finance module",
+    [Permission.MANAGE_FEE_HEADS]: "Manage fee heads",
+    [Permission.MANAGE_FEE_TERMS]: "Manage fee terms",
+    [Permission.MANAGE_CLASSWISE_FEES]: "Manage classwise fees",
+    [Permission.COLLECT_FEES]: "Collect fees",
+    [Permission.VIEW_FINANCE_REPORTS]: "View finance reports",
+    [Permission.MANAGE_ROLES]: "Manage user roles and permissions",
+  };
 
-// Fix system role flags in existing data
-async function fixSystemRoleFlags(db: any) {
-  // Make sure all standard roles from the Role enum are marked as system roles
-  for (const role of Object.values(Role)) {
-    await db.rbacRole.updateMany({
-      where: { name: role },
-      data: { isSystem: true },
-    });
-  }
+  return descriptions[permission] || "No description available";
 }
 
-// Seed default roles from the Role enum
-async function seedDefaultRoles(db: any) {
-  // Create all standard roles from the Role enum with JSON permissions
-  for (const role of Object.values(Role)) {
-    const permissions = (rolePermissions as any)[role] || [];
+function getPermissionCategory(permission: Permission): string {
+  const categories: Record<string, string> = {
+    // Dashboard
+    view_dashboard: "Dashboard",
     
-    await db.rbacRole.upsert({
-      where: { name: role },
-      update: {
-        description: getRoleDescription(role),
-        isSystem: true,
-        permissions: permissions, // Store as JSON array
-      },
-      create: {
-        name: role,
-        description: getRoleDescription(role),
-        isSystem: true,
-        permissions: permissions, // Store as JSON array
-      },
-    });
-  }
-}
+    // Students
+    view_students: "Students",
+    create_student: "Students",
+    edit_student: "Students",
+    delete_student: "Students",
+    manage_admissions: "Students",
+    manage_transfer_certificates: "Students",
+    
+    // Money Collection
+    view_money_collection: "Money Collection",
+    create_money_collection: "Money Collection",
+    edit_money_collection: "Money Collection",
+    delete_money_collection: "Money Collection",
+    
+    // Teachers
+    view_teachers: "Teachers",
+    create_teacher: "Teachers",
+    edit_teacher: "Teachers",
+    delete_teacher: "Teachers",
+    
+    // Employees
+    view_employees: "Employees",
+    create_employee: "Employees",
+    edit_employee: "Employees",
+    delete_employee: "Employees",
+    
+    // Departments
+    view_departments: "Departments",
+    create_department: "Departments",
+    edit_department: "Departments",
+    delete_department: "Departments",
+    
+    // Designations
+    view_designations: "Designations",
+    create_designation: "Designations",
+    edit_designation: "Designations",
+    delete_designation: "Designations",
+    
+    // Classes
+    view_classes: "Classes",
+    create_class: "Classes",
+    edit_class: "Classes",
+    delete_class: "Classes",
+    manage_class_students: "Classes",
+    
+    // Attendance
+    view_attendance: "Attendance",
+    mark_attendance: "Attendance",
+    mark_attendance_any_date: "Attendance",
+    mark_self_attendance: "Attendance",
+    mark_all_staff_attendance: "Attendance",
+    view_attendance_reports: "Attendance",
+    
+    // Leave Management
+    view_leaves: "Leave Management",
+    manage_leave_applications: "Leave Management",
+    manage_leave_policies: "Leave Management",
+    
+    // Salary
+    view_salary: "Salary",
+    manage_salary_structures: "Salary",
+    manage_teacher_salaries: "Salary",
+    manage_employee_salaries: "Salary",
+    manage_salary_increments: "Salary",
+    process_salary_payments: "Salary",
+    
+    // Transport
+    view_transport: "Transport",
+    manage_transport_routes: "Transport",
+    manage_transport_stops: "Transport",
+    manage_transport_assignments: "Transport",
+    
+    // Fees
+    view_fees: "Fees",
+    manage_fees: "Fees",
+    view_finance_module: "Finance",
+    manage_fee_heads: "Finance",
+    manage_fee_terms: "Finance",
+    manage_classwise_fees: "Finance",
+    collect_fees: "Finance",
+    view_finance_reports: "Finance",
+    
+    // Question Papers
+    view_question_papers: "Question Papers",
+    create_question_paper: "Question Papers",
+    manage_question_papers: "Question Papers",
+    
+    // Examinations
+    view_examinations: "Examinations",
+    manage_exam_types: "Examinations",
+    manage_exam_configurations: "Examinations",
+    manage_exam_schedules: "Examinations",
+    manage_seating_plans: "Examinations",
+    enter_marks: "Examinations",
+    manage_assessments: "Examinations",
+    manage_grade_scales: "Examinations",
+    view_exam_reports: "Examinations",
+    
+    // System
+    view_reports: "System",
+    view_settings: "System",
+    manage_branches: "System",
+    manage_academic_sessions: "System",
+    manage_subjects: "System",
+    manage_attendance_config: "System",
+    manage_roles: "System",
+  };
 
-// Seed default permissions from the Permission enum
-async function seedDefaultPermissions(db: any) {
-  // Create all permissions from the Permission enum
-  for (const permission of Object.values(Permission)) {
-    await db.rbacPermission.create({
-      data: {
-        name: permission,
-        description: getPermissionDescription(permission),
-        category: getPermissionCategory(permission),
-      },
-    });
-  }
-
-  // For each role, assign the default permissions (both JSON and relational for compatibility)
-  const roles = await db.rbacRole.findMany();
-  for (const role of roles) {
-    if ((rolePermissions as any)[role.name]) {
-      const permissions = (rolePermissions as any)[role.name];
-      
-      // Update the JSON permissions field
-      await db.rbacRole.update({
-        where: { id: role.id },
-        data: { permissions: permissions }
-      });
-      
-      // Also add to relational table for backward compatibility
-      await addPermissionsToRole(db, role.id, permissions);
-    }
-  }
-}
-
-// Add permissions to a role
-async function addPermissionsToRole(db: any, roleId: string, permissionNames: string[]) {
-  // Get permission IDs from names
-  const permissions = await db.rbacPermission.findMany({
-    where: {
-      name: {
-        in: permissionNames,
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  // Create role permissions
-  const rolePermissions = permissions.map((permission: any) => ({
-    roleId,
-    permissionId: permission.id,
-  }));
-
-  // Use createMany for efficient bulk creation
-  if (rolePermissions.length > 0) {
-    await db.rbacRolePermission.createMany({
-      data: rolePermissions,
-      skipDuplicates: true,
-    });
-  }
-}
-
-// Copy permissions from one role to another
-async function copyRolePermissions(db: any, sourceRoleId: string, targetRoleId: string) {
-  // Get permissions from source role
-  const sourcePermissions = await db.rbacRolePermission.findMany({
-    where: { roleId: sourceRoleId },
-    select: { permissionId: true },
-  });
-
-  // Create permissions for target role
-  const targetPermissions = sourcePermissions.map((p: any) => ({
-    roleId: targetRoleId,
-    permissionId: p.permissionId,
-  }));
-
-  // Create role permissions for target role
-  if (targetPermissions.length > 0) {
-    await db.rbacRolePermission.createMany({
-      data: targetPermissions,
-      skipDuplicates: true,
-    });
-  }
-}
-
-// Helper function to get role description
-function getRoleDescription(role: string): string {
-  switch (role) {
-    case Role.ADMIN:
-      return "Administrative staff with access to most system functions";
-    case Role.SUPER_ADMIN:
-      return "Unrestricted access to all system features";
-    case Role.TEACHER:
-      return "Teaching staff with access to classroom and student management";
-    case Role.PRINCIPAL:
-      return "School principal with oversight of staff and academics";
-    case Role.ACCOUNTANT:
-      return "Financial staff with access to fee and payment management";
-    case Role.RECEPTIONIST:
-      return "Front office staff for admissions and general inquiries";
-    case Role.TRANSPORT_MANAGER:
-      return "Staff responsible for transportation management";
-    case Role.STAFF:
-      return "General staff with basic system access";
-    default:
-      return `${role} role`;
-  }
-}
-
-// Helper function to get permission description
-function getPermissionDescription(permission: string): string {
-  // Generate readable description from permission name
-  const formattedName = permission
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (l) => l.toUpperCase());
-  
-  return formattedName;
-}
-
-// Helper function to determine permission category
-function getPermissionCategory(permission: string): string {
-  if (permission.startsWith("view_dashboard")) return "Dashboard";
-  if (permission.includes("_student") || permission.includes("_admission") || permission.includes("_transfer")) return "Students";
-  if (permission.includes("_teacher")) return "Teachers";
-  if (permission.includes("_employee") || permission.includes("_department") || permission.includes("_designation")) return "Employees";
-  if (permission.includes("_class")) return "Classes";
-  if (permission.includes("_attendance")) return "Attendance";
-  if (permission.includes("_leave")) return "Leave Management";
-  if (permission.includes("_salary") || permission.includes("_increment") || permission.includes("_payment")) return "Salary Management";
-  if (permission.includes("_transport") || permission.includes("_route") || permission.includes("_stop") || permission.includes("_assignment")) return "Transport";
-  if (permission.includes("_fee") && !permission.includes("_finance")) return "Fees";
-  if (permission.includes("_finance") || permission.includes("fee_head") || permission.includes("fee_term") || permission.includes("classwise_fee") || permission.includes("collect_fee") || permission.includes("finance_report")) return "Finance";
-  if (permission.includes("_question") || permission.includes("question_paper")) return "Question Papers";
-  if (permission.includes("_exam") || permission.includes("_mark") || permission.includes("_assessment") || permission.includes("_grade") || permission.includes("_seating")) return "Examinations";
-  if (permission.includes("_money_collection")) return "Money Collection";
-  if (permission.includes("_report")) return "Reports";
-  if (permission.includes("_setting") || permission.includes("_user") || permission.includes("_branch") || permission.includes("_academic") || permission.includes("_subject") || permission.includes("_config")) return "Settings";
-  return "General";
+  return categories[permission] || "Other";
 } 

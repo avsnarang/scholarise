@@ -57,6 +57,8 @@ model Branch {
   attendanceLocations     AttendanceLocation[]
   attendanceWindows       AttendanceWindow[]
   locationTypes           LocationType[]
+  rbacRoles               RbacRole[]
+  userRoles               UserRole[]
 }
 
 model Student {
@@ -720,37 +722,21 @@ model LeaveApplication {
 }
 
 model RbacRole {
-  id              String               @id @default(cuid())
-  name            String               @unique
+  id              String     @id @default(cuid())
+  name            String     @unique
   description     String?
-  isSystem        Boolean              @default(false)
-  isActive        Boolean              @default(true)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  permissions     String[]             @default([])
-  rolePermissions RbacRolePermission[] @relation("RolePermissionRelation")
+  isSystem        Boolean    @default(false)
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  permissions     String[]   @default([])
   userRoles       UserRole[]
-}
-
-model RbacPermission {
-  id              String               @id @default(cuid())
-  name            String               @unique
-  description     String?
-  category        String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  rolePermissions RbacRolePermission[]
-}
-
-model RbacRolePermission {
-  id           String         @id @default(cuid())
-  roleId       String
-  permissionId String
-  createdAt    DateTime       @default(now())
-  permission   RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  role         RbacRole       @relation("RolePermissionRelation", fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@unique([roleId, permissionId])
+  branchId        String?
+  branch          Branch?    @relation(fields: [branchId], references: [id])
+  
+  @@index([name])
+  @@index([isSystem])
+  @@index([isActive])
 }
 
 model UserRole {
@@ -761,11 +747,17 @@ model UserRole {
   updatedAt  DateTime  @updatedAt
   teacherId  String?
   employeeId String?
+  branchId   String?
+  isActive   Boolean   @default(true)
   employee   Employee? @relation(fields: [employeeId], references: [id])
-  role       RbacRole  @relation(fields: [roleId], references: [id])
+  role       RbacRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
   teacher    Teacher?  @relation(fields: [teacherId], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
 
   @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([isActive])
 }
 
 model SalaryStructure {

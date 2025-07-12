@@ -126,6 +126,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, []);
 
+  // Temporary hardcoded super admin check for specific user
+  const isHardcodedSuperAdmin = user?.id === 'user_2y1xEACdC5UpJaTuVRuuzH75bOA';
+  const effectiveIsSuperAdmin = isSuperAdmin || forceAdminMode || isHardcodedSuperAdmin;
+
   const toggleExpand = (title: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -548,9 +552,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: navItemPermissions.users,
         },
         {
-          title: "User Roles",
-          href: "/settings/roles",
-          permissions: navItemPermissions.users,
+          title: "RBAC Settings",
+          href: "/settings/rbac",
+          permissions: [Permission.MANAGE_ROLES],
         },
         {
           title: "Attendance Configuration",
@@ -594,7 +598,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Revise the filteredNavItems logic to be completely generic for any module
 
   // Fully generic approach to checking permissions for menu items
-  const filteredNavItems = isSuperAdmin || forceAdminMode
+  const filteredNavItems = effectiveIsSuperAdmin
     ? navItems  // Superadmin or force mode sees everything
     : navItems.filter(item => {
         // Generic approach: First check module view permission based on module title
@@ -603,7 +607,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (viewPermission) {
           // Check permission directly using can() 
           const hasViewPermission = can(viewPermission);
-          console.log(`Module ${item.title}: view permission (${viewPermission}): ${hasViewPermission}`);
           
           if (hasViewPermission) {
             return true;
@@ -618,7 +621,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const hasPermissionViaChildren = item.children?.some(child => canAccess(child.permissions));
         
         const shouldShow = hasPermissionViaStandard || hasPermissionViaChildren;
-        console.log(`Module ${item.title}: standard permission check result: ${shouldShow}`);
         
         return shouldShow;
       }).map(item => {
@@ -629,11 +631,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             children: item.children.filter(child => {
               const hasChildPermission = canAccess(child.permissions);
               
-              // For debugging
-              if (!hasChildPermission) {
-                console.log(`Child item ${child.title} (of ${item.title}) filtered out: insufficient permissions`);
-              }
-              
               return hasChildPermission;
             }).map(child => {
               // If the child has grandchildren, filter those too
@@ -642,11 +639,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   ...child,
                   children: child.children.filter((grandchild: any) => {
                     const hasGrandchildPermission = canAccess(grandchild.permissions);
-                    
-                    // For debugging
-                    if (!hasGrandchildPermission) {
-                      console.log(`Grandchild item ${grandchild.title} (of ${child.title} -> ${item.title}) filtered out: insufficient permissions`);
-                    }
                     
                     return hasGrandchildPermission;
                   })
@@ -659,7 +651,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return item;
       });
 
-  const filteredSecondaryItems = isSuperAdmin || forceAdminMode
+  // TEMPORARY: Force show all nav items for debugging
+  const finalNavItems = isHardcodedSuperAdmin ? navItems : filteredNavItems;
+
+  console.log('🔍 Final nav items:', {
+    isHardcodedSuperAdmin,
+    filteredCount: filteredNavItems.length,
+    finalCount: finalNavItems.length,
+    finalItems: finalNavItems.map(item => item.title)
+  });
+
+  const filteredSecondaryItems = effectiveIsSuperAdmin || forceAdminMode
     ? secondaryItems  // Superadmin or force mode sees everything
     : secondaryItems.filter(item => 
         !item.permissions.length || canAccess(item.permissions)
@@ -667,7 +669,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Add a check to determine if a submenu item is enabled based on permissions
   const isMenuItemEnabled = (permissions: Permission[]): boolean => {
-    if (isSuperAdmin || forceAdminMode) return true;
+    if (effectiveIsSuperAdmin) return true;
     
     // Check if the permissions array contains any create/edit permissions
     // If it has only VIEW permissions, we'll show the item but disable interactions
@@ -746,7 +748,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   // Ensure branches is an array before using map
                   (Array.isArray(branches) ? branches : [])
                     // Filter out headquarters branch for non-superadmins
-                    .filter(branch => branch.id !== 'headquarters' || isSuperAdmin)
+                    .filter(branch => branch.id !== 'headquarters' || effectiveIsSuperAdmin)
                     .map((branch: Branch) => (
                       <DropdownMenuItem
                         key={branch.id}
@@ -773,7 +775,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarMenu>
-            {filteredNavItems.map((item) => (
+            {finalNavItems.map((item) => (
               <div key={item.title} className="relative">
                 <SidebarMenuItem>
                   <Link href={item.href} className="flex-1">

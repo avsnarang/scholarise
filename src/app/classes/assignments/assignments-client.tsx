@@ -7,13 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { 
@@ -243,17 +242,19 @@ interface SubjectTeacherAssignment {
 
 export function TeacherSubjectAssignments() {
   const { toast } = useToast();
-  const { currentBranchId } = useBranchContext();
+  const { currentBranchId, currentBranch } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   
-  // State
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<SubjectTeacherAssignment | null>(null);
-  const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(null);
+  // State for UI
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null);
+  const [assignmentToEdit, setAssignmentToEdit] = useState<SubjectTeacherAssignment | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [filters, setFilters] = useState<AdvancedFilters>({
     conditions: [],
-    logicOperator: "and",
+    logicOperator: "and"
   });
 
   // Process filters for API query
@@ -285,330 +286,493 @@ export function TeacherSubjectAssignments() {
     { enabled: !!currentBranchId }
   );
 
-  // Fetch data for dropdowns
-  const { data: teachersData } = api.teacher.getAll.useQuery(
-    { branchId: currentBranchId || undefined, isActive: true },
-    { enabled: !!currentBranchId }
-  );
-  const teachers = teachersData?.items || [];
-
-  const { data: subjects } = api.subject.getAll.useQuery(
-    { isActive: true },
-    { enabled: !!currentBranchId }
-  );
-
-  const { data: classes = [] } = api.class.getAll.useQuery(
-    { 
-      branchId: currentBranchId || undefined, 
-      sessionId: currentSessionId || undefined,
-      isActive: true 
-    },
-    { enabled: !!currentBranchId && !!currentSessionId }
-  );
-
-  // Fetch stats
-  const { data: stats } = api.subjectTeacher.getStats.useQuery(
-    { branchId: currentBranchId || undefined },
-    { enabled: !!currentBranchId }
-  );
-
-  // Mutations
-  const deleteAssignmentMutation = api.subjectTeacher.delete.useMutation({
+  // Delete assignment mutation
+  const { mutate: deleteAssignment, isPending: isDeleting } = api.subjectTeacher.delete.useMutation({
     onSuccess: () => {
       toast({
         title: "Assignment deleted",
-        description: "Subject teacher assignment has been removed successfully",
+        description: "The subject teacher assignment has been deleted successfully.",
+        variant: "success"
       });
-      refetchAssignments();
-      setDeleteAssignmentId(null);
+      setIsDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
+      void refetchAssignments();
     },
     onError: (error) => {
       toast({
-        title: "Error deleting assignment",
-        description: error.message,
-        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete assignment. Please try again.",
+        variant: "destructive"
       });
     }
   });
 
-  const handleDeleteAssignment = async (assignmentId: string) => {
-    await deleteAssignmentMutation.mutateAsync({ id: assignmentId });
+  const handleDeleteAssignment = (assignmentId: string) => {
+    deleteAssignment({ id: assignmentId });
   };
 
   const handleEditAssignment = (assignment: SubjectTeacherAssignment) => {
-    setSelectedAssignment(assignment);
-    setIsEditDialogOpen(true);
+    setAssignmentToEdit(assignment);
+    setIsAssignmentDialogOpen(true);
+  };
+
+  const handleCreateAssignment = () => {
+    setAssignmentToEdit(null);
+    setIsAssignmentDialogOpen(true);
   };
 
   const handleFilterChange = (newFilters: AdvancedFilters) => {
     setFilters(newFilters);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#00501B]">Subject Teacher Assignments</h1>
-          <p className="mt-2 text-gray-500">
-            Assign teachers to subjects for specific classes and sections (used for examinations and academic purposes)
+  const handleAssignmentSuccess = () => {
+    setIsAssignmentDialogOpen(false);
+    setAssignmentToEdit(null);
+    void refetchAssignments();
+  };
+
+  const handleAssignmentCancel = () => {
+    setIsAssignmentDialogOpen(false);
+    setAssignmentToEdit(null);
+  };
+
+  // Filter assignments based on search query and status filter
+  const filteredAssignments = assignments?.filter(assignment => {
+    const matchesSearch = !searchQuery || 
+      assignment.teacher.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      assignment.teacher.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      assignment.subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      assignment.class.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assignment.section && assignment.section.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesStatus = statusFilter === "all" || 
+                         (statusFilter === "active" && assignment.isActive) ||
+                         (statusFilter === "inactive" && !assignment.isActive);
+    
+    return matchesSearch && matchesStatus;
+  }) || [];
+
+  // Calculate stats
+  const totalAssignments = assignments?.length || 0;
+  const activeAssignments = assignments?.filter(a => a.isActive).length || 0;
+  const uniqueTeachers = new Set(assignments?.map(a => a.teacherId)).size || 0;
+  const uniqueSubjects = new Set(assignments?.map(a => a.subjectId)).size || 0;
+
+  // Page action buttons
+  const renderPageActions = () => (
+    <div className="flex gap-2">
+      <Button variant="glowing-secondary" className="flex items-center gap-1">
+        <FileDown className="h-4 w-4" />
+        <span>Export</span>
+      </Button>
+      
+      <Button 
+        variant="glowing" 
+        className="flex items-center gap-1"
+        onClick={handleCreateAssignment}
+      >
+        <PlusCircle className="h-4 w-4" />
+        <span>Add Assignment</span>
+      </Button>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <PageWrapper
+        title="Subject Teacher Assignments"
+        subtitle="Manage subject teacher assignments for your school"
+        action={renderPageActions()}
+      >
+        {/* Stats cards skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full dark:bg-gray-700" />
+          ))}
+        </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <Skeleton className="h-10 w-64 dark:bg-gray-700" />
+          <Skeleton className="h-10 w-32 dark:bg-gray-700" />
+        </div>
+        
+        <Skeleton className="h-[400px] w-full dark:bg-gray-700" />
+      </PageWrapper>
+    );
+  }
+
+  if (!currentBranchId || !currentSessionId) {
+    return (
+      <PageWrapper
+        title="Subject Teacher Assignments"
+        subtitle="Manage subject teacher assignments for your school"
+        action={renderPageActions()}
+      >
+        <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-8 text-center dark:border-gray-700">
+          <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Selection Required</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+            Please select a branch and academic session from the dropdown above to manage teacher subject assignments.
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-[#00501B] hover:bg-[#00501B]/90"
-          disabled={!currentBranchId || !currentSessionId}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Assignment
-        </Button>
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <PageWrapper
+      title="Subject Teacher Assignments"
+      subtitle={`Manage subject teacher assignments for ${currentBranch?.name || ""}`}
+      action={renderPageActions()}
+    >
+      {/* Stats Cards */}
+      <div className="*:data-[slot=card]:from-[#00501B]/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:from-[#7aad8c]/10 dark:*:data-[slot=card]:to-[#252525] dark:*:data-[slot=card]:bg-[#252525] grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 mb-6">
+        <Card className="@container/card dark:border-[#303030]">
+          <CardHeader>
+            <CardDescription className="dark:text-[#c0c0c0]">Total Assignments</CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
+              {totalAssignments}
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
+                <TrendingUp className="text-[#00501B] dark:text-[#7aad8c]" />
+                All
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
+              <Settings className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
+              {totalAssignments} total assignments
+            </div>
+            <div className="text-muted-foreground dark:text-[#c0c0c0]">
+              Across all teachers and subjects
+            </div>
+          </CardFooter>
+        </Card>
+        
+        <Card className="@container/card dark:border-[#303030]">
+          <CardHeader>
+            <CardDescription className="dark:text-[#c0c0c0]">Active Assignments</CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
+              {activeAssignments}
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
+                <TrendingUp className="text-[#00501B] dark:text-[#7aad8c]" />
+                {Math.round((activeAssignments / (totalAssignments || 1)) * 100)}%
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
+              <BadgeCheck className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
+              {activeAssignments} active assignments
+            </div>
+            <div className="text-muted-foreground dark:text-[#c0c0c0]">
+              {totalAssignments - activeAssignments} inactive assignments
+            </div>
+          </CardFooter>
+        </Card>
+        
+        <Card className="@container/card dark:border-[#303030]">
+          <CardHeader>
+            <CardDescription className="dark:text-[#c0c0c0]">Teachers Assigned</CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
+              {uniqueTeachers}
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
+                <TrendingUp className="text-[#00501B] dark:text-[#7aad8c]" />
+                Unique
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
+              <UserCheck className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
+              {uniqueTeachers} teachers with assignments
+            </div>
+            <div className="text-muted-foreground dark:text-[#c0c0c0]">
+              Teaching various subjects
+            </div>
+          </CardFooter>
+        </Card>
+        
+        <Card className="@container/card dark:border-[#303030]">
+          <CardHeader>
+            <CardDescription className="dark:text-[#c0c0c0]">Subjects Covered</CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl dark:text-[#e6e6e6]">
+              {uniqueSubjects}
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-[#00501B] dark:text-[#7aad8c] dark:border-[#7aad8c]/30">
+                <TrendingUp className="text-[#00501B] dark:text-[#7aad8c]" />
+                Subjects
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="line-clamp-1 flex gap-2 font-medium dark:text-[#e6e6e6]">
+              <BookOpen className="size-4 text-[#00501B] dark:text-[#7aad8c]" /> 
+              {uniqueSubjects} subjects assigned
+            </div>
+            <div className="text-muted-foreground dark:text-[#c0c0c0]">
+              Across all classes
+            </div>
+          </CardFooter>
+        </Card>
       </div>
 
-      {!currentBranchId || !currentSessionId ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Please select a branch and academic session to manage teacher subject assignments.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {/* Stats Cards */}
-          {stats && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Users className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">Total Assignments</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalAssignments}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <GraduationCap className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">Active Assignments</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.activeAssignments}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <BookOpen className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">Unique Teachers</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.uniqueTeachers}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <BookOpen className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">Unique Subjects</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.uniqueSubjects}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="mt-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-medium">All Assignments</h2>
+          
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search assignments..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-64"
+              />
             </div>
-          )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
+              onClick={() => {
+                const current = statusFilter === "all" ? "active" : "all";
+                setStatusFilter(current);
+              }}
+            >
+              <Filter className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+              {statusFilter === "all" ? "All Assignments" : "Active Only"}
+            </Button>
+          </div>
+        </div>
 
-          {/* Filters */}
-          <SubjectTeacherFilter 
+        {/* Filters */}
+        <div className="mb-4">
+          <SubjectTeacherFilter
             filters={filters}
             onFilterChange={handleFilterChange}
           />
+        </div>
 
-          {/* Assignments Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignments ({assignments.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : assignments.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Users className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    {filters.conditions.length > 0 ? 'No matching assignments found' : 'No assignments configured'}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {filters.conditions.length > 0 
-                      ? 'Try adjusting your search criteria or create a new assignment.'
-                      : 'Start by creating your first subject teacher assignment.'
-                    }
-                  </p>
-                  {filters.conditions.length === 0 && (
-                    <Button 
-                      onClick={() => setIsCreateDialogOpen(true)}
-                      className="bg-[#00501B] hover:bg-[#00501B]/90"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First Assignment
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Teacher</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Section</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {assignments.map((assignment) => (
-                      <TableRow key={assignment.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {assignment.teacher.firstName} {assignment.teacher.lastName}
-                            </div>
-                            {assignment.teacher.employeeCode && (
-                              <div className="text-sm text-gray-500">
-                                {assignment.teacher.employeeCode}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{assignment.subject.name}</div>
-                            {assignment.subject.code && (
-                              <div className="text-sm text-gray-500">
-                                {assignment.subject.code}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{assignment.class.name}</div>
-                        </TableCell>
-                        <TableCell>
-                          {assignment.section ? (
-                            <div className="font-medium">{assignment.section.name}</div>
-                          ) : (
-                            <span className="text-gray-500 italic">All sections</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={assignment.isActive ? "default" : "secondary"}>
-                            {assignment.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditAssignment(assignment as SubjectTeacherAssignment)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => setDeleteAssignmentId(assignment.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+        {/* Active filters display */}
+        {(statusFilter !== "all" || filters.conditions.length > 0) && (
+          <div className="flex flex-wrap gap-2 items-center text-sm p-3 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <span className="text-gray-600 dark:text-gray-300 font-medium">Active filters:</span>
+            
+            {statusFilter !== "all" && (
+              <Badge variant="outline" className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 gap-1 pl-2 border-green-200 dark:border-green-700 shadow-sm">
+                Status: {statusFilter === "active" ? "Active" : "Inactive"}
+                <X className="h-3 w-3 cursor-pointer hover:text-green-900 dark:hover:text-green-100 transition-colors" onClick={() => setStatusFilter("all")} />
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {filteredAssignments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-12 text-center bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+            <div className="h-16 w-16 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center mb-4">
+              <BookOpen className="h-8 w-8 text-[#00501B] dark:text-[#7aad8c]" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No assignments found</h3>
+            <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md">
+              {(searchQuery || statusFilter !== "all" || filters.conditions.length > 0) 
+                ? "Try adjusting your search or filters to find assignments." 
+                : "Get started by creating your first subject teacher assignment."}
+            </p>
+            <div className="mt-6">
+              <Button 
+                onClick={handleCreateAssignment}
+                className="bg-[#00501B] hover:bg-[#00501B]/90 dark:bg-[#7aad8c] dark:hover:bg-[#7aad8c]/90 text-white shadow-sm hover:shadow transition-all"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Assignment
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-md overflow-hidden shadow-sm">
+            <Card>
+              <CardHeader>
+                <CardTitle>Assignments ({filteredAssignments.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Teacher</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Section</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAssignments.map((assignment) => (
+                        <TableRow key={assignment.id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <div className="h-8 w-8 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center">
+                                <Users className="h-4 w-4 text-[#00501B] dark:text-[#7aad8c]" />
+                              </div>
+                              <div>
+                                <div className="font-medium dark:text-gray-100">
+                                  {assignment.teacher.firstName} {assignment.teacher.lastName}
+                                </div>
+                                {assignment.teacher.employeeCode && (
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {assignment.teacher.employeeCode}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <BookOpen className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                              <span className="dark:text-gray-100">{assignment.subject.name}</span>
+                              {assignment.subject.code && (
+                                <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
+                                  {assignment.subject.code}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                              <span className="dark:text-gray-100">{assignment.class.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {assignment.section ? (
+                              <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+                                {assignment.section.name}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-500 dark:text-gray-400 text-sm">All sections</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={assignment.isActive ? "default" : "secondary"}>
+                              {assignment.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => handleEditAssignment(assignment)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setAssignmentToDelete(assignment.id);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
 
-      {/* Create Assignment Dialog */}
+      {/* Assignment Form Dialog */}
       <AssignmentFormDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={() => {
-          refetchAssignments();
-          setIsCreateDialogOpen(false);
-        }}
-      />
-
-      {/* Edit Assignment Dialog */}
-      <AssignmentFormDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        assignment={selectedAssignment}
-        onSuccess={() => {
-          refetchAssignments();
-          setIsEditDialogOpen(false);
-          setSelectedAssignment(null);
-        }}
+        open={isAssignmentDialogOpen}
+        onOpenChange={setIsAssignmentDialogOpen}
+        assignment={assignmentToEdit}
+        onSuccess={handleAssignmentSuccess}
+        onCancel={handleAssignmentCancel}
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteAssignmentId} onOpenChange={() => setDeleteAssignmentId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Assignment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this subject teacher assignment? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteAssignmentId && handleDeleteAssignment(deleteAssignmentId)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      {isDeleteDialogOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsDeleteDialogOpen(false);
+              setAssignmentToDelete(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Are you sure?
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                This action cannot be undone. This will permanently delete the assignment
+                and remove it from our servers.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end space-x-3 p-6">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setAssignmentToDelete(null);
+                }}
+                disabled={isDeleting}
+                className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => assignmentToDelete && handleDeleteAssignment(assignmentToDelete)}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </div>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </PageWrapper>
   );
 }
 
@@ -617,9 +781,10 @@ interface AssignmentFormDialogProps {
   onOpenChange: (open: boolean) => void;
   assignment?: SubjectTeacherAssignment | null;
   onSuccess: () => void;
+  onCancel: () => void;
 }
 
-function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: AssignmentFormDialogProps) {
+function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCancel }: AssignmentFormDialogProps) {
   const { toast } = useToast();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -665,7 +830,6 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
         description: "Subject teacher assignment has been created successfully",
       });
       onSuccess();
-      resetForm();
     },
     onError: (error) => {
       toast({
@@ -683,7 +847,6 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
         description: "Subject teacher assignment has been updated successfully",
       });
       onSuccess();
-      resetForm();
     },
     onError: (error) => {
       toast({
@@ -704,16 +867,25 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
 
   // Populate form when editing
   useEffect(() => {
-    if (assignment) {
+    if (open && assignment) {
+      console.log("Populating form with assignment:", assignment);
+      console.log("Setting values:", {
+        teacherId: assignment.teacherId,
+        subjectId: assignment.subjectId,
+        classId: assignment.classId,
+        sectionId: assignment.sectionId || "all",
+        isActive: assignment.isActive
+      });
       setTeacherId(assignment.teacherId);
       setSubjectId(assignment.subjectId);
       setClassId(assignment.classId);
       setSectionId(assignment.sectionId || "all");
       setIsActive(assignment.isActive);
-    } else {
+    } else if (open && !assignment) {
+      console.log("Resetting form for new assignment");
       resetForm();
     }
-  }, [assignment]);
+  }, [assignment, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -743,109 +915,259 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess }: Ass
     }
   };
 
+  const handleCancel = () => {
+    resetForm();
+    onCancel();
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleCancel();
+    }
+  };
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        handleCancel();
+      }
+    };
+
+    if (open) {
+      document.addEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  console.log("Current form values:", { teacherId, subjectId, classId, sectionId, isActive });
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {assignment ? "Edit Assignment" : "Create Assignment"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="teacher">Teacher *</Label>
-            <Select value={teacherId} onValueChange={setTeacherId} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select teacher" />
-              </SelectTrigger>
-              <SelectContent>
-                {teachers.map((teacher) => (
-                  <SelectItem key={teacher.id} value={teacher.id}>
-                    {teacher.firstName} {teacher.lastName}
-                    {teacher.employeeCode && ` (${teacher.employeeCode})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {assignment ? "Edit Assignment" : "Create Assignment"}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              {assignment 
+                ? "Update the subject teacher assignment details below."
+                : "Assign a teacher to a subject for a specific class and section."}
+            </p>
+          </div>
+          <button
+            onClick={handleCancel}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="teacher" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Teacher <span className="text-red-500">*</span>
+              </Label>
+              <Select value={teacherId} onValueChange={setTeacherId} required key={`teacher-${teacherId}`}>
+                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                  <SelectValue placeholder="Select teacher" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
+                  {teachers.map((teacher) => (
+                    <SelectItem 
+                      key={teacher.id} 
+                      value={teacher.id} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="h-6 w-6 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center">
+                          <Users className="h-3 w-3 text-[#00501B] dark:text-[#7aad8c]" />
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {teacher.firstName} {teacher.lastName}
+                          </div>
+                          {teacher.employeeCode && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {teacher.employeeCode}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subject" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Subject <span className="text-red-500">*</span>
+              </Label>
+              <Select value={subjectId} onValueChange={setSubjectId} required key={`subject-${subjectId}`}>
+                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
+                  {subjects?.items?.map((subject) => (
+                    <SelectItem 
+                      key={subject.id} 
+                      value={subject.id} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <BookOpen className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                        <div>
+                          <div className="font-medium">{subject.name}</div>
+                          {subject.code && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {subject.code}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="subject">Subject *</Label>
-            <Select value={subjectId} onValueChange={setSubjectId} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects?.items?.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id}>
-                    {subject.name}
-                    {subject.code && ` (${subject.code})`}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="class" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Class <span className="text-red-500">*</span>
+              </Label>
+              <Select value={classId} onValueChange={(value) => {
+                setClassId(value);
+                setSectionId("all"); // Reset section when class changes
+              }} required key={`class-${classId}`}>
+                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
+                  {classes.map((cls) => (
+                    <SelectItem 
+                      key={cls.id} 
+                      value={cls.id} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                        <span>{cls.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="section" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Section
+              </Label>
+              <Select value={sectionId} onValueChange={setSectionId} key={`section-${sectionId}`}>
+                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
+                  <SelectItem 
+                    value="all" 
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Users className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <span className="font-medium">All sections</span>
+                    </div>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {sections.map((section) => (
+                    <SelectItem 
+                      key={section.id} 
+                      value={section.id} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="h-4 w-4 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                            {section.name.charAt(0)}
+                          </span>
+                        </div>
+                        <span>{section.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Leave as "All sections" to assign to all sections of the class
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="class">Class *</Label>
-            <Select value={classId} onValueChange={(value) => {
-              setClassId(value);
-              setSectionId("all"); // Reset section when class changes
-            }} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="section">Section (Optional)</Label>
-            <Select value={sectionId} onValueChange={setSectionId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select section (leave empty for all sections)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sections</SelectItem>
-                {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <Switch
               id="isActive"
               checked={isActive}
               onCheckedChange={setIsActive}
             />
-            <Label htmlFor="isActive">Active</Label>
+            <div className="flex-1">
+              <Label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Active Assignment
+              </Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Enable this assignment for examination and academic purposes
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
+              className="dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            >
               Cancel
             </Button>
             <Button 
               type="submit" 
-              className="bg-[#00501B] hover:bg-[#00501B]/90"
+              className="bg-[#00501B] hover:bg-[#00501B]/90 dark:bg-[#7aad8c] dark:hover:bg-[#7aad8c]/90 text-white shadow-sm hover:shadow transition-all"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {assignment ? "Update" : "Create"} Assignment
+              {createMutation.isPending || updateMutation.isPending ? (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>{assignment ? "Updating..." : "Creating..."}</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>{assignment ? "Update" : "Create"} Assignment</span>
+                </div>
+              )}
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 } 

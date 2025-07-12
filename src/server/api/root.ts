@@ -3,7 +3,6 @@ import { branchRouter } from "@/server/api/routers/branch";
 import { userRouter } from "@/server/api/routers/user";
 import { roleRouter } from "@/server/api/routers/role";
 import { groupRouter } from "@/server/api/routers/group";
-import { permissionRouter } from "@/server/api/routers/permission";
 import { studentRouter } from "@/server/api/routers/student";
 import { parentRouter } from "@/server/api/routers/parent";
 import { classRouter } from "@/server/api/routers/class";
@@ -46,7 +45,6 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   role: roleRouter,
   group: groupRouter,
-  permission: permissionRouter,
   student: studentRouter,
   parent: parentRouter,
   class: classRouter,
