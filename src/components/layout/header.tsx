@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
@@ -6,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { TaskProgressDropdown } from "@/components/ui/task-progress-dropdown";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -18,6 +21,8 @@ export function Header({
   isSidebarCollapsed = false,
   onSidebarCollapseToggle
 }: HeaderProps) {
+  const { isSuperAdmin } = usePermissions();
+  
   return (
     <header className={cn(
       "sticky top-0 z-20 flex h-14 items-center justify-between bg-white shadow-sm border-b border-[#00501B]/10 w-full dark:bg-[#101010]"
@@ -57,10 +62,12 @@ export function Header({
 
       {/* Right side of header with session selector and theme toggle */}
       <div className="flex items-center gap-3 mr-4">
-        {/* Task Progress Dropdown */}
-        <div className="relative z-[60]">
-          <TaskProgressDropdown />
-        </div>
+        {/* Task Progress Dropdown - Only visible to superadmins */}
+        {isSuperAdmin && (
+          <div className="relative z-[60]">
+            <TaskProgressDropdown />
+          </div>
+        )}
         
         {/* Session selector */}
         <div className="relative z-[60]">
