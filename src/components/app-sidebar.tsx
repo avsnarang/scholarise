@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import {
+  Award,
   Users,
   GraduationCap,
   Building,
@@ -461,6 +462,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Fee Collection",
           href: "/finance/fee-collection",
           permissions: navItemPermissions.feeCollection,
+        },
+        {
+          title: "Concession Types",
+          href: "/finance/concession-types",
+          permissions: navItemPermissions.finance,
+        },
+        {
+          title: "Student Concessions",
+          href: "/finance/student-concessions",
+          permissions: navItemPermissions.finance,
         },
         {
           title: "Reports",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 export interface FeeHead {
@@ -19,6 +26,7 @@ export interface FeeHead {
   description: string | null;
   isSystemDefined: boolean;
   isActive: boolean;
+  studentType: string;
   branchId: string;
   sessionId: string;
   createdAt: Date;
@@ -44,6 +52,7 @@ interface FeeHeadFormModalProps {
     name: string;
     description: string | null;
     isSystemDefined: boolean;
+    studentType: string;
   }) => void;
   feeHead?: FeeHead | null;
   isLoading?: boolean;
@@ -56,38 +65,43 @@ export function FeeHeadFormModal({
   feeHead,
   isLoading = false,
 }: FeeHeadFormModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    isSystemDefined: false,
-  });
-
   const isEditing = !!feeHead;
 
-  useEffect(() => {
+  // Initialize form data based on whether we're editing or creating
+  const initialFormData = useMemo(() => {
     if (feeHead) {
-      setFormData({
+      return {
         name: feeHead.name,
         description: feeHead.description ?? '',
         isSystemDefined: feeHead.isSystemDefined,
-      });
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        isSystemDefined: false,
-      });
+        studentType: feeHead.studentType || 'BOTH',
+      };
     }
-  }, [feeHead, isOpen]);
+    return {
+      name: '',
+      description: '',
+      isSystemDefined: false,
+      studentType: 'BOTH',
+    };
+  }, [feeHead]);
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Reset form data when modal opens/closes or feeHead changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialFormData);
+    }
+  }, [isOpen, initialFormData]);
+
+  const handleInputChange = useCallback((field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
@@ -98,22 +112,41 @@ export function FeeHeadFormModal({
       name: formData.name.trim(),
       description: formData.description.trim() || null,
       isSystemDefined: formData.isSystemDefined,
+      studentType: formData.studentType,
     });
-  };
+  }, [formData, onSuccess]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!isLoading) {
-      setFormData({
-        name: '',
-        description: '',
-        isSystemDefined: false,
-      });
       onClose();
     }
-  };
+  }, [isLoading, onClose]);
+
+  // Memoize handlers for input changes to prevent re-renders
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleInputChange('name', e.target.value);
+  }, [handleInputChange]);
+
+  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleInputChange('description', e.target.value);
+  }, [handleInputChange]);
+
+  const handleStudentTypeChange = useCallback((value: string) => {
+    handleInputChange('studentType', value);
+  }, [handleInputChange]);
+
+  const handleSystemDefinedChange = useCallback((checked: boolean) => {
+    handleInputChange('isSystemDefined', checked);
+  }, [handleInputChange]);
+
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      handleClose();
+    }
+  }, [handleClose]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Fee Head" : "Add New Fee Head"}</DialogTitle>
@@ -128,7 +161,7 @@ export function FeeHeadFormModal({
                 type="text"
                 placeholder="e.g., Tuition Fee, Library Fee"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={handleNameChange}
                 disabled={isLoading}
                 className="mt-1"
                 required
@@ -141,11 +174,32 @@ export function FeeHeadFormModal({
                 id="description"
                 placeholder="Brief description of this fee head"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={handleDescriptionChange}
                 disabled={isLoading}
                 className="mt-1"
                 rows={3}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="studentType">Student Type</Label>
+              <Select
+                value={formData.studentType}
+                onValueChange={handleStudentTypeChange}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select student type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BOTH">Both (New & Old Students)</SelectItem>
+                  <SelectItem value="NEW_ADMISSION">New Admission Only</SelectItem>
+                  <SelectItem value="OLD_STUDENT">Old Students Only</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-sm text-gray-500 mt-1">
+                Choose which type of students this fee head applies to
+              </div>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -158,7 +212,7 @@ export function FeeHeadFormModal({
               <Switch
                 id="system-defined"
                 checked={formData.isSystemDefined}
-                onCheckedChange={(checked) => handleInputChange('isSystemDefined', checked)}
+                onCheckedChange={handleSystemDefinedChange}
                 disabled={isLoading || isEditing}
               />
             </div>

@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { PageWrapper } from "@/components/layout/page-wrapper";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,505 +8,718 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Search, User, DollarSign, Printer, CircleAlert, CheckCircle2, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { FeeReceiptModal } from "@/components/finance/fee-receipt-modal";
+import { 
+  Search, 
+  Users, 
+  Clock,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle,
+  RefreshCw,
+  X,
+  Loader2
+} from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StreamlinedFeeCollection } from "@/components/finance/streamlined-fee-collection";
+import { BulkFeeCollection } from "@/components/finance/bulk-fee-collection";
+import { PageWrapper } from "@/components/layout/page-wrapper";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useToast } from "@/components/ui/use-toast";
+import { formatIndianCurrency } from "@/lib/utils";
 
-// Placeholder student data
-const students = [
-  { id: 's1', name: 'Aarav Sharma', admissionNo: 'SCH001', class: '10 A', parentName: 'Mr. Rajesh Sharma' },
-  { id: 's2', name: 'Priya Singh', admissionNo: 'SCH002', class: '12 B', parentName: 'Mrs. Anita Singh' },
-  { id: 's3', name: 'Rohan Mehta', admissionNo: 'SCH003', class: '9 C', parentName: 'Mr. Vikram Mehta' },
-];
-
-// Placeholder fee structure for a student
-const getStudentFeeDetails = (studentId: string, termId?: string) => {
-  // This would be a complex API call based on student, class, assigned fees, and previous payments
-  if (studentId === 's1') {
-    return [
-      { id:'f1', feeHead: 'Tuition Fee', term: 'Term 1 (2024-2025)', totalAmount: 5000, paidAmount: 2500, dueAmount: 2500, dueDate: '2024-08-15', status: 'Partially Paid' as FeeItem['status'] },
-      { id:'f2', feeHead: 'Library Fee', term: 'Term 1 (2024-2025)', totalAmount: 500, paidAmount: 0, dueAmount: 500, dueDate: '2024-08-15', status: 'Pending' as FeeItem['status'] },
-      { id:'f3', feeHead: 'Annual Fund', term: 'Annual (2024-2025)', totalAmount: 1200, paidAmount: 1200, dueAmount: 0, dueDate: '2024-04-30', status: 'Paid' as FeeItem['status'] },
-      { id:'f4', feeHead: 'Transport Fee', term: 'Term 1 (2024-2025)', totalAmount: 1500, paidAmount: 0, dueAmount: 1500, dueDate: '2024-08-15', status: 'Pending' as FeeItem['status'] },
-    ];
-  }
-  return [];
-};
-
-const allFeeTerms = [
-    { id: 'ft1', name: 'Term 1 (2024-2025)' },
-    { id: 'ft2', name: 'Annual Charges (2024-2025)' },
-    { id: 'all', name: 'All Outstanding Terms' },
-];
-  
-interface FeeItem {
+interface Student {
   id: string;
-  feeHead: string;
-  term: string;
-  totalAmount: number;
-  paidAmount: number;
-  dueAmount: number;
-  dueDate: string;
-  status: 'Paid' | 'Pending' | 'Partially Paid' | 'Overdue';
-  selected?: boolean;
-  payingAmount?: number;
+  firstName: string;
+  lastName: string;
+  admissionNumber: string;
+  section?: {
+    class?: {
+      name: string;
+      id: string;
+    };
+  } | null;
+  parent?: {
+    firstName: string;
+    lastName: string;
+    fatherMobile?: string;
+    motherMobile?: string;
+    email?: string;
+  } | null;
 }
 
 export default function FeeCollectionPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [activeTab, setActiveTab] = useState('individual');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
+  
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
-  const [studentFees, setStudentFees] = useState<FeeItem[]>([]);
-  const [selectedTermFilter, setSelectedTermFilter] = useState<string>('all');
-  const [paymentMode, setPaymentMode] = useState('Cash');
-  const [transactionDetails, setTransactionDetails] = useState('');
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-
-  // Fetch students for search
-  const {
-    data: students = [],
-    isLoading: studentsLoading
-  } = api.finance.getStudents.useQuery(
-    {
-      branchId: currentBranchId!,
-      sessionId: currentSessionId!,
-    },
-    {
-      enabled: !!currentBranchId && !!currentSessionId,
+  // Debounced search effect for real-time fuzzy search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setActiveSearchQuery('');
+      setShowSearchResults(false);
+      return;
     }
-  );
 
-  // Fetch fee terms
-  const {
-    data: feeTerms = []
-  } = api.finance.getFeeTerms.useQuery(
-    {
-      branchId: currentBranchId || undefined,
-      sessionId: currentSessionId || undefined,
-    },
-    {
-      enabled: !!currentBranchId && !!currentSessionId,
-    }
-  );
+    const debounceTimeout = setTimeout(() => {
+      setActiveSearchQuery(searchQuery.trim());
+      setShowSearchResults(true);
+    }, 300); // 300ms debounce
 
-  // Student fee calculation query
-  const {
-    data: studentFeeData,
-    isLoading: feeDataLoading,
-    refetch: refetchFeeData
-  } = api.finance.getStudentFeeDetails.useQuery(
-    {
-      studentId: selectedStudent?.id || '',
-      feeTermId: selectedTermFilter === 'all' ? undefined : selectedTermFilter,
-      branchId: currentBranchId!,
-      sessionId: currentSessionId!,
-    },
-    {
-      enabled: !!selectedStudent?.id && !!currentBranchId && !!currentSessionId,
-    }
-  );
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery]);
 
-  // Create fee collection mutation
-  const createFeeCollectionMutation = api.finance.createFeeCollection.useMutation({
+
+
+  // API calls
+  const collectPaymentMutation = api.finance.createFeeCollection.useMutation({
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Payment collected successfully",
+        title: "Payment Collected Successfully",
+        description: "Fee payment has been recorded.",
       });
-      refetchFeeData();
-      // Reset selection
-      setStudentFees(prev => prev.map(f => ({ ...f, selected: false, payingAmount: f.dueAmount })));
+    },
+  });
+
+  const bulkCollectPaymentsMutation = api.finance.createBulkFeeCollection.useMutation();
+
+  const assignConcessionMutation = api.finance.assignConcession.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Concession Assigned",
+        description: "Student concession has been assigned successfully.",
+      });
+      void getStudentFeesQuery.refetch();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to assign concession. Please try again.",
         variant: "destructive",
       });
     },
   });
+  
+  const getStudentFeesQuery = api.finance.getStudentFeeDetails.useQuery(
+    { 
+      studentId: selectedStudent?.id || '',
+      branchId: currentBranchId!,
+      sessionId: currentSessionId!
+    },
+    { enabled: !!selectedStudent?.id && !!currentBranchId && !!currentSessionId }
+  );
 
-  useEffect(() => {
-    if (studentFeeData) {
-      const fees = studentFeeData.map((fee: any) => ({
-        id: fee.id,
-        feeHead: fee.feeHead,
-        term: fee.term,
-        totalAmount: fee.totalAmount,
-        paidAmount: fee.paidAmount,
-        dueAmount: fee.dueAmount,
-        dueDate: fee.dueDate,
-        status: fee.status as FeeItem['status'],
-        selected: false,
-        payingAmount: fee.dueAmount,
-      }));
-      setStudentFees(fees);
-    } else {
-      setStudentFees([]);
+  const studentsQuery = api.finance.getStudents.useQuery(
+    { 
+      branchId: currentBranchId!, 
+      sessionId: currentSessionId!,
+      search: activeSearchQuery.trim() || undefined,
+    },
+    { enabled: !!currentBranchId && !!currentSessionId }
+  );
+
+  const classesQuery = api.finance.getClasses.useQuery(
+    { branchId: currentBranchId!, sessionId: currentSessionId! },
+    { enabled: !!currentBranchId && !!currentSessionId }
+  );
+
+  const feeTermsQuery = api.finance.getFeeTerms.useQuery(
+    { branchId: currentBranchId!, sessionId: currentSessionId! },
+    { enabled: !!currentBranchId && !!currentSessionId }
+  );
+
+  const concessionTypesQuery = api.finance.getConcessionTypes.useQuery(
+    { branchId: currentBranchId!, sessionId: currentSessionId! },
+    { enabled: !!currentBranchId && !!currentSessionId }
+  );
+
+  const feeHeadsQuery = api.finance.getFeeHeads.useQuery(
+    { branchId: currentBranchId!, sessionId: currentSessionId! },
+    { enabled: !!currentBranchId && !!currentSessionId }
+  );
+
+  // Note: feeCollectionsQuery removed as payment history is now handled within StreamlinedFeeCollection
+
+  // Transform API data into the format expected by StreamlinedFeeCollection
+  const feeItems = useMemo(() => {
+    const studentFees = getStudentFeesQuery.data || [];
+    
+    // Transform fee details into FeeItem format
+    return studentFees.map(fee => ({
+      id: fee.id,
+      feeHeadId: fee.feeHeadId,
+      feeHeadName: fee.feeHead,
+      feeTermId: fee.feeTermId,
+      feeTermName: fee.term,
+      originalAmount: fee.originalAmount,
+      concessionAmount: fee.concessionAmount || 0,
+      totalAmount: fee.totalAmount,
+      paidAmount: fee.paidAmount,
+      outstandingAmount: fee.dueAmount,
+      dueDate: fee.dueDate || new Date().toISOString(),
+      status: fee.status as 'Paid' | 'Partially Paid' | 'Pending' | 'Overdue',
+      appliedConcessions: fee.appliedConcessions || [],
+    }));
+  }, [getStudentFeesQuery.data]);
+
+  // Fuzzy search function
+  const fuzzyMatch = useCallback((text: string, query: string): number => {
+    if (!query) return 0;
+    if (!text) return -1;
+    
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    
+    // Exact match gets highest score
+    if (lowerText.includes(lowerQuery)) {
+      const exactIndex = lowerText.indexOf(lowerQuery);
+      return 100 - exactIndex; // Earlier matches score higher
     }
-  }, [studentFeeData]);
-
-  const handleSearch = () => {
-    const foundStudent = students.find((s: any) => 
-      s.admissionNumber?.toLowerCase() === searchQuery.toLowerCase() || 
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setSelectedStudent(foundStudent || null);
-  };
-
-  const handleFeeItemSelection = (feeId: string, isSelected: boolean) => {
-    setStudentFees(prevFees =>
-      prevFees.map(fee => (fee.id === feeId ? { ...fee, selected: isSelected } : fee))
-    );
-  };
-
-  const handlePayingAmountChange = (feeId: string, amount: string) => {
-    const numericAmount = parseFloat(amount) || 0;
-    setStudentFees(prevFees =>
-      prevFees.map(fee => (fee.id === feeId ? { ...fee, payingAmount: numericAmount } : fee))
-    );
-  };
-
-  const totalSelectedAmount = studentFees
-    .filter(f => f.selected && f.dueAmount > 0)
-    .reduce((sum, f) => sum + (f.payingAmount || 0), 0);
-
-  const handleCollectPayment = () => {
-    const itemsToPay = studentFees.filter(f => f.selected && f.payingAmount && f.payingAmount > 0);
-    if (itemsToPay.length === 0) {
-      toast({
-        title: "Error",
-        description: "No fees selected or amount entered for payment.",
-        variant: "destructive",
-      });
-      return;
+    
+    // Fuzzy match - check if all query characters exist in order
+    let textIndex = 0;
+    let queryIndex = 0;
+    let matches = 0;
+    
+    while (textIndex < lowerText.length && queryIndex < lowerQuery.length) {
+      if (lowerText[textIndex] === lowerQuery[queryIndex]) {
+        matches++;
+        queryIndex++;
+      }
+      textIndex++;
     }
-
-    if (!selectedStudent || !currentBranchId || !currentSessionId) {
-      toast({
-        title: "Error",
-        description: "Missing required information for payment collection.",
-        variant: "destructive",
-      });
-      return;
+    
+    if (queryIndex === lowerQuery.length) {
+      return matches * 10; // Fuzzy match score
     }
+    
+    return -1; // No match
+  }, []);
 
-    // Find the term ID - for now use the first selected item's term
-    const firstSelectedItem = itemsToPay[0];
-    const termId = feeTerms.find(t => t.name === firstSelectedItem?.term)?.id;
-
-    if (!termId) {
-      toast({
-        title: "Error",
-        description: "Unable to identify fee term for payment.",
-        variant: "destructive",
-      });
-      return;
+  // Function to highlight matching characters
+  const highlightMatch = useCallback((text: string, query: string) => {
+    if (!query) return text;
+    
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerText.includes(lowerQuery)) {
+      const index = lowerText.indexOf(lowerQuery);
+      return (
+        <>
+          {text.substring(0, index)}
+          <span className="bg-yellow-200 dark:bg-yellow-700 font-medium">
+            {text.substring(index, index + query.length)}
+          </span>
+          {text.substring(index + query.length)}
+        </>
+      );
     }
+    
+    return text;
+  }, []);
 
-    const feeCollectionData = {
-      studentId: selectedStudent.id,
-      feeTermId: termId,
-      paymentMode,
-      transactionReference: transactionDetails || undefined,
-      paymentDate: new Date(),
-      items: itemsToPay.map(item => {
-        // Find the original fee data to get the feeHeadId
-        const originalFee = studentFeeData?.find((fee: any) => fee.id === item.id);
+  // Enhanced fuzzy search with scoring
+  const searchResults = useMemo(() => {
+    if (!activeSearchQuery.trim() || !studentsQuery.data) return [];
+    
+    const results = studentsQuery.data
+      .map((student: any) => {
+        const fullName = `${student.firstName} ${student.lastName}`;
+        const className = student.section?.class?.name || '';
+        
+        // Calculate scores for different fields
+        const nameScore = fuzzyMatch(fullName, activeSearchQuery);
+        const admissionScore = fuzzyMatch(student.admissionNumber, activeSearchQuery);
+        const classScore = fuzzyMatch(className, activeSearchQuery);
+        
+        const maxScore = Math.max(nameScore, admissionScore, classScore);
+        
         return {
-          feeHeadId: originalFee?.feeHeadId || '',
-          amount: item.payingAmount || 0,
+          ...student,
+          searchScore: maxScore
         };
-      }),
+      })
+      .filter((student: any) => student.searchScore > 0)
+      .sort((a: any, b: any) => b.searchScore - a.searchScore)
+      .slice(0, 8); // Show top 8 results
+    
+    return results;
+  }, [activeSearchQuery, studentsQuery.data, fuzzyMatch]);
+
+  // Show search results when they become available
+  useEffect(() => {
+    if (activeSearchQuery && searchResults.length > 0 && searchQuery.trim()) {
+      setShowSearchResults(true);
+    } else if (!searchQuery.trim()) {
+      setShowSearchResults(false);
+    }
+    // Reset selected index when search results change
+    setSelectedResultIndex(-1);
+  }, [searchResults, activeSearchQuery, searchQuery]);
+
+  // Handle search input focus and blur
+  const handleSearchFocus = () => {
+    if (activeSearchQuery && searchResults.length > 0) {
+      setShowSearchResults(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    // Delay hiding results to allow for clicking on results
+    setTimeout(() => {
+      setShowSearchResults(false);
+      setSelectedResultIndex(-1);
+    }, 200);
+  };
+
+  // Handle keyboard navigation
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSearchResults || searchResults.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedResultIndex(prev => 
+          prev < searchResults.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedResultIndex(prev => 
+          prev > 0 ? prev - 1 : searchResults.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
+          handleStudentSelect(searchResults[selectedResultIndex] as Student);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setShowSearchResults(false);
+        setSelectedResultIndex(-1);
+        break;
+    }
+  };
+
+  const handleStudentSelect = (student: Student) => {
+    setSelectedStudent(student);
+    setSearchQuery(`${student.firstName} ${student.lastName}`);
+    setActiveSearchQuery('');
+    setShowSearchResults(false);
+    toast({
+      title: "Student Selected",
+      description: `Selected ${student.firstName} ${student.lastName}`,
+    });
+  };
+
+  const handleCollectPayment = async (paymentData: {
+    studentId: string;
+    selectedFees: Array<{
+      feeHeadId: string;
+      feeTermId: string;
+      amount: number;
+    }>;
+    paymentMode: string;
+    transactionReference?: string;
+    notes?: string;
+    paymentDate: Date;
+  }): Promise<{ receiptNumber: string; totalAmount: number; }> => {
+    try {
+      setIsLoading(true);
+      
+      // Group fees by term to handle multiple API calls
+      const feesByTerm: Record<string, Array<{ feeHeadId: string; amount: number; }>> = {};
+      paymentData.selectedFees.forEach(fee => {
+        if (!feesByTerm[fee.feeTermId]) {
+          feesByTerm[fee.feeTermId] = [];
+        }
+        feesByTerm[fee.feeTermId]!.push({
+          feeHeadId: fee.feeHeadId,
+          amount: fee.amount,
+        });
+      });
+
+      // Process payments for each term
+      let lastResult: any = null;
+      for (const [feeTermId, items] of Object.entries(feesByTerm)) {
+        lastResult = await collectPaymentMutation.mutateAsync({
+          studentId: paymentData.studentId,
+          feeTermId,
+          items,
+          paymentMode: paymentData.paymentMode as "Cash" | "Card" | "Online" | "Cheque" | "DD" | "Bank Transfer",
+          transactionReference: paymentData.transactionReference,
+          paymentDate: paymentData.paymentDate,
+          notes: paymentData.notes,
+          branchId: currentBranchId!,
+          sessionId: currentSessionId!,
+        });
+      }
+
+      const totalAmount = paymentData.selectedFees.reduce((sum, fee) => sum + fee.amount, 0);
+
+      await getStudentFeesQuery.refetch();
+
+      return {
+        receiptNumber: lastResult?.receiptNumber || `RCP-${Date.now()}`,
+        totalAmount,
+      };
+    } catch (error) {
+      toast({
+        title: "Payment Collection Failed",
+        description: "There was an error processing the payment. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Payment collection error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkCollectPayments = async (payments: Array<{
+    studentId: string;
+    feeTermId: string;
+    paymentMode: string;
+    transactionReference?: string;
+    paymentDate: Date;
+    notes?: string;
+    items: Array<{
+      feeHeadId: string;
+      amount: number;
+    }>;
+  }>) => {
+    try {
+      setIsLoading(true);
+      await bulkCollectPaymentsMutation.mutateAsync({
+        collections: payments.map(payment => ({
+          studentId: payment.studentId,
+          feeTermId: payment.feeTermId,
+          paymentMode: payment.paymentMode as "Cash" | "Card" | "Online" | "Cheque" | "DD" | "Bank Transfer",
+          transactionReference: payment.transactionReference,
+          paymentDate: payment.paymentDate,
+          notes: payment.notes,
+          items: payment.items,
+        })),
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+
+      toast({
+        title: "Bulk Payments Collected",
+        description: `Successfully processed ${payments.length} payments.`,
+      });
+
+      await studentsQuery.refetch();
+    } catch (error) {
+      toast({
+        title: "Bulk Payment Failed",
+        description: "There was an error processing the bulk payments. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Bulk payment error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGetStudentFees = async (studentId: string, feeTermId?: string) => {
+    // Use the actual API to get student fees
+    const response = await fetch(`/api/trpc/finance.getStudentFeeDetails?input=${encodeURIComponent(JSON.stringify({
+      studentId,
+      feeTermId,
       branchId: currentBranchId,
       sessionId: currentSessionId,
-    };
-
-    createFeeCollectionMutation.mutate(feeCollectionData);
-  };
-
-  const handlePreviewReceipt = () => {
-    const itemsToPay = studentFees.filter(f => f.selected && f.payingAmount && f.payingAmount > 0);
-    if (itemsToPay.length === 0) {
-      toast({
-        title: "Error",
-        description: "No fees selected for receipt preview.",
-        variant: "destructive",
-      });
-      return;
+    }))}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch student fees');
     }
-    setIsReceiptModalOpen(true);
-  };
-
-  const getStatusBadge = (status: FeeItem['status']) => {
-    switch (status) {
-      case 'Paid': return <Badge variant="default" className="capitalize bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"><CheckCircle2 className="h-3 w-3 mr-1" />{status}</Badge>;
-      case 'Pending': return <Badge variant="destructive" className="capitalize"><CircleAlert className="h-3 w-3 mr-1" />{status}</Badge>;
-      case 'Partially Paid': return <Badge variant="outline" className="capitalize border-yellow-500 text-yellow-700 dark:border-yellow-400 dark:text-yellow-300"><DollarSign className="h-3 w-3 mr-1" />{status}</Badge>;
-      case 'Overdue': return <Badge variant="destructive" className="capitalize"><CircleAlert className="h-3 w-3 mr-1" />{status}</Badge>;
-      default: return <Badge className="capitalize">{status}</Badge>;
-    }
-  };
-
-  const filteredFees = studentFees.filter(fee => {
-    if (selectedTermFilter === 'all') return fee.dueAmount > 0; // Show only items with dues if 'all'
-    return fee.term === feeTerms.find(t => t.id === selectedTermFilter)?.name && fee.dueAmount > 0;
-  });
-
-  // Get selected items for receipt
-  const selectedFeeItems = studentFees
-    .filter(f => f.selected && f.payingAmount && f.payingAmount > 0)
-    .map(f => ({
-      id: f.id,
-      feeHead: f.feeHead,
-      term: f.term,
-      payingAmount: f.payingAmount || 0,
-      dueDate: f.dueDate,
+    
+    const data = await response.json();
+    const feeDetails = data.result?.data || [];
+    
+    // Transform the API response to match the expected format
+    return feeDetails.map((fee: any) => ({
+      id: fee.id,
+      feeHeadId: fee.feeHeadId,
+      feeHeadName: fee.feeHead,
+      feeTermId: fee.feeTermId,
+      feeTermName: fee.term,
+      amount: fee.totalAmount,
+      dueDate: new Date(fee.dueDate),
+      outstandingAmount: fee.dueAmount,
+      status: fee.status,
     }));
+  };
 
-  // Create options for term filter
-  const allFeeTerms = [
-    { id: 'all', name: 'All Outstanding Terms' },
-    ...feeTerms.map(term => ({ id: term.id, name: term.name })),
-  ];
+  const handleAssignConcession = async (concessionData: any) => {
+    if (!currentBranchId || !currentSessionId) return;
+
+    await assignConcessionMutation.mutateAsync({
+      ...concessionData,
+      branchId: currentBranchId,
+      sessionId: currentSessionId,
+      createdBy: 'current-user', // TODO: Get from auth context
+    });
+  };
+
+  const handleRefreshFees = async () => {
+    await getStudentFeesQuery.refetch();
+  };
 
   if (!currentBranchId || !currentSessionId) {
     return (
-      <PageWrapper title="Fee Collection Portal" subtitle="Search students, view outstanding fees, and record payments.">
-        <div className="flex justify-center items-center h-64">
-          <p className="text-gray-500">Please select a branch and academic session to continue.</p>
-        </div>
+      <PageWrapper title="Fee Collection" subtitle="Collect student fees efficiently">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Please select a branch and academic session to access fee collection features.
+          </AlertDescription>
+        </Alert>
       </PageWrapper>
     );
   }
 
   return (
-    <PageWrapper title="Fee Collection Portal" subtitle="Search students, view outstanding fees, and record payments.">
-      {/* Action Buttons */}
-      <div className="flex justify-end mb-6">
-        <Link href="/finance/fee-collection/create">
-          <Button className="bg-[#00501B] hover:bg-[#00501B]/90 text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Record New Payment
-          </Button>
-        </Link>
-      </div>
+    <PageWrapper title="Fee Collection" subtitle="Collect student fees efficiently">
+      <div className="space-y-6">
+                {/* Search and Tabs */}
+        <div className="flex items-center justify-between">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-fit grid-cols-2 h-9">
+              <TabsTrigger value="individual" className="px-4">Individual</TabsTrigger>
+              <TabsTrigger value="bulk" className="px-4">Bulk</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-      <Card className="mb-6 shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-700 dark:text-white flex items-center">
-            <Search className="h-5 w-5 mr-2 text-[#00501B] dark:text-green-400" />
-            Search Student
-          </CardTitle>
-          <CardDescription>Enter Admission No. or Student Name to fetch fee details.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Admission No. or Name"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
-          />
-          <Button onClick={handleSearch}>Search Student</Button>
-        </CardContent>
-      </Card>
-
-      {selectedStudent && (
-        <>
-          <Card className="mb-6 shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-700 dark:text-white flex items-center">
-                <User className="h-5 w-5 mr-2 text-[#00501B] dark:text-green-400" />
-                Student Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div><strong>Name:</strong> {selectedStudent.name}</div>
-              <div><strong>Admission No:</strong> {selectedStudent.admissionNo}</div>
-              <div><strong>Class:</strong> {selectedStudent.class}</div>
-              <div><strong>Parent:</strong> {selectedStudent.parentName}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                    <div >
-                        <CardTitle className="text-lg font-semibold text-gray-700 dark:text-white flex items-center">
-                        <DollarSign className="h-5 w-5 mr-2 text-[#00501B] dark:text-green-400" />
-                        Outstanding Fees & Payment
-                        </CardTitle>
-                        <CardDescription>Select fee items to pay. Only items with dues are shown.</CardDescription>
-                    </div>
-                    <div className="w-full sm:w-auto">
-                        <Select value={selectedTermFilter} onValueChange={setSelectedTermFilter}>
-                            <SelectTrigger className="w-full sm:w-[200px]">
-                                <SelectValue placeholder="Filter by Term" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {allFeeTerms.map(term => (
-                                <SelectItem key={term.id} value={term.id}>{term.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+          {/* Search */}
+          <div className="flex items-center gap-2">
+          <div className="relative">
+            <Input
+              placeholder="Search student..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSelectedResultIndex(-1); // Reset selection when typing
+              }}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onKeyDown={handleSearchKeyDown}
+              className="pl-8 pr-8 h-9 w-64 text-sm"
+            />
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            
+            {/* Loading indicator or Clear button */}
+            {searchQuery && (
+              <div className="absolute right-2 top-2.5">
+                {studentsQuery.isLoading && activeSearchQuery ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveSearchQuery('');
+                      setShowSearchResults(false);
+                      setSelectedStudent(null);
+                    }}
+                    className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-            </CardHeader>
-            <CardContent>
-              {filteredFees.length > 0 ? (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[50px]">Select</TableHead>
-                          <TableHead>Fee Head</TableHead>
-                          <TableHead>Term</TableHead>
-                          <TableHead className="text-right">Total (₹)</TableHead>
-                          <TableHead className="text-right">Paid (₹)</TableHead>
-                          <TableHead className="text-right">Due (₹)</TableHead>
-                          <TableHead>Due Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right w-[150px]">Pay Amount (₹)</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredFees.map((fee) => (
-                          <TableRow key={fee.id} className={fee.selected ? 'bg-green-50 dark:bg-green-900/30' : ''}>
-                            <TableCell>
-                              {fee.dueAmount > 0 && (
-                                <Checkbox
-                                  checked={fee.selected}
-                                  onCheckedChange={(checked) => handleFeeItemSelection(fee.id, !!checked)}
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell className="font-medium">{fee.feeHead}</TableCell>
-                            <TableCell>{fee.term}</TableCell>
-                            <TableCell className="text-right">{fee.totalAmount.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{fee.paidAmount.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-semibold">{fee.dueAmount.toFixed(2)}</TableCell>
-                            <TableCell>{new Date(fee.dueDate).toLocaleDateString()}</TableCell>
-                            <TableCell>{getStatusBadge(fee.status)}</TableCell>
-                            <TableCell className="text-right">
-                              {fee.dueAmount > 0 && (
-                                <Input
-                                  type="number"
-                                  value={fee.payingAmount === 0 && fee.dueAmount > 0 ? '' : fee.payingAmount?.toString() ?? ''} // Show empty for 0 unless it's fully paid
-                                  onChange={(e) => handlePayingAmountChange(fee.id, e.target.value)}
-                                  max={fee.dueAmount}
-                                  min="0"
-                                  disabled={!fee.selected}
-                                  className="h-8 text-right"
-                                  placeholder={fee.dueAmount.toFixed(2)}
-                                />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-md">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                        <div>
-                            <Label htmlFor="payment-mode" className="mb-1 block">Payment Mode</Label>
-                            <Select value={paymentMode} onValueChange={setPaymentMode}>
-                                <SelectTrigger id="payment-mode">
-                                    <SelectValue placeholder="Select Mode" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Cash">Cash</SelectItem>
-                                    <SelectItem value="Card">Card</SelectItem>
-                                    <SelectItem value="Online">Online Transfer</SelectItem>
-                                    <SelectItem value="Cheque">Cheque</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label htmlFor="transaction-details" className="mb-1 block">Reference / Details</Label>
-                            <Input 
-                                id="transaction-details"
-                                placeholder="e.g., Card ending XXXX, Cheque No."
-                                value={transactionDetails}
-                                onChange={(e) => setTransactionDetails(e.target.value)}
-                            />
-                        </div>                       
-                        <div className="text-right md:text-left">
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Total to Collect:</p>
-                            <p className="text-2xl font-bold text-[#00501B] dark:text-green-400">₹{totalSelectedAmount.toFixed(2)}</p>
-                        </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <p className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    No outstanding fees found for the selected student/term or all dues are cleared.
-                </p>
-              )}
-            </CardContent>
-            {filteredFees.length > 0 && (
-                <CardFooter className="flex justify-end gap-2 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <Button variant="outline" onClick={handlePreviewReceipt} disabled={totalSelectedAmount === 0}>
-                        <Printer className="h-4 w-4 mr-2" /> Preview Receipt
-                    </Button>
-                    <Button onClick={handleCollectPayment} disabled={totalSelectedAmount === 0}>
-                        <DollarSign className="h-4 w-4 mr-2" /> Collect ₹{totalSelectedAmount.toFixed(2)}
-                    </Button>
-                </CardFooter>
             )}
-          </Card>
-        </>
-      )}
+            
+            {/* Search Results Overlay */}
+            {showSearchResults && activeSearchQuery && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                <div className="bg-background/95 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 rounded-lg shadow-xl ring-1 ring-black/5 dark:ring-white/10">
+                  {searchResults.length > 0 ? (
+                    <>
+                      {/* Header with results count */}
+                      <div className="px-3 py-2 border-b border-border/50 dark:border-gray-700/50">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {searchResults.length} student{searchResults.length !== 1 ? 's' : ''} found
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Results list */}
+                      <div className="max-h-80 overflow-y-auto py-1">
+                        {searchResults.map((student: any, index: number) => (
+                          <div
+                            key={student.id}
+                            className={`mx-1 px-3 py-2.5 rounded-md cursor-pointer transition-all duration-150 ${
+                              index === selectedResultIndex 
+                                ? 'bg-primary/15 dark:bg-primary/25 border-l-2 border-primary shadow-sm' 
+                                : 'hover:bg-muted/70 dark:hover:bg-muted/40 hover:shadow-sm'
+                            }`}
+                            onClick={() => handleStudentSelect(student as Student)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-xs font-semibold text-primary">
+                                      {student.firstName[0]}{student.lastName[0]}
+                                    </span>
+                                  </div>
+                                  <div className="font-medium text-sm text-foreground truncate">
+                                    {highlightMatch(`${student.firstName} ${student.lastName}`, activeSearchQuery)}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground ml-10">
+                                  <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded">
+                                    {highlightMatch(student.admissionNumber, activeSearchQuery)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <div className="h-1 w-1 rounded-full bg-muted-foreground/40"></div>
+                                    {highlightMatch(student.section?.class?.name || 'No class', activeSearchQuery)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center text-muted-foreground ml-3">
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-4 py-8 text-center">
+                      {studentsQuery.isLoading ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Searching students...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-muted/50 flex items-center justify-center">
+                            <Search className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-foreground">No students found</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Try searching with a different term
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+              </div>
 
-      {!selectedStudent && searchQuery && (
-        <Card className="shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <CardContent className="pt-6">
-                <p className="text-center text-red-600 dark:text-red-400">
-                    <CircleAlert className="inline h-5 w-5 mr-2" /> Student not found. Please check the Admission No. or Name.
-                </p>
-            </CardContent>
-        </Card>
-      )}
+        {/* Tab Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsContent value="individual" className="space-y-4 mt-0">
+          {/* Fee Collection Form */}
+          {selectedStudent && !getStudentFeesQuery.isLoading && (
+            <StreamlinedFeeCollection
+              student={selectedStudent as any}
+              feeItems={feeItems}
+              isLoading={getStudentFeesQuery.isLoading}
+              onCollectPayment={handleCollectPayment}
+              concessionTypes={concessionTypesQuery.data as any[] || []}
+              feeHeads={feeHeadsQuery.data || []}
+              feeTerms={feeTermsQuery.data || []}
+              onAssignConcession={handleAssignConcession}
+              onRefreshFees={handleRefreshFees}
+            />
+          )}
 
-      {/* Receipt Modal */}
-      <FeeReceiptModal
-        isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
-        student={selectedStudent}
-        feeItems={selectedFeeItems}
-        totalAmount={totalSelectedAmount}
-        paymentMode={paymentMode}
-        transactionDetails={transactionDetails}
-      />
+          {selectedStudent && getStudentFeesQuery.isLoading && (
+            <Card>
+              <CardContent className="p-8">
+                <div className="flex items-center justify-center space-x-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>Loading fee details...</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedStudent && !getStudentFeesQuery.isLoading && feeItems.length === 0 && (
+            <Card>
+              <CardContent className="p-8">
+                <div className="text-center">
+                  <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Fee Structure Found</h3>
+                  <p className="text-muted-foreground">
+                    No fees have been configured for this student's class and section.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!selectedStudent && (
+            <Card>
+              <CardContent className="p-8">
+                <div className="text-center">
+                  <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Search for a Student</h3>
+                  <p className="text-muted-foreground">
+                    Use the search bar above to find a student and collect fees.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-4">
+          <BulkFeeCollection
+            students={(studentsQuery.data as any[]) || []}
+            classes={classesQuery.data || []}
+            feeTerms={feeTermsQuery.data || []}
+            onGetStudentFees={handleGetStudentFees}
+            onBulkCollectPayments={handleBulkCollectPayments}
+            onExportData={(data) => {
+              const csvContent = data.map(item => 
+                `${item.student.firstName} ${item.student.lastName},${item.student.admissionNumber},${item.totalOutstanding}`
+              ).join('\n');
+              
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'student-fees-export.csv';
+              a.click();
+              
+              toast({
+                title: "Data Exported",
+                description: "Fee collection data has been exported successfully.",
+              });
+            }}
+          />
+        </TabsContent>
+      </Tabs>
+      </div>
     </PageWrapper>
   );
 } 

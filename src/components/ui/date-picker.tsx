@@ -69,7 +69,7 @@ export function DatePicker({
           </Button>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+      <PopoverContent className="w-auto p-0" align="start">
         <EnhancedCalendar
           value={value}
           onChange={(date) => {

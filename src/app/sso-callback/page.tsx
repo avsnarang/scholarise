@@ -9,11 +9,15 @@ export default function SSOCallback() {
   const router = useRouter();
 
   useEffect(() => {
+    // Get redirect URL from query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirectUrl') || "/dashboard";
+    
     // Handle the OAuth callback
     void handleRedirectCallback({
-      redirectUrl: "/dashboard",
-      afterSignInUrl: "/dashboard",
-      afterSignUpUrl: "/dashboard",
+      redirectUrl: redirectUrl,
+      afterSignInUrl: redirectUrl,
+      afterSignUpUrl: redirectUrl,
     });
   }, [handleRedirectCallback, router]);
 

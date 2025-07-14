@@ -110,6 +110,7 @@
     "postalcodes-india": "^1.0.2",
     "posthog-js": "^1.236.2",
     "react": "^18.2.0",
+    "react-countup": "^6.5.3",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.55.0",
     "recharts": "^2.15.3",

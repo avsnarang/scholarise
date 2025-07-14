@@ -11,13 +11,14 @@ import {
   CardDescription
 } from "@/components/ui/card";
 import { PlusCircle, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FeeHeadFormModal, type FeeHead } from "@/components/finance/fee-head-form-modal";
+import { FeeHeadForm, type FeeHead } from "@/components/finance/fee-head-form";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -34,7 +35,6 @@ export default function FeeHeadPage() {
   const [selectedFeeHead, setSelectedFeeHead] = useState<FeeHead | null>(null);
   const [feeHeadToDelete, setFeeHeadToDelete] = useState<FeeHead | null>(null);
 
-  // Fetch fee heads
   const {
     data: feeHeads = [],
     isLoading,
@@ -49,7 +49,6 @@ export default function FeeHeadPage() {
     }
   );
 
-  // Mutations
   const createFeeHeadMutation = api.finance.createFeeHead.useMutation({
     onSuccess: () => {
       toast({
@@ -107,13 +106,13 @@ export default function FeeHeadPage() {
   };
 
   const handleEditFeeHead = (feeHead: FeeHead) => {
-    if (feeHead.isSystemDefined) return; // Prevent editing system-defined fee heads
+    if (feeHead.isSystemDefined) return;
     setSelectedFeeHead(feeHead);
     setIsFormModalOpen(true);
   };
 
   const handleDeleteFeeHead = (feeHead: FeeHead) => {
-    if (feeHead.isSystemDefined) return; // Prevent deleting system-defined fee heads
+    if (feeHead.isSystemDefined) return;
     setFeeHeadToDelete(feeHead);
     setIsDeleteDialogOpen(true);
   };
@@ -122,23 +121,24 @@ export default function FeeHeadPage() {
     name: string;
     description: string | null;
     isSystemDefined: boolean;
+    studentType: string;
   }) => {
     if (!currentBranchId || !currentSessionId) return;
 
     if (selectedFeeHead) {
-      // Update existing fee head
       updateFeeHeadMutation.mutate({
         id: selectedFeeHead.id,
         name: feeHeadData.name,
         description: feeHeadData.description ?? undefined,
         isSystemDefined: feeHeadData.isSystemDefined,
+        studentType: feeHeadData.studentType as "NEW_ADMISSION" | "OLD_STUDENT" | "BOTH",
       });
     } else {
-      // Add new fee head
       createFeeHeadMutation.mutate({
         name: feeHeadData.name,
         description: feeHeadData.description ?? undefined,
         isSystemDefined: feeHeadData.isSystemDefined,
+        studentType: feeHeadData.studentType as "NEW_ADMISSION" | "OLD_STUDENT" | "BOTH",
         branchId: currentBranchId,
         sessionId: currentSessionId,
       });
@@ -157,55 +157,62 @@ export default function FeeHeadPage() {
 
   if (!currentBranchId || !currentSessionId) {
     return (
-      <PageWrapper title="Manage Fee Heads" subtitle="Define and manage various types of fees applicable in the institution.">
+      <PageWrapper title="Manage Fee Heads" subtitle="Define and manage fee types">
         <div className="flex justify-center items-center h-64">
-          <p className="text-gray-500">Please select a branch and academic session to continue.</p>
+          <p className="text-muted-foreground">Please select a branch and academic session to continue.</p>
         </div>
       </PageWrapper>
     );
   }
 
   return (
-    <PageWrapper title="Manage Fee Heads" subtitle="Define and manage various types of fees applicable in the institution.">
+    <PageWrapper title="Manage Fee Heads" subtitle="Define and manage fee types">
       <div className="flex justify-end mb-6">
         <Button onClick={handleAddFeeHead} disabled={isLoading}>
           <PlusCircle className="h-4 w-4 mr-2" />
-          Add New Fee Head
+          Add Fee Head
         </Button>
       </div>
 
-      <Card className="shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-700 dark:text-white">Existing Fee Heads</CardTitle>
-          <CardDescription>View, edit, or delete fee heads. System-defined heads have limited editability.</CardDescription>
+          <CardTitle>Fee Heads</CardTitle>
+          <CardDescription>View, edit, or delete fee heads</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Loading fee heads...</p>
+              <p className="text-muted-foreground">Loading fee heads...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">Name</th>
-                    <th scope="col" className="px-6 py-3">Description</th>
-                    <th scope="col" className="px-6 py-3 text-center">System Defined</th>
-                    <th scope="col" className="px-6 py-3 text-center">Actions</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Name</th>
+                    <th className="text-left p-2">Description</th>
+                    <th className="text-center p-2">Student Type</th>
+                    <th className="text-center p-2">System Defined</th>
+                    <th className="text-center p-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {feeHeads.map((head) => (
-                    <tr key={head.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{head.name}</td>
-                      <td className="px-6 py-4">{head.description ?? '-'}</td>
-                      <td className="px-6 py-4 text-center">{head.isSystemDefined ? 'Yes' : 'No'}</td>
-                      <td className="px-6 py-4 text-center">
+                    <tr key={head.id} className="border-b hover:bg-muted/50">
+                      <td className="p-2 font-medium">{head.name}</td>
+                      <td className="p-2">{head.description ?? '-'}</td>
+                      <td className="p-2 text-center">
+                        <Badge variant={head.studentType === 'BOTH' ? 'default' : 'secondary'}>
+                          {head.studentType === 'NEW_ADMISSION' ? 'New Admission' : 
+                           head.studentType === 'OLD_STUDENT' ? 'Old Students' : 
+                           'Both'}
+                        </Badge>
+                      </td>
+                      <td className="p-2 text-center">{head.isSystemDefined ? 'Yes' : 'No'}</td>
+                      <td className="p-2 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -215,15 +222,15 @@ export default function FeeHeadPage() {
                               disabled={head.isSystemDefined}
                             >
                               <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
+                              Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDeleteFeeHead(head)} 
                               disabled={head.isSystemDefined} 
-                              className="text-red-600 dark:text-red-400 hover:!text-red-700 dark:hover:!text-red-500"
+                              className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete</span>
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -232,7 +239,7 @@ export default function FeeHeadPage() {
                   ))}
                   {feeHeads.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
                         No fee heads defined yet.
                       </td>
                     </tr>
@@ -244,19 +251,57 @@ export default function FeeHeadPage() {
         </CardContent>
       </Card>
 
-      {/* Form Modal */}
-      <FeeHeadFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setSelectedFeeHead(null);
-        }}
-        onSuccess={handleFormSuccess}
-        feeHead={selectedFeeHead}
-        isLoading={createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending}
-      />
+      {isFormModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/50" 
+            onClick={() => {
+              if (!(createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending)) {
+                setIsFormModalOpen(false);
+                setSelectedFeeHead(null);
+              }
+            }}
+          />
+          <div className="relative bg-background rounded-lg shadow-lg max-w-md w-full z-10 border">
+            <div className="border-b bg-background px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">{selectedFeeHead ? "Edit Fee Head" : "Add New Fee Head"}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedFeeHead ? "Update fee head details" : "Create a new fee head"}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (!(createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending)) {
+                      setIsFormModalOpen(false);
+                      setSelectedFeeHead(null);
+                    }
+                  }}
+                  disabled={createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending}
+                  className="text-muted-foreground hover:text-foreground p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <FeeHeadForm
+                onSuccess={handleFormSuccess}
+                feeHead={selectedFeeHead}
+                isLoading={createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending}
+                onCancel={() => {
+                  setIsFormModalOpen(false);
+                  setSelectedFeeHead(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => {
@@ -265,7 +310,7 @@ export default function FeeHeadPage() {
         }}
         onConfirm={confirmDelete}
         title="Delete Fee Head"
-        description={`Are you sure you want to delete the fee head "${feeHeadToDelete?.name}"? This action cannot be undone and may affect associated fee terms and collections.`}
+        description={`Are you sure you want to delete the fee head "${feeHeadToDelete?.name}"? This action cannot be undone.`}
         isDeleting={deleteFeeHeadMutation.isPending}
       />
     </PageWrapper>

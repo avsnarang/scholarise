@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { PlusCircle, Edit, Trash2, MoreVertical, Calendar, Clock } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, MoreVertical, Calendar, Clock, X, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { FeeTermFormModal, type FeeTerm } from "@/components/finance/fee-term-form-modal";
+import { FeeTermForm, type FeeTerm } from "@/components/finance/fee-term-form";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -50,9 +50,9 @@ export default function FeeTermPage() {
     }
   );
 
-  // Fetch fee heads for display
+  // Fetch fee heads for association
   const {
-    data: feeHeads = []
+    data: feeHeads = [],
   } = api.finance.getFeeHeads.useQuery(
     {
       branchId: currentBranchId ?? undefined,
@@ -66,16 +66,19 @@ export default function FeeTermPage() {
   // Mutations
   const createFeeTermMutation = api.finance.createFeeTerm.useMutation({
     onSuccess: () => {
+      refetch();
+      setIsFormModalOpen(false);
+      setSelectedFeeTerm(null);
       toast({
         title: "Success",
-        description: "Fee term created successfully",
+        description: "Fee term created successfully.",
       });
-      void refetch();
     },
     onError: (error) => {
+      console.error('Error creating fee term:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create fee term. Please try again.",
         variant: "destructive",
       });
     },
@@ -83,16 +86,19 @@ export default function FeeTermPage() {
 
   const updateFeeTermMutation = api.finance.updateFeeTerm.useMutation({
     onSuccess: () => {
+      refetch();
+      setIsFormModalOpen(false);
+      setSelectedFeeTerm(null);
       toast({
         title: "Success",
-        description: "Fee term updated successfully",
+        description: "Fee term updated successfully.",
       });
-      void refetch();
     },
     onError: (error) => {
+      console.error('Error updating fee term:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update fee term. Please try again.",
         variant: "destructive",
       });
     },
@@ -100,16 +106,56 @@ export default function FeeTermPage() {
 
   const deleteFeeTermMutation = api.finance.deleteFeeTerm.useMutation({
     onSuccess: () => {
+      refetch();
+      setIsDeleteDialogOpen(false);
+      setFeeTermToDelete(null);
       toast({
         title: "Success",
-        description: "Fee term deleted successfully",
+        description: "Fee term deleted successfully.",
       });
-      void refetch();
     },
     onError: (error) => {
+      console.error('Error deleting fee term:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to delete fee term. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fee Term Ordering Mutations
+  const moveFeeTermUpMutation = api.finance.moveFeeTermUp.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast({
+        title: "Success",
+        description: "Fee term moved up successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error moving fee term up:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to move fee term up.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const moveFeeTermDownMutation = api.finance.moveFeeTermDown.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast({
+        title: "Success",
+        description: "Fee term moved down successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error moving fee term down:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to move fee term down.",
         variant: "destructive",
       });
     },
@@ -130,50 +176,51 @@ export default function FeeTermPage() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleMoveFeeTermUp = (feeTermId: string) => {
+    moveFeeTermUpMutation.mutate({ id: feeTermId });
+  };
+
+  const handleMoveFeeTermDown = (feeTermId: string) => {
+    moveFeeTermDownMutation.mutate({ id: feeTermId });
+  };
+
   const handleFormSuccess = (feeTermData: {
     name: string;
-    description: string | null;
+    description?: string;
     startDate: Date;
     endDate: Date;
     dueDate: Date;
     feeHeadIds: string[];
   }) => {
-    if (!currentBranchId || !currentSessionId) return;
-
     if (selectedFeeTerm) {
       // Update existing fee term
       updateFeeTermMutation.mutate({
         id: selectedFeeTerm.id,
-        name: feeTermData.name,
-        description: feeTermData.description ?? undefined,
-        startDate: feeTermData.startDate,
-        endDate: feeTermData.endDate,
-        dueDate: feeTermData.dueDate,
-        feeHeadIds: feeTermData.feeHeadIds,
+        ...feeTermData,
       });
     } else {
-      // Add new fee term
+      // Create new fee term
+      if (!currentBranchId || !currentSessionId) {
+        toast({
+          title: "Error",
+          description: "Branch and session must be selected.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       createFeeTermMutation.mutate({
-        name: feeTermData.name,
-        description: feeTermData.description ?? undefined,
-        startDate: feeTermData.startDate,
-        endDate: feeTermData.endDate,
-        dueDate: feeTermData.dueDate,
-        feeHeadIds: feeTermData.feeHeadIds,
+        ...feeTermData,
         branchId: currentBranchId,
         sessionId: currentSessionId,
       });
     }
-    setIsFormModalOpen(false);
-    setSelectedFeeTerm(null);
   };
 
   const confirmDelete = async () => {
-    if (!feeTermToDelete) return;
-
-    deleteFeeTermMutation.mutate({ id: feeTermToDelete.id });
-    setIsDeleteDialogOpen(false);
-    setFeeTermToDelete(null);
+    if (feeTermToDelete) {
+      deleteFeeTermMutation.mutate({ id: feeTermToDelete.id });
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -193,110 +240,161 @@ export default function FeeTermPage() {
   };
 
   const getStatusBadge = (startDate: Date, endDate: Date, dueDate: Date) => {
-    const today = new Date();
+    const now = new Date();
     const start = new Date(startDate);
     const end = new Date(endDate);
     const due = new Date(dueDate);
 
-    if (today < start) {
-      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">Upcoming</Badge>;
-    } else if (today >= start && today <= end) {
-      return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">Active</Badge>;
-    } else if (today > end && today <= due) {
-      return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Payment Period</Badge>;
+    if (now < start) {
+      return <Badge variant="outline">Upcoming</Badge>;
+    } else if (now >= start && now <= end) {
+      const daysUntilDue = getDaysUntilDue(due);
+      if (daysUntilDue < 0) {
+        return <Badge variant="destructive">Overdue</Badge>;
+      } else if (daysUntilDue <= 7) {
+        return <Badge variant="secondary">Due Soon</Badge>;
+      } else {
+        return <Badge variant="default">Active</Badge>;
+      }
     } else {
-      return <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-200">Completed</Badge>;
+      return <Badge variant="outline">Completed</Badge>;
     }
   };
 
   if (!currentBranchId || !currentSessionId) {
     return (
-      <PageWrapper title="Manage Fee Terms" subtitle="Configure fee collection periods and associated fee heads for each term.">
-        <div className="flex justify-center items-center h-64">
-          <p className="text-gray-500">Please select a branch and academic session to continue.</p>
-        </div>
+      <PageWrapper title="Fee Terms" subtitle="Manage fee collection terms and schedules">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Please select a branch and academic session to manage fee terms.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </PageWrapper>
     );
   }
 
   return (
-    <PageWrapper title="Manage Fee Terms" subtitle="Configure fee collection periods and associated fee heads for each term.">
-      <div className="flex justify-end mb-6">
-        <Button onClick={handleAddFeeTerm} disabled={isLoading}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add New Fee Term
-        </Button>
-      </div>
-
-      <Card className="shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-700 dark:text-white">Fee Terms Overview</CardTitle>
-          <CardDescription>View, edit, or delete fee terms. Each term defines a collection period with associated fee heads.</CardDescription>
+    <PageWrapper title="Fee Terms" subtitle="Manage fee collection terms and schedules">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Fee Terms</CardTitle>
+            <CardDescription>
+              Create and manage fee collection terms with associated fee heads
+            </CardDescription>
+          </div>
+          <Button onClick={handleAddFeeTerm}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Fee Term
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Loading fee terms...</p>
+            <div className="flex justify-center py-8">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-muted-foreground">Loading fee terms...</p>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">Term Name</th>
-                    <th scope="col" className="px-6 py-3">Period</th>
-                    <th scope="col" className="px-6 py-3">Due Date</th>
-                    <th scope="col" className="px-6 py-3">Fee Heads</th>
-                    <th scope="col" className="px-6 py-3">Status</th>
-                    <th scope="col" className="px-6 py-3 text-center">Actions</th>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-center py-3 px-2 font-medium text-gray-600 dark:text-gray-300 w-20">Order</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Term Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Period</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Due Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Fee Heads</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Status</th>
+                    <th className="text-right py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {feeTerms.map((term) => (
-                    <tr key={term.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4">
+                  {feeTerms.map((term, index) => (
+                    <tr key={term.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                      <td className="py-4 px-2 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleMoveFeeTermUp(term.id)}
+                            disabled={index === 0 || moveFeeTermUpMutation.isPending || moveFeeTermDownMutation.isPending}
+                            title="Move up"
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleMoveFeeTermDown(term.id)}
+                            disabled={index === feeTerms.length - 1 || moveFeeTermUpMutation.isPending || moveFeeTermDownMutation.isPending}
+                            title="Move down"
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
                         <div>
-                          <div className="font-medium text-gray-900 dark:text-white">{term.name}</div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{term.name}</p>
                           {term.description && (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">{term.description}</div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{term.description}</p>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="py-4 px-4">
                         <div className="text-sm">
-                          <div className="flex items-center mb-1">
-                            <Calendar className="h-3 w-3 mr-1 text-gray-400" />
+                          <div className="flex items-center text-gray-600 dark:text-gray-400 mb-1">
+                            <Calendar className="w-4 h-4 mr-1" />
                             {formatDate(term.startDate)} - {formatDate(term.endDate)}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1 text-gray-400" />
-                          <span className="text-sm">{formatDate(term.dueDate)}</span>
-                          {getDaysUntilDue(term.dueDate) > 0 && getDaysUntilDue(term.dueDate) <= 7 && (
-                            <span className="ml-2 text-xs text-orange-600 dark:text-orange-400">
-                              ({getDaysUntilDue(term.dueDate)} days left)
-                            </span>
+                      <td className="py-4 px-4">
+                        <div className="text-sm">
+                          <div className="flex items-center text-gray-600 dark:text-gray-400">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {formatDate(term.dueDate)}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            {getDaysUntilDue(term.dueDate) > 0 
+                              ? `${getDaysUntilDue(term.dueDate)} days left`
+                              : `${Math.abs(getDaysUntilDue(term.dueDate))} days overdue`
+                            }
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="text-sm">
+                          {term.feeHeads && term.feeHeads.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {term.feeHeads.slice(0, 2).map((fh) => (
+                                <Badge key={fh.feeHead.id} variant="outline" className="text-xs">
+                                  {fh.feeHead.name}
+                                </Badge>
+                              ))}
+                              {term.feeHeads.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{term.feeHeads.length - 2} more
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 dark:text-gray-400">No fee heads</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {term.feeHeads && term.feeHeads.map((termFeeHead) => (
-                            <Badge key={termFeeHead.feeHead.id} variant="outline" className="text-xs">
-                              {termFeeHead.feeHead.name}
-                            </Badge>
-                          ))}
-                          {(!term.feeHeads?.length) && (
-                            <span className="text-sm text-gray-500">No fee heads assigned</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      <td className="py-4 px-4">
                         {getStatusBadge(term.startDate, term.endDate, term.dueDate)}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="py-4 px-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -323,7 +421,7 @@ export default function FeeTermPage() {
                   ))}
                   {feeTerms.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                         No fee terms defined yet.
                       </td>
                     </tr>
@@ -335,18 +433,59 @@ export default function FeeTermPage() {
         </CardContent>
       </Card>
 
-      {/* Form Modal */}
-      <FeeTermFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setSelectedFeeTerm(null);
-        }}
-        onSuccess={handleFormSuccess}
-        feeTerm={selectedFeeTerm}
-        feeHeads={feeHeads}
-        isLoading={createFeeTermMutation.isPending || updateFeeTermMutation.isPending}
-      />
+      {/* Custom Form Modal */}
+      {isFormModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={() => {
+              setIsFormModalOpen(false);
+              setSelectedFeeTerm(null);
+            }}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedFeeTerm ? 'Edit Fee Term' : 'Add New Fee Term'}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  {selectedFeeTerm ? 'Update the fee term details' : 'Create a new fee collection term'}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsFormModalOpen(false);
+                  setSelectedFeeTerm(null);
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Form */}
+            <div className="p-6">
+              <FeeTermForm
+                onSuccess={handleFormSuccess}
+                onCancel={() => {
+                  setIsFormModalOpen(false);
+                  setSelectedFeeTerm(null);
+                }}
+                feeTerm={selectedFeeTerm}
+                feeHeads={feeHeads}
+                isLoading={createFeeTermMutation.isPending || updateFeeTermMutation.isPending}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog

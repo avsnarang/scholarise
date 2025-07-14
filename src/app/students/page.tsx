@@ -59,15 +59,26 @@ export type Student = {
 // Skeleton loader component
 const StudentSkeleton = () => (
   <div className="animate-pulse">
-    <div className="flex items-center space-x-4 p-4 border rounded-lg">
-      <div className="w-4 h-4 bg-gray-300 rounded"></div>
-      <div className="flex-1 space-y-2">
-        <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-        <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+    <div className="flex items-center space-x-4 p-4 border-b">
+      <div className="w-4 h-4 bg-muted rounded"></div>
+      <div className="flex-1 grid grid-cols-6 gap-4 items-center">
+        <div className="h-4 bg-muted rounded w-16"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-24"></div>
+          <div className="h-3 bg-muted rounded w-20"></div>
+        </div>
+        <div className="h-4 bg-muted rounded w-20"></div>
+        <div className="h-4 bg-muted rounded w-8"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-24"></div>
+          <div className="h-3 bg-muted rounded w-20"></div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="h-5 bg-muted rounded w-12"></div>
+          <div className="h-5 bg-muted rounded w-8"></div>
+        </div>
       </div>
-      <div className="h-4 bg-gray-300 rounded w-20"></div>
-      <div className="h-4 bg-gray-300 rounded w-16"></div>
-      <div className="w-8 h-8 bg-gray-300 rounded"></div>
+      <div className="w-8 h-8 bg-muted rounded"></div>
     </div>
   </div>
 );
@@ -103,6 +114,9 @@ export default function StudentsPage() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [allStudentsSelected, setAllStudentsSelected] = useState(false);
   const [allStudentIds, setAllStudentIds] = useState<string[]>([]);
+  const [isPaginating, setIsPaginating] = useState(false);
+  const [paginatingDirection, setPaginatingDirection] = useState<'previous' | 'next' | null>(null);
+  const [lastKnownTotalPages, setLastKnownTotalPages] = useState(0);
 
   const { getBranchFilterParam } = useGlobalBranchFilter();
   const { currentSessionId } = useAcademicSessionContext();
@@ -156,7 +170,8 @@ export default function StudentsPage() {
   });
 
   // Calculate pagination parameters
-  const totalPages = Math.ceil((studentsData?.totalCount || 0) / pageSize);
+  const currentTotalPages = Math.ceil((studentsData?.totalCount || 0) / pageSize);
+  const totalPages = isPaginating && lastKnownTotalPages > 1 ? lastKnownTotalPages : currentTotalPages;
   const totalCount = studentsData?.totalCount || 0;
 
   // Transform student data
@@ -212,8 +227,18 @@ export default function StudentsPage() {
           return newCursors;
         });
       }
+      
+      // Update last known total pages when we have valid data
+      if (studentsData.totalCount !== undefined) {
+        const newTotalPages = Math.ceil(studentsData.totalCount / pageSize);
+        setLastKnownTotalPages(newTotalPages);
+      }
+      
+      // Reset pagination loading state
+      setIsPaginating(false);
+      setPaginatingDirection(null);
     }
-  }, [studentsData?.items, studentsData?.nextCursor, currentPage]);
+  }, [studentsData?.items, studentsData?.nextCursor, studentsData?.totalCount, currentPage, pageSize]);
 
   // Update all student IDs when data loads
   useEffect(() => {
@@ -228,6 +253,9 @@ export default function StudentsPage() {
     setCursors([undefined]); // Reset cursors
     setRowSelection({});
     setAllStudentsSelected(false);
+    setIsPaginating(false); // Reset pagination state
+    setPaginatingDirection(null); // Reset pagination direction
+    setLastKnownTotalPages(0); // Reset last known total pages
   }, [sortBy, sortOrder, debouncedSearchTerm, currentSessionId, getBranchFilterParam, pageSize]);
 
   // API mutations
@@ -333,17 +361,23 @@ export default function StudentsPage() {
   // Pagination handlers
   const handlePreviousPage = () => {
     if (currentPage > 1) {
+      setIsPaginating(true);
+      setPaginatingDirection('previous');
       setCurrentPage(currentPage - 1);
     }
   };
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
+      setIsPaginating(true);
+      setPaginatingDirection('next');
       setCurrentPage(currentPage + 1);
     }
   };
 
   const handlePageChange = (page: number) => {
+    setIsPaginating(true);
+    setPaginatingDirection(null);
     setCurrentPage(page);
   };
 
@@ -607,6 +641,7 @@ export default function StudentsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    disabled={isPaginating}
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     {sortBy === 'class' 
@@ -771,7 +806,7 @@ export default function StudentsPage() {
 
           {/* Student Rows */}
           {isLoading && currentStudents.length === 0 ? (
-            <div className="space-y-2">
+            <div className="border rounded-lg overflow-hidden">
               {Array.from({ length: 10 }).map((_, index) => (
                 <StudentSkeleton key={index} />
               ))}
@@ -783,7 +818,7 @@ export default function StudentsPage() {
               ))}
               
               {/* Loading More Skeletons */}
-              {isLoading && (
+              {isLoading && !isPaginating && (
                 <div className="space-y-0">
                   {Array.from({ length: 5 }).map((_, index) => (
                     <StudentSkeleton key={`loading-${index}`} />
@@ -800,15 +835,13 @@ export default function StudentsPage() {
                 'Loading students...'
               ) : (
                 <>
-                  <>
-                    Showing <span className="font-medium">{currentStudents.length}</span> of{" "}
-                    <span className="font-medium">{totalCount}</span> students
-                    {totalPages > 1 && (
-                      <span className="ml-2 text-blue-600 dark:text-blue-400">
-                        • {totalCount - currentStudents.length} more available
-                      </span>
-                    )}
-                  </>
+                  Showing <span className="font-medium">{currentStudents.length}</span> of{" "}
+                  <span className="font-medium">{totalCount}</span> students
+                  {totalPages > 1 && (
+                    <span className="ml-2 text-blue-600 dark:text-blue-400">
+                      • {totalCount - currentStudents.length} more available
+                    </span>
+                  )}
                 </>
               )}
             </div>
@@ -819,10 +852,17 @@ export default function StudentsPage() {
                 <Button
                   variant="outline"
                   onClick={handlePreviousPage}
-                  disabled={currentPage === 1 || isLoading}
-                  className="min-w-32"
+                  disabled={currentPage === 1 || isLoading || isPaginating}
+                  className="min-w-28"
                 >
-                  Previous
+                  {isPaginating && paginatingDirection === 'previous' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Previous
+                    </>
+                  ) : (
+                    'Previous'
+                  )}
                 </Button>
                 <span className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}
@@ -830,21 +870,23 @@ export default function StudentsPage() {
                 <Button
                   variant="outline"
                   onClick={handleNextPage}
-                  disabled={currentPage === totalPages || isLoading}
-                  className="min-w-32"
+                  disabled={currentPage === totalPages || isLoading || isPaginating}
+                  className="min-w-28"
                 >
-                  Next
+                  {isPaginating && paginatingDirection === 'next' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Next
+                    </>
+                  ) : (
+                    'Next'
+                  )}
                 </Button>
               </div>
             )}
           </div>
 
-          {/* No More Students Message */}
-          {!totalPages && currentStudents.length > 0 && (
-            <div className="text-center py-4 text-muted-foreground">
-              You've reached the end of the student list.
-            </div>
-          )}
+
 
           {/* No Students Found */}
           {!isLoading && currentStudents.length === 0 && (

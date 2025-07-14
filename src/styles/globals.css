@@ -242,9 +242,9 @@
 
 .dark {
   /* Base colors - Dark mode with pastel versions */
-  --primary: #7aad8c;  /* Pastel green */
+  --primary: #7AAD8B;  /* Pastel green */
   --primary-foreground: #f8fafc;
-  --primary-light: rgba(122, 173, 140, 0.2);
+  --primary-light: rgba(122, 173, 139, 0.2);
 
   --secondary: #c27c54;  /* Rust/orange color */
   --secondary-foreground: #f8fafc;
@@ -275,7 +275,7 @@
   --destructive-foreground: #f8fafc;
 
   /* Shadows and rings */
-  --ring: #7aad8c;  /* Pastel green */
+  --ring: #7AAD8B;  /* Pastel green */
   
   /* Sidebar - Keep darker than main content */
   --sidebar: #101010;  /* Keep darkest gray for sidebar */
@@ -285,7 +285,7 @@
   --sidebar-accent: #202020;
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #202020;
-  --sidebar-ring: #7aad8c;  /* Pastel green */
+  --sidebar-ring: #7AAD8B;  /* Pastel green */
 }
 
 @layer base {

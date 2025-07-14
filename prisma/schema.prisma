@@ -31,6 +31,8 @@ model Branch {
   chapters                Chapter[]
   classes                 Class[]
   classwiseFees           ClasswiseFee[]
+  concessionTypes         ConcessionType[]
+  concessionApprovalSettings ConcessionApprovalSettings[]
   departments             Department[]
   designations            Designation[]
   emailConfiguration      EmailConfiguration?
@@ -46,19 +48,20 @@ model Branch {
   leavePolicies           LeavePolicy[]
   MarksEntry              MarksEntry[]
   moneyCollections        MoneyCollection[]
+  rbacRoles               RbacRole[]
   SeatingPlan             SeatingPlan[]
   students                Student[]
   studentAssessmentScores StudentAssessmentScore[]
+  studentConcessions      StudentConcession[]
   subjectTeachers         SubjectTeacher[]
   teachers                Teacher[]
   terms                   Term[]
   routes                  TransportRoute[]
+  userRoles               UserRole[]
   attendanceDevices       AttendanceDevice[]
   attendanceLocations     AttendanceLocation[]
   attendanceWindows       AttendanceWindow[]
   locationTypes           LocationType[]
-  rbacRoles               RbacRole[]
-  userRoles               UserRole[]
 }
 
 model Student {
@@ -125,6 +128,7 @@ model Student {
   transferCertificates    TransferCertificate[]
   transportAssignments    TransportAssignment[]
   studentAttendance       StudentAttendance[]
+  studentConcessions      StudentConcession[]
 
   @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
   @@index([branchId, isActive], map: "student_branch_active_idx")
@@ -337,7 +341,7 @@ model Class {
   branch                  Branch                    @relation(fields: [branchId], references: [id])
   session                 AcademicSession           @relation(fields: [sessionId], references: [id])
   subjects                ClassSubject[]
-  classwiseFees           ClasswiseFee[]
+  ClasswiseFee            ClasswiseFee[]
   ExamConfiguration       ExamConfiguration[]
   moneyCollectionLinks    MoneyCollectionClass[]    @relation("ClassMoneyCollectionLinks")
   sections                Section[]
@@ -357,6 +361,7 @@ model Section {
   teacherId               String?
   displayOrder            Int                       @default(0)
   AssessmentConfiguration AssessmentConfiguration[]
+  sectionwiseFees         ClasswiseFee[]
   ExamConfiguration       ExamConfiguration[]
   class                   Class                     @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher                 Teacher?                  @relation(fields: [teacherId], references: [id])
@@ -370,39 +375,41 @@ model Section {
 }
 
 model AcademicSession {
-  id               String            @id @default(cuid())
-  name             String
-  startDate        DateTime
-  endDate          DateTime
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  academicRecords  AcademicRecord[]
-  classes          Class[]
-  classwiseFees    ClasswiseFee[]    @relation("ClasswiseFeeSession")
-  feeCollections   FeeCollection[]   @relation("FeeCollectionSession")
-  feeHeads         FeeHead[]         @relation("FeeHeadSession")
-  feeTerms         FeeTerm[]         @relation("FeeTermSession")
-  moneyCollections MoneyCollection[] @relation("MoneyCollectionSession")
-  terms            Term[]
+  id                 String              @id @default(cuid())
+  name               String
+  startDate          DateTime
+  endDate            DateTime
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  academicRecords    AcademicRecord[]
+  classes            Class[]
+  classwiseFees      ClasswiseFee[]      @relation("ClasswiseFeeSession")
+  concessionTypes    ConcessionType[]    @relation("ConcessionTypeSession")
+  feeCollections     FeeCollection[]     @relation("FeeCollectionSession")
+  feeHeads           FeeHead[]           @relation("FeeHeadSession")
+  feeTerms           FeeTerm[]           @relation("FeeTermSession")
+  moneyCollections   MoneyCollection[]   @relation("MoneyCollectionSession")
+  studentConcessions StudentConcession[] @relation("StudentConcessionSession")
+  terms              Term[]
 }
 
 model Term {
-  id               String             @id @default(cuid())
-  name             String
-  description      String?
-  startDate        DateTime
-  endDate          DateTime
-  order            Int                @default(0)
-  isActive         Boolean            @default(true)
-  isCurrentTerm    Boolean            @default(false)
-  branchId         String
-  sessionId        String
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  startDate         DateTime
+  endDate           DateTime
+  order             Int                @default(0)
+  isActive          Boolean            @default(true)
+  isCurrentTerm     Boolean            @default(false)
+  branchId          String
+  sessionId         String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   assessmentSchemas AssessmentSchema[] @relation("termRelation")
-  branch           Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  session          AcademicSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  branch            Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  session           AcademicSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([name, branchId, sessionId])
   @@index([branchId, isActive])
@@ -722,18 +729,18 @@ model LeaveApplication {
 }
 
 model RbacRole {
-  id              String     @id @default(cuid())
-  name            String     @unique
-  description     String?
-  isSystem        Boolean    @default(false)
-  isActive        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  permissions     String[]   @default([])
-  userRoles       UserRole[]
-  branchId        String?
-  branch          Branch?    @relation(fields: [branchId], references: [id])
-  
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  isSystem    Boolean    @default(false)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  permissions String[]   @default([])
+  branchId    String?
+  branch      Branch?    @relation(fields: [branchId], references: [id])
+  userRoles   UserRole[]
+
   @@index([name])
   @@index([isSystem])
   @@index([isActive])
@@ -749,10 +756,10 @@ model UserRole {
   employeeId String?
   branchId   String?
   isActive   Boolean   @default(true)
+  branch     Branch?   @relation(fields: [branchId], references: [id])
   employee   Employee? @relation(fields: [employeeId], references: [id])
   role       RbacRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
   teacher    Teacher?  @relation(fields: [teacherId], references: [id])
-  branch     Branch?   @relation(fields: [branchId], references: [id])
 
   @@unique([userId, roleId])
   @@index([userId])
@@ -1352,6 +1359,7 @@ model FeeHead {
   sessionId          String
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  studentType        String              @default("BOTH")
   classwiseFees      ClasswiseFee[]
   feeCollectionItems FeeCollectionItem[]
   branch             Branch              @relation(fields: [branchId], references: [id])
@@ -1359,6 +1367,7 @@ model FeeHead {
   feeTerms           FeeTermFeeHead[]
 
   @@unique([name, branchId, sessionId])
+  @@index([studentType])
 }
 
 model FeeTerm {
@@ -1373,6 +1382,7 @@ model FeeTerm {
   sessionId      String
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+  order          Int              @default(0)
   classwiseFees  ClasswiseFee[]
   feeCollections FeeCollection[]
   branch         Branch           @relation(fields: [branchId], references: [id])
@@ -1380,6 +1390,7 @@ model FeeTerm {
   feeHeads       FeeTermFeeHead[]
 
   @@unique([name, branchId, sessionId])
+  @@index([branchId, sessionId, order])
 }
 
 model FeeTermFeeHead {
@@ -1403,13 +1414,118 @@ model ClasswiseFee {
   sessionId String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+  sectionId String?
   branch    Branch          @relation(fields: [branchId], references: [id])
-  class     Class           @relation(fields: [classId], references: [id])
+  Class     Class           @relation(fields: [classId], references: [id])
   feeHead   FeeHead         @relation(fields: [feeHeadId], references: [id])
   feeTerm   FeeTerm         @relation(fields: [feeTermId], references: [id])
+  section   Section?        @relation(fields: [sectionId], references: [id])
   session   AcademicSession @relation("ClasswiseFeeSession", fields: [sessionId], references: [id])
+}
 
-  @@unique([classId, feeTermId, feeHeadId])
+model ConcessionType {
+  id                     String              @id @default(cuid())
+  name                   String
+  description            String?
+  type                   String              @default("PERCENTAGE") // 'PERCENTAGE' or 'FIXED'
+  value                  Float               @default(0)
+  maxValue               Float?
+  isActive               Boolean             @default(true)
+  applicableStudentTypes String[]            @default(["BOTH"]) // 'NEW_ADMISSION', 'OLD_STUDENT', 'BOTH'
+  eligibilityCriteria    String?
+  requiredDocuments      String[]            @default([])
+  autoApproval           Boolean             @default(false)
+  branchId               String
+  sessionId              String
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  branch                 Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  session                AcademicSession     @relation("ConcessionTypeSession", fields: [sessionId], references: [id], onDelete: Cascade)
+  studentConcessions     StudentConcession[]
+
+  @@unique([name, branchId, sessionId])
+  @@index([branchId, sessionId])
+  @@index([isActive])
+  @@index([type])
+}
+
+model StudentConcession {
+  id               String            @id @default(cuid())
+  studentId        String
+  concessionTypeId String
+  customValue      Float? // Override default concession value if needed
+  reason           String?
+  approvedBy       String?
+  approvedAt       DateTime?
+  status           String            @default("PENDING") // 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED', 'EXPIRED'
+  validFrom        DateTime          @default(now())
+  validUntil       DateTime?
+  appliedFeeHeads  String[]          @default([]) // Specific fee heads this concession applies to (empty = all)
+  appliedFeeTerms  String[]          @default([]) // Specific fee terms this concession applies to (empty = all)
+  documents        String[]          @default([]) // Document URLs/paths for verification
+  notes            String?
+  branchId         String
+  sessionId        String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  branch           Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  session          AcademicSession   @relation("StudentConcessionSession", fields: [sessionId], references: [id], onDelete: Cascade)
+  student          Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  concessionType   ConcessionType    @relation(fields: [concessionTypeId], references: [id], onDelete: Cascade)
+  history          ConcessionHistory[]
+
+  @@unique([studentId, concessionTypeId], name: "student_concession_type_unique")
+  @@index([studentId])
+  @@index([branchId, sessionId])
+  @@index([status])
+  @@index([concessionTypeId])
+  @@index([validFrom, validUntil])
+}
+
+model ConcessionHistory {
+  id                   String            @id @default(cuid())
+  studentConcessionId  String
+  action               String // 'CREATED', 'APPROVED', 'REJECTED', 'SUSPENDED', 'MODIFIED'
+  oldValue             Float?
+  newValue             Float?
+  reason               String?
+  performedBy          String
+  performedAt          DateTime          @default(now())
+  studentConcession    StudentConcession @relation(fields: [studentConcessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentConcessionId])
+  @@index([performedAt])
+}
+
+model ConcessionApprovalSettings {
+  id                        String   @id @default(cuid())
+  branchId                  String
+  sessionId                 String
+  approvalType              String   @default("1_PERSON")
+  authorizationType         String   @default("ROLE_BASED")
+  autoApproveBelow          Float    @default(1000)
+  requireDocumentVerification Boolean @default(true)
+  allowSelfApproval         Boolean  @default(false)
+  maxApprovalAmount         Float    @default(50000)
+  escalationThreshold       Float    @default(25000)
+  notificationEnabled       Boolean  @default(true)
+  approvalTimeoutDays       Int      @default(7)
+  requireReason             Boolean  @default(true)
+  approvalRoles             String[] @default([])
+  secondApprovalRoles       String[] @default([])
+  approvalIndividuals       String[] @default([])
+  secondApprovalIndividuals String[] @default([])
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  createdBy                 String?
+  updatedBy                 String?
+  branch                    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, sessionId], name: "branchId_sessionId")
+  @@index([branchId])
+  @@index([sessionId])
+  @@index([approvalType])
+  @@index([authorizationType])
 }
 
 model FeeCollection {
@@ -1543,26 +1659,26 @@ model GradeRange {
 }
 
 model AssessmentSchema {
-  id                    String                   @id @default(cuid())
-  name                  String
-  term                  String
-  classId               String
-  subjectId             String
-  totalMarks            Int                      @default(100)
-  isActive              Boolean                  @default(true)
-  isPublished           Boolean                  @default(false)
-  createdBy             String
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  branchId              String
-  appliedClasses        Json?
-  components            AssessmentComponent[]
-  permissions           AssessmentPermission[]
+  id                      String                   @id @default(cuid())
+  name                    String
+  term                    String
+  classId                 String
+  subjectId               String
+  totalMarks              Int                      @default(100)
+  isActive                Boolean                  @default(true)
+  isPublished             Boolean                  @default(false)
+  createdBy               String
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  branchId                String
+  appliedClasses          Json?
+  components              AssessmentComponent[]
+  permissions             AssessmentPermission[]
+  branch                  Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  class                   Class                    @relation(fields: [classId], references: [id])
+  subject                 Subject                  @relation(fields: [subjectId], references: [id])
+  termRelation            Term                     @relation("termRelation", fields: [term], references: [id])
   studentAssessmentScores StudentAssessmentScore[]
-  branch                Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  class                 Class                    @relation(fields: [classId], references: [id])
-  subject               Subject                  @relation(fields: [subjectId], references: [id])
-  termRelation          Term                     @relation("termRelation", fields: [term], references: [id])
 
   @@unique([branchId, classId, subjectId, term])
   @@index([branchId, isActive])
@@ -1608,7 +1724,6 @@ model AssessmentSubCriteria {
 model StudentAssessmentScore {
   id                 String           @id @default(cuid())
   studentId          String
-  assessmentSchemaId String
   finalScore         Float?
   finalGrade         String?
   finalPercentage    Float?
@@ -1618,6 +1733,7 @@ model StudentAssessmentScore {
   enteredAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   branchId           String
+  assessmentSchemaId String
   componentScores    ComponentScore[]
   assessmentSchema   AssessmentSchema @relation(fields: [assessmentSchemaId], references: [id], onDelete: Cascade)
   branch             Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -1965,11 +2081,11 @@ enum BackgroundTaskStatus {
   PENDING
   QUEUED
   RUNNING
-  PAUSED
   COMPLETED
   FAILED
   CANCELLED
   RETRY
+  PAUSED
 }
 
 enum TaskLogLevel {

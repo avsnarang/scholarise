@@ -25,13 +25,25 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Get redirect URL from query parameters
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirectUrl');
+      setRedirectUrl(redirect);
+    }
+  }, []);
 
   // Redirect to dashboard if already signed in
   useEffect(() => {
     if (isAuthLoaded && userId) {
-      router.push('/dashboard');
+      const destination = redirectUrl || '/dashboard';
+      router.push(destination);
     }
-  }, [isAuthLoaded, userId, router]);
+  }, [isAuthLoaded, userId, router, redirectUrl]);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -68,8 +80,9 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
         // Set the active session
         await setActive({ session: result.createdSessionId });
         
-        // Redirect to dashboard
-        router.push('/dashboard');
+        // Redirect to original destination or dashboard
+        const destination = redirectUrl || '/dashboard';
+        router.push(destination);
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -85,10 +98,11 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
     if (!isLoaded || !signIn) return;
     
     try {
+      const destination = redirectUrl || "/dashboard";
       signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/dashboard"
+        redirectUrlComplete: destination
       });
     } catch (err) {
       console.error("Google sign in error:", err);

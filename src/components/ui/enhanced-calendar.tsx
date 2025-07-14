@@ -110,30 +110,30 @@ export function EnhancedCalendar({
   }
 
   return (
-    <div className={cn("p-4 px-8", className)}>
+    <div className={cn("p-4", className)}>
       {/* Calendar header with dropdowns */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 px-1">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="h-9 w-9 bg-transparent p-0"
+          className="h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100"
           onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
           disabled={disabled}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Select
             value={monthNames[month]}
             onValueChange={handleMonthChange}
             disabled={disabled}
           >
-            <SelectTrigger className="h-9 w-fit min-w-32">
+            <SelectTrigger className="h-8 w-fit min-w-[120px] text-sm">
               <SelectValue>{monthNames[month]}</SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {monthNames.map((monthName) => (
                 <SelectItem key={monthName} value={monthName}>
                   {monthName}
@@ -147,10 +147,10 @@ export function EnhancedCalendar({
             onValueChange={handleYearChange}
             disabled={disabled}
           >
-            <SelectTrigger className="h-9 w-fit min-w-28">
+            <SelectTrigger className="h-8 w-fit min-w-[80px] text-sm">
               <SelectValue>{year}</SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {years.map((yearNum) => (
                 <SelectItem key={yearNum} value={yearNum.toString()}>
                   {yearNum}
@@ -164,11 +164,11 @@ export function EnhancedCalendar({
           type="button"
           variant="outline"
           size="icon"
-          className="h-9 w-9 bg-transparent p-0"
+          className="h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100"
           onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
           disabled={disabled}
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
