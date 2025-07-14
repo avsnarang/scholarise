@@ -237,6 +237,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Teachers",
           href: "/teachers",
           permissions: navItemPermissions.teachers,
+          children: [
+            {
+              title: "Dashboard",
+              href: "/teachers/dashboard",
+              permissions: navItemPermissions.teachers,
+            },
+            {
+              title: "All Teachers",
+              href: "/teachers",
+              permissions: navItemPermissions.teachers,
+            },
+          ],
         },
         {
           title: "Add Teacher",

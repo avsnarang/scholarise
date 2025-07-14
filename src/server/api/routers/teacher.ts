@@ -1358,4 +1358,188 @@ export const teacherRouter = createTRPCRouter({
         importMessages,
       };
     }),
+
+  // Get teacher dashboard data
+  getDashboardData: publicProcedure
+    .input(z.object({
+      teacherId: z.string(),
+      sessionId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        // Get teacher details with sections and classes
+        const teacher = await ctx.db.teacher.findUnique({
+          where: { id: input.teacherId },
+          include: {
+            sections: {
+              include: {
+                class: {
+                  include: {
+                    _count: {
+                      select: {
+                        students: true
+                      }
+                    }
+                  }
+                },
+                _count: {
+                  select: {
+                    students: true
+                  }
+                }
+              }
+            },
+            subjectAssignments: {
+              where: { isActive: true },
+              include: {
+                subject: true,
+                class: true,
+                section: true
+              }
+            },
+            leaveApplications: {
+              where: {
+                createdAt: {
+                  gte: new Date(new Date().getFullYear(), 0, 1) // Current year
+                }
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            },
+            leaveBalances: {
+              where: {
+                year: new Date().getFullYear()
+              }
+            }
+          }
+        });
+
+        if (!teacher) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Teacher not found",
+          });
+        }
+
+        // Get today's attendance status
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const todayAttendance = await ctx.db.staffAttendance.findFirst({
+          where: {
+            teacherId: input.teacherId,
+            timestamp: {
+              gte: today,
+              lte: todayEnd
+            }
+          },
+          orderBy: { timestamp: 'desc' }
+        });
+
+        // Get this week's attendance count
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        
+        const weekAttendanceCount = await ctx.db.staffAttendance.count({
+          where: {
+            teacherId: input.teacherId,
+            timestamp: {
+              gte: weekStart,
+              lte: todayEnd
+            }
+          }
+        });
+
+        // Get recent student attendance summary for teacher's sections
+        const sectionIds = teacher.sections.map(section => section.id);
+        let studentAttendanceSummary = null;
+        
+        if (sectionIds.length > 0) {
+          const recentStudentAttendance = await ctx.db.studentAttendance.groupBy({
+            by: ['status'],
+            where: {
+              sectionId: { in: sectionIds },
+              date: {
+                gte: today,
+                lte: todayEnd
+              }
+            },
+            _count: true
+          });
+
+          studentAttendanceSummary = recentStudentAttendance.reduce((acc, item) => {
+            acc[item.status] = item._count;
+            return acc;
+          }, {} as Record<string, number>);
+        }
+
+        // Calculate class statistics
+        const totalStudents = teacher.sections.reduce((sum, section) => sum + section._count.students, 0);
+        const totalClasses = teacher.sections.length;
+        
+        // Get subject assignments count
+        const totalSubjects = teacher.subjectAssignments.length;
+
+        // Calculate leave statistics
+        const totalLeaveBalance = teacher.leaveBalances.reduce((sum, balance) => sum + balance.totalDays, 0);
+        const usedLeave = teacher.leaveBalances.reduce((sum, balance) => sum + balance.usedDays, 0);
+        const pendingApplications = teacher.leaveApplications.filter(app => app.status === 'PENDING').length;
+
+        return {
+          teacher: {
+            id: teacher.id,
+            firstName: teacher.firstName,
+            lastName: teacher.lastName,
+            designation: teacher.designation,
+            subjects: teacher.subjects,
+            employeeCode: teacher.employeeCode
+          },
+          stats: {
+            totalStudents,
+            totalClasses,
+            totalSubjects,
+            weekAttendanceCount,
+            todayAttendanceMarked: !!todayAttendance,
+            totalLeaveBalance,
+            usedLeave,
+            pendingApplications
+          },
+          sections: teacher.sections.map(section => ({
+            id: section.id,
+            name: section.name,
+            className: section.class.name,
+            studentCount: section._count.students,
+            totalClassStudents: section.class._count.students
+          })),
+          subjectAssignments: teacher.subjectAssignments.map(assignment => ({
+            id: assignment.id,
+            subjectName: assignment.subject.name,
+            className: assignment.class.name,
+            sectionName: assignment.section?.name || 'All Sections'
+          })),
+          recentLeaveApplications: teacher.leaveApplications.map(app => ({
+            id: app.id,
+            startDate: app.startDate,
+            endDate: app.endDate,
+            reason: app.reason,
+            status: app.status,
+            createdAt: app.createdAt
+          })),
+          studentAttendanceSummary,
+          todayAttendance: todayAttendance ? {
+            timestamp: todayAttendance.timestamp,
+            type: todayAttendance.type,
+            location: todayAttendance.locationId
+          } : null
+        };
+      } catch (error) {
+        console.error("Error fetching teacher dashboard data:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch teacher dashboard data",
+        });
+      }
+    }),
 });
