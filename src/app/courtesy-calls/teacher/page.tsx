@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { CourtesyCallsDataTable } from "@/components/courtesy-calls/courtesy-calls-data-table";
-import { CourtesyCallsStatsCards } from "@/components/courtesy-calls/courtesy-calls-stats-cards";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/types/permissions";
 
@@ -169,52 +168,9 @@ export default function TeacherCourtesyCallsPage() {
           </CardContent>
         </Card>
 
-        {/* Statistics */}
-        <CourtesyCallsStatsCards
-          branchId={currentBranchId || undefined}
-        />
 
-        {/* Instructions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="w-5 h-5" />
-              How to Use Courtesy Calls
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <h5 className="font-medium mb-1">📞 Making Courtesy Calls</h5>
-                <p className="text-muted-foreground">
-                  Contact parents using the phone numbers provided in the table below.
-                  Document your conversations to track student progress.
-                </p>
-              </div>
-              <div>
-                <h5 className="font-medium mb-1">📝 Adding Feedback</h5>
-                <p className="text-muted-foreground">
-                  Click "Add Feedback" to record details about your conversation,
-                  including purpose, feedback, and any follow-up actions needed.
-                </p>
-              </div>
-              <div>
-                <h5 className="font-medium mb-1">📊 Viewing History</h5>
-                <p className="text-muted-foreground">
-                  Click "History" to view all your previous feedback records for
-                  each student and track conversation patterns.
-                </p>
-              </div>
-              <div>
-                <h5 className="font-medium mb-1">🔒 Privacy Settings</h5>
-                <p className="text-muted-foreground">
-                  Mark feedback as "Private" if it should only be visible to
-                  administrators and heads above you in the hierarchy.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+        
 
         {/* Students Data Table */}
         <Card>

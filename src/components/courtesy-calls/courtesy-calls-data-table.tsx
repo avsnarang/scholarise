@@ -95,6 +95,7 @@ export function CourtesyCallsDataTable({
   pageSize: initialPageSize = 10,
 }: CourtesyCallsDataTableProps) {
   const { toast } = useToast();
+  const utils = api.useContext();
   
   // State for modals
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -107,10 +108,36 @@ export function CourtesyCallsDataTable({
   const [globalFilter, setGlobalFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
-  // API calls
-  const createFeedbackMutation = api.courtesyCalls.create.useMutation();
-  const updateFeedbackMutation = api.courtesyCalls.update.useMutation();
-  const deleteFeedbackMutation = api.courtesyCalls.delete.useMutation();
+  // API calls with proper cache invalidation
+  const createFeedbackMutation = api.courtesyCalls.create.useMutation({
+    onSuccess: () => {
+      // Invalidate all relevant queries to refresh data
+      void utils.courtesyCalls.getAll.invalidate();
+      void utils.courtesyCalls.getByStudentId.invalidate();
+      void utils.courtesyCalls.getStats.invalidate();
+      void utils.courtesyCalls.getTeacherStudents.invalidate();
+    },
+  });
+  
+  const updateFeedbackMutation = api.courtesyCalls.update.useMutation({
+    onSuccess: () => {
+      // Invalidate all relevant queries to refresh data
+      void utils.courtesyCalls.getAll.invalidate();
+      void utils.courtesyCalls.getByStudentId.invalidate();
+      void utils.courtesyCalls.getStats.invalidate();
+      void utils.courtesyCalls.getTeacherStudents.invalidate();
+    },
+  });
+  
+  const deleteFeedbackMutation = api.courtesyCalls.delete.useMutation({
+    onSuccess: () => {
+      // Invalidate all relevant queries to refresh data
+      void utils.courtesyCalls.getAll.invalidate();
+      void utils.courtesyCalls.getByStudentId.invalidate();
+      void utils.courtesyCalls.getStats.invalidate();
+      void utils.courtesyCalls.getTeacherStudents.invalidate();
+    },
+  });
 
   // Get feedback history for selected student
   const {
