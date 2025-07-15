@@ -308,7 +308,12 @@ export const branchRouter = createTRPCRouter({
 
         // First check if the user is an employee
         const employee = await ctx.db.employee.findFirst({
-          where: { userId: userId },
+          where: { 
+            OR: [
+              { clerkId: userId },
+              { userId: userId }
+            ]
+          },
           include: {
             branchAccessRecords: {
               include: {
@@ -339,7 +344,12 @@ export const branchRouter = createTRPCRouter({
         
         // Check if the user is a teacher
         const teacher = await ctx.db.teacher.findFirst({
-          where: { userId: userId },
+          where: { 
+            OR: [
+              { clerkId: userId },
+              { userId: userId }
+            ]
+          },
         });
         
         if (teacher) {
