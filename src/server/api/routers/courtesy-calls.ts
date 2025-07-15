@@ -128,8 +128,8 @@ export const courtesyCallsRouter = createTRPCRouter({
                 },
               },
             },
-            teacher: true,
-            employee: true,
+            Teacher: true,
+            Employee: true,
           },
           orderBy: {
             callDate: "desc",
@@ -201,8 +201,8 @@ export const courtesyCallsRouter = createTRPCRouter({
           skip: offset,
           take: limit,
           include: {
-            teacher: true,
-            employee: true,
+            Teacher: true,
+            Employee: true,
           },
           orderBy: {
             callDate: "desc",
@@ -424,8 +424,8 @@ export const courtesyCallsRouter = createTRPCRouter({
               },
             },
           },
-          teacher: true,
-          employee: true,
+          Teacher: true,
+          Employee: true,
         },
       });
 
@@ -538,8 +538,8 @@ export const courtesyCallsRouter = createTRPCRouter({
               },
             },
           },
-          teacher: true,
-          employee: true,
+          Teacher: true,
+          Employee: true,
         },
       });
 
@@ -711,8 +711,8 @@ export const courtesyCallsRouter = createTRPCRouter({
                   },
                 },
               },
-              teacher: true,
-              employee: true,
+              Teacher: true,
+              Employee: true,
             },
           }),
         ]);
