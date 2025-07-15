@@ -56,7 +56,9 @@ export function EmploymentTab() {
 
   return (
     <div className="space-y-6 p-6">
-      <h3 className="text-xl font-medium text-[#00501B]">Employment Details</h3>
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#7AAD8B]">
+        Employment Details
+      </h3>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Employee Code */}
@@ -69,7 +71,9 @@ export function EmploymentTab() {
               <FormControl>
                 <Input {...field} placeholder="e.g., EMP-2023-001" />
               </FormControl>
-              <FormDescription>Unique identifier for this employee</FormDescription>
+              <FormDescription>
+                Unique identifier for this employee
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -86,7 +90,7 @@ export function EmploymentTab() {
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date.toISOString().split("T")[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select date of joining"
@@ -104,12 +108,15 @@ export function EmploymentTab() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center">
-                Designation <span className="text-red-500 ml-1">*</span>
+                Designation <span className="ml-1 text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 {designations.length > 0 ? (
                   <Combobox
-                    options={designations.map(designation => ({ value: designation.title, label: designation.title }))}
+                    options={designations.map((designation) => ({
+                      value: designation.title,
+                      label: designation.title,
+                    }))}
                     value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Select designation"
@@ -121,7 +128,7 @@ export function EmploymentTab() {
                       { value: "Manager", label: "Manager" },
                       { value: "Supervisor", label: "Supervisor" },
                       { value: "Administrator", label: "Administrator" },
-                      { value: "Support Staff", label: "Support Staff" }
+                      { value: "Support Staff", label: "Support Staff" },
                     ]}
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -145,7 +152,10 @@ export function EmploymentTab() {
               <FormControl>
                 {departments.length > 0 ? (
                   <Combobox
-                    options={departments.map(department => ({ value: department.name, label: department.name }))}
+                    options={departments.map((department) => ({
+                      value: department.name,
+                      label: department.name,
+                    }))}
                     value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Select department"
@@ -157,7 +167,7 @@ export function EmploymentTab() {
                       { value: "Academic", label: "Academic" },
                       { value: "Non-Academic", label: "Non-Academic" },
                       { value: "Admin", label: "Admin" },
-                      { value: "Support", label: "Support" }
+                      { value: "Support", label: "Support" },
                     ]}
                     value={field.value || ""}
                     onChange={field.onChange}
@@ -181,7 +191,10 @@ export function EmploymentTab() {
               <FormControl>
                 {potentialManagers.length > 0 ? (
                   <Combobox
-                    options={potentialManagers.map(manager => ({ value: manager.name, label: manager.name }))}
+                    options={potentialManagers.map((manager) => ({
+                      value: manager.name,
+                      label: manager.name,
+                    }))}
                     value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Select reporting manager"
@@ -191,7 +204,9 @@ export function EmploymentTab() {
                   <Input {...field} placeholder="Department Head/Principal" />
                 )}
               </FormControl>
-              <FormDescription>Person to whom this employee reports</FormDescription>
+              <FormDescription>
+                Person to whom this employee reports
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -206,7 +221,10 @@ export function EmploymentTab() {
               <FormLabel>Employee Type</FormLabel>
               <FormControl>
                 <Combobox
-                  options={employeeTypes.map(type => ({ value: type, label: type }))}
+                  options={employeeTypes.map((type) => ({
+                    value: type,
+                    label: type,
+                  }))}
                   value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Select employee type"
@@ -226,7 +244,12 @@ export function EmploymentTab() {
             <FormItem>
               <FormLabel>Previous Experience (Years)</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Total years of experience" type="number" min="0" />
+                <Input
+                  {...field}
+                  placeholder="Total years of experience"
+                  type="number"
+                  min="0"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -259,13 +282,15 @@ export function EmploymentTab() {
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date.toISOString().split("T")[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select confirmation date"
                 />
               </FormControl>
-              <FormDescription>Post-probation confirmation date</FormDescription>
+              <FormDescription>
+                Post-probation confirmation date
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -273,7 +298,9 @@ export function EmploymentTab() {
       </div>
 
       {/* Salary & Banking Details */}
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">Salary & Banking Details</h3>
+      <h3 className="mt-8 text-xl font-medium text-[#00501B] dark:text-[#909090]">
+        Salary & Banking Details
+      </h3>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <FormField
           control={control}
@@ -310,7 +337,10 @@ export function EmploymentTab() {
             <FormItem>
               <FormLabel>ESI Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Employee State Insurance Number" />
+                <Input
+                  {...field}
+                  placeholder="Employee State Insurance Number"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -375,7 +405,9 @@ export function EmploymentTab() {
       </div>
 
       {/* IT & Asset Allocation */}
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">IT & Asset Allocation</h3>
+      <h3 className="mt-8 text-xl font-medium text-[#00501B] dark:text-[#909090]">
+        IT & Asset Allocation
+      </h3>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <FormField
           control={control}
@@ -384,7 +416,11 @@ export function EmploymentTab() {
             <FormItem>
               <FormLabel>Official Email ID</FormLabel>
               <FormControl>
-                <Input {...field} type="email" placeholder="Official email address" />
+                <Input
+                  {...field}
+                  type="email"
+                  placeholder="Official email address"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -398,7 +434,10 @@ export function EmploymentTab() {
             <FormItem>
               <FormLabel>Device/System Issued</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Device details and serial numbers" />
+                <Input
+                  {...field}
+                  placeholder="Device details and serial numbers"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -441,7 +480,10 @@ export function EmploymentTab() {
               <FormLabel>Return of Assets Status</FormLabel>
               <FormControl>
                 <Combobox
-                  options={assetReturnStatusOptions.map(status => ({ value: status, label: status }))}
+                  options={assetReturnStatusOptions.map((status) => ({
+                    value: status,
+                    label: status,
+                  }))}
                   value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Select status"

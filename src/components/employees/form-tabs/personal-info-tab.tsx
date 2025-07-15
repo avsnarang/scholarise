@@ -25,7 +25,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
 
   return (
     <div className="space-y-6 p-6">
-      <h3 className="text-xl font-medium text-[#00501B]">
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#7AAD8B]">
         Personal Information
       </h3>
 
@@ -90,7 +90,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date.toISOString().split("T")[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select date of birth"
@@ -148,7 +148,10 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
               <FormLabel>Blood Group</FormLabel>
               <FormControl>
                 <Combobox
-                  options={bloodGroups.map(group => ({ value: group, label: group }))}
+                  options={bloodGroups.map((group) => ({
+                    value: group,
+                    label: group,
+                  }))}
                   value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Select blood group"
@@ -194,10 +197,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
             <FormItem>
               <FormLabel>Nationality</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  placeholder="Nationality"
-                />
+                <Input {...field} placeholder="Nationality" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -230,14 +230,18 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
               </FormLabel>
               <FormControl>
                 <MultiSelect
-                  options={branches.map(branch => ({ value: branch.id, label: branch.name }))}
+                  options={branches.map((branch) => ({
+                    value: branch.id,
+                    label: branch.name,
+                  }))}
                   selected={field.value || []}
                   onValueChange={field.onChange}
                   placeholder="Select branches"
                 />
               </FormControl>
               <FormDescription>
-                Select all branches this employee can access. The first branch selected is the primary branch.
+                Select all branches this employee can access. The first branch
+                selected is the primary branch.
               </FormDescription>
               <FormMessage />
             </FormItem>

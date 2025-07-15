@@ -215,9 +215,9 @@ export function Combobox({
                   key={option.value}
                   className={cn(
                     "flex cursor-pointer items-center justify-between px-3 py-2 text-sm outline-none",
-                    activeIndex === index && "bg-slate-100 text-[#00501B]",
+                    activeIndex === index && "bg-gray-100 dark:bg-[#505050] text-gray-900 dark:text-white",
                     value === option.value && "font-medium",
-                    "hover:bg-slate-100 hover:text-[#00501B]"
+                    "hover:bg-gray-100 dark:hover:bg-[#505050] hover:text-gray-900 dark:hover:text-white"
                   )}
                   onClick={(e) => {
                     e.preventDefault();
@@ -232,7 +232,7 @@ export function Combobox({
                 >
                   {option.label}
                   {value === option.value && (
-                    <Check className="h-4 w-4 text-[#00501B]" />
+                    <Check className="h-4 w-4 text-primary" />
                   )}
                 </div>
               ))}

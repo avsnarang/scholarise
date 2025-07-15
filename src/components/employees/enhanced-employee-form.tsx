@@ -85,14 +85,20 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
     }
   };
 
+  // Get utils for query invalidation
+  const utils = api.useContext();
+
   // Create or update mutation
   const createMutation = api.employee.create.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.employee.getAll.invalidate();
+      void utils.employee.getStats.invalidate();
       toast({
         title: "Success",
         description: "Employee created successfully",
       });
-      router.push('/employees');
+      router.push('/staff/employees');
     },
     onError: (error) => {
       toast({
@@ -105,11 +111,15 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
 
   const updateMutation = api.employee.update.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.employee.getAll.invalidate();
+      void utils.employee.getStats.invalidate();
+      void utils.employee.getById.invalidate();
       toast({
         title: "Success",
         description: "Employee updated successfully",
       });
-      router.push('/employees');
+      router.push('/staff/employees');
     },
     onError: (error) => {
       toast({
@@ -295,12 +305,12 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
         )}
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="w-full">
-          <TabsList className="w-full grid grid-cols-5">
-            <TabsTrigger value="personal-info" className="rounded-l-md">Personal Info</TabsTrigger>
-            <TabsTrigger value="contact-info">Contact Info</TabsTrigger>
-            <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
-            <TabsTrigger value="employment">Employment</TabsTrigger>
-            <TabsTrigger value="account-info" className="rounded-r-md">Account</TabsTrigger>
+          <TabsList className="w-full flex justify-center">
+            <TabsTrigger value="personal-info" className="flex-1">Personal Info</TabsTrigger>
+            <TabsTrigger value="contact-info" className="flex-1">Contact Info</TabsTrigger>
+            <TabsTrigger value="qualifications" className="flex-1">Qualifications</TabsTrigger>
+            <TabsTrigger value="employment" className="flex-1">Employment</TabsTrigger>
+            <TabsTrigger value="account-info" className="flex-1">Account</TabsTrigger>
           </TabsList>
 
           <div className="mt-6 border rounded-md overflow-hidden">
@@ -344,7 +354,7 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/employees")}
+              onClick={() => router.push("/staff/employees")}
             >
               Cancel
             </Button>

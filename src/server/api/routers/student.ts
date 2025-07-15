@@ -256,7 +256,17 @@ export const studentRouter = createTRPCRouter({
               include: {
                 session: true
               }
-            }
+            },
+            // Include the most recent feedback for each student
+            courtesyCallFeedbacks: {
+              take: 1,
+              orderBy: {
+                callDate: "desc",
+              },
+              select: {
+                callDate: true,
+              },
+            },
           },
         });
 

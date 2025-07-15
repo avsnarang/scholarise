@@ -48,9 +48,9 @@ export function EmployeeStatsCards({
             {totalEmployees.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={totalEmployeesChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={totalEmployeesChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {totalEmployeesChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -60,7 +60,7 @@ export function EmployeeStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Users className="size-4 text-[#00501B]" /> 
+            <Users className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             All Employees
           </div>
           <div className="text-muted-foreground">
@@ -76,9 +76,9 @@ export function EmployeeStatsCards({
             {activeEmployees.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={activeEmployeesChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={activeEmployeesChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {activeEmployeesChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -88,7 +88,7 @@ export function EmployeeStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <UserCheck className="size-4 text-[#00501B]" /> 
+            <UserCheck className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Currently Active
           </div>
           <div className="text-muted-foreground">
@@ -106,9 +106,9 @@ export function EmployeeStatsCards({
             {departmentCount.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={departmentChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={departmentChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {departmentChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -118,7 +118,7 @@ export function EmployeeStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Building className="size-4 text-[#00501B]" /> 
+            <Building className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Active Departments
           </div>
           <div className="text-muted-foreground">
@@ -134,9 +134,9 @@ export function EmployeeStatsCards({
             {averageTenure.toFixed(1)} years
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={tenureChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={tenureChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {tenureChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -146,7 +146,7 @@ export function EmployeeStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Clock className="size-4 text-[#00501B]" /> 
+            <Clock className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Staff Retention
           </div>
           <div className="text-muted-foreground">

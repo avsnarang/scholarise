@@ -69,7 +69,7 @@ export function StudentStatsCards({
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00501B]" />
+                    <Loader2 className="h-8 w-8 animate-spin text-[#00501B] dark:text-[#7AAD8B]" />
         <span className="sr-only">Loading stats...</span>
       </div>
     );
@@ -88,9 +88,9 @@ export function StudentStatsCards({
             {displayStats.totalStudents.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={totalStudentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={totalStudentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {totalStudentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -100,7 +100,7 @@ export function StudentStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <GraduationCap className="size-4 text-[#00501B]" /> 
+            <GraduationCap className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             {sessionId ? "Current academic session" : "All academic sessions"}
           </div>
           <div className="text-muted-foreground">
@@ -116,9 +116,9 @@ export function StudentStatsCards({
             {displayStats.activeStudents.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={activeStudentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={activeStudentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {activeStudentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -128,7 +128,7 @@ export function StudentStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <UserCheck className="size-4 text-[#00501B]" /> 
+            <UserCheck className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Active Students
           </div>
           <div className="text-muted-foreground">
@@ -146,9 +146,9 @@ export function StudentStatsCards({
             {displayStats.inactiveStudents.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={inactiveStudentsChange <= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={inactiveStudentsChange <= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {inactiveStudentsChange <= 0 ? (
-                <IconTrendingDown className="text-[#00501B]" />
+                <IconTrendingDown className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingUp className="text-[#A65A20]" />
               )}
@@ -158,7 +158,7 @@ export function StudentStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <UserX className="size-4 text-[#00501B]" /> 
+            <UserX className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Inactive Students
           </div>
           <div className="text-muted-foreground">
@@ -176,9 +176,9 @@ export function StudentStatsCards({
             {displayStats.attendanceRate}%
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={attendanceRateChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={attendanceRateChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {attendanceRateChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -188,7 +188,7 @@ export function StudentStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <BookOpen className="size-4 text-[#00501B]" /> 
+            <BookOpen className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Average Attendance
           </div>
           <div className="text-muted-foreground">

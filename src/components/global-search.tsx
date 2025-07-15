@@ -32,8 +32,8 @@ import { Kbd } from "@/components/ui/kbd";
 const navigationItems = [
   { name: "Dashboard", href: "/dashboard", icon: <Building className="h-4 w-4" /> },
   { name: "Students", href: "/students", icon: <GraduationCap className="h-4 w-4" /> },
-  { name: "Teachers", href: "/teachers", icon: <Users className="h-4 w-4" /> },
-  { name: "Employees", href: "/employees", icon: <User className="h-4 w-4" /> },
+      { name: "Teachers", href: "/staff/teachers", icon: <Users className="h-4 w-4" /> },
+    { name: "Employees", href: "/staff/employees", icon: <User className="h-4 w-4" /> },
   { name: "Classes", href: "/classes", icon: <Building className="h-4 w-4" /> },
   { name: "Transport", href: "/transport", icon: <Bus className="h-4 w-4" /> },
   { name: "Fees", href: "/fees", icon: <CreditCard className="h-4 w-4" /> },
@@ -113,13 +113,13 @@ export function GlobalSearch() {
   // Handle teacher selection
   const handleSelectTeacher = useCallback((teacherId: string) => {
     setOpen(false);
-    router.push(`/teachers/${teacherId}`);
+            router.push(`/staff/teachers/${teacherId}`);
   }, [router]);
 
   // Handle employee selection
   const handleSelectEmployee = useCallback((employeeId: string) => {
     setOpen(false);
-    router.push(`/employees/${employeeId}`);
+            router.push(`/staff/employees/${employeeId}`);
   }, [router]);
 
   return (

@@ -268,7 +268,7 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
         description: "Teacher has been successfully created.",
         variant: "default",
       });
-      void router.push("/teachers");
+      void router.push("/staff/teachers");
     },
     onError: (error) => {
       console.error("Error creating teacher:", error);
@@ -294,7 +294,7 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
         description: "Teacher has been successfully updated.",
         variant: "default",
       });
-      void router.push("/teachers");
+      void router.push("/staff/teachers");
     },
     onError: (error) => {
       console.error("Error updating teacher:", error);
@@ -536,7 +536,7 @@ export function EnhancedTeacherForm({ initialData, isEditing = false }: Enhanced
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/teachers")}
+              onClick={() => router.push("/staff/teachers")}
             >
               Cancel
             </Button>

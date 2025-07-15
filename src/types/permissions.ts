@@ -110,6 +110,14 @@ export enum Permission {
   MANAGE_GRADE_SCALES = "manage_grade_scales",
   VIEW_EXAM_REPORTS = "view_exam_reports",
   
+  // Courtesy Calls Feedback permissions
+  VIEW_COURTESY_CALLS = "view_courtesy_calls",
+  CREATE_COURTESY_CALL_FEEDBACK = "create_courtesy_call_feedback",
+  VIEW_OWN_COURTESY_CALL_FEEDBACK = "view_own_courtesy_call_feedback",
+  VIEW_ALL_COURTESY_CALL_FEEDBACK = "view_all_courtesy_call_feedback",
+  EDIT_COURTESY_CALL_FEEDBACK = "edit_courtesy_call_feedback",
+  DELETE_COURTESY_CALL_FEEDBACK = "delete_courtesy_call_feedback",
+  
   // Reports permissions
   VIEW_REPORTS = "view_reports",
   

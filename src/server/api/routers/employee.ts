@@ -438,7 +438,7 @@ export const employeeRouter = createTRPCRouter({
             ifscCode: input.ifscCode,
             
             // IT & Asset Allocation
-            officialEmail: input.officialEmail,
+            officialEmail: input.email || input.officialEmail,
             deviceIssued: input.deviceIssued,
             accessCardId: input.accessCardId,
             softwareLicenses: input.softwareLicenses,
@@ -1251,7 +1251,7 @@ export const employeeRouter = createTRPCRouter({
                     ifscCode: employeeData.ifscCode,
                     
                     // IT & Asset Allocation
-                    officialEmail: employeeData.officialEmail,
+                    officialEmail: employeeData.email || employeeData.officialEmail,
                     deviceIssued: employeeData.deviceIssued,
                     accessCardId: employeeData.accessCardId,
                     softwareLicenses: employeeData.softwareLicenses,

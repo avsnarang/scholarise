@@ -12,7 +12,6 @@ import {
   Settings,
   Bell,
   LayoutDashboard,
-  HelpCircle,
   School,
   ChevronsUpDown,
   ChevronRight,
@@ -27,6 +26,9 @@ import {
   BookOpen,
   Plus,
   ClipboardCheck,
+  MessageSquare,
+  BarChart3,
+  MonitorSpeaker,
 } from "lucide-react"
 import { useClerk } from "@clerk/nextjs"
 import { type Prisma } from "@prisma/client"
@@ -70,12 +72,17 @@ import {
   useSidebar,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarGroupContent,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 export * from "@/components/ui/app-sidebar";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>({});
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { signOut } = useClerk();
@@ -127,6 +134,113 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, []);
 
+  // Function to determine which section should be expanded based on current pathname
+  const getExpandedSectionsFromPath = (currentPath: string) => {
+    // ERP section paths
+    const erpPaths = [
+      '/admissions', '/students', '/staff', '/classes', '/attendance', '/leaves', 
+      '/finance', '/money-collection', '/salary', '/transport', '/settings'
+    ];
+    
+    // LMS section paths
+    const lmsPaths = ['/question-papers', '/examination'];
+    
+    // Reports section paths
+    const reportsPaths = ['/courtesy-calls', '/attendance/reports', '/examination/reports', '/finance/reports', '/reports'];
+    
+    const isInErp = erpPaths.some(path => currentPath.startsWith(path));
+    const isInLms = lmsPaths.some(path => currentPath.startsWith(path));
+    const isInReports = reportsPaths.some(path => currentPath.startsWith(path));
+    
+    return {
+      ERP: isInErp,
+      LMS: isInLms,
+      Reports: isInReports,
+    };
+  };
+
+  // Function to determine which parent menu items should be expanded based on current pathname
+  const getExpandedItemsFromPath = (currentPath: string) => {
+    const expandedItems: Record<string, boolean> = {};
+    
+    // ERP section parent items
+    if (currentPath.startsWith('/admissions/')) {
+      expandedItems['Admissions'] = true;
+    }
+    if (currentPath.startsWith('/students/')) {
+      expandedItems['Students'] = true;
+    }
+    if (currentPath.startsWith('/staff/')) {
+      expandedItems['Staff'] = true;
+      // Check for nested items in Staff
+      if (currentPath.startsWith('/staff/teachers/')) {
+        expandedItems['Staff-Teachers'] = true;
+      }
+    }
+    if (currentPath.startsWith('/classes/')) {
+      expandedItems['Classes'] = true;
+    }
+    if (currentPath.startsWith('/attendance/')) {
+      expandedItems['Attendance'] = true;
+    }
+    if (currentPath.startsWith('/leaves/')) {
+      expandedItems['Leave Management'] = true;
+    }
+    if (currentPath.startsWith('/finance/')) {
+      expandedItems['Finance'] = true;
+    }
+    if (currentPath.startsWith('/money-collection/')) {
+      expandedItems['Money Collection'] = true;
+    }
+    if (currentPath.startsWith('/salary/')) {
+      expandedItems['Salary Management'] = true;
+    }
+    if (currentPath.startsWith('/transport/')) {
+      expandedItems['Transport'] = true;
+    }
+    if (currentPath.startsWith('/settings/')) {
+      expandedItems['Settings'] = true;
+    }
+    
+    // LMS section parent items
+    if (currentPath.startsWith('/question-papers/')) {
+      expandedItems['Question Papers'] = true;
+    }
+    if (currentPath.startsWith('/examination/')) {
+      expandedItems['Examination'] = true;
+      // Check for nested items in Examination
+      if (currentPath.startsWith('/examination/config/')) {
+        expandedItems['Examination-Configuration'] = true;
+      }
+    }
+    
+    // Reports section parent items
+    if (currentPath.startsWith('/courtesy-calls/')) {
+      expandedItems['Courtesy Calls'] = true;
+    }
+    
+    return expandedItems;
+  };
+
+  const [expandedItems, setExpandedItems] = React.useState<Record<string, boolean>>(() => {
+    // Initialize expanded items based on current pathname
+    return getExpandedItemsFromPath(pathname || '');
+  });
+  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>(() => {
+    // Initialize expanded sections based on current pathname
+    return getExpandedSectionsFromPath(pathname || '');
+  });
+
+  // Update expanded sections and items when pathname changes
+  React.useEffect(() => {
+    if (pathname) {
+      const newExpandedSections = getExpandedSectionsFromPath(pathname);
+      const newExpandedItems = getExpandedItemsFromPath(pathname);
+      setExpandedSections(newExpandedSections);
+      setExpandedItems(newExpandedItems);
+    }
+  }, [pathname]);
+
   // Temporary hardcoded super admin check for specific user
   const isHardcodedSuperAdmin = user?.id === 'user_2y1xEACdC5UpJaTuVRuuzH75bOA';
   const effectiveIsSuperAdmin = isSuperAdmin || forceAdminMode || isHardcodedSuperAdmin;
@@ -140,14 +254,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }));
   };
 
-  // Data for menu items
-  const navItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      permissions: navItemPermissions.dashboard,
-    },
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // ERP section items (main business operations)
+  const erpItems = [
     {
       title: "Admissions",
       href: "/admissions/dashboard",
@@ -205,24 +320,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
-      title: "Money Collection",
-      href: "/money-collection",
-      icon: CreditCard,
-      permissions: navItemPermissions.moneyCollection,
-      children: [
-        {
-          title: "All Collections",
-          href: "/money-collection",
-          permissions: [Permission.VIEW_MONEY_COLLECTION],
-        },
-        {
-          title: "New Collection",
-          href: "/money-collection/new",
-          permissions: [Permission.CREATE_MONEY_COLLECTION],
-        },
-      ],
-    },
-    {
       title: "Staff",
       href: "/staff",
       icon: Users,
@@ -235,7 +332,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       children: [
         {
           title: "Teachers",
-          href: "/teachers",
+          href: "/staff/teachers",
           permissions: navItemPermissions.teachers,
           children: [
             {
@@ -245,34 +342,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             },
             {
               title: "All Teachers",
-              href: "/teachers",
+              href: "/staff/teachers",
               permissions: navItemPermissions.teachers,
             },
           ],
         },
         {
           title: "Add Teacher",
-          href: "/teachers/create",
+          href: "/staff/teachers/create",
           permissions: navItemPermissions.createTeacher,
         },
         {
           title: "Employees",
-          href: "/employees",
+          href: "/staff/employees",
           permissions: navItemPermissions.employees,
         },
         {
           title: "Add Employee",
-          href: "/employees/create",
+          href: "/staff/employees/create",
           permissions: navItemPermissions.createEmployee,
         },
         {
           title: "Departments",
-          href: "/departments/list",
+          href: "/staff/departments/list",
           permissions: navItemPermissions.departments,
         },
         {
           title: "Designations",
-          href: "/designations/list",
+          href: "/staff/designations/list",
           permissions: navItemPermissions.designations,
         },
       ],
@@ -321,11 +418,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/attendance/students",
           permissions: navItemPermissions.attendance,
         },
-        {
-          title: "Attendance Reports",
-          href: "/attendance/reports",
-          permissions: navItemPermissions.attendanceReports,
-        },
       ],
     },
     {
@@ -348,99 +440,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Leave Policies",
           href: "/leaves?tab=policies",
           permissions: navItemPermissions.leavePolicies,
-        },
-      ],
-    },
-    {
-      title: "Examination",
-      href: "/examination",
-      icon: ClipboardCheck,
-      permissions: navItemPermissions.examination,
-      children: [
-        {
-          title: "Dashboard",
-          href: "/examination",
-          permissions: navItemPermissions.examination,
-        },
-        {
-          title: "Configuration",
-          href: "/examination/config",
-          permissions: navItemPermissions.examination,
-          children: [
-            {
-              title: "Assessment Schemas",
-              href: "/examination/assessment-schemas",
-              permissions: navItemPermissions.manageAssessments,
-            },
-            {
-              title: "Grade Configuration",
-              href: "/examination/grade-scales",
-              permissions: navItemPermissions.gradeScales,
-            },
-            {
-              title: "Term Configuration",
-              href: "/examination/config/terms",
-              permissions: navItemPermissions.terms,
-            },
-          ],
-        },
-        {
-          title: "Score Entry",
-          href: "/examination/score-entry",
-          permissions: navItemPermissions.enterMarks,
-        },
-        {
-          title: "Results & Analytics",
-          href: "/examination/results-dashboard",
-          permissions: navItemPermissions.examination,
-        },
-        {
-          title: "Reports",
-          href: "/examination/reports",
-          permissions: navItemPermissions.examReports,
-        },
-      ],
-    },
-    {
-      title: "Salary Management",
-      href: "/salary",
-      icon: DollarSign,
-      permissions: navItemPermissions.salary,
-      children: [
-        {
-          title: "Overview",
-          href: "/salary",
-          permissions: navItemPermissions.salary,
-        },
-        {
-          title: "Salary Structures",
-          href: "/salary/structures",
-          permissions: navItemPermissions.salaryStructures,
-        },
-        {
-          title: "Teacher Salaries",
-          href: "/salary/teachers/assign",
-          permissions: navItemPermissions.teacherSalaries,
-        },
-        {
-          title: "Employee Salaries",
-          href: "/salary/employees/assign",
-          permissions: navItemPermissions.employeeSalaries,
-        },
-        {
-          title: "Salary Increments",
-          href: "/salary/increments",
-          permissions: navItemPermissions.salaryIncrements,
-        },
-        {
-          title: "Increment History",
-          href: "/salary/increments/history",
-          permissions: navItemPermissions.salaryIncrements,
-        },
-        {
-          title: "Process Payments",
-          href: "/salary/payments",
-          permissions: navItemPermissions.salaryPayments,
         },
       ],
     },
@@ -485,43 +484,66 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/finance/student-concessions",
           permissions: navItemPermissions.finance,
         },
+      ],
+    },
+    {
+      title: "Money Collection",
+      href: "/money-collection",
+      icon: DollarSign,
+      permissions: navItemPermissions.moneyCollection,
+      children: [
         {
-          title: "Reports",
-          href: "/finance/reports",
-          permissions: navItemPermissions.financeReports,
+          title: "All Collections",
+          href: "/money-collection",
+          permissions: [Permission.VIEW_MONEY_COLLECTION],
+        },
+        {
+          title: "New Collection",
+          href: "/money-collection/new",
+          permissions: [Permission.CREATE_MONEY_COLLECTION],
         },
       ],
     },
     {
-      title: "Question Papers",
-      href: "/question-papers",
-      icon: BookOpen,
-      permissions: navItemPermissions.questionPapers,
+      title: "Salary Management",
+      href: "/salary",
+      icon: DollarSign,
+      permissions: navItemPermissions.salary,
       children: [
         {
-          title: "Dashboard",
-          href: "/question-papers",
-          permissions: navItemPermissions.questionPapers,
+          title: "Overview",
+          href: "/salary",
+          permissions: navItemPermissions.salary,
         },
         {
-          title: "Create Blueprint",
-          href: "/question-papers/blueprints/create",
-          permissions: navItemPermissions.createQuestionPaper,
+          title: "Salary Structures",
+          href: "/salary/structures",
+          permissions: navItemPermissions.salaryStructures,
         },
         {
-          title: "Create Question Paper",
-          href: "/question-papers/create",
-          permissions: navItemPermissions.createQuestionPaper,
+          title: "Teacher Salaries",
+          href: "/salary/teachers/assign",
+          permissions: navItemPermissions.teacherSalaries,
         },
         {
-          title: "All Question Papers",
-          href: "/question-papers/list",
-          permissions: navItemPermissions.questionPapers,
+          title: "Employee Salaries",
+          href: "/salary/employees/assign",
+          permissions: navItemPermissions.employeeSalaries,
         },
         {
-          title: "Manage Question Papers",
-          href: "/question-papers/manage",
-          permissions: navItemPermissions.manageQuestionPapers,
+          title: "Salary Increments",
+          href: "/salary/increments",
+          permissions: navItemPermissions.salaryIncrements,
+        },
+        {
+          title: "Increment History",
+          href: "/salary/increments/history",
+          permissions: navItemPermissions.salaryIncrements,
+        },
+        {
+          title: "Process Payments",
+          href: "/salary/payments",
+          permissions: navItemPermissions.salaryPayments,
         },
       ],
     },
@@ -603,92 +625,205 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const secondaryItems = [
+  // LMS section items (learning management and educational features)
+  const lmsItems = [
     {
-      title: "Reports",
+      title: "Question Papers",
+      href: "/question-papers",
+      icon: BookOpen,
+      permissions: navItemPermissions.questionPapers,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/question-papers",
+          permissions: navItemPermissions.questionPapers,
+        },
+        {
+          title: "Create Blueprint",
+          href: "/question-papers/blueprints/create",
+          permissions: navItemPermissions.createQuestionPaper,
+        },
+        {
+          title: "Create Question Paper",
+          href: "/question-papers/create",
+          permissions: navItemPermissions.createQuestionPaper,
+        },
+        {
+          title: "All Question Papers",
+          href: "/question-papers/list",
+          permissions: navItemPermissions.questionPapers,
+        },
+        {
+          title: "Manage Question Papers",
+          href: "/question-papers/manage",
+          permissions: navItemPermissions.manageQuestionPapers,
+        },
+      ],
+    },
+    {
+      title: "Examination",
+      href: "/examination",
+      icon: ClipboardCheck,
+      permissions: navItemPermissions.examination,
+      children: [
+        {
+          title: "Dashboard",
+          href: "/examination",
+          permissions: navItemPermissions.examination,
+        },
+        {
+          title: "Configuration",
+          href: "/examination/config",
+          permissions: navItemPermissions.examination,
+          children: [
+            {
+              title: "Assessment Schemas",
+              href: "/examination/assessment-schemas",
+              permissions: navItemPermissions.manageAssessments,
+            },
+            {
+              title: "Grade Configuration",
+              href: "/examination/grade-scales",
+              permissions: navItemPermissions.gradeScales,
+            },
+            {
+              title: "Term Configuration",
+              href: "/examination/config/terms",
+              permissions: navItemPermissions.terms,
+            },
+          ],
+        },
+        {
+          title: "Score Entry",
+          href: "/examination/score-entry",
+          permissions: navItemPermissions.enterMarks,
+        },
+        {
+          title: "Results & Analytics",
+          href: "/examination/results-dashboard",
+          permissions: navItemPermissions.examination,
+        },
+      ],
+    },
+  ];
+
+  // Reports section items (analytics, reporting, and feedback features)
+  const reportsItems = [
+    {
+      title: "Courtesy Calls",
+      href: "/courtesy-calls/teacher",
+      icon: MessageSquare,
+      permissions: navItemPermissions.courtesyCalls,
+      children: [
+        {
+          title: "Teacher View",
+          href: "/courtesy-calls/teacher",
+          permissions: navItemPermissions.viewOwnCourtesyCallFeedback,
+        },
+        {
+          title: "Head View",
+          href: "/courtesy-calls/head",
+          permissions: navItemPermissions.viewAllCourtesyCallFeedback,
+        },
+      ],
+    },
+    {
+      title: "Attendance Reports",
+      href: "/attendance/reports",
+      icon: BarChart3,
+      permissions: navItemPermissions.attendanceReports,
+    },
+    {
+      title: "Examination Reports",
+      href: "/examination/reports",
+      icon: FileText,
+      permissions: navItemPermissions.examReports,
+    },
+    {
+      title: "Finance Reports",
+      href: "/finance/reports",
+      icon: CreditCard,
+      permissions: navItemPermissions.financeReports,
+    },
+    {
+      title: "System Reports",
       href: "/reports",
       icon: FileText,
       permissions: navItemPermissions.reports,
     },
-    {
-      title: "Help",
-      href: "/help",
-      icon: HelpCircle,
-      permissions: [], // Empty array means everyone can access
-    },
   ];
 
   // Revise the filteredNavItems logic to be completely generic for any module
-
-  // Fully generic approach to checking permissions for menu items
-  const filteredNavItems = effectiveIsSuperAdmin
-    ? navItems  // Superadmin or force mode sees everything
-    : navItems.filter(item => {
-        // Generic approach: First check module view permission based on module title
-        const viewPermission = moduleViewPermissions[item.title];
-        
-        if (viewPermission) {
-          // Check permission directly using can() 
-          const hasViewPermission = can(viewPermission);
+  const filterMenuItems = (items: NavItem[]) => {
+    return effectiveIsSuperAdmin
+      ? items  // Superadmin or force mode sees everything
+      : items.filter(item => {
+          // Generic approach: First check module view permission based on module title
+          const viewPermission = moduleViewPermissions[item.title];
           
-          if (hasViewPermission) {
-            return true;
+          if (viewPermission) {
+            // Check permission directly using can() 
+            const hasViewPermission = can(viewPermission);
+            
+            if (hasViewPermission) {
+              return true;
+            }
           }
-        }
-        
-        // If no match in moduleViewPermissions mapping or permission check failed,
-        // fall back to standard permission checks from the navItemPermissions
-        const hasPermissionViaStandard = canAccess(item.permissions);
-        
-        // Also check if any child items are accessible
-        const hasPermissionViaChildren = item.children?.some(child => canAccess(child.permissions));
-        
-        const shouldShow = hasPermissionViaStandard || hasPermissionViaChildren;
-        
-        return shouldShow;
-      }).map(item => {
-        // If the item has children, filter those too
-        if (item.children) {
-          return {
-            ...item,
-            children: item.children.filter(child => {
-              const hasChildPermission = canAccess(child.permissions);
-              
-              return hasChildPermission;
-            }).map(child => {
-              // If the child has grandchildren, filter those too
-              if (child.children) {
-                return {
-                  ...child,
-                  children: child.children.filter((grandchild: any) => {
-                    const hasGrandchildPermission = canAccess(grandchild.permissions);
-                    
-                    return hasGrandchildPermission;
-                  })
-                };
-              }
-              return child;
-            })
-          };
-        }
-        return item;
-      });
+          
+          // If no match in moduleViewPermissions mapping or permission check failed,
+          // fall back to standard permission checks from the navItemPermissions
+          const hasPermissionViaStandard = canAccess(item.permissions);
+          
+          // Also check if any child items are accessible
+          const hasPermissionViaChildren = item.children?.some(child => canAccess(child.permissions));
+          
+          const shouldShow = hasPermissionViaStandard || hasPermissionViaChildren;
+          
+          return shouldShow;
+        }).map(item => {
+          // If the item has children, filter those too
+          if (item.children) {
+            return {
+              ...item,
+              children: item.children.filter(child => {
+                const hasChildPermission = canAccess(child.permissions);
+                
+                return hasChildPermission;
+              }).map(child => {
+                // If the child has grandchildren, filter those too
+                if (child.children) {
+                  return {
+                    ...child,
+                    children: child.children.filter((grandchild: any) => {
+                      const hasGrandchildPermission = canAccess(grandchild.permissions);
+                      
+                      return hasGrandchildPermission;
+                    })
+                  };
+                }
+                return child;
+              })
+            };
+          }
+          return item;
+        });
+  };
 
-  // TEMPORARY: Force show all nav items for debugging
-  const finalNavItems = isHardcodedSuperAdmin ? navItems : filteredNavItems;
+  // Filter items for each section
+  const filteredErpItems = isHardcodedSuperAdmin ? erpItems : filterMenuItems(erpItems);
+  const filteredLmsItems = isHardcodedSuperAdmin ? lmsItems : filterMenuItems(lmsItems);
+  const filteredReportsItems = isHardcodedSuperAdmin ? reportsItems : filterMenuItems(reportsItems);
 
-  console.log('🔍 Final nav items:', {
+  // Check if main dashboard should be shown
+  const showMainDashboard = effectiveIsSuperAdmin || canAccess(navItemPermissions.dashboard);
+
+  console.log('🔍 Filtered nav items:', {
     isHardcodedSuperAdmin,
-    filteredCount: filteredNavItems.length,
-    finalCount: finalNavItems.length,
-    finalItems: finalNavItems.map(item => item.title)
+    erpCount: filteredErpItems.length,
+    lmsCount: filteredLmsItems.length,
+    reportsCount: filteredReportsItems.length,
+    showMainDashboard,
   });
-
-  const filteredSecondaryItems = effectiveIsSuperAdmin || forceAdminMode
-    ? secondaryItems  // Superadmin or force mode sees everything
-    : secondaryItems.filter(item => 
-        !item.permissions.length || canAccess(item.permissions)
-      );
 
   // Add a check to determine if a submenu item is enabled based on permissions
   const isMenuItemEnabled = (permissions: Permission[]): boolean => {
@@ -713,6 +848,142 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       // Fallback: redirect to login page even if there's an error
       window.location.href = "/sign-in";
     }
+  };
+
+  const renderMenuItems = (items: NavItem[]) => {
+    return items.map((item) => (
+      <div key={item.title} className="relative">
+        <SidebarMenuItem>
+          <Link href={item.href} className="flex-1">
+            <SidebarMenuButton 
+              className={`${!isCollapsed && item.children && item.children.length > 0 ? 'pr-10' : ''}`}
+              isActive={isActive(item.href)}
+            >
+              {item.icon && <item.icon className="h-4 w-4" />}
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </Link>
+          
+          {!isCollapsed && item.children && item.children.length > 0 && (
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
+              <button
+                onClick={(e) => toggleExpand(item.title, e)}
+                className={`
+                  h-7 w-7 flex items-center justify-center rounded-md 
+                  hover:bg-sidebar-accent text-sidebar-foreground
+                  transition-all duration-200
+                  ${expandedItems[item.title] ? "bg-sidebar-accent" : ""}
+                `}
+                aria-label={`Toggle ${item.title} submenu`}
+              >
+                <ChevronRight 
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    expandedItems[item.title] ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+        </SidebarMenuItem>
+        
+        {!isCollapsed && item.children && item.children.length > 0 && (
+          <div className={`overflow-hidden transition-all duration-200 ${
+            expandedItems[item.title] ? 'max-h-[500px]' : 'max-h-0'
+          }`}>
+            <SidebarMenuSub>
+              {item.children.map((child) => {
+                // Check if this item should be disabled (greyed out)
+                const isEnabled = isMenuItemEnabled(child.permissions);
+                // Special handling for attendance items
+                const isAttendanceItem = item.title === "Attendance";
+                // If it's attendance and user only has VIEW_ATTENDANCE, 
+                // only the dashboard should be enabled
+                const isAttendanceDashboard = isAttendanceItem && child.title === "Dashboard";
+                const showDisabled = 
+                  (isAttendanceItem && !isAttendanceDashboard && 
+                  !canAccess([Permission.MARK_ATTENDANCE]) && 
+                  !canAccess([Permission.MARK_SELF_ATTENDANCE]) &&
+                  !canAccess([Permission.MARK_ALL_STAFF_ATTENDANCE])) ||
+                  (!isEnabled);
+
+                const hasGrandchildren = child.children && child.children.length > 0;
+
+                return (
+                  <div key={child.href}>
+                    <SidebarMenuSubItem>
+                      <div className="relative flex-1">
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isActive(child.href)}
+                          className={`${hasGrandchildren ? 'pr-8' : ''} ${showDisabled ? 'pointer-events-none opacity-50' : ''}`}
+                        >
+                          <Link 
+                            href={showDisabled ? "#" : child.href}
+                            onClick={e => showDisabled && e.preventDefault()}
+                          >
+                            <span>{child.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                        
+                        {hasGrandchildren && (
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
+                            <button
+                              onClick={(e) => toggleExpand(`${item.title}-${child.title}`, e)}
+                              className={`
+                                h-6 w-6 flex items-center justify-center rounded-md 
+                                hover:bg-sidebar-accent text-sidebar-foreground
+                                transition-all duration-200
+                                ${expandedItems[`${item.title}-${child.title}`] ? "bg-sidebar-accent" : ""}
+                              `}
+                              aria-label={`Toggle ${child.title} submenu`}
+                            >
+                              <ChevronRight 
+                                className={`h-3 w-3 transition-transform duration-200 ${
+                                  expandedItems[`${item.title}-${child.title}`] ? 'rotate-90' : ''
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuSubItem>
+                    
+                    {hasGrandchildren && (
+                      <div className={`overflow-hidden transition-all duration-200 ml-4 ${
+                        expandedItems[`${item.title}-${child.title}`] ? 'max-h-96' : 'max-h-0'
+                      }`}>
+                        <SidebarMenuSub>
+                          {child.children?.map((grandchild: any) => {
+                            const grandchildEnabled = isMenuItemEnabled(grandchild.permissions);
+                            
+                            return (
+                              <SidebarMenuSubItem key={grandchild.href}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isActive(grandchild.href)}
+                                  className={`pl-4 ${!grandchildEnabled ? 'pointer-events-none opacity-50' : ''}`}
+                                >
+                                  <Link 
+                                    href={!grandchildEnabled ? "#" : grandchild.href}
+                                    onClick={e => !grandchildEnabled && e.preventDefault()}
+                                  >
+                                    <span>{grandchild.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </SidebarMenuSub>
+          </div>
+        )}
+      </div>
+    ));
   };
 
   return (
@@ -793,161 +1064,105 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
-          <SidebarMenu>
-            {finalNavItems.map((item) => (
-              <div key={item.title} className="relative">
-                <SidebarMenuItem>
-                  <Link href={item.href} className="flex-1">
-                    <SidebarMenuButton 
-                      className={`${!isCollapsed && item.children && item.children.length > 0 ? 'pr-10' : ''}`}
-                      isActive={isActive(item.href)}
-                    >
-                      {item.icon && <item.icon className="h-4 w-4" />}
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </Link>
-                  
-                  {!isCollapsed && item.children && item.children.length > 0 && (
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
-                      <button
-                        onClick={(e) => toggleExpand(item.title, e)}
-                        className={`
-                          h-7 w-7 flex items-center justify-center rounded-md 
-                          hover:bg-sidebar-accent text-sidebar-foreground
-                          transition-all duration-200
-                          ${expandedItems[item.title] ? "bg-sidebar-accent" : ""}
-                        `}
-                        aria-label={`Toggle ${item.title} submenu`}
-                      >
-                        <ChevronRight 
-                          className={`h-4 w-4 transition-transform duration-200 ${
-                            expandedItems[item.title] ? 'rotate-90' : ''
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  )}
-                </SidebarMenuItem>
-                
-                {!isCollapsed && item.children && item.children.length > 0 && (
-                  <div className={`overflow-hidden transition-all duration-200 ${
-                    expandedItems[item.title] ? 'max-h-[500px]' : 'max-h-0'
-                  }`}>
-                    <SidebarMenuSub>
-                      {item.children.map((child) => {
-                        // Check if this item should be disabled (greyed out)
-                        const isEnabled = isMenuItemEnabled(child.permissions);
-                        // Special handling for attendance items
-                        const isAttendanceItem = item.title === "Attendance";
-                        // If it's attendance and user only has VIEW_ATTENDANCE, 
-                        // only the dashboard should be enabled
-                        const isAttendanceDashboard = isAttendanceItem && child.title === "Dashboard";
-                        const showDisabled = 
-                          (isAttendanceItem && !isAttendanceDashboard && 
-                          !canAccess([Permission.MARK_ATTENDANCE]) && 
-                          !canAccess([Permission.MARK_SELF_ATTENDANCE]) &&
-                          !canAccess([Permission.MARK_ALL_STAFF_ATTENDANCE])) ||
-                          (!isEnabled);
-
-                        const hasGrandchildren = child.children && child.children.length > 0;
-
-                        return (
-                          <div key={child.href}>
-                            <SidebarMenuSubItem>
-                              <div className="relative flex-1">
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={isActive(child.href)}
-                                  className={`${hasGrandchildren ? 'pr-8' : ''} ${showDisabled ? 'pointer-events-none opacity-50' : ''}`}
-                                >
-                                  <Link 
-                                    href={showDisabled ? "#" : child.href}
-                                    onClick={e => showDisabled && e.preventDefault()}
-                                  >
-                                    <span>{child.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                                
-                                {hasGrandchildren && (
-                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">
-                                    <button
-                                      onClick={(e) => toggleExpand(`${item.title}-${child.title}`, e)}
-                                      className={`
-                                        h-6 w-6 flex items-center justify-center rounded-md 
-                                        hover:bg-sidebar-accent text-sidebar-foreground
-                                        transition-all duration-200
-                                        ${expandedItems[`${item.title}-${child.title}`] ? "bg-sidebar-accent" : ""}
-                                      `}
-                                      aria-label={`Toggle ${child.title} submenu`}
-                                    >
-                                      <ChevronRight 
-                                        className={`h-3 w-3 transition-transform duration-200 ${
-                                          expandedItems[`${item.title}-${child.title}`] ? 'rotate-90' : ''
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </SidebarMenuSubItem>
-                            
-                            {hasGrandchildren && (
-                              <div className={`overflow-hidden transition-all duration-200 ml-4 ${
-                                expandedItems[`${item.title}-${child.title}`] ? 'max-h-96' : 'max-h-0'
-                              }`}>
-                                <SidebarMenuSub>
-                                  {child.children?.map((grandchild: any) => {
-                                    const grandchildEnabled = isMenuItemEnabled(grandchild.permissions);
-                                    
-                                    return (
-                                      <SidebarMenuSubItem key={grandchild.href}>
-                                        <SidebarMenuSubButton
-                                          asChild
-                                          isActive={isActive(grandchild.href)}
-                                          className={`pl-4 ${!grandchildEnabled ? 'pointer-events-none opacity-50' : ''}`}
-                                        >
-                                          <Link 
-                                            href={!grandchildEnabled ? "#" : grandchild.href}
-                                            onClick={e => !grandchildEnabled && e.preventDefault()}
-                                          >
-                                            <span>{grandchild.title}</span>
-                                          </Link>
-                                        </SidebarMenuSubButton>
-                                      </SidebarMenuSubItem>
-                                    );
-                                  })}
-                                </SidebarMenuSub>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </SidebarMenuSub>
-                  </div>
-                )}
-              </div>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        {/* Secondary navigation */}
-        <SidebarGroup className="mt-6">
-          <SidebarGroupLabel>Resources</SidebarGroupLabel>
-          <SidebarMenu>
-            {filteredSecondaryItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <Link href={item.href} className="flex-1">
-                  <SidebarMenuButton isActive={isActive(item.href)}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+        {/* Main Dashboard */}
+        {showMainDashboard && (
+          <SidebarGroup>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Link href="/dashboard" className="flex-1">
+                  <SidebarMenuButton isActive={isActive("/dashboard")}>
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {/* ERP Section */}
+        {filteredErpItems.length > 0 && (
+          <Collapsible
+            open={expandedSections.ERP}
+            onOpenChange={() => toggleSection('ERP')}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between p-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
+                  <span className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    ERP
+                  </span>
+                  <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${expandedSections.ERP ? 'rotate-90' : ''}`} />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {renderMenuItems(filteredErpItems)}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
+
+        {/* LMS Section */}
+        {filteredLmsItems.length > 0 && (
+          <Collapsible
+            open={expandedSections.LMS}
+            onOpenChange={() => toggleSection('LMS')}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between p-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
+                  <span className="flex items-center gap-2">
+                    <MonitorSpeaker className="h-4 w-4" />
+                    LMS
+                  </span>
+                  <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${expandedSections.LMS ? 'rotate-90' : ''}`} />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {renderMenuItems(filteredLmsItems)}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
+
+        {/* Reports Section */}
+        {filteredReportsItems.length > 0 && (
+          <Collapsible
+            open={expandedSections.Reports}
+            onOpenChange={() => toggleSection('Reports')}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between p-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md">
+                  <span className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Reports
+                  </span>
+                  <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${expandedSections.Reports ? 'rotate-90' : ''}`} />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {renderMenuItems(filteredReportsItems)}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

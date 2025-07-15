@@ -13,7 +13,7 @@ export function QualificationsTab() {
 
   return (
     <div className="space-y-6 p-6">
-      <h3 className="text-xl font-medium text-[#00501B]">Educational Qualifications</h3>
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#7AAD8B]">Educational Qualifications</h3>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Highest Qualification Achieved */}

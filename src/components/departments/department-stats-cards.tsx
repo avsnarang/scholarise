@@ -118,9 +118,9 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
             {totalDepartments}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={totalDepartmentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={totalDepartmentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {totalDepartmentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -130,7 +130,7 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Building className="size-4 text-[#00501B]" /> 
+            <Building className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             All Departments
           </div>
           <div className="text-muted-foreground">
@@ -146,9 +146,9 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
             {activeDepartments}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={activeDepartmentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={activeDepartmentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {activeDepartmentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -158,7 +158,7 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Briefcase className="size-4 text-[#00501B]" /> 
+            <Briefcase className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Currently Active
           </div>
           <div className="text-muted-foreground">
@@ -176,9 +176,9 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
             {academicDepartments}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={academicDepartmentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={academicDepartmentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {academicDepartmentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -188,7 +188,7 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Users className="size-4 text-[#00501B]" /> 
+            <Users className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Teaching Related
           </div>
           <div className="text-muted-foreground">
@@ -206,9 +206,9 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
             {administrativeDepartments}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={administrativeDepartmentsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={administrativeDepartmentsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {administrativeDepartmentsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -218,7 +218,7 @@ export function DepartmentStatsCards({ branchId }: DepartmentStatsCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <BarChart3 className="size-4 text-[#00501B]" /> 
+            <BarChart3 className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Non-Teaching Related
           </div>
           <div className="text-muted-foreground">

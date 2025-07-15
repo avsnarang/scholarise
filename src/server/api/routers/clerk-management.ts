@@ -666,14 +666,14 @@ async function retryEmployeeClerkCreation(ctx: any, employeeId: string, results:
   }
 
   try {
-    if (!employee.email) {
+    if (!employee.officialEmail) {
       throw new Error("Email is required for employee accounts");
     }
 
     const clerkUser = await createEmployeeUser({
       firstName: employee.firstName,
       lastName: employee.lastName,
-      email: employee.email,
+      email: employee.officialEmail,
       password: "Employee@12345", // Default password
       branchId: employee.branchId,
       username: employee.username || undefined,

@@ -541,6 +541,12 @@ function getPermissionDescription(permission: Permission): string {
     [Permission.COLLECT_FEES]: "Collect fees",
     [Permission.VIEW_FINANCE_REPORTS]: "View finance reports",
     [Permission.MANAGE_ROLES]: "Manage user roles and permissions",
+    [Permission.VIEW_COURTESY_CALLS]: "View courtesy calls",
+    [Permission.CREATE_COURTESY_CALL_FEEDBACK]: "Create courtesy call feedback",
+    [Permission.EDIT_COURTESY_CALL_FEEDBACK]: "Edit courtesy call feedback",
+    [Permission.VIEW_OWN_COURTESY_CALL_FEEDBACK]: "View own courtesy call feedback",
+    [Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK]: "View all courtesy call feedback",
+    [Permission.DELETE_COURTESY_CALL_FEEDBACK]: "Delete courtesy call feedback",
   };
 
   return descriptions[permission] || "No description available";

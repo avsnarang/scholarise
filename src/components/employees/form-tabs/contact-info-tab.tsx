@@ -29,7 +29,8 @@ export function ContactInfoTab() {
 
   return (
     <div className="space-y-6 p-6">
-      <h3 className="text-xl font-medium text-[#00501B]">Current Address</h3>
+      {/* Current Address Section */}
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#7AAD8B]">Current Address</h3>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Address */}
@@ -123,7 +124,8 @@ export function ContactInfoTab() {
         </label>
       </div>
 
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">Permanent Address</h3>
+      {/* Permanent Address Section */}
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#909090] mt-8">Permanent Address</h3>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Permanent Address */}
@@ -202,7 +204,8 @@ export function ContactInfoTab() {
         />
       </div>
 
-      <h3 className="text-xl font-medium text-[#00501B] mt-8">Contact Details</h3>
+      {/* Contact Details Section */}
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#909090] mt-8">Contact Details</h3>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Phone */}
         <FormField

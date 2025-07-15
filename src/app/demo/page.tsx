@@ -117,19 +117,19 @@ const data = {
       items: [
         {
           title: "Teachers",
-          url: "/teachers",
+          url: "/staff/teachers",
         },
         {
           title: "Add Teacher",
-          url: "/teachers/create",
+          url: "/staff/teachers/create",
         },
         {
           title: "Employees",
-          url: "/employees",
+          url: "/staff/employees",
         },
         {
           title: "Add Employee",
-          url: "/employees/create",
+          url: "/staff/employees/create",
         },
         {
           title: "Departments",

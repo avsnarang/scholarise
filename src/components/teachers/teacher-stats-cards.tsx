@@ -46,9 +46,9 @@ export function TeacherStatsCards({
             {totalTeachers.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={totalTeachersChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={totalTeachersChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {totalTeachersChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -58,7 +58,7 @@ export function TeacherStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Users className="size-4 text-[#00501B]" /> 
+            <Users className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             {totalTeachersChange >= 0 ? "Faculty growth on track" : "Faculty reduction"}
           </div>
           <div className="text-muted-foreground">
@@ -74,9 +74,9 @@ export function TeacherStatsCards({
             {activeTeachers.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={activeTeachersChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={activeTeachersChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {activeTeachersChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -86,7 +86,7 @@ export function TeacherStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <UserCheck className="size-4 text-[#00501B]" /> 
+            <UserCheck className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             {activeTeachersChange >= 0 ? "Improving retention" : "Declining retention"}
           </div>
           <div className="text-muted-foreground">
@@ -102,9 +102,9 @@ export function TeacherStatsCards({
             {averageExperience} years
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={experienceChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={experienceChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {experienceChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -114,7 +114,7 @@ export function TeacherStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Clock className="size-4 text-[#00501B]" /> 
+            <Clock className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             {experienceChange >= 0 ? "Experienced faculty" : "Less experienced faculty"}
           </div>
           <div className="text-muted-foreground">
@@ -130,9 +130,9 @@ export function TeacherStatsCards({
             {certifiedTeachers.toLocaleString()}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={certifiedTeachersChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={certifiedTeachersChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {certifiedTeachersChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -142,7 +142,7 @@ export function TeacherStatsCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Award className="size-4 text-[#00501B]" /> 
+            <Award className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             {certifiedTeachersChange >= 0 ? "More qualified faculty" : "Less qualified faculty"}
           </div>
           <div className="text-muted-foreground">

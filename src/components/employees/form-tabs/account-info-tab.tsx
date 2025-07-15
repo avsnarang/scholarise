@@ -48,8 +48,7 @@ export function AccountInfoTab({ isEdit = false }: AccountInfoTabProps) {
 
   return (
     <div className="space-y-6 p-6">
-      {/* User Account */}
-      <h3 className="text-xl font-medium text-[#00501B]">User Account</h3>
+      <h3 className="text-xl font-medium text-[#00501B] dark:text-[#7AAD8B]">User Account</h3>
       
       {isEdit && hasExistingAccount && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">

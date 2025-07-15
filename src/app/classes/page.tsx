@@ -79,8 +79,11 @@ export default function ClassesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [pageSize, setPageSize] = useState(50);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [allSectionsSelected, setAllSectionsSelected] = useState(false);
   
-  // Get sections for the current session and branch
+  // Get all sections for the current session and branch
   const {
     data: sectionsData,
     isLoading,
@@ -117,6 +120,26 @@ export default function ClassesPage() {
     studentCount: section.studentCount || section._count?.students || 0
   })) || [];
 
+  // Filter sections based on status filter and search
+  const filteredSections = sections?.filter(section => {
+    const matchesStatus = statusFilter === "all" || 
+                         (statusFilter === "active" && section.isActive) ||
+                         (statusFilter === "inactive" && !section.isActive);
+    const matchesSearch = !searchQuery || 
+                         section.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         section.class.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  }) || [];
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredSections.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentPageData = filteredSections.slice(startIndex, endIndex);
+  
+  // Calculate selection counts
+  const selectedCount = allSectionsSelected ? filteredSections.length : Object.keys(rowSelection).filter(id => rowSelection[id]).length;
+
   // Delete section mutation
   const { mutate: deleteSection, isPending: isDeleting } = api.section.delete.useMutation({
     onSuccess: () => {
@@ -138,17 +161,6 @@ export default function ClassesPage() {
     }
   });
   
-  // Filter sections based on status filter
-  const filteredSections = sections?.filter(section => {
-    const matchesStatus = statusFilter === "all" || 
-                         (statusFilter === "active" && section.isActive) ||
-                         (statusFilter === "inactive" && !section.isActive);
-    const matchesSearch = !searchQuery || 
-                         section.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         section.class.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  }) || [];
-
   // Get stats
   const totalClasses = [...new Set(sections?.map(s => s.classId))].length || 0;
   const activeClasses = [...new Set(sections?.filter(s => s.class.isActive).map(s => s.classId))].length || 0;
@@ -158,6 +170,53 @@ export default function ClassesPage() {
   // Handle page size change
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+  
+  // Handle pagination
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  // Handle bulk actions
+  const handleBulkDelete = async (ids: string[]) => {
+    // Implementation for bulk delete
+    for (const id of ids) {
+      try {
+        await deleteSection({ id });
+      } catch (error) {
+        console.error('Failed to delete section:', error);
+      }
+    }
+    setRowSelection({});
+    setAllSectionsSelected(false);
+  };
+  
+  const handleBulkStatusUpdate = async (ids: string[], status: boolean) => {
+    // Implementation for bulk status update
+    // This would require a bulk update API endpoint
+    console.log('Bulk status update:', ids, status);
+    setRowSelection({});
+    setAllSectionsSelected(false);
+  };
+  
+  // Handle selection
+  const handleSelectAllSections = () => {
+    setAllSectionsSelected(true);
+    setRowSelection({});
+  };
+  
+  const handleDeselectAllSections = () => {
+    setAllSectionsSelected(false);
+    setRowSelection({});
   };
   
   // Handle class deletion
@@ -366,7 +425,7 @@ export default function ClassesPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
+              className="flex items-center gap-2 dark:bg-[#404040] dark:border-[#606060] dark:text-white"
               onClick={() => {
                 const current = statusFilter === "all" ? "active" : "all";
                 setStatusFilter(current);
@@ -380,7 +439,7 @@ export default function ClassesPage() {
 
         {/* Active filters display */}
         {(statusFilter !== "all") && (
-          <div className="flex flex-wrap gap-2 items-center text-sm p-3 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-wrap gap-2 items-center text-sm p-3 mb-4 bg-gray-50 dark:bg-[#404040]/50 rounded-lg border border-gray-200 dark:border-[#606060]">
             <span className="text-gray-600 dark:text-gray-300 font-medium">Active filters:</span>
             
             {statusFilter !== "all" && (
@@ -394,7 +453,7 @@ export default function ClassesPage() {
         
         {/* Empty state */}
         {filteredSections.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-12 text-center bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700">
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-12 text-center bg-gray-50 dark:bg-[#404040]/50 dark:border-[#606060]">
             <div className="h-16 w-16 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center mb-4">
               <GraduationCap className="h-8 w-8 text-[#00501B] dark:text-[#7aad8c]" />
             </div>
@@ -417,35 +476,30 @@ export default function ClassesPage() {
         ) : (
           <>
             {/* Class data table */}
-            <div className="rounded-md overflow-hidden shadow-sm">
               <SectionDataTable 
                 key={`section-table-${pageSize}`}
-                data={filteredSections}
+                data={currentPageData}
                 isLoading={isLoading}
+                searchTerm={searchQuery}
+                onSearchChange={setSearchQuery}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
+                totalCount={filteredSections.length}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPreviousPage={handlePreviousPage}
+                onNextPage={handleNextPage}
+                isPaginating={false}
+                paginatingDirection={null}
+                rowSelection={rowSelection}
+                onRowSelectionChange={setRowSelection}
+                allSectionsSelected={allSectionsSelected}
+                onSelectAllSections={handleSelectAllSections}
+                onDeselectAllSections={handleDeselectAllSections}
+                selectedCount={selectedCount}
+                onBulkDelete={handleBulkDelete}
+                onBulkStatusUpdate={handleBulkStatusUpdate}
               />
-            </div>
-            
-            {/* Simplified pagination controls */}
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {pageSize >= filteredSections.length 
-                  ? `Showing all ${filteredSections.length} sections` 
-                  : `Showing up to ${pageSize} sections per page`}
-              </div>
-              <div className="flex items-center gap-4">
-                <select 
-                  className="border rounded p-1 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200"
-                  value={pageSize === filteredSections.length ? filteredSections.length.toString() : pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                >
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
-                  <option value={filteredSections.length}>All</option>
-                </select>
-              </div>
-            </div>
           </>
         )}
       </div>

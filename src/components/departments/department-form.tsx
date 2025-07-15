@@ -82,11 +82,17 @@ export function DepartmentForm({ initialData, branches = [] }: DepartmentFormPro
     },
   });
 
+  // Get utils for query invalidation
+  const utils = api.useContext();
+
   // Create and update mutations
   const createDepartment = api.department.create.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.department.getAll.invalidate();
+      void utils.department.getStats.invalidate();
       toast.success("Department created successfully");
-      router.push("/departments/list");
+      router.push("/staff/departments/list");
     },
     onError: (error) => {
       toast.error(`Error creating department: ${error.message}`);
@@ -96,8 +102,11 @@ export function DepartmentForm({ initialData, branches = [] }: DepartmentFormPro
 
   const updateDepartment = api.department.update.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.department.getAll.invalidate();
+      void utils.department.getStats.invalidate();
       toast.success("Department updated successfully");
-      router.push("/departments/list");
+      router.push("/staff/departments/list");
     },
     onError: (error) => {
       toast.error(`Error updating department: ${error.message}`);
@@ -275,7 +284,7 @@ export function DepartmentForm({ initialData, branches = [] }: DepartmentFormPro
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push("/departments/list")}
+          onClick={() => router.push("/staff/departments/list")}
         >
           Cancel
         </Button>

@@ -128,6 +128,11 @@ export const rolePermissions: PermissionMap = {
     Permission.VIEW_SETTINGS,
     Permission.MANAGE_ACADEMIC_SESSIONS,
     Permission.MANAGE_SUBJECTS,
+    Permission.VIEW_COURTESY_CALLS,
+    Permission.CREATE_COURTESY_CALL_FEEDBACK,
+    Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK,
+    Permission.EDIT_COURTESY_CALL_FEEDBACK,
+    Permission.DELETE_COURTESY_CALL_FEEDBACK,
   ],
   
   [Role.TEACHER]: [
@@ -143,6 +148,10 @@ export const rolePermissions: PermissionMap = {
     Permission.VIEW_EXAMINATIONS,
     Permission.ENTER_MARKS,
     Permission.VIEW_EXAM_REPORTS,
+    Permission.VIEW_COURTESY_CALLS,
+    Permission.CREATE_COURTESY_CALL_FEEDBACK,
+    Permission.VIEW_OWN_COURTESY_CALL_FEEDBACK,
+    Permission.EDIT_COURTESY_CALL_FEEDBACK,
   ],
   
   [Role.ACCOUNTANT]: [
@@ -374,6 +383,14 @@ export const navItemPermissions = {
   // Basic Fees (separate from comprehensive Finance module)
   fees: [Permission.VIEW_FEES],
   manageFees: [Permission.MANAGE_FEES],
+  
+  // Courtesy Calls module
+  courtesyCalls: [Permission.VIEW_COURTESY_CALLS],
+  createCourtesyCallFeedback: [Permission.CREATE_COURTESY_CALL_FEEDBACK],
+  viewOwnCourtesyCallFeedback: [Permission.VIEW_OWN_COURTESY_CALL_FEEDBACK],
+  viewAllCourtesyCallFeedback: [Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK],
+  editCourtesyCallFeedback: [Permission.EDIT_COURTESY_CALL_FEEDBACK],
+  deleteCourtesyCallFeedback: [Permission.DELETE_COURTESY_CALL_FEEDBACK],
   
   // Reports module
   reports: [Permission.VIEW_REPORTS],

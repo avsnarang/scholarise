@@ -62,6 +62,7 @@ model Branch {
   attendanceLocations     AttendanceLocation[]
   attendanceWindows       AttendanceWindow[]
   locationTypes           LocationType[]
+  courtesyCallFeedbacks   CourtesyCallFeedback[]
 }
 
 model Student {
@@ -129,6 +130,7 @@ model Student {
   transportAssignments    TransportAssignment[]
   studentAttendance       StudentAttendance[]
   studentConcessions      StudentConcession[]
+  courtesyCallFeedbacks   CourtesyCallFeedback[]
 
   @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
   @@index([branchId, isActive], map: "student_branch_active_idx")
@@ -165,6 +167,36 @@ model Parent {
   guardianAadharNumber String?
   motherAadharNumber   String?
   students             Student[]
+}
+
+model CourtesyCallFeedback {
+  id           String    @id @default(cuid())
+  studentId    String
+  callerId     String    // Teacher or Head who made the call
+  callerType   CallerType // TEACHER or HEAD
+  callDate     DateTime  @default(now())
+  purpose      String?   // Purpose of the call
+  feedback     String    // Detailed feedback
+  followUp     String?   // Any follow-up actions needed
+  isPrivate    Boolean   @default(false) // Whether feedback is visible only to hierarchy above
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  branchId     String
+  
+  // Relations
+  student      Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher      Teacher?  @relation(fields: [callerId], references: [id], onDelete: Cascade, map: "CourtesyCallFeedback_teacher_fkey")
+  employee     Employee? @relation(fields: [callerId], references: [id], onDelete: Cascade, map: "CourtesyCallFeedback_employee_fkey")
+  branch       Branch    @relation(fields: [branchId], references: [id])
+
+  @@index([studentId, callDate])
+  @@index([callerId, callDate])
+  @@index([branchId, callDate])
+}
+
+enum CallerType {
+  TEACHER
+  HEAD
 }
 
 model Teacher {
@@ -242,6 +274,7 @@ model Teacher {
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   attendances                StaffAttendance[]
+  courtesyCallFeedbacks      CourtesyCallFeedback[]
 }
 
 model Employee {
@@ -322,6 +355,7 @@ model Employee {
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
   staffAttendances           StaffAttendance[]
+  courtesyCallFeedbacks      CourtesyCallFeedback[]
 }
 
 model Class {

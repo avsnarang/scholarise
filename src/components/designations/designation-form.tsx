@@ -95,11 +95,17 @@ export function DesignationForm({ initialData, branches = [] }: DesignationFormP
     },
   });
 
+  // Get utils for query invalidation
+  const utils = api.useContext();
+
   // Create and update mutations
   const createDesignation = api.designation.create.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.designation.getAll.invalidate();
+      void utils.designation.getStats.invalidate();
       toast.success("Designation created successfully");
-      router.push("/designations/list");
+      router.push("/staff/designations/list");
     },
     onError: (error) => {
       toast.error(`Error creating designation: ${error.message}`);
@@ -109,8 +115,11 @@ export function DesignationForm({ initialData, branches = [] }: DesignationFormP
 
   const updateDesignation = api.designation.update.useMutation({
     onSuccess: () => {
+      // Invalidate queries to refresh the list
+      void utils.designation.getAll.invalidate();
+      void utils.designation.getStats.invalidate();
       toast.success("Designation updated successfully");
-      router.push("/designations/list");
+      router.push("/staff/designations/list");
     },
     onError: (error) => {
       toast.error(`Error updating designation: ${error.message}`);
@@ -316,7 +325,7 @@ export function DesignationForm({ initialData, branches = [] }: DesignationFormP
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push("/designations/list")}
+          onClick={() => router.push("/staff/designations/list")}
         >
           Cancel
         </Button>

@@ -40,11 +40,11 @@ const multiSelectVariants = cva(
     variants: {
       variant: {
         default:
-          "border-foreground/10 text-foreground bg-card hover:bg-card/80",
+          "border-foreground/10 text-foreground bg-card hover:bg-card/80 dark:bg-card/80 dark:border-foreground/20",
         secondary:
-          "border-foreground/10 bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-foreground/10 bg-secondary text-secondary-foreground hover:bg-secondary/80 dark:bg-secondary/80 dark:border-foreground/20",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80 dark:bg-destructive/80",
         inverted: "inverted",
       },
     },
@@ -463,12 +463,12 @@ export const MultiSelect = React.forwardRef<
             pointerEvents: 'auto'
           }}
         >
-          <div className="w-full bg-white dark:bg-popover rounded-md border border-gray-200 dark:border-gray-800">
-            <div className="flex items-center border-b px-3">
+          <div className="w-full bg-white dark:bg-[#404040] rounded-md border border-gray-200 dark:border-[#606060] shadow-lg">
+            <div className="flex items-center border-b border-gray-200 dark:border-[#606060] px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <input 
                 ref={inputRef}
-                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground dark:text-white"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -477,11 +477,11 @@ export const MultiSelect = React.forwardRef<
             </div>
             <div className="p-1">
               {filteredOptions.length === 0 && (
-                <div className="py-6 text-center text-sm">No results found.</div>
+                <div className="py-6 text-center text-sm text-muted-foreground">No results found.</div>
               )}
               <div className="p-1">
                 <div
-                  className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm"
+                  className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#505050] rounded-sm"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -514,7 +514,7 @@ export const MultiSelect = React.forwardRef<
                       <div 
                         key={option.value}
                         className={cn(
-                          "flex items-center px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm text-sm select-none",
+                          "flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#505050] rounded-sm text-sm select-none",
                           isLastClicked && "ring-1 ring-primary ring-inset"
                         )}
                         onClick={(e) => handleDirectClick(e, option.value, index)}
@@ -548,7 +548,7 @@ export const MultiSelect = React.forwardRef<
                   {selectedValues.length > 0 && (
                     <>
                       <div
-                        className="flex-1 justify-center cursor-pointer text-center py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm text-sm"
+                        className="flex-1 justify-center cursor-pointer text-center py-1.5 hover:bg-gray-100 dark:hover:bg-[#505050] rounded-sm text-sm"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation(); 
@@ -561,7 +561,7 @@ export const MultiSelect = React.forwardRef<
                     </>
                   )}
                   <div
-                    className="flex-1 justify-center cursor-pointer text-center py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm text-sm"
+                    className="flex-1 justify-center cursor-pointer text-center py-1.5 hover:bg-gray-100 dark:hover:bg-[#505050] rounded-sm text-sm"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

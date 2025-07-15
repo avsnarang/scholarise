@@ -124,5 +124,3 @@ export function usePermissions() {
 export function useUserPermissions() {
   return usePermissions();
 }
-
-

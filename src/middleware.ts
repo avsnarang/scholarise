@@ -118,6 +118,11 @@ const routePermissions: Record<string, string[]> = {
   '/question-papers/list': ['view_question_papers'],
   '/question-papers/blueprints': ['create_question_paper'],
   '/question-papers/questions': ['view_question_papers'],
+  
+  // Courtesy Calls
+  '/courtesy-calls': ['view_courtesy_calls'],
+  '/courtesy-calls/teacher': ['view_courtesy_calls', 'view_own_courtesy_call_feedback'],
+  '/courtesy-calls/head': ['view_courtesy_calls', 'view_all_courtesy_call_feedback'],
   '/question-papers/view': ['view_question_papers'],
   
   // Settings
@@ -174,7 +179,9 @@ const rolePermissions: Record<string, string[]> = {
     'view_examinations', 'manage_exam_types', 'manage_exam_configurations', 'enter_marks',
     'manage_assessments', 'manage_grade_scales', 'view_exam_reports',
     'view_reports', 'view_settings', 'manage_branches', 'manage_academic_sessions',
-    'manage_subjects', 'manage_roles', 'manage_attendance_config'
+    'manage_subjects', 'manage_roles', 'manage_attendance_config',
+    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
+    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
   ],
   'admin': [
     'view_dashboard',
@@ -190,7 +197,9 @@ const rolePermissions: Record<string, string[]> = {
     'view_leaves', 'manage_leave_applications', 'manage_leave_policies',
     'view_salary', 'manage_salary_structures', 'manage_teacher_salaries', 'manage_employee_salaries',
     'view_transport', 'manage_transport_routes', 'manage_transport_stops', 'manage_transport_assignments',
-    'view_fees', 'manage_fees', 'view_reports', 'view_settings'
+    'view_fees', 'manage_fees', 'view_reports', 'view_settings',
+    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
+    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
   ],
   'principal': [
     'view_dashboard',
@@ -205,14 +214,18 @@ const rolePermissions: Record<string, string[]> = {
     'view_question_papers', 'create_question_paper', 'manage_question_papers',
     'view_examinations', 'manage_exam_types', 'manage_exam_configurations', 'enter_marks',
     'manage_assessments', 'manage_grade_scales', 'view_exam_reports',
-    'view_reports', 'view_settings', 'manage_academic_sessions', 'manage_subjects'
+    'view_reports', 'view_settings', 'manage_academic_sessions', 'manage_subjects',
+    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
+    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
   ],
   'teacher': [
     'view_dashboard', 'view_students', 'view_classes',
     'view_attendance', 'mark_attendance',
     'view_leaves', 'manage_leave_applications',
     'view_question_papers', 'create_question_paper',
-    'view_examinations', 'enter_marks', 'view_exam_reports'
+    'view_examinations', 'enter_marks', 'view_exam_reports',
+    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_own_courtesy_call_feedback',
+    'edit_courtesy_call_feedback'
   ],
   'accountant': [
     'view_dashboard', 'view_students',

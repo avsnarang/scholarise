@@ -118,9 +118,9 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
             {totalDesignations}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={totalDesignationsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={totalDesignationsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {totalDesignationsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -130,7 +130,7 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Tag className="size-4 text-[#00501B]" /> 
+            <Tag className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             All Role Types
           </div>
           <div className="text-muted-foreground">
@@ -146,9 +146,9 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
             {activeDesignations}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={activeDesignationsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={activeDesignationsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {activeDesignationsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -158,7 +158,7 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <BadgeCheck className="size-4 text-[#00501B]" /> 
+            <BadgeCheck className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Currently Active
           </div>
           <div className="text-muted-foreground">
@@ -176,9 +176,9 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
             {teachingDesignations}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={teachingDesignationsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={teachingDesignationsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {teachingDesignationsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -188,7 +188,7 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <Layers className="size-4 text-[#00501B]" /> 
+            <Layers className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Faculty Positions
           </div>
           <div className="text-muted-foreground">
@@ -206,9 +206,9 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
             {adminDesignations}
           </CardTitle>
           <CardAction>
-            <Badge variant="outline" className={adminDesignationsChange >= 0 ? "text-[#00501B]" : "text-[#A65A20]"}>
+            <Badge variant="outline" className={adminDesignationsChange >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
               {adminDesignationsChange >= 0 ? (
-                <IconTrendingUp className="text-[#00501B]" />
+                <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
               ) : (
                 <IconTrendingDown className="text-[#A65A20]" />
               )}
@@ -218,7 +218,7 @@ export function DesignationStatsCards({ branchId }: DesignationStatsCardsProps) 
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            <BarChart2 className="size-4 text-[#00501B]" /> 
+            <BarChart2 className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
             Administrative Positions
           </div>
           <div className="text-muted-foreground">
