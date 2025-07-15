@@ -243,6 +243,9 @@ export const teacherRouter = createTRPCRouter({
           const sections = await ctx.db.section.findMany({
             where: {
               teacherId: teacher.id
+            },
+            include: {
+              class: true
             }
           });
           
