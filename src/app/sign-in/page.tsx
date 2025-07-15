@@ -37,10 +37,10 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
     }
   }, []);
 
-  // Redirect to dashboard if already signed in
+  // Redirect to root page if already signed in (let root page handle role-based routing)
   useEffect(() => {
     if (isAuthLoaded && userId) {
-      const destination = redirectUrl || '/dashboard';
+      const destination = redirectUrl || '/';
       router.push(destination);
     }
   }, [isAuthLoaded, userId, router, redirectUrl]);
@@ -80,8 +80,8 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
         // Set the active session
         await setActive({ session: result.createdSessionId });
         
-        // Redirect to original destination or dashboard
-        const destination = redirectUrl || '/dashboard';
+        // Redirect to original destination or root page (let root page handle role-based routing)
+        const destination = redirectUrl || '/';
         router.push(destination);
       } else {
         setError("Something went wrong. Please try again.");
@@ -98,7 +98,7 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
     if (!isLoaded || !signIn) return;
     
     try {
-      const destination = redirectUrl || "/dashboard";
+      const destination = redirectUrl || "/";
       signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",

@@ -3,20 +3,28 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function Home() {
   const router = useRouter();
   const { isLoaded, userId } = useAuth();
+  const { isTeacher } = useUserRole();
 
   useEffect(() => {
     if (isLoaded) {
       if (userId) {
-        router.push("/dashboard");
+        // Redirect teachers to their specific dashboard
+        if (isTeacher) {
+          router.push("/staff/teachers/dashboard");
+        } else {
+          // Redirect other users to main dashboard
+          router.push("/dashboard");
+        }
       } else {
         router.push("/sign-in");
       }
     }
-  }, [isLoaded, userId, router]);
+  }, [isLoaded, userId, isTeacher, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

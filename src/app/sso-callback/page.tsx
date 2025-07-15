@@ -11,7 +11,7 @@ export default function SSOCallback() {
   useEffect(() => {
     // Get redirect URL from query parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const redirectUrl = urlParams.get('redirectUrl') || "/dashboard";
+    const redirectUrl = urlParams.get('redirectUrl') || "/";
     
     // Handle the OAuth callback
     void handleRedirectCallback({
