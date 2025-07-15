@@ -600,10 +600,11 @@ export const courtesyCallsRouter = createTRPCRouter({
         fromDate: z.date().optional(),
         toDate: z.date().optional(),
         classId: z.string().optional(),
+        teacherId: z.string().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { branchId, fromDate, toDate, classId } = input || {};
+      const { branchId, fromDate, toDate, classId, teacherId } = input || {};
 
       // Check if user is super admin first
       const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
@@ -676,7 +677,10 @@ export const courtesyCallsRouter = createTRPCRouter({
             },
           },
         }),
-        ...(!canViewAll && canViewOwn && userCallerId && { callerId: userCallerId }),
+        // If teacherId is provided, filter by that specific teacher
+        ...(teacherId && { callerId: teacherId }),
+        // Otherwise, use existing permission-based filtering
+        ...(!teacherId && !canViewAll && canViewOwn && userCallerId && { callerId: userCallerId }),
       };
 
       try {

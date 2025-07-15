@@ -56,9 +56,10 @@ export default function TeacherCourtesyCallsPage() {
   } = api.courtesyCalls.getStats.useQuery(
     {
       branchId: currentBranchId || undefined,
+      teacherId: teacherData?.id || undefined,
     },
     {
-      enabled: !!currentBranchId,
+      enabled: !!currentBranchId && !!teacherData?.id,
     }
   );
 
@@ -207,48 +208,6 @@ export default function TeacherCourtesyCallsPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Recent Feedback Summary */}
-        {stats?.recentFeedback && stats.recentFeedback.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Recent Feedback
-              </CardTitle>
-              <CardDescription>
-                Your most recent courtesy call feedback records
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {stats.recentFeedback.slice(0, 3).map((feedback: any) => (
-                  <div
-                    key={feedback.id}
-                    className="flex items-start justify-between p-3 bg-muted/50 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">
-                          {feedback.student?.firstName} {feedback.student?.lastName}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {feedback.student?.section?.class?.name} - {feedback.student?.section?.name}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {feedback.feedback}
-                      </p>
-                    </div>
-                    <div className="text-xs text-muted-foreground ml-4">
-                      {new Date(feedback.callDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Permissions Notice */}
         {!canAdd && (
