@@ -103,13 +103,6 @@ export function FeedbackFormModal({
     ['admin', 'Admin', 'principal', 'Principal', 'super_admin', 'SuperAdmin', 'Super Admin'].includes(role)
   ) || ['admin', 'Admin', 'principal', 'Principal', 'super_admin', 'SuperAdmin', 'Super Admin'].includes(user?.role || '');
 
-  // Debug logging
-  console.log('FeedbackFormModal - Role Detection:', {
-    userRoles: user?.roles,
-    userRole: user?.role,
-    isHeadUser,
-  });
-
   const form = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {

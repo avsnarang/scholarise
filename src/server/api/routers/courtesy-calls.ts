@@ -53,6 +53,34 @@ export const courtesyCallsRouter = createTRPCRouter({
         }
       }
 
+      // If user can only view their own feedback, get their teacher/employee ID
+      let userTeacherId: string | null = null;
+      let userEmployeeId: string | null = null;
+      
+      if (!canViewAll && canViewOwn) {
+        const [teacher, employee] = await Promise.all([
+          ctx.db.teacher.findFirst({
+            where: {
+              OR: [
+                { userId: ctx.userId },
+                { clerkId: ctx.userId },
+              ],
+            },
+          }),
+          ctx.db.employee.findFirst({
+            where: {
+              OR: [
+                { userId: ctx.userId },
+                { clerkId: ctx.userId },
+              ],
+            },
+          }),
+        ]);
+        
+        userTeacherId = teacher?.id || null;
+        userEmployeeId = employee?.id || null;
+      }
+
       // Build where clause based on permissions
       const whereClause: Prisma.CourtesyCallFeedbackWhereInput = {
         ...(branchId && { branchId }),
@@ -72,8 +100,16 @@ export const courtesyCallsRouter = createTRPCRouter({
             },
           },
         }),
-        // If user can only view their own feedback, filter by callerId
-        ...(!canViewAll && canViewOwn && { callerId: ctx.userId }),
+        // If user can only view their own feedback, filter by their teacher/employee ID
+        ...(!canViewAll && canViewOwn && {
+          OR: [
+            // Check if callerId matches their teacher or employee ID
+            ...(userTeacherId ? [{ callerId: userTeacherId }] : []),
+            ...(userEmployeeId ? [{ callerId: userEmployeeId }] : []),
+            // Fallback to legacy callerId for backward compatibility
+            { callerId: ctx.userId },
+          ].filter(Boolean)
+        }),
       };
 
       const [feedback, totalCount] = await Promise.all([
@@ -368,7 +404,7 @@ export const courtesyCallsRouter = createTRPCRouter({
       const feedback = await ctx.db.courtesyCallFeedback.create({
         data: {
           studentId: input.studentId,
-          callerId,
+          callerId, // Keep for backward compatibility
           callerType,
           purpose: input.purpose,
           feedback: input.feedback,

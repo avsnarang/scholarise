@@ -53,16 +53,12 @@ model Branch {
   students                Student[]
   studentAssessmentScores StudentAssessmentScore[]
   studentConcessions      StudentConcession[]
-  subjectTeachers         SubjectTeacher[]
-  teachers                Teacher[]
-  terms                   Term[]
-  routes                  TransportRoute[]
-  userRoles               UserRole[]
-  attendanceDevices       AttendanceDevice[]
-  attendanceLocations     AttendanceLocation[]
-  attendanceWindows       AttendanceWindow[]
-  locationTypes           LocationType[]
   courtesyCallFeedbacks   CourtesyCallFeedback[]
+
+  @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
+  @@index([branchId, isActive], map: "student_branch_active_idx")
+  @@index([sectionId, isActive], map: "student_section_active_idx")
+  @@index([admissionNumber, branchId], map: "student_admission_branch_idx")
 }
 
 model Student {
@@ -183,11 +179,8 @@ model CourtesyCallFeedback {
   updatedAt    DateTime  @updatedAt
   branchId     String
   
-  // Relations
+  // Relations (without foreign key constraints to avoid conflicts)
   student      Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher      Teacher?  @relation(fields: [callerId], references: [id], onDelete: Cascade, map: "CourtesyCallFeedback_teacher_fkey")
-  employee     Employee? @relation(fields: [callerId], references: [id], onDelete: Cascade, map: "CourtesyCallFeedback_employee_fkey")
-  branch       Branch    @relation(fields: [branchId], references: [id])
 
   @@index([studentId, callDate])
   @@index([callerId, callDate])
@@ -274,7 +267,6 @@ model Teacher {
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   attendances                StaffAttendance[]
-  courtesyCallFeedbacks      CourtesyCallFeedback[]
 }
 
 model Employee {
@@ -355,7 +347,6 @@ model Employee {
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
   staffAttendances           StaffAttendance[]
-  courtesyCallFeedbacks      CourtesyCallFeedback[]
 }
 
 model Class {
