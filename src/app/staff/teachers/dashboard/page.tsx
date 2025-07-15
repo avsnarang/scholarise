@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { formatIndianNumber } from "@/lib/utils";
 import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { useAuth } from "@/hooks/useAuth";
 
 function LoadingSkeleton() {
   return (
@@ -100,9 +101,36 @@ function StatsCard({ title, value, description, icon, loading = false, trend, co
 }
 
 function TeacherDashboardContent() {
-  const { teacherId, isTeacher } = useUserRole();
+  const { teacherId, isTeacher, teacher: teacherProfile } = useUserRole();
   const { currentSessionId } = useAcademicSessionContext();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Debug logging
+  console.log("Teacher Dashboard Debug:", {
+    teacherId,
+    isTeacher,
+    hasTeacherData: !!teacherProfile,
+    currentSessionId,
+    userId: user?.id,
+    userRole: user?.role,
+    userRoles: user?.roles
+  });
+
+  // Also check the teacher query independently for debugging
+  const { data: teacherDebugData, error: teacherDebugError } = api.teacher.getByUserId.useQuery(
+    { userId: user?.id || "" },
+    { 
+      enabled: !!user?.id,
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  console.log("Teacher Debug Query:", {
+    teacherDebugData,
+    teacherDebugError,
+    queryEnabled: !!user?.id
+  });
 
   // Fetch teacher dashboard data
   const { data: dashboardData, isLoading, error } = api.teacher.getDashboardData.useQuery(
@@ -116,13 +144,68 @@ function TeacherDashboardContent() {
     }
   );
 
+  // Enhanced error logging
   if (error) {
+    console.error("Teacher Dashboard Error:", {
+      error,
+      errorMessage: error.message,
+      errorData: error.data,
+      teacherId,
+      isTeacher,
+      currentSessionId
+    });
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
         <AlertCircle className="h-12 w-12 text-red-500" />
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-900">Error Loading Dashboard</h3>
           <p className="text-gray-600">There was an error loading your dashboard data. Please try again later.</p>
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500">Debug Info (Development Only)</summary>
+              <pre className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded max-w-md overflow-auto">
+                {JSON.stringify({
+                  teacherId,
+                  isTeacher,
+                  hasTeacherData: !!teacherProfile,
+                  currentSessionId,
+                  userId: user?.id,
+                  errorMessage: error.message,
+                  errorData: error.data,
+                  teacherDebugData,
+                  teacherDebugError: teacherDebugError?.message
+                }, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading if we don't have teacher ID yet but we should
+  if (isTeacher && !teacherId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-gray-900">Loading Teacher Profile</h3>
+          <p className="text-gray-600">Please wait while we load your teacher information...</p>
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500">Debug Info (Development Only)</summary>
+              <pre className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded max-w-md overflow-auto">
+                {JSON.stringify({
+                  userId: user?.id,
+                  isTeacher,
+                  teacherId,
+                  teacherDebugData,
+                  teacherDebugError: teacherDebugError?.message
+                }, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       </div>
     );
@@ -139,6 +222,23 @@ function TeacherDashboardContent() {
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-900">No Data Available</h3>
           <p className="text-gray-600">Your teacher profile is not yet set up or you don't have any assigned classes.</p>
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500">Debug Info (Development Only)</summary>
+              <pre className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded max-w-md overflow-auto">
+                {JSON.stringify({
+                  teacherId,
+                  isTeacher,
+                  hasTeacherData: !!teacherProfile,
+                  currentSessionId,
+                  queryEnabled: !!teacherId && isTeacher,
+                  userId: user?.id,
+                  teacherDebugData,
+                  teacherDebugError: teacherDebugError?.message
+                }, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       </div>
     );

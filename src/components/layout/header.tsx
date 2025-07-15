@@ -9,6 +9,7 @@ import { TaskProgressDropdown } from "@/components/ui/task-progress-dropdown";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -22,6 +23,7 @@ export function Header({
   onSidebarCollapseToggle
 }: HeaderProps) {
   const { isSuperAdmin } = usePermissions();
+  const { isTeacher } = useUserRole();
   
   return (
     <header className={cn(
@@ -41,7 +43,7 @@ export function Header({
         )}
 
         {/* Mobile logo - only visible on mobile */}
-        <Link href="/dashboard" className="md:hidden items-center gap-2 flex">
+        <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"} className="md:hidden items-center gap-2 flex">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-r from-[#00501B] to-[#A65A20]">
             <span className="text-xs font-bold text-white">SR</span>
           </div>

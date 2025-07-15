@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function ToggleAdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [status, setStatus] = useState("");
+  const { isTeacher } = useUserRole();
   
   // Check current state on load
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function ToggleAdminPage() {
         </CardContent>
         <CardFooter>
           <div className="w-full flex justify-between">
-            <Link href="/dashboard">
+            <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"}>
               <Button variant="outline">Back to Dashboard</Button>
             </Link>
             <Link href="/debug">

@@ -35,6 +35,7 @@ import { type Prisma } from "@prisma/client"
 import { useBranchContext } from "@/hooks/useBranchContext"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useUserRole } from "@/hooks/useUserRole"
 import { Permission, Role } from "@/types/permissions"
 import { navItemPermissions, moduleViewPermissions } from "@/utils/rbac"
 import { api } from "@/utils/api"
@@ -92,6 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
   const { user } = useAuth();
   const { canAccess, isSuperAdmin, can } = usePermissions();
+  const { isTeacher } = useUserRole();
 
   // Define Branch type based on the API response
   type Branch = {
@@ -1069,8 +1071,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link href="/dashboard" className="flex-1">
-                  <SidebarMenuButton isActive={isActive("/dashboard")}>
+                <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"} className="flex-1">
+                  <SidebarMenuButton isActive={isActive(isTeacher ? "/staff/teachers/dashboard" : "/dashboard")}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>Dashboard</span>
                   </SidebarMenuButton>
