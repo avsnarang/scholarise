@@ -16,8 +16,10 @@ interface VerticalBarChartProps {
   className?: string;
 }
 
+import { formatIndianNumber } from '@/lib/utils';
+
 const defaultValueFormatter = (number: number) =>
-  `${Intl.NumberFormat('us').format(number).toString()}`;
+  formatIndianNumber(number);
 
 export default function VerticalBarChart({
   data,
@@ -52,7 +54,7 @@ export default function VerticalBarChart({
       <div className="mb-6">
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{metricLabel}</p>
         <p className="text-3xl font-bold text-gray-900 dark:text-white">
-          <CountUp end={displaySum} duration={0.6} separator="," />
+          <CountUp end={displaySum} duration={0.6} formattingFn={valueFormatter} />
         </p>
       </div>
 

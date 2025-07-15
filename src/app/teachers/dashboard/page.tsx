@@ -310,7 +310,7 @@ function TeacherDashboardContent() {
               <CardContent>
                 {sections.length > 0 ? (
                   <div className="space-y-3">
-                    {sections.map((section) => (
+                    {sections.map((section: any) => (
                       <div key={section.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div>
                           <h4 className="font-medium">{section.className} - {section.name}</h4>
@@ -342,7 +342,7 @@ function TeacherDashboardContent() {
               <CardContent>
                 {subjectAssignments.length > 0 ? (
                   <div className="space-y-3">
-                    {subjectAssignments.map((assignment) => (
+                    {subjectAssignments.map((assignment: any) => (
                       <div key={assignment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div>
                           <h4 className="font-medium">{assignment.subjectName}</h4>
@@ -511,7 +511,7 @@ function TeacherDashboardContent() {
               <CardContent>
                 {recentLeaveApplications.length > 0 ? (
                   <div className="space-y-3">
-                    {recentLeaveApplications.map((application) => (
+                    {recentLeaveApplications.map((application: any) => (
                       <div key={application.id} className="p-3 bg-muted/30 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium">

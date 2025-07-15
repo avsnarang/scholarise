@@ -1368,20 +1368,12 @@ export const teacherRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         // Get teacher details with sections and classes
-        const teacher = await ctx.db.teacher.findUnique({
+        const teacher: any = await ctx.db.teacher.findUnique({
           where: { id: input.teacherId },
           include: {
             sections: {
               include: {
-                class: {
-                  include: {
-                    _count: {
-                      select: {
-                        students: true
-                      }
-                    }
-                  }
-                },
+                class: true,
                 _count: {
                   select: {
                     students: true
@@ -1453,7 +1445,7 @@ export const teacherRouter = createTRPCRouter({
         });
 
         // Get recent student attendance summary for teacher's sections
-        const sectionIds = teacher.sections.map(section => section.id);
+        const sectionIds = teacher.sections.map((section: any) => section.id);
         let studentAttendanceSummary = null;
         
         if (sectionIds.length > 0) {
@@ -1476,16 +1468,16 @@ export const teacherRouter = createTRPCRouter({
         }
 
         // Calculate class statistics
-        const totalStudents = teacher.sections.reduce((sum, section) => sum + section._count.students, 0);
+        const totalStudents = teacher.sections.reduce((sum: any, section: any) => sum + section._count.students, 0);
         const totalClasses = teacher.sections.length;
         
         // Get subject assignments count
         const totalSubjects = teacher.subjectAssignments.length;
 
         // Calculate leave statistics
-        const totalLeaveBalance = teacher.leaveBalances.reduce((sum, balance) => sum + balance.totalDays, 0);
-        const usedLeave = teacher.leaveBalances.reduce((sum, balance) => sum + balance.usedDays, 0);
-        const pendingApplications = teacher.leaveApplications.filter(app => app.status === 'PENDING').length;
+        const totalLeaveBalance = teacher.leaveBalances.reduce((sum: any, balance: any) => sum + balance.totalDays, 0);
+        const usedLeave = teacher.leaveBalances.reduce((sum: any, balance: any) => sum + balance.usedDays, 0);
+        const pendingApplications = teacher.leaveApplications.filter((app: any) => app.status === 'PENDING').length;
 
         return {
           teacher: {
@@ -1506,20 +1498,20 @@ export const teacherRouter = createTRPCRouter({
             usedLeave,
             pendingApplications
           },
-          sections: teacher.sections.map(section => ({
+          sections: teacher.sections.map((section: any) => ({
             id: section.id,
             name: section.name,
             className: section.class.name,
             studentCount: section._count.students,
             totalClassStudents: section.class._count.students
           })),
-          subjectAssignments: teacher.subjectAssignments.map(assignment => ({
+          subjectAssignments: teacher.subjectAssignments.map((assignment: any) => ({
             id: assignment.id,
             subjectName: assignment.subject.name,
             className: assignment.class.name,
             sectionName: assignment.section?.name || 'All Sections'
           })),
-          recentLeaveApplications: teacher.leaveApplications.map(app => ({
+          recentLeaveApplications: teacher.leaveApplications.map((app: any) => ({
             id: app.id,
             startDate: app.startDate,
             endDate: app.endDate,

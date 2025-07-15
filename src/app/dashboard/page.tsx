@@ -54,7 +54,7 @@ function DashboardContent() {
   const { data: branchesStats, isLoading } = api.dashboard.getAllBranchesStats.useQuery();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
-  const { isTeacher, teacherData } = useUserRole();
+  const { isTeacher, teacher } = useUserRole();
 
   // Fetch finance data for the charts
   const { data: financeAnalytics } = api.finance.getFeeCollectionAnalytics.useQuery(
@@ -217,7 +217,7 @@ function DashboardContent() {
     return (
     <div className="space-y-8 pb-8">
       {/* Teacher Dashboard Link Banner */}
-      {isTeacher && teacherData && (
+      {isTeacher && teacher && (
         <div className="bg-gradient-to-r from-[#00501B] to-[#00501B]/80 rounded-lg p-4 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -225,7 +225,7 @@ function DashboardContent() {
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold">Welcome, {teacherData.firstName} {teacherData.lastName}!</h3>
+                <h3 className="font-semibold">Welcome, {teacher.firstName} {teacher.lastName}!</h3>
                 <p className="text-white/80 text-sm">Access your personalized teacher dashboard for class management and insights.</p>
               </div>
             </div>
