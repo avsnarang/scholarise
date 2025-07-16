@@ -5,6 +5,7 @@ import { api } from "@/utils/api";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -101,10 +102,14 @@ function StatsCard({ title, value, description, icon, loading = false, trend, co
 }
 
 function TeacherDashboardContent() {
-  const { teacherId, isTeacher, teacher: teacherProfile } = useUserRole();
+  const { teacherId, isTeacher, teacher: teacherProfile, isSuperAdmin } = useUserRole();
+  const { isSuperAdmin: isPermissionsSuperAdmin } = usePermissions();
   const { currentSessionId } = useAcademicSessionContext();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Check if user is superadmin
+  const isEffectiveSuperAdmin = isSuperAdmin || isPermissionsSuperAdmin;
 
   // Debug logging
   console.log("Teacher Dashboard Debug:", {
@@ -132,14 +137,17 @@ function TeacherDashboardContent() {
     queryEnabled: !!user?.id
   });
 
-  // Fetch teacher dashboard data
+  // Determine if we should run the dashboard query
+  const shouldFetchDashboard = (!!teacherId && isTeacher) || (isEffectiveSuperAdmin && !!teacherId);
+  
+  // Fetch teacher dashboard data - only when we have valid parameters
   const { data: dashboardData, isLoading, error } = api.teacher.getDashboardData.useQuery(
     {
-      teacherId: teacherId || "",
+      teacherId: teacherId || "invalid", // This will only be called when enabled=true, so teacherId will exist
       sessionId: currentSessionId || undefined,
     },
     {
-      enabled: !!teacherId && isTeacher,
+      enabled: shouldFetchDashboard,
       refetchOnWindowFocus: false,
     }
   );
@@ -148,8 +156,8 @@ function TeacherDashboardContent() {
   if (error) {
     console.error("Teacher Dashboard Error:", {
       error,
-      errorMessage: error.message,
-      errorData: error.data,
+      errorMessage: error?.message || "Unknown error",
+      errorData: error?.data,
       teacherId,
       isTeacher,
       currentSessionId
@@ -171,10 +179,10 @@ function TeacherDashboardContent() {
                   hasTeacherData: !!teacherProfile,
                   currentSessionId,
                   userId: user?.id,
-                  errorMessage: error.message,
-                  errorData: error.data,
+                  errorMessage: error?.message || "Unknown error",
+                  errorData: error?.data,
                   teacherDebugData,
-                  teacherDebugError: teacherDebugError?.message
+                  teacherDebugError: (teacherDebugError as any)?.message
                 }, null, 2)}
               </pre>
             </details>
@@ -184,8 +192,51 @@ function TeacherDashboardContent() {
     );
   }
 
-  // Show loading if we don't have teacher ID yet but we should
-  if (isTeacher && !teacherId) {
+  // Show loading if we don't have teacher ID yet but we should (only for actual teachers, not superadmins)
+  if (isTeacher && !teacherId && !isEffectiveSuperAdmin) {
+    // Check if the teacher query has completed to determine if it's a missing record issue
+    if (teacherDebugData === null && !teacherDebugError) {
+      // User is marked as teacher but no teacher record exists
+      return (
+        <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
+          <AlertCircle className="h-12 w-12 text-amber-500" />
+          <div className="text-center max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900">Teacher Profile Not Found</h3>
+            <p className="text-gray-600 mt-2">
+              You are registered as a teacher, but your teacher profile is not set up in the system.
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Please contact your administrator to create your teacher profile.
+            </p>
+            <div className="mt-4 space-y-2">
+              <Button asChild variant="outline">
+                <Link href="/dashboard">Go to Main Dashboard</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/staff/teachers">View All Teachers</Link>
+              </Button>
+            </div>
+            {process.env.NODE_ENV === 'development' && (
+              <details className="mt-4 text-left">
+                <summary className="cursor-pointer text-sm text-gray-500">Debug Info (Development Only)</summary>
+                <pre className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded max-w-md overflow-auto">
+                  {JSON.stringify({
+                    userId: user?.id,
+                    isTeacher,
+                    teacherId,
+                    teacherDebugData,
+                    teacherDebugError: (teacherDebugError as any)?.message,
+                    solution: "Create a Teacher record with clerkId = " + user?.id
+                  }, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Still loading teacher data
     return (
       <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>
@@ -201,7 +252,42 @@ function TeacherDashboardContent() {
                   isTeacher,
                   teacherId,
                   teacherDebugData,
-                  teacherDebugError: teacherDebugError?.message
+                  teacherDebugError: (teacherDebugError as any)?.message
+                }, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Special case for superadmins without teacher records
+  if (isEffectiveSuperAdmin && !teacherId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
+        <GraduationCap className="h-12 w-12 text-gray-400" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-gray-900">Teacher Dashboard Preview</h3>
+          <p className="text-gray-600">As a super administrator, you can view the teacher dashboard layout, but you don't have teacher-specific data.</p>
+          <div className="mt-4">
+            <Button asChild variant="outline">
+              <Link href="/staff/teachers">View All Teachers</Link>
+            </Button>
+          </div>
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500">Debug Info (Development Only)</summary>
+              <pre className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded max-w-md overflow-auto">
+                {JSON.stringify({
+                  userId: user?.id,
+                  isTeacher,
+                  isSuperAdmin,
+                  isPermissionsSuperAdmin,
+                  isEffectiveSuperAdmin,
+                  teacherId,
+                  teacherDebugData,
+                  teacherDebugError: (teacherDebugError as any)?.message
                 }, null, 2)}
               </pre>
             </details>
@@ -234,7 +320,7 @@ function TeacherDashboardContent() {
                   queryEnabled: !!teacherId && isTeacher,
                   userId: user?.id,
                   teacherDebugData,
-                  teacherDebugError: teacherDebugError?.message
+                  teacherDebugError: (teacherDebugError as any)?.message
                 }, null, 2)}
               </pre>
             </details>
@@ -646,17 +732,40 @@ function TeacherDashboardContent() {
 }
 
 export default function TeacherDashboard() {
-  const { isTeacher, teacherId } = useUserRole();
+  const { isTeacher, teacherId, isSuperAdmin } = useUserRole();
+  const { isSuperAdmin: isPermissionsSuperAdmin } = usePermissions();
 
-  // Check if user is a teacher
-  if (!isTeacher || !teacherId) {
+  // Allow access for teachers or superadmins
+  const hasAccess = isTeacher || isSuperAdmin || isPermissionsSuperAdmin;
+  const effectiveTeacherId = teacherId || "superadmin-access";
+
+  // Check if user has access (teacher or superadmin)
+  if (!hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
         <AlertCircle className="h-12 w-12 text-red-500" />
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-900">Access Denied</h3>
-          <p className="text-gray-600">This dashboard is only available for teachers. Please contact your administrator if you believe this is an error.</p>
+          <p className="text-gray-600">This dashboard is only available for teachers and administrators. Please contact your administrator if you believe this is an error.</p>
         </div>
+      </div>
+    );
+  }
+
+  // If superadmin but no teacher record, show a special message
+  if ((isSuperAdmin || isPermissionsSuperAdmin) && !isTeacher && !teacherId) {
+    return (
+      <div className="w-full p-6 bg-white min-h-screen">
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+            <span className="text-blue-800 font-medium">Super Admin Access</span>
+          </div>
+          <p className="text-blue-700 text-sm mt-1">
+            You're viewing this as a super administrator. This dashboard is designed for teachers.
+          </p>
+        </div>
+        <TeacherDashboardContent />
       </div>
     );
   }

@@ -23,7 +23,7 @@ import {
   Badge,
   CategoryBar,
 } from "@tremor/react";
-import { TrendingUp, TrendingDown, Users, GraduationCap, Building2, DollarSign, Bus, BookOpen } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, GraduationCap, Building2, DollarSign, Bus, BookOpen, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VerticalBarChart from "@/components/ui/vertical-bar-chart";
 import TabbedVerticalBarChart from "@/components/ui/tabbed-vertical-bar-chart";
@@ -32,6 +32,7 @@ import { formatIndianCurrency } from "@/lib/utils";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function LoadingSkeleton() {
@@ -54,7 +55,9 @@ function DashboardContent() {
   const { data: branchesStats, isLoading } = api.dashboard.getAllBranchesStats.useQuery();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
-  const { isTeacher, teacher } = useUserRole();
+  const { isTeacher, teacher, teacherId } = useUserRole();
+  const searchParams = useSearchParams();
+  const teacherSetupNeeded = searchParams.get('teacherSetupNeeded');
 
   // Fetch finance data for the charts
   const { data: financeAnalytics } = api.finance.getFeeCollectionAnalytics.useQuery(
@@ -216,8 +219,30 @@ function DashboardContent() {
 
     return (
     <div className="space-y-8 pb-8">
+      {/* Teacher Setup Needed Banner */}
+      {(isTeacher && (!teacherId || teacherSetupNeeded)) && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Teacher Profile Setup Required</h3>
+                <p className="text-white/80 text-sm">Your teacher profile needs to be set up to access the teacher dashboard. Please contact your administrator.</p>
+              </div>
+            </div>
+            <Link href="/staff/teachers">
+              <Button variant="secondary" size="sm" className="bg-white text-amber-600 hover:bg-white/90">
+                View Teachers
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Teacher Dashboard Link Banner */}
-      {isTeacher && teacher && (
+      {isTeacher && teacher && teacherId && !teacherSetupNeeded && (
         <div className="bg-gradient-to-r from-[#00501B] to-[#00501B]/80 rounded-lg p-4 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -229,7 +254,7 @@ function DashboardContent() {
                 <p className="text-white/80 text-sm">Access your personalized teacher dashboard for class management and insights.</p>
               </div>
             </div>
-            <Link href="/teachers/dashboard">
+            <Link href="/staff/teachers/dashboard">
               <Button variant="secondary" size="sm" className="bg-white text-[#00501B] hover:bg-white/90">
                 Go to Teacher Dashboard
               </Button>

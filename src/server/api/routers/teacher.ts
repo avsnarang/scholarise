@@ -1198,7 +1198,7 @@ export const teacherRouter = createTRPCRouter({
         try {
           // Process each teacher in the batch
           const batchResults = await ctx.db.$transaction(async (prisma) => {
-            const processedTeachers = [];
+            const processedTeachers: any[] = [];
 
             for (const [index, teacherData] of batch.entries()) {
               const globalIndex = batchIndex * batchSize + index;
@@ -1505,8 +1505,7 @@ export const teacherRouter = createTRPCRouter({
             id: section.id,
             name: section.name,
             className: section.class.name,
-            studentCount: section._count.students,
-            totalClassStudents: section.class._count.students
+            studentCount: section._count.students
           })),
           subjectAssignments: teacher.subjectAssignments.map((assignment: any) => ({
             id: assignment.id,
