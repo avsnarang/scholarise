@@ -424,25 +424,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Leave Management",
-      href: "/leaves/dashboard",
+      href: "/leave-management",
       icon: Calendar,
       permissions: navItemPermissions.leaves,
       children: [
-        {
-          title: "Dashboard",
-          href: "/leaves/dashboard",
-          permissions: navItemPermissions.leaves,
-        },
-        {
-          title: "Leave Applications",
-          href: "/leaves",
-          permissions: navItemPermissions.leaveApplications,
-        },
-        {
-          title: "Leave Policies",
-          href: "/leaves?tab=policies",
-          permissions: navItemPermissions.leavePolicies,
-        },
+                  {
+            title: "Apply for Leave",
+            href: "/leave-management/application",
+            permissions: navItemPermissions.leaveApplications,
+          },
+          {
+            title: "Manage Leave Policies",
+            href: "/leave-management/policies",
+            permissions: navItemPermissions.leavePolicies,
+          },
       ],
     },
     {

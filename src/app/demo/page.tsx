@@ -185,16 +185,12 @@ const data = {
       icon: Calendar as unknown as LucideIcon,
       items: [
         {
-          title: "Dashboard",
-          url: "/leaves/dashboard",
-        },
-        {
           title: "Leave Applications",
-          url: "/leaves",
+          url: "/leaves/application",
         },
         {
           title: "Leave Policies",
-          url: "/leaves?tab=policies",
+          url: "/leaves/policies",
         },
       ],
     },

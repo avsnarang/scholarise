@@ -436,7 +436,7 @@ function TeacherDashboardContent() {
                 <span className="text-sm">Student Attendance</span>
               </Button>
             </Link>
-            <Link href="/leaves">
+            <Link href="/leaves/application">
               <Button 
                 variant="outline" 
                 className="w-full h-20 flex flex-col items-center justify-center space-y-2 hover:bg-[#00501B] hover:text-white transition-colors"
@@ -679,7 +679,7 @@ function TeacherDashboardContent() {
                   )}
                 </div>
                 
-                <Link href="/leaves">
+                <Link href="/leaves/application">
                   <Button className="w-full mt-4">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Apply for Leave

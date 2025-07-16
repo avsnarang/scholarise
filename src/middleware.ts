@@ -89,8 +89,9 @@ const routePermissions: Record<string, string[]> = {
   '/attendance-records': ['view_attendance'],
   
   // Leaves
-  '/leaves': ['view_leaves'],
-  '/leaves/dashboard': ['view_leaves'],
+  '/leaves': ['view_leaves'], // Redirects to /leaves/application
+  '/leaves/application': ['view_leaves'],
+  '/leaves/policies': ['manage_leave_policies'],
   
   // Examination
   '/examination': ['view_examinations'],
