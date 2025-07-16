@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { api } from "@/utils/api";
@@ -11,15 +12,22 @@ import { LeaveApplicationsList } from "@/components/leaves/leave-applications-li
 import { LeavePoliciesList } from "@/components/leaves/leave-policies-list";
 import { LeaveBalanceCard } from "@/components/leaves/leave-balance-card";
 import type { LeaveBalance } from "@/components/leaves/leave-balance-card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Calendar, ClipboardList, Settings, AlertCircle, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LeavesPage() {
   const [activeTab, setActiveTab] = useState("applications");
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, teacherId, employeeId } = useUserRole();
   const { currentBranchId, isLoading: isLoadingBranch } = useBranchContext();
 
   // Fetch leave policies
-  const { data: policies, isLoading: isLoadingPolicies, error: policiesError } = api.leave.getPolicies.useQuery(
+  const { 
+    data: policies, 
+    isLoading: isLoadingPolicies, 
+    error: policiesError,
+    refetch: refetchPolicies 
+  } = api.leave.getPolicies.useQuery(
     { branchId: currentBranchId || "" },
     { 
       enabled: !!currentBranchId,
@@ -28,21 +36,42 @@ export default function LeavesPage() {
     }
   );
 
-  // Fetch leave balance
-  const { data: leaveBalance, isLoading: isLoadingBalance } = api.leave.getLeaveBalance.useQuery(
+  // Fetch leave balance with auto-initialization
+  const { 
+    data: leaveBalance, 
+    isLoading: isLoadingBalance,
+    error: balanceError,
+    refetch: refetchBalance 
+  } = api.leave.getLeaveBalance.useQuery(
     {
       teacherId,
       employeeId,
       year: new Date().getFullYear(),
+      branchId: currentBranchId || "",
     },
     { 
-      enabled: !!(teacherId || employeeId),
+      enabled: !!(teacherId || employeeId) && !!currentBranchId,
       retry: 3,
       retryDelay: 1000
     }
   );
 
+  // Initialize leave balances mutation
+  const initializeBalances = api.leave.initializeLeaveBalances.useMutation({
+    onSuccess: (result) => {
+      void refetchBalance();
+      if (result.initialized > 0) {
+        // Show success message
+        console.log(`Initialized ${result.initialized} leave balances`);
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to initialize leave balances:", error);
+    },
+  });
+
   const isLoading = isLoadingBranch || isLoadingPolicies;
+  const isStaffMember = isTeacher || isEmployee;
 
   if (isLoading) {
     return (
@@ -57,15 +86,30 @@ export default function LeavesPage() {
     return (
       <div className="container mx-auto py-6 text-center">
         <h1 className="text-3xl font-bold text-[#00501B] mb-4">Leave Management</h1>
-        <div className="py-8 text-center">
-          <p className="text-destructive">Error loading leave policies</p>
-          <p className="text-muted-foreground mt-2">
-            Please try refreshing the page or contact support.
-          </p>
-        </div>
+        <Alert className="max-w-md mx-auto">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading leave policies: {policiesError.message}
+            <Button 
+              onClick={() => refetchPolicies()} 
+              variant="outline" 
+              size="sm" 
+              className="ml-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
+
+  // Check if staff member has any policies available
+  const availablePolicies = policies?.filter(policy => {
+    const userRole = isTeacher ? "Teacher" : "Employee";
+    return policy.applicableRoles.includes(userRole);
+  }) || [];
 
   return (
     <div className="container-fluid px-6 py-6 space-y-8">
@@ -76,64 +120,146 @@ export default function LeavesPage() {
             Manage leave applications and policies for your institution
           </p>
         </div>
+        
+        {/* Quick Actions */}
+        {isStaffMember && availablePolicies.length > 0 && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowApplicationForm(!showApplicationForm)}
+              className="bg-[#00501B] hover:bg-[#004016]"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Apply for Leave
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Staff member warning if no policies available */}
+      {isStaffMember && availablePolicies.length === 0 && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-700">
+            No leave policies are currently available for your role. Please contact your administrator.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="bg-slate-100 p-1">
-          <TabsTrigger value="applications" className="data-[state=active]:bg-white data-[state=active]:text-[#00501B] data-[state=active]:shadow">Leave Applications</TabsTrigger>
+          <TabsTrigger 
+            value="applications" 
+            className="data-[state=active]:bg-white data-[state=active]:text-[#00501B] data-[state=active]:shadow"
+          >
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Leave Applications
+          </TabsTrigger>
           {(isAdmin || isSuperAdmin) && (
-            <TabsTrigger value="policies" className="data-[state=active]:bg-white data-[state=active]:text-[#00501B] data-[state=active]:shadow">Leave Policies</TabsTrigger>
+            <TabsTrigger 
+              value="policies" 
+              className="data-[state=active]:bg-white data-[state=active]:text-[#00501B] data-[state=active]:shadow"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Leave Policies
+            </TabsTrigger>
           )}
         </TabsList>
 
         <TabsContent value="applications" className="space-y-8">
-          {/* Leave Balance Card - Only show for teachers and employees, not for admins */}
-          {(isTeacher || isEmployee) && (
+          {/* Leave Balance Cards - Staff Only */}
+          {isStaffMember && (
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#00501B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Leave Balance
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-slate-800 flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-[#00501B]" />
+                  Your Leave Balance
+                </h2>
+                {balanceError && (
+                  <Button
+                    onClick={() => refetchBalance()}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry
+                  </Button>
+                )}
+              </div>
+              
               {isLoadingBalance ? (
-                <div className="flex justify-center items-center py-8 bg-white rounded-lg border border-slate-200">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#00501B]" />
-                  <span className="ml-2 text-slate-600">Loading leave balances...</span>
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2">Loading leave balances...</span>
                 </div>
+              ) : balanceError ? (
+                <Alert className="bg-red-50 border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-700">
+                    Error loading leave balances: {balanceError.message}
+                  </AlertDescription>
+                </Alert>
               ) : leaveBalance && leaveBalance.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {leaveBalance.map((balance: LeaveBalance) => (
+                  {leaveBalance.map((balance) => (
                     <LeaveBalanceCard key={balance.id} balance={balance} />
                   ))}
                 </div>
               ) : (
-                <Card className="border-slate-200 shadow-sm">
-                  <CardContent className="py-10 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p className="text-slate-500 font-medium">No leave balances found</p>
-                    <p className="text-slate-400 text-sm mt-1">Please contact your administrator to set up leave policies.</p>
+                <Card className="border-dashed border-2 border-slate-200">
+                  <CardContent className="pt-6 text-center">
+                    <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-600 mb-2">No Leave Balances Found</h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Your leave balances will be automatically initialized when policies are available.
+                    </p>
+                    {availablePolicies.length > 0 && (
+                      <Button
+                        onClick={() => {
+                          if (currentBranchId) {
+                            // Initialize balances for each available policy
+                            availablePolicies.forEach(policy => {
+                              initializeBalances.mutate({
+                                policyId: policy.id,
+                                branchId: currentBranchId,
+                              });
+                            });
+                          }
+                        }}
+                        variant="outline"
+                        disabled={initializeBalances.isPending}
+                      >
+                        {initializeBalances.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Initialize Leave Balances
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
             </div>
           )}
 
-          {/* Leave Application Form */}
-          {(isTeacher || isEmployee) && (
+          {/* Leave Application Form - Staff Only */}
+          {isStaffMember && availablePolicies.length > 0 && (showApplicationForm || (!leaveBalance || leaveBalance.length === 0)) && (
             <div>
               <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#00501B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
+                <Plus className="h-5 w-5 mr-2 text-[#00501B]" />
                 Apply for Leave
               </h2>
               <Card className="border-slate-200 shadow-sm">
-                <CardContent className="pt-6">
+                <CardHeader>
+                  <CardTitle>New Leave Application</CardTitle>
+                  <CardDescription>
+                    Fill out the form below to submit a new leave application. 
+                    Make sure to provide all required details for faster processing.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <LeaveApplicationForm
-                    policies={policies || []}
+                    policies={availablePolicies}
                     teacherId={teacherId}
                     employeeId={employeeId}
                   />
@@ -145,9 +271,7 @@ export default function LeavesPage() {
           {/* Leave Applications List */}
           <div>
             <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#00501B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+              <ClipboardList className="h-5 w-5 mr-2 text-[#00501B]" />
               Leave Applications
             </h2>
             <Card className="border-slate-200 shadow-sm">
@@ -163,17 +287,37 @@ export default function LeavesPage() {
         </TabsContent>
 
         {(isAdmin || isSuperAdmin) && (
-          <TabsContent value="policies">
+          <TabsContent value="policies" className="space-y-8">
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#00501B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                </svg>
-                Leave Policies
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-slate-800 flex items-center">
+                  <Settings className="h-5 w-5 mr-2 text-[#00501B]" />
+                  Leave Policies Management
+                </h2>
+                <div className="text-sm text-slate-500">
+                  {policies?.length || 0} policies configured
+                </div>
+              </div>
+              
               <Card className="border-slate-200 shadow-sm">
-                <CardContent className="pt-6">
-                  <LeavePoliciesList branchId={currentBranchId || ""} />
+                <CardHeader>
+                  <CardTitle>Manage Leave Policies</CardTitle>
+                  <CardDescription>
+                    Configure leave policies, manage applicable roles, and set leave entitlements 
+                    for your organization. Changes will affect all staff members.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {currentBranchId ? (
+                    <LeavePoliciesList branchId={currentBranchId} />
+                  ) : (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No branch selected. Please select a branch to manage leave policies.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </CardContent>
               </Card>
             </div>

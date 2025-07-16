@@ -120,7 +120,6 @@ export default function MarkAttendancePage() {
   const [progress, setProgress] = useState(0);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [attendanceMarked, setAttendanceMarked] = useState(false);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [attendanceType, setAttendanceType] = useState<AttendanceType>("IN");
@@ -152,8 +151,21 @@ export default function MarkAttendancePage() {
     if (canMarkSelfAttendance && !canMarkAllStaffAttendance && !canMarkAttendance) {
       return teacherId;
     }
-    // Otherwise use selected teacherId if admin/superadmin and a teacher is selected
-    return (isSuperAdmin || canMarkAllStaffAttendance) && selectedTeacherId ? selectedTeacherId : teacherId;
+    // For superadmin/users with mark all staff permission:
+    // 1. If they selected a teacher, use that teacherId
+    // 2. If no teacher selected but they have their own teacherId, use their own
+    // 3. Otherwise return undefined (will show teacher selection requirement)
+    if (isSuperAdmin || canMarkAllStaffAttendance) {
+      if (selectedTeacherId) {
+        return selectedTeacherId;
+      } else if (teacherId) {
+        // Allow superadmin to mark their own attendance if they have a teacher profile
+        return teacherId;
+      }
+      return undefined; // This will require teacher selection
+    }
+    // Default fallback
+    return teacherId;
   }, [isSuperAdmin, canMarkSelfAttendance, canMarkAllStaffAttendance, canMarkAttendance, selectedTeacherId, teacherId]);
 
   // Create a stable date value for today (midnight)
@@ -200,17 +212,24 @@ export default function MarkAttendancePage() {
     }
   };
 
-  // Fetch attendance data on initial mount
+  // Fetch attendance data on initial mount and when effectiveTeacherId changes
   React.useEffect(() => {
     // Only fetch if we have valid identification
     if (userId && (effectiveTeacherId || employeeId)) {
       fetchAttendanceData();
+    } else {
+      // Clear attendance data if no valid identification
+      setTodayAttendance(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array means this runs once on mount
+  }, [fetchAttendanceData, effectiveTeacherId, employeeId, userId]);
 
   // Determine available attendance types based on last record
   const availableTypes = React.useMemo(() => {
+    // If superadmin/user with mark all staff permission hasn't selected a teacher yet, show message
+    if ((isSuperAdmin || canMarkAllStaffAttendance) && !effectiveTeacherId && !employeeId) {
+      return [] as AttendanceType[]; // Empty array means show teacher selection requirement
+    }
+
     if (!todayAttendance) {
       return ["IN"] as AttendanceType[];
     }
@@ -232,7 +251,7 @@ export default function MarkAttendancePage() {
       default:
         return ["IN"] as AttendanceType[];
     }
-  }, [todayAttendance]);
+  }, [todayAttendance, isSuperAdmin, canMarkAllStaffAttendance, effectiveTeacherId, employeeId]);
 
   // Update attendance type when available types change
   useEffect(() => {
@@ -266,7 +285,6 @@ export default function MarkAttendancePage() {
   // Simplify the attendance state management
   React.useEffect(() => {
     if (selectedTeacherId) {
-      setAttendanceMarked(false);
       setDistance(null);
       setErrorMessage(null);
       setProgress(0);
@@ -278,7 +296,6 @@ export default function MarkAttendancePage() {
     setDistance(null);
     setErrorMessage(null);
     setProgress(0);
-    setAttendanceMarked(false);
   };
 
   const handleSelectTeacher = (teacherId: string) => {
@@ -286,7 +303,6 @@ export default function MarkAttendancePage() {
     setDistance(null);
     setErrorMessage(null);
     setProgress(0);
-    setAttendanceMarked(false);
   };
 
   const checkLocation = async () => {
@@ -317,8 +333,7 @@ export default function MarkAttendancePage() {
       setDistance(calculatedDistance);
       
       // Fetch attendance data when checking location
-      const result = await fetchAttendanceData();
-      setAttendanceMarked(!!result);
+      await fetchAttendanceData();
       
       setProgress(100);
     } catch (error) {
@@ -334,9 +349,17 @@ export default function MarkAttendancePage() {
       return;
     }
 
-    // If superadmin or has mark all staff permission and no teacher selected, show error
-    if ((isSuperAdmin || canMarkAllStaffAttendance) && !selectedTeacherId) {
-      toast.error("Please select a teacher first");
+    // Check if we have a valid teacher/employee ID to mark attendance for
+    if (!effectiveTeacherId && !employeeId) {
+      toast.error((isSuperAdmin || canMarkAllStaffAttendance) 
+        ? "Please select a teacher to mark attendance for" 
+        : "Unable to identify user for attendance marking");
+      return;
+    }
+
+    // Check if attendance types are available
+    if (availableTypes.length === 0) {
+      toast.error("No attendance options are currently available");
       return;
     }
 
@@ -355,16 +378,17 @@ export default function MarkAttendancePage() {
       distance,
       type: attendanceType,
       isWithinAllowedArea: distance <= selectedLocation.radius,
-      ...(isSuperAdmin || canMarkAllStaffAttendance) && selectedTeacherId ? { teacherId: selectedTeacherId } : {},
-      ...(!isSuperAdmin && !canMarkAllStaffAttendance && teacherId) ? { teacherId } : {},
-      ...(!isSuperAdmin && !canMarkAllStaffAttendance && employeeId) ? { employeeId } : {},
+      ...(effectiveTeacherId ? { teacherId: effectiveTeacherId } : {}),
+      ...(employeeId && !effectiveTeacherId ? { employeeId } : {}),
     };
 
     // Record attendance
     recordAttendance(attendanceData, {
       onSuccess: async () => {
-        setAttendanceMarked(false); // Don't set to true since multiple records are allowed
-        toast.success(`${attendanceType} attendance marked successfully`);
+        const teacherName = effectiveTeacherId && selectedTeacherId 
+          ? teachers?.items?.find((t: any) => t.id === selectedTeacherId)?.firstName 
+          : "Your";
+        toast.success(`${attendanceType} attendance marked successfully${teacherName !== "Your" ? ` for ${teacherName}` : ""}`);
         // Explicitly fetch data again
         await fetchAttendanceData();
       },
@@ -391,8 +415,7 @@ export default function MarkAttendancePage() {
               size="sm"
               className="flex items-center"
               onClick={async () => {
-                const result = await fetchAttendanceData();
-                setAttendanceMarked(!!result);
+                await fetchAttendanceData();
               }}
             >
               <RefreshCw className="mr-2 h-3.5 w-3.5" />
@@ -422,34 +445,16 @@ export default function MarkAttendancePage() {
           </Card>
         )}
 
-        {/* Attendance Already Marked */}
-        {attendanceMarked && (
-          <Card className="border-green-200 bg-green-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-green-600">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Attendance Already Marked
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-green-700">
-                {isSuperAdmin && selectedTeacherId ? "The selected teacher has" : "You have"} already marked 
-                attendance today at{" "}
-                {todayAttendance?.timestamp
-                  ? format(new Date(todayAttendance.timestamp), "h:mm a")
-                  : "an earlier time"}.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Main Attendance Form */}
-        {!attendanceMarked && !identityError && (
+        {!identityError && (
           <Card>
             <CardHeader>
               <CardTitle>Mark Attendance</CardTitle>
               <CardDescription>
-                Mark your attendance for today by checking in at your designated location.
+                {todayAttendance 
+                  ? `Mark your next attendance action. Last recorded: ${todayAttendance.type} at ${format(new Date(todayAttendance.timestamp), "h:mm a")}`
+                  : "Mark your attendance for today by checking in at your designated location."
+                }
               </CardDescription>
             </CardHeader>
 
@@ -457,30 +462,46 @@ export default function MarkAttendancePage() {
               {/* Attendance Type Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Attendance Type</label>
-                <Select value={attendanceType} onValueChange={handleAttendanceTypeChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select attendance type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        <div className="flex items-center">
-                          {type === "IN" && <LogIn className="mr-2 h-3.5 w-3.5 text-green-500" />}
-                          {type === "OUT" && <LogOut className="mr-2 h-3.5 w-3.5 text-red-500" />}
-                          {type === "BRANCH_TRANSFER_OUT" && <ArrowRight className="mr-2 h-3.5 w-3.5 text-orange-500" />}
-                          {type === "BRANCH_TRANSFER_IN" && <ArrowLeft className="mr-2 h-3.5 w-3.5 text-blue-500" />}
-                          <span>{type.replace(/_/g, " ")}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {availableTypes.length > 0 ? (
+                  <Select value={attendanceType} onValueChange={handleAttendanceTypeChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select attendance type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          <div className="flex items-center">
+                            {type === "IN" && <LogIn className="mr-2 h-3.5 w-3.5 text-green-500" />}
+                            {type === "OUT" && <LogOut className="mr-2 h-3.5 w-3.5 text-red-500" />}
+                            {type === "BRANCH_TRANSFER_OUT" && <ArrowRight className="mr-2 h-3.5 w-3.5 text-orange-500" />}
+                            {type === "BRANCH_TRANSFER_IN" && <ArrowLeft className="mr-2 h-3.5 w-3.5 text-blue-500" />}
+                            <span>{type.replace(/_/g, " ")}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <Info className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-blue-700">
+                      {(isSuperAdmin || canMarkAllStaffAttendance) && !effectiveTeacherId && !employeeId
+                        ? "Please select a teacher below to view their available attendance options."
+                        : "No attendance options available at this time."}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Teacher Selection for SuperAdmin */}
-              {isSuperAdmin && (
+              {(isSuperAdmin || canMarkAllStaffAttendance) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Select Teacher</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Select Teacher
+                    {!effectiveTeacherId && !employeeId && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </label>
                   {isLoadingTeachers ? (
                     <Skeleton className="h-10 w-full" />
                   ) : (
@@ -494,11 +515,19 @@ export default function MarkAttendancePage() {
                             <div className="flex items-center">
                               <Users className="mr-2 h-3.5 w-3.5 text-gray-500" />
                               <span>{`${teacher.firstName} ${teacher.lastName}`}</span>
+                              {teacher.employeeCode && (
+                                <span className="ml-2 text-xs text-gray-500">({teacher.employeeCode})</span>
+                              )}
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  )}
+                  {!effectiveTeacherId && !employeeId && (
+                    <p className="text-xs text-gray-600">
+                      Required: You must select a teacher to mark attendance for them.
+                    </p>
                   )}
                 </div>
               )}
@@ -650,7 +679,7 @@ export default function MarkAttendancePage() {
                 variant="outline"
                 className="flex-1 gap-2"
                 onClick={checkLocation}
-                disabled={!selectedLocationId || isCheckingLocation || (isSuperAdmin && !selectedTeacherId)}
+                disabled={!selectedLocationId || isCheckingLocation || (!effectiveTeacherId && !employeeId) || availableTypes.length === 0}
               >
                 {isCheckingLocation ? (
                   <>
@@ -669,7 +698,8 @@ export default function MarkAttendancePage() {
                 onClick={markAttendance}
                 disabled={
                   !selectedLocationId ||
-                  (isSuperAdmin && !selectedTeacherId) ||
+                  (!effectiveTeacherId && !employeeId) ||
+                  availableTypes.length === 0 ||
                   distance === null ||
                   distance > (locations.find((loc: Location) => loc.id === selectedLocationId)?.radius || 0) ||
                   isRecordingAttendance

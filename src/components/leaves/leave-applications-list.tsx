@@ -20,7 +20,23 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreHorizontal, Filter, RefreshCw } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useBranchContext } from "@/hooks/useBranchContext";
 
 interface LeaveApplicationsListProps {
   teacherId?: string;
@@ -37,27 +53,45 @@ export function LeaveApplicationsList({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [comments, setComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  // For admin users, don't require teacherId or employeeId
-  const shouldFetchAll = isAdmin && !teacherId && !employeeId;
   
-  // Only fetch if we have a teacherId/employeeId OR we're an admin
-  const { data: applications, isLoading, error } = api.leave.getApplications.useQuery(
-    {
-      teacherId,
-      employeeId,
-    },
-    { 
-      enabled: !!(teacherId || employeeId || shouldFetchAll)
-    }
-  );
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 20;
+
+  const { toast } = useToast();
+  const { currentBranchId } = useBranchContext();
+
+  // Build query parameters
+  const queryParams = {
+    teacherId,
+    employeeId,
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(isAdmin && currentBranchId ? { branchId: currentBranchId } : {}),
+    limit: pageSize,
+    offset: currentPage * pageSize,
+  };
+
+  const { 
+    data: applicationsData, 
+    isLoading, 
+    error,
+    refetch 
+  } = api.leave.getApplications.useQuery(queryParams, {
+    refetchOnWindowFocus: false,
+    // keepPreviousData: true,
+  });
 
   const utils = api.useContext();
 
   const updateStatus = api.leave.updateApplicationStatus.useMutation({
     onSuccess: () => {
       void utils.leave.getApplications.invalidate();
+      void utils.leave.getLeaveBalance.invalidate();
       toast({
         title: "Status updated",
         description: "The leave application status has been updated.",
@@ -65,6 +99,26 @@ export function LeaveApplicationsList({
       setIsDialogOpen(false);
       setSelectedApplication(null);
       setComments("");
+      setIsSubmitting(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    },
+  });
+
+  const bulkUpdateStatus = api.leave.bulkUpdateApplicationStatus.useMutation({
+    onSuccess: (result) => {
+      void utils.leave.getApplications.invalidate();
+      void utils.leave.getLeaveBalance.invalidate();
+      toast({
+        title: "Bulk update completed",
+        description: `Successfully updated ${result.updated} applications.`,
+      });
     },
     onError: (error) => {
       toast({
@@ -115,7 +169,42 @@ export function LeaveApplicationsList({
     }
   };
 
-  if (isLoading) {
+  const handleBulkAction = (action: "approve" | "reject", applicationIds: string[]) => {
+    if (applicationIds.length === 0) {
+      toast({
+        title: "No applications selected",
+        description: "Please select at least one application.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    bulkUpdateStatus.mutate({
+      applicationIds,
+      status: action === "approve" ? "APPROVED" : "REJECTED",
+      comments: action === "reject" ? "Bulk rejection" : "Bulk approval",
+    });
+  };
+
+  // Filter applications based on search term
+  const filteredApplications = applicationsData?.applications?.filter(app => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const staffName = app.teacher 
+      ? `${app.teacher.firstName || ''} ${app.teacher.lastName || ''}`.trim()
+      : app.employee 
+      ? `${app.employee.firstName || ''} ${app.employee.lastName || ''}`.trim()
+      : '';
+    
+    return (
+      staffName.toLowerCase().includes(searchLower) ||
+      app.policy.name.toLowerCase().includes(searchLower) ||
+      app.reason.toLowerCase().includes(searchLower)
+    );
+  }) || [];
+
+  if (isLoading && currentPage === 0) {
     return (
       <div className="flex justify-center items-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -131,11 +220,19 @@ export function LeaveApplicationsList({
         <p className="text-muted-foreground mt-2">
           Please try refreshing the page or contact support.
         </p>
+        <Button 
+          onClick={() => refetch()} 
+          variant="outline" 
+          className="mt-4"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
       </div>
     );
   }
 
-  if (!applications?.length) {
+  if (!applicationsData?.applications?.length) {
     return (
       <div className="py-8 text-center">
         <p className="text-muted-foreground">No leave applications found.</p>
@@ -148,8 +245,89 @@ export function LeaveApplicationsList({
     );
   }
 
+  const totalPages = Math.ceil((applicationsData?.totalCount || 0) / pageSize);
+
   return (
     <>
+      {/* Filters and Controls */}
+      <div className="mb-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {isAdmin && (
+            <div className="text-sm text-muted-foreground">
+              Total: {applicationsData?.totalCount || 0} applications
+            </div>
+          )}
+        </div>
+
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg border">
+            <div>
+              <Label htmlFor="status-filter" className="text-sm font-medium">
+                Status
+              </Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger id="status-filter">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="search" className="text-sm font-medium">
+                Search
+              </Label>
+              <Input
+                id="search"
+                placeholder="Search by name, policy, or reason..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setSearchTerm("");
+                  setCurrentPage(0);
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Applications Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader className="bg-slate-50">
@@ -161,11 +339,11 @@ export function LeaveApplicationsList({
               <TableHead className="font-medium">Duration</TableHead>
               <TableHead className="font-medium">Status</TableHead>
               <TableHead className="font-medium">Reason</TableHead>
-              {isAdmin && <TableHead className="font-medium text-right">Actions</TableHead>}
+              <TableHead className="font-medium text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {applications.map((application) => (
+            {filteredApplications.map((application) => (
               <TableRow key={application.id} className="hover:bg-slate-50">
                 {isAdmin && (
                   <TableCell className="font-medium">
@@ -179,7 +357,14 @@ export function LeaveApplicationsList({
                     </div>
                   </TableCell>
                 )}
-                <TableCell>{application.policy.name}</TableCell>
+                <TableCell>
+                  <div>
+                    {application.policy.name}
+                    <div className="text-xs text-muted-foreground">
+                      {application.policy.isPaid ? "Paid" : "Unpaid"}
+                    </div>
+                  </div>
+                </TableCell>
                 <TableCell>{new Date(application.startDate).toLocaleDateString()}</TableCell>
                 <TableCell>{new Date(application.endDate).toLocaleDateString()}</TableCell>
                 <TableCell>
@@ -196,34 +381,83 @@ export function LeaveApplicationsList({
                 <TableCell>
                   <span className="line-clamp-2 max-w-[200px] text-sm">{application.reason}</span>
                 </TableCell>
-                {isAdmin && application.status === "PENDING" && (
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedApplication(application);
-                        setIsDialogOpen(true);
-                      }}
-                      className="text-[#00501B] border-[#00501B] hover:bg-[#00501B]/5"
-                    >
-                      Review
-                    </Button>
-                  </TableCell>
-                )}
-                {isAdmin && application.status !== "PENDING" && (
-                  <TableCell className="text-right">
+                <TableCell className="text-right">
+                  {isAdmin && application.status === "PENDING" ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedApplication(application);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          Review Application
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleBulkAction("approve", [application.id])}
+                          className="text-green-600"
+                        >
+                          Quick Approve
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleBulkAction("reject", [application.id])}
+                          className="text-red-600"
+                        >
+                          Quick Reject
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
                     <span className="text-sm text-muted-foreground">
                       {application.status.toLowerCase()}
                     </span>
-                  </TableCell>
-                )}
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, applicationsData?.totalCount || 0)} of {applicationsData?.totalCount || 0} applications
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0 || isLoading}
+            >
+              Previous
+            </Button>
+            
+            <span className="text-sm">
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+              disabled={currentPage >= totalPages - 1 || isLoading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Review Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

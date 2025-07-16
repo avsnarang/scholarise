@@ -122,13 +122,17 @@ async function main() {
     sections.push(sectionA, sectionB);
   }
 
+  // Seed leave policies
+  await seedLeavePolicies(prisma, branch.id);
+
   console.log('✅ Database seeded successfully!');
   console.log(`📊 Created:
     - 1 Branch: ${branch.name}
     - 1 Academic Session: ${session.name}
     - ${classes.length} Classes
     - ${teachers.length} Teachers
-    - ${sections.length} Sections`);
+    - ${sections.length} Sections
+    - Leave Policies`);
 }
 
 main()
