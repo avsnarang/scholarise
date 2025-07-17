@@ -60,6 +60,8 @@ export default function TeacherCourtesyCallsPage() {
     },
     {
       enabled: !!currentBranchId && !!teacherData?.id,
+      staleTime: 5 * 60 * 1000, // 5 minutes - don't refetch if data is less than 5 minutes old
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
     }
   );
 

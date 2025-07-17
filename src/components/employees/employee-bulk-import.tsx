@@ -324,11 +324,11 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
     try {
       await bulkImportMutation.mutateAsync({
         type: 'employee',
+        operation: 'bulk_import',
         title: `Bulk Employee Import - ${previewData.length} employees`,
         description: `Importing ${previewData.length} employees from ${file.name}`,
         items: previewData,
-        branchId: currentBranchId,
-        priority: 5
+        branchId: currentBranchId
       });
     } catch (error) {
       console.error("Error creating background task:", error);

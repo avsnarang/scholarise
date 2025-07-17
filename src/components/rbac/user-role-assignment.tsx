@@ -74,7 +74,15 @@ export function UserRoleAssignmentComponent({
   const [roleToRemove, setRoleToRemove] = useState<UserRoleAssignment | null>(null);
 
   // Queries
-  const { data: roles = [] } = api.role.getAll.useQuery();
+  const { data: rolesData = [] } = api.role.getAll.useQuery({});
+  
+  // Convert roles data to match expected interface
+  const roles = rolesData.map(role => ({
+    id: role.id,
+    name: role.name,
+    description: role.description || undefined,
+    isSystem: role.isSystem,
+  }));
   const { data: userRoles = [], refetch: refetchUserRoles } = api.role.getUserRoles.useQuery(
     { userId: selectedUserId },
     { enabled: !!selectedUserId }
@@ -89,7 +97,7 @@ export function UserRoleAssignmentComponent({
   const { data: employees = [] } = api.employee.getAll.useQuery();
 
   // Mutations
-  const assignRoleMutation = api.role.assignRole.useMutation({
+  const assignRoleMutation = api.role.assignToUser.useMutation({
     onSuccess: () => {
       toast.success("Role assigned successfully");
       refetchUserRoles();
@@ -101,7 +109,7 @@ export function UserRoleAssignmentComponent({
     },
   });
 
-  const removeRoleMutation = api.role.removeRole.useMutation({
+  const removeRoleMutation = api.role.removeFromUser.useMutation({
     onSuccess: () => {
       toast.success("Role removed successfully");
       refetchUserRoles();
@@ -131,11 +139,10 @@ export function UserRoleAssignmentComponent({
     });
   };
 
-  const handleRemoveRole = (roleAssignment: UserRoleAssignment) => {
+  const handleRemoveRole = (roleAssignment: any) => {
     removeRoleMutation.mutate({
       userId: roleAssignment.userId,
       roleId: roleAssignment.roleId,
-      branchId: roleAssignment.branchId,
     });
   };
 
@@ -279,7 +286,7 @@ export function UserRoleAssignmentComponent({
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {role?.permissions.length || 0} permissions
+                            {rolesData.find(r => r.id === role?.id)?.rolePermissions?.length || 0} permissions
                           </Badge>
                         </TableCell>
                         <TableCell>

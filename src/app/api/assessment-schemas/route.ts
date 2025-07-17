@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/server/db';
-import { auth } from '@clerk/nextjs/server';
+import { getServerUser } from '@/lib/supabase/auth';
 import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,13 +15,13 @@ export async function GET(request: NextRequest) {
 
     // Check if user is a teacher by looking up their teacher record
     const teacher = await db.teacher.findFirst({
-      where: { clerkId: userId },
+      where: { clerkId: user.id },
       select: { id: true, branchId: true }
     });
 
     // Check if user is a superadmin (assuming they have a user record with superadmin role)
     const userMetadata = await db.userRole.findFirst({
-      where: { userId: userId },
+      where: { userId: user.id },
       include: { role: true }
     });
 
@@ -146,8 +146,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -307,7 +307,7 @@ export async function POST(request: NextRequest) {
           branchId: String(branchId),
           totalMarks: Number(totalMarks) || 100,
           isActive: true,
-          createdBy: String(userId),
+          createdBy: String(user.id),
           appliedClasses: processedAppliedClasses, // Store the class-section selections
         },
       });
@@ -411,8 +411,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -684,8 +684,8 @@ export async function PATCH(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -798,8 +798,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

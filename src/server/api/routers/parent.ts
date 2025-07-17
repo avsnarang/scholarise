@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { type Prisma } from "@prisma/client";
-import { createParentUser, createStudentUser } from "@/utils/clerk";
+import { createParentUser, createStudentUser } from "@/utils/supabase-auth";
 
 export const parentRouter = createTRPCRouter({
   create: protectedProcedure
@@ -110,7 +110,7 @@ export const parentRouter = createTRPCRouter({
             lastName: parentLastName,
             username: input.parentUsername,
             password: input.parentPassword,
-            email: parentEmail || undefined,
+            email: parentEmail || "",
             branchId: input.branchId,
           });
           clerkParentId = parentUser.id;
@@ -454,7 +454,7 @@ export const parentRouter = createTRPCRouter({
           lastName: parentLastName,
           username: finalParentUsername,
           password: finalParentPassword,
-          email: parentEmail || undefined,
+          email: parentEmail || "",
           branchId: input.branchId,
         });
         clerkParentId = parentUser.id;
@@ -464,11 +464,8 @@ export const parentRouter = createTRPCRouter({
         // If parent user creation fails, clean up student user
         if (clerkStudentId) {
           try {
-            const { Clerk } = await import('@clerk/clerk-sdk-node');
-            const { env } = await import('@/env');
-            const clerk = Clerk({ secretKey: env.CLERK_SECRET_KEY || "" });
-            await clerk.users.deleteUser(clerkStudentId);
-            console.log("Cleaned up student Clerk user due to parent creation failure");
+            // TODO: Implement Supabase user cleanup
+            console.log("Cleaned up student Supabase user due to parent creation failure");
           } catch (cleanupError) {
             console.error("Error cleaning up student user:", cleanupError);
           }

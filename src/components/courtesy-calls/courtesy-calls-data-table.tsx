@@ -108,34 +108,164 @@ export function CourtesyCallsDataTable({
   const [globalFilter, setGlobalFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
-  // API calls with proper cache invalidation
+  // API calls with optimistic updates and targeted cache management
+  // This implementation prevents full page refreshes by:
+  // 1. Using optimistic updates for immediate UI feedback
+  // 2. Updating caches directly instead of invalidating all queries
+  // 3. Only invalidating stats queries which don't affect the main UI
   const createFeedbackMutation = api.courtesyCalls.create.useMutation({
-    onSuccess: () => {
-      // Invalidate all relevant queries to refresh data
-      void utils.courtesyCalls.getAll.invalidate();
-      void utils.courtesyCalls.getByStudentId.invalidate();
-      void utils.courtesyCalls.getStats.invalidate();
-      void utils.courtesyCalls.getTeacherStudents.invalidate();
+    onMutate: async (newFeedback) => {
+      // Cancel any outgoing refetches for student data
+      await utils.courtesyCalls.getByStudentId.cancel({ studentId: newFeedback.studentId });
+      
+      // Snapshot the previous value
+      const previousData = utils.courtesyCalls.getByStudentId.getData({ studentId: newFeedback.studentId });
+      
+      // Optimistically update to the new value
+      if (previousData) {
+        const optimisticFeedback = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          studentId: newFeedback.studentId,
+          callerId: 'current-user', // Will be replaced with actual data
+          callerType: 'TEACHER' as const,
+          callDate: newFeedback.callDate || new Date(),
+          purpose: newFeedback.purpose || null,
+          feedback: newFeedback.feedback,
+          followUp: newFeedback.followUp || null,
+          isPrivate: newFeedback.isPrivate || false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          branchId: 'current-branch',
+          employeeId: null,
+          teacherId: null,
+          Teacher: null,
+          Employee: null,
+        };
+        
+        utils.courtesyCalls.getByStudentId.setData(
+          { studentId: newFeedback.studentId },
+          {
+            ...previousData,
+            items: [optimisticFeedback, ...previousData.items],
+            totalCount: previousData.totalCount + 1,
+          }
+        );
+      }
+      
+      return { previousData, studentId: newFeedback.studentId };
     },
+    onError: (err, newFeedback, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousData) {
+        utils.courtesyCalls.getByStudentId.setData(
+          { studentId: context.studentId },
+          context.previousData
+        );
+      }
+    },
+         onSuccess: (data, variables) => {
+       // Update cache with actual server data and refresh only relevant queries
+       utils.courtesyCalls.getByStudentId.setData(
+         { studentId: variables.studentId },
+         (oldData) => {
+           if (!oldData) return oldData;
+           
+           // Replace the temporary optimistic entry with real data
+           const updatedItems = oldData.items.map(item => 
+             item.id.startsWith('temp-') ? data : item
+           ).filter((item, index, arr) => 
+             // Remove duplicates (keep only the real data)
+             arr.findIndex(i => i.id === item.id) === index
+           );
+           
+           return {
+             ...oldData,
+             items: updatedItems,
+           };
+         }
+       );
+       
+       // Note: We're not updating the student list cache here to avoid complexity
+       // The feedback history will update immediately due to optimistic updates above
+       // The student list will eventually reflect the updated feedback date on next refresh
+       
+       // Only invalidate stats, not the main data
+       void utils.courtesyCalls.getStats.invalidate();
+     },
   });
   
   const updateFeedbackMutation = api.courtesyCalls.update.useMutation({
-    onSuccess: () => {
-      // Invalidate all relevant queries to refresh data
-      void utils.courtesyCalls.getAll.invalidate();
-      void utils.courtesyCalls.getByStudentId.invalidate();
-      void utils.courtesyCalls.getStats.invalidate();
-      void utils.courtesyCalls.getTeacherStudents.invalidate();
+    onMutate: async (updatedFeedback) => {
+      // We need to find which student this feedback belongs to
+      // Since we don't have studentId in the update call, we'll need to get it from editingFeedback
+      const studentId = editingFeedback?.studentId;
+      if (!studentId) return;
+      
+      // Cancel any outgoing refetches
+      await utils.courtesyCalls.getByStudentId.cancel({ studentId });
+      
+      // Snapshot the previous value
+      const previousData = utils.courtesyCalls.getByStudentId.getData({ studentId });
+      
+      // Optimistically update the feedback
+      if (previousData) {
+        utils.courtesyCalls.getByStudentId.setData(
+          { studentId },
+          {
+            ...previousData,
+            items: previousData.items.map(item =>
+              item.id === updatedFeedback.id
+                ? { ...item, ...updatedFeedback, updatedAt: new Date() }
+                : item
+            ),
+          }
+        );
+      }
+      
+      return { previousData, studentId };
     },
+    onError: (err, updatedFeedback, context) => {
+      // Rollback on error
+      if (context?.previousData && context?.studentId) {
+        utils.courtesyCalls.getByStudentId.setData(
+          { studentId: context.studentId },
+          context.previousData
+        );
+      }
+    },
+         onSuccess: (data, variables) => {
+       // Update cache with server data
+       const studentId = editingFeedback?.studentId;
+       if (studentId) {
+         utils.courtesyCalls.getByStudentId.setData(
+           { studentId },
+           (oldData) => {
+             if (!oldData) return oldData;
+             return {
+               ...oldData,
+               items: oldData.items.map(item =>
+                 item.id === variables.id ? data : item
+               ),
+             };
+           }
+         );
+       }
+       
+       // Note: Student list cache will reflect updates on next refresh
+       // Only invalidate stats, not the main data
+       void utils.courtesyCalls.getStats.invalidate();
+     },
   });
   
   const deleteFeedbackMutation = api.courtesyCalls.delete.useMutation({
     onSuccess: () => {
-      // Invalidate all relevant queries to refresh data
-      void utils.courtesyCalls.getAll.invalidate();
-      void utils.courtesyCalls.getByStudentId.invalidate();
+      // For delete, we'll use a simpler approach and only invalidate the specific student's data
+      // when we know the studentId (passed from the modal)
+      if (selectedStudent?.id) {
+        void utils.courtesyCalls.getByStudentId.invalidate({ studentId: selectedStudent.id });
+      }
+      // Only invalidate stats
       void utils.courtesyCalls.getStats.invalidate();
-      void utils.courtesyCalls.getTeacherStudents.invalidate();
     },
   });
 

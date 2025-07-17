@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { RiGoogleFill, RiGithubFill } from "@remixicon/react";
-import { useSignIn, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/providers/auth-provider";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +18,7 @@ interface SignInFormProps {
 
 const SignInForm = ({ onSubmit }: SignInFormProps) => {
   const router = useRouter();
-  const { isLoaded: isAuthLoaded, userId } = useAuth();
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const { user, loading, signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,11 +38,11 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
 
   // Redirect to root page if already signed in (let root page handle role-based routing)
   useEffect(() => {
-    if (isAuthLoaded && userId) {
+    if (!loading && user) {
       const destination = redirectUrl || '/';
       router.push(destination);
     }
-  }, [isAuthLoaded, userId, router, redirectUrl]);
+  }, [loading, user, router, redirectUrl]);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -62,48 +61,34 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
       return;
     }
     
-    if (!isLoaded || !signIn) {
-      setError("Authentication system is not ready. Please try again.");
-      return;
-    }
-    
     setError("");
     setIsLoading(true);
 
     try {
-      const result = await signIn.create({
-        identifier: email,
-        password: password,
-      });
+      const { error: signInError } = await signIn(email, password);
 
-      if (result.status === "complete" && setActive) {
-        // Set the active session
-        await setActive({ session: result.createdSessionId });
-        
+      if (signInError) {
+        setError(signInError.message || "Invalid email or password");
+      } else {
         // Redirect to original destination or root page (let root page handle role-based routing)
         const destination = redirectUrl || '/';
         router.push(destination);
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     } catch (err: any) {
       console.error("Sign in error:", err);
-      setError(err?.errors?.[0]?.message || "Invalid email or password");
+      setError("Invalid email or password");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    if (!isLoaded || !signIn) return;
-    
     try {
-      const destination = redirectUrl || "/";
-      signIn.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: destination
-      });
+      const { error } = await signInWithGoogle();
+      if (error) {
+        setError("An error occurred with Google sign in. Please try again.");
+      }
+      // Redirect will be handled by the auth callback
     } catch (err) {
       console.error("Google sign in error:", err);
       setError("An error occurred with Google sign in. Please try again.");
@@ -111,7 +96,7 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
   };
 
   // If still loading auth state, show a loading spinner
-  if (!isAuthLoaded) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>

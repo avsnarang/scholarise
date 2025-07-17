@@ -12,11 +12,10 @@ import { PageWrapper } from "@/components/layout/page-wrapper";
 export default function DebugPermissionsPage() {
   const { user } = useAuth();
   const {
-    userRoles,
-    userPermissions,
+    roles,
+    permissions,
     isSuperAdmin,
-    forceAdmin,
-    isLoadingPermissions,
+    isLoading,
     can,
     canAccess,
   } = usePermissions();
@@ -83,16 +82,16 @@ export default function DebugPermissionsPage() {
               <strong>User Email:</strong> {user?.email || "Not available"}
             </div>
             <div>
-              <strong>User Roles:</strong> {userRoles.length > 0 ? userRoles.join(", ") : "None"}
+              <strong>User Roles:</strong> {roles.length > 0 ? roles.map(role => role.role.name).join(", ") : "None"}
             </div>
             <div>
               <strong>Is Super Admin:</strong> <Badge variant={isSuperAdmin ? "default" : "secondary"}>{String(isSuperAdmin)}</Badge>
             </div>
             <div>
-              <strong>Force Admin Mode:</strong> <Badge variant={forceAdmin ? "default" : "secondary"}>{String(forceAdmin)}</Badge>
+              <strong>Force Admin Mode:</strong> <Badge variant="secondary">Not applicable</Badge>
             </div>
             <div>
-              <strong>Loading Permissions:</strong> <Badge variant={isLoadingPermissions ? "destructive" : "default"}>{String(isLoadingPermissions)}</Badge>
+              <strong>Loading Permissions:</strong> <Badge variant={isLoading ? "destructive" : "default"}>{String(isLoading)}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -103,11 +102,11 @@ export default function DebugPermissionsPage() {
             <CardTitle>User Permissions</CardTitle>
           </CardHeader>
           <CardContent>
-            {userPermissions.length > 0 ? (
+            {permissions.length > 0 ? (
               <div className="space-y-2">
-                <p><strong>Count:</strong> {userPermissions.length}</p>
+                <p><strong>Count:</strong> {permissions.length}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {userPermissions.map((permission: string) => (
+                  {permissions.map((permission: string) => (
                     <Badge key={permission} variant="outline" className="text-xs">
                       {permission.replace(/_/g, " ")}
                     </Badge>
@@ -207,7 +206,7 @@ export default function DebugPermissionsPage() {
               <div>
                 <h4 className="font-semibold">User Permissions Array:</h4>
                 <pre className="text-xs bg-muted p-2 rounded overflow-auto">
-                  {JSON.stringify(userPermissions, null, 2)}
+                  {JSON.stringify(permissions, null, 2)}
                 </pre>
               </div>
             </div>

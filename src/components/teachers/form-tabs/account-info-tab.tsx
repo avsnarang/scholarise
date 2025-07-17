@@ -33,7 +33,7 @@ export function AccountInfoTab({ isEditing = false }: AccountInfoTabProps) {
   }, [isEditing]);
   
   // Fetch roles from the API
-  const { data: dbRoles, isLoading: isLoadingRoles } = api.role.getAll.useQuery();
+  const { data: dbRoles, isLoading: isLoadingRoles } = api.role.getAll.useQuery({});
   
   // Role badge colors helper
   const getRoleBadgeColor = (role: string) => {

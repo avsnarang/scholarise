@@ -1,43 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const router = useRouter();
-  const { isLoaded, userId } = useAuth();
-  const { isTeacher, teacherId } = useUserRole();
-  const [hasCheckedTeacher, setHasCheckedTeacher] = useState(false);
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
-    if (isLoaded) {
-      if (userId) {
-        // For teachers, wait for teacher data to load before redirecting
-        if (isTeacher) {
-          if (!hasCheckedTeacher) {
-            // Give some time for teacher data to load
-            setTimeout(() => setHasCheckedTeacher(true), 1000);
-            return;
-          }
-
-          // If we have a teacher ID, redirect to teacher dashboard
-          if (teacherId) {
-            router.push("/staff/teachers/dashboard");
-          } else {
-            // Teacher role but no teacher record - redirect to main dashboard with info
-            router.push("/dashboard?teacherSetupNeeded=true");
-          }
-        } else {
-          // Redirect other users to main dashboard
-          router.push("/dashboard");
-        }
-      } else {
-        router.push("/sign-in");
-      }
+    // Don't do anything while loading
+    if (isLoading) {
+      return;
     }
-  }, [isLoaded, userId, isTeacher, teacherId, hasCheckedTeacher, router]);
+
+    // If not authenticated, go to sign-in
+    if (!isAuthenticated) {
+      router.push("/sign-in");
+      return;
+    }
+
+    // If authenticated, go directly to dashboard
+    if (isAuthenticated && user?.id) {
+      console.log('Home page: Redirecting authenticated user to dashboard');
+      router.push("/dashboard");
+      return;
+    }
+
+    // Fallback: if authenticated but no user data, go to sign-in
+    if (isAuthenticated && !user?.id) {
+      router.push("/sign-in");
+    }
+  }, [isAuthenticated, isLoading, user?.id, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">
@@ -45,10 +39,7 @@ export default function Home() {
         <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>
         <h1 className="text-xl font-semibold text-gray-900">Loading...</h1>
         <p className="mt-2 text-gray-600">
-          {isTeacher && !hasCheckedTeacher 
-            ? "Checking teacher profile..." 
-            : "Please wait while we redirect you."
-          }
+          Please wait while we redirect you.
         </p>
       </div>
     </div>

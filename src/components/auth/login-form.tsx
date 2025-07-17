@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { signIn } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const { login, loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
@@ -35,15 +36,10 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-        callbackUrl: `/dashboard?branch=${selectedBranch}`,
-      });
+      const result = await login(data.email, data.password, selectedBranch);
 
-      if (result?.error) {
-        setError("Invalid email or password");
+      if (!result.ok) {
+        setError(result.error || "Invalid email or password");
         setIsLoading(false);
         return;
       }
@@ -60,9 +56,12 @@ export function LoginForm() {
     setError(null);
 
     try {
-      await signIn("google", {
-        callbackUrl: `/dashboard?branch=${selectedBranch}`,
-      });
+      const result = await loginWithGoogle(selectedBranch);
+      
+      if (!result.ok) {
+        setError(result.error || "An error occurred with Google sign in");
+        setIsLoading(false);
+      }
     } catch (error) {
       setError("An error occurred with Google sign in. Please try again.");
       setIsLoading(false);

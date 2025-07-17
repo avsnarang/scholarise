@@ -1,31 +1,26 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { Clerk } from '@clerk/clerk-sdk-node';
-import { env } from '@/env';
-
-// Initialize Clerk client
-const secretKey = env.CLERK_SECRET_KEY;
-const clerk = Clerk({ secretKey: secretKey || "" });
+import { getUserById } from '@/utils/supabase-auth';
 
 /**
  * Router for user/account management functions
  */
 export const usersRouter = createTRPCRouter({
-  // Get user by Clerk ID
-  getByClerkId: protectedProcedure
-    .input(z.object({ clerkId: z.string() }))
+  // Get user by Supabase ID
+  getByUserId: protectedProcedure
+    .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      if (!input.clerkId) {
+      if (!input.userId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Clerk ID is required",
+          message: "User ID is required",
         });
       }
 
       try {
-        // Fetch user from Clerk
-        const user = await clerk.users.getUser(input.clerkId);
+        // Fetch user from Supabase
+        const user = await getUserById(input.userId);
         
         if (!user) {
           throw new TRPCError({
@@ -33,22 +28,17 @@ export const usersRouter = createTRPCRouter({
             message: "User not found",
           });
         }
-
-        // Get primary email address if available
-        const emailAddress = user.emailAddresses.length > 0 
-          ? user.emailAddresses[0]?.emailAddress 
-          : undefined;
           
         return {
           id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          emailAddress,
-          // Include public metadata which contains role information
-          publicMetadata: user.publicMetadata
+          email: user.email,
+          // Include user metadata which contains role information
+          userMetadata: user.user_metadata,
+          createdAt: user.created_at,
+          lastSignInAt: user.last_sign_in_at,
         };
       } catch (error) {
-        console.error("Error fetching user from Clerk:", error);
+        console.error("Error fetching user from Supabase:", error);
         
         if (error instanceof TRPCError) {
           throw error;

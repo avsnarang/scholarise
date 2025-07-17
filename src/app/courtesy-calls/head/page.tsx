@@ -176,7 +176,6 @@ export default function HeadCourtesyCallsPage() {
         {/* Statistics */}
         <CourtesyCallsStatsCards
           branchId={currentBranchId || undefined}
-          classId={selectedClassId || undefined}
         />
 
         {/* Search and Filter Section */}

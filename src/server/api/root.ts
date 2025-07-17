@@ -2,6 +2,7 @@ import { postRouter } from "@/server/api/routers/post";
 import { branchRouter } from "@/server/api/routers/branch";
 import { userRouter } from "@/server/api/routers/user";
 import { roleRouter } from "@/server/api/routers/role";
+import { permissionRouter } from "@/server/api/routers/permission";
 import { groupRouter } from "@/server/api/routers/group";
 import { studentRouter } from "@/server/api/routers/student";
 import { parentRouter } from "@/server/api/routers/parent";
@@ -30,7 +31,6 @@ import { questionPaperRouter } from "./routers/questionPaper";
 import { moneyCollectionRouter } from "./routers/money-collection";
 import { transferCertificateRouter } from "./routers/transferCertificate";
 import { financeRouter } from "./routers/finance";
-import { clerkManagementRouter } from "./routers/clerk-management";
 import { backgroundTasksRouter } from "./routers/background-tasks";
 import { examinationRouter } from "./routers/examination";
 import { courtesyCallsRouter } from "./routers/courtesy-calls";
@@ -45,6 +45,7 @@ export const appRouter = createTRPCRouter({
   branch: branchRouter,
   user: userRouter,
   role: roleRouter,
+  permission: permissionRouter,
   group: groupRouter,
   student: studentRouter,
   parent: parentRouter,
@@ -72,7 +73,6 @@ export const appRouter = createTRPCRouter({
   moneyCollection: moneyCollectionRouter,
   transferCertificate: transferCertificateRouter,
   finance: financeRouter,
-  clerkManagement: clerkManagementRouter,
   backgroundTasks: backgroundTasksRouter,
   examination: examinationRouter,
   courtesyCalls: courtesyCallsRouter,

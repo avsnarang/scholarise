@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/
 import { TRPCError } from "@trpc/server";
 import { Permission } from "@/types/permissions";
 import { rbacService } from "@/services/rbac-service";
-import { type Prisma } from "@prisma/client";
+import { Prisma, type Prisma as PrismaType } from "@prisma/client";
 
 export const courtesyCallsRouter = createTRPCRouter({
   // Get all feedback with filtering and permission-based visibility
@@ -82,7 +82,7 @@ export const courtesyCallsRouter = createTRPCRouter({
       }
 
       // Build where clause based on permissions
-      const whereClause: Prisma.CourtesyCallFeedbackWhereInput = {
+      const whereClause: PrismaType.CourtesyCallFeedbackWhereInput = {
         ...(branchId && { branchId }),
         ...(studentId && { studentId }),
         ...(callerId && { callerId }),
@@ -189,7 +189,7 @@ export const courtesyCallsRouter = createTRPCRouter({
         }
       }
 
-      const whereClause: Prisma.CourtesyCallFeedbackWhereInput = {
+      const whereClause: PrismaType.CourtesyCallFeedbackWhereInput = {
         studentId,
         // If user can only view their own feedback, filter by callerId
         ...(!canViewAll && canViewOwn && { callerId: ctx.userId }),
@@ -268,7 +268,7 @@ export const courtesyCallsRouter = createTRPCRouter({
         };
       }
 
-      const whereClause: Prisma.StudentWhereInput = {
+      const whereClause: PrismaType.StudentWhereInput = {
         sectionId: { in: sectionIds },
         isActive: true,
         ...(branchId && { branchId }),
@@ -666,7 +666,7 @@ export const courtesyCallsRouter = createTRPCRouter({
         }
       }
 
-      const whereClause: Prisma.CourtesyCallFeedbackWhereInput = {
+      const whereClause: PrismaType.CourtesyCallFeedbackWhereInput = {
         ...(branchId && { branchId }),
         ...(fromDate && { callDate: { gte: fromDate } }),
         ...(toDate && { callDate: { lte: toDate } }),
@@ -734,6 +734,266 @@ export const courtesyCallsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Error retrieving courtesy call statistics",
+        });
+      }
+    }),
+
+  // Get dashboard analytics for courtesy calls
+  getDashboardAnalytics: protectedProcedure
+    .input(
+      z.object({
+        branchId: z.string().optional(),
+        sessionId: z.string().optional(),
+        days: z.number().min(1).max(365).optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        classId: z.string().optional(),
+        sectionId: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { branchId, sessionId, days, startDate, endDate, classId, sectionId } = input;
+
+      // Check permissions
+      const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+      const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId, userMetadata);
+
+      if (!isSuperAdmin) {
+        const canViewDashboard = await rbacService.hasPermission(
+          ctx.userId,
+          Permission.VIEW_COURTESY_CALLS_DASHBOARD
+        );
+
+        if (!canViewDashboard) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to view courtesy calls dashboard",
+          });
+        }
+      }
+
+      // Calculate date range
+      let fromDate: Date;
+      let toDate: Date = new Date();
+
+      if (startDate && endDate) {
+        fromDate = startDate;
+        toDate = endDate;
+      } else if (days) {
+        fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - days);
+      } else {
+        // Default to last 30 days
+        fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 30);
+      }
+
+      // Build base where clause
+      const baseWhere: PrismaType.CourtesyCallFeedbackWhereInput = {
+        ...(branchId && { branchId }),
+        callDate: {
+          gte: fromDate,
+          lte: toDate,
+        },
+        ...(classId && {
+          student: {
+            section: {
+              classId,
+            },
+          },
+        }),
+        ...(sectionId && {
+          student: {
+            sectionId,
+          },
+        }),
+      };
+
+      try {
+        // Get all feedback data for analytics
+        const [
+          allFeedback,
+          feedbackByType,
+          feedbackByClass,
+          feedbackByDate,
+          totalFeedback,
+          totalStudentsWithFeedback,
+          avgFeedbackPerStudent,
+        ] = await Promise.all([
+          // All feedback with student details
+          ctx.db.courtesyCallFeedback.findMany({
+            where: baseWhere,
+            include: {
+              student: {
+                include: {
+                  section: {
+                    include: {
+                      class: true,
+                    },
+                  },
+                },
+              },
+              Teacher: true,
+              Employee: true,
+            },
+            orderBy: { callDate: "asc" },
+          }),
+          
+          // Feedback by type (Teacher vs Head)
+          ctx.db.courtesyCallFeedback.groupBy({
+            by: ["callerType"],
+            where: baseWhere,
+            _count: { id: true },
+          }),
+          
+          // Feedback by class
+          ctx.db.courtesyCallFeedback.groupBy({
+            by: ["studentId"],
+            where: baseWhere,
+            _count: { id: true },
+          }),
+          
+          // Daily feedback count for trend charts
+          ctx.db.$queryRaw`
+            SELECT 
+              DATE("callDate") as date,
+              COUNT(*) as count,
+              "callerType"
+            FROM "CourtesyCallFeedback"
+            WHERE "callDate" >= ${fromDate} 
+              AND "callDate" <= ${toDate}
+              ${branchId ? Prisma.sql`AND "branchId" = ${branchId}` : Prisma.empty}
+            GROUP BY DATE("callDate"), "callerType"
+            ORDER BY date ASC
+          `,
+          
+          // Total feedback count
+          ctx.db.courtesyCallFeedback.count({
+            where: baseWhere,
+          }),
+          
+          // Unique students with feedback
+          ctx.db.courtesyCallFeedback.findMany({
+            where: baseWhere,
+            select: { studentId: true },
+            distinct: ["studentId"],
+          }),
+          
+          // Average feedback per student
+          ctx.db.courtesyCallFeedback.groupBy({
+            by: ["studentId"],
+            where: baseWhere,
+            _count: { id: true },
+          }),
+        ]);
+
+        // Process feedback by class data
+        const classWiseData: Record<string, { name: string; count: number }> = {};
+        
+        for (const item of feedbackByClass) {
+          // Find the student to get class info
+          const student = allFeedback.find(f => f.studentId === item.studentId)?.student;
+          if (student?.section?.class) {
+            const className = student.section.class.name;
+            if (!classWiseData[className]) {
+              classWiseData[className] = { name: className, count: 0 };
+            }
+            classWiseData[className].count += item._count.id;
+          }
+        }
+
+        // Process daily trend data
+        const dailyTrends: Record<string, { date: string; Teacher: number; Head: number; Total: number }> = {};
+        
+        (feedbackByDate as any[]).forEach((item: any) => {
+          const dateStr = item.date.toISOString().split('T')[0];
+          if (!dailyTrends[dateStr]) {
+            dailyTrends[dateStr] = {
+              date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              Teacher: 0,
+              Head: 0,
+              Total: 0,
+            };
+          }
+          
+          const count = Number(item.count);
+          dailyTrends[dateStr][item.callerType as 'Teacher' | 'Head'] += count;
+          dailyTrends[dateStr].Total += count;
+        });
+
+        // Calculate analytics metrics
+        const uniqueStudentsCount = totalStudentsWithFeedback.length;
+        const avgFeedbackCount = uniqueStudentsCount > 0 
+          ? (totalFeedback / uniqueStudentsCount).toFixed(1)
+          : "0";
+
+        const teacherFeedbackCount = feedbackByType.find(item => item.callerType === "TEACHER")?._count.id || 0;
+        const headFeedbackCount = feedbackByType.find(item => item.callerType === "HEAD")?._count.id || 0;
+
+        // Get most active classes
+        const topClasses = Object.values(classWiseData)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        // Calculate period-over-period growth (compare with previous period)
+        const periodDays = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+        const previousFromDate = new Date(fromDate);
+        previousFromDate.setDate(previousFromDate.getDate() - periodDays);
+        
+        const previousPeriodCount = await ctx.db.courtesyCallFeedback.count({
+          where: {
+            ...baseWhere,
+            callDate: {
+              gte: previousFromDate,
+              lt: fromDate,
+            },
+          },
+        });
+
+        const growthRate = previousPeriodCount > 0 
+          ? (((totalFeedback - previousPeriodCount) / previousPeriodCount) * 100).toFixed(1)
+          : "0";
+
+        return {
+          summary: {
+            totalFeedback,
+            teacherFeedback: teacherFeedbackCount,
+            headFeedback: headFeedbackCount,
+            uniqueStudents: uniqueStudentsCount,
+            avgFeedbackPerStudent: avgFeedbackCount,
+            growthRate: Number(growthRate),
+          },
+          charts: {
+            dailyTrends: Object.values(dailyTrends).sort((a, b) => 
+              new Date(a.date).getTime() - new Date(b.date).getTime()
+            ),
+            feedbackByType: feedbackByType.map(item => ({
+              name: item.callerType === "TEACHER" ? "Teacher" : "Head/Management",
+              value: item._count.id,
+            })),
+            classWiseDistribution: topClasses,
+            weeklyTrends: [], // We'll calculate this from dailyTrends if needed
+          },
+          recentActivity: allFeedback.slice(-10).map(feedback => ({
+            id: feedback.id,
+            studentName: `${feedback.student.firstName} ${feedback.student.lastName}`,
+            className: feedback.student.section?.class?.name || "Unknown",
+            callerType: feedback.callerType,
+            callerName: feedback.Teacher 
+              ? `${feedback.Teacher.firstName} ${feedback.Teacher.lastName}`
+              : feedback.Employee 
+                ? `${feedback.Employee.firstName} ${feedback.Employee.lastName}`
+                : "Unknown",
+            callDate: feedback.callDate,
+            feedback: feedback.feedback.substring(0, 100) + (feedback.feedback.length > 100 ? "..." : ""),
+            isPrivate: feedback.isPrivate,
+          })),
+        };
+      } catch (error) {
+        console.error("Error in getDashboardAnalytics:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Error retrieving courtesy calls dashboard analytics",
         });
       }
     }),

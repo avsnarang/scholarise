@@ -47,13 +47,13 @@ export function TaskProgressDropdown() {
   const utils = api.useContext();
   
   const { data: tasks = [], isLoading, error } = api.backgroundTasks.getAllTasks.useQuery(
-    undefined,
+    {},
     {
       refetchInterval: isOpen ? 2000 : 10000,
       refetchIntervalInBackground: false,
       refetchOnMount: true,
       refetchOnWindowFocus: false,
-      placeholderData: (previousData: Task[] | undefined) => previousData,
+      placeholderData: (previousData: any) => previousData,
       retry: (failureCount, error) => {
         // Only retry on network errors, not on actual API errors
         if (failureCount >= 3) return false;
@@ -62,7 +62,7 @@ export function TaskProgressDropdown() {
     }
   );
 
-  const activeTasks = tasks.filter((task: Task) => 
+  const activeTasks = tasks.filter((task: any) => 
     task.status === 'pending' || task.status === 'processing' || task.status === 'paused'
   );
 
@@ -278,7 +278,7 @@ export function TaskProgressDropdown() {
             </div>
           ) : (
             <div className="py-2">
-              {tasks.map((task: Task) => (
+              {tasks.map((task: any) => (
                 <div
                   key={task.id}
                   className="mx-2 my-1 p-4 rounded-lg border border-transparent hover:border-border/50 hover:bg-muted/30 transition-all duration-200 group"

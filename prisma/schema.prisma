@@ -65,6 +65,35 @@ model Branch {
   locationTypes              LocationType[]
 }
 
+model User {
+  id                    String                 @id // Supabase user ID
+  authIdentifier        String?                @unique // Username for parents, email for others (stored in Supabase Auth email field)
+  email                 String?                // Real email address
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  avatarUrl             String?
+  userType              String?                // 'parent', 'student', 'teacher', 'employee', 'staff'
+  isActive              Boolean                @default(true)
+  lastLoginAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  metadata              Json?
+
+  // Relationships
+  student               Student?
+  parent                Parent?
+  teacher               Teacher?
+  employee              Employee?
+  admissionStaff        AdmissionStaff?
+  userRoles             UserRole[]
+
+  @@index([authIdentifier])
+  @@index([email])
+  @@index([userType])
+  @@index([isActive])
+}
+
 model Student {
   id                      String                   @id @default(cuid())
   admissionNumber         String                   @unique
@@ -113,29 +142,32 @@ model Student {
   cbse10RollNumber        String?
   cbse12RollNumber        String?
   sectionId               String?
+  userId                  String?                  @unique
   academicRecords         AcademicRecord[]
   AssessmentMarks         AssessmentMarks[]
   courtesyCallFeedbacks   CourtesyCallFeedback[]
   feeCollections          FeeCollection[]
   MarksEntry              MarksEntry[]
-  moneyCollectionItems    MoneyCollectionItem[]
-  SeatingPlan             SeatingPlan[]
+  MoneyCollectionItem     MoneyCollectionItem[]
+  seatingPlans            SeatingPlan[]
   branch                  Branch                   @relation(fields: [branchId], references: [id])
   parent                  Parent?                  @relation(fields: [parentId], references: [id])
   section                 Section?                 @relation(fields: [sectionId], references: [id])
+  user                    User?                    @relation(fields: [userId], references: [id])
   studentAssessmentScores StudentAssessmentScore[]
   studentConcessions      StudentConcession[]
-  siblingRelationships    StudentSibling[]         @relation("SiblingToStudent")
-  studentSiblings         StudentSibling[]         @relation("StudentToSibling")
-  subjects                StudentSubject[]
-  transferCertificates    TransferCertificate[]
+  siblingsOf              StudentSibling[]         @relation("SiblingToStudent")
+  siblings                StudentSibling[]         @relation("StudentToSibling")
+  StudentSubject          StudentSubject[]
+  transferCertificate     TransferCertificate[]
   transportAssignments    TransportAssignment[]
-  studentAttendance       StudentAttendance[]
+  StudentAttendance       StudentAttendance[]
 
-  @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
-  @@index([branchId, isActive], map: "student_branch_active_idx")
-  @@index([sectionId, isActive], map: "student_section_active_idx")
+  @@index([userId])
   @@index([admissionNumber, branchId], map: "student_admission_branch_idx")
+  @@index([branchId, isActive], map: "student_branch_active_idx")
+  @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
+  @@index([sectionId, isActive], map: "student_section_active_idx")
 }
 
 model Parent {
@@ -166,7 +198,11 @@ model Parent {
   fatherAadharNumber   String?
   guardianAadharNumber String?
   motherAadharNumber   String?
+  userId               String?   @unique // NEW: Foreign key to User
   students             Student[]
+  user                 User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model CourtesyCallFeedback {
@@ -262,16 +298,20 @@ model Teacher {
   state                      String?
   uanNumber                  String?
   yearOfCompletion           String?
-  CourtesyCallFeedback       CourtesyCallFeedback[]
+  courtesyCallFeedbacks      CourtesyCallFeedback[]
   leaveApplications          LeaveApplication[]
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
   sections                   Section[]
-  subjectAssignments         SubjectTeacher[]
+  SubjectTeacher             SubjectTeacher[]
   branch                     Branch                 @relation(fields: [branchId], references: [id])
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
-  attendances                StaffAttendance[]
+  user                       User?                @relation(fields: [userId], references: [id])
+  staffAttendances           StaffAttendance[]
+
+  @@index([employeeCode])
+  @@index([userId])
 }
 
 model Employee {
@@ -352,7 +392,10 @@ model Employee {
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
+  user                       User?                  @relation(fields: [userId], references: [id])
   staffAttendances           StaffAttendance[]
+
+  @@index([userId])
 }
 
 model Class {
@@ -760,21 +803,53 @@ model LeaveApplication {
 }
 
 model RbacRole {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  description String?
-  isSystem    Boolean    @default(false)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  permissions String[]   @default([])
-  branchId    String?
-  branch      Branch?    @relation(fields: [branchId], references: [id])
-  userRoles   UserRole[]
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  isSystem        Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  permissions     String[]         @default([])
+  branchId        String?
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
 
   @@index([name])
   @@index([isSystem])
   @@index([isActive])
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  category        String
+  isSystem        Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@index([name])
+  @@index([category])
+  @@index([isSystem])
+  @@index([isActive])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         RbacRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }
 
 model UserRole {
@@ -791,6 +866,7 @@ model UserRole {
   employee   Employee? @relation(fields: [employeeId], references: [id])
   role       RbacRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
   teacher    Teacher?  @relation(fields: [teacherId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
   @@index([userId])
@@ -1042,13 +1118,16 @@ model AdmissionStaff {
   isActive             Boolean                @default(true)
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
-  applications         AdmissionApplication[]
-  leads                AdmissionLead[]
-  conductedAssessments Assessment[]
+  AdmissionApplication AdmissionApplication[]
+  admissionLeads       AdmissionLead[]
+  assessments          Assessment[]
   followUps            FollowUp[]
-  documents            LeadDocument[]
-  interactions         LeadInteraction[]
-  processedPayments    PaymentTransaction[]
+  leadDocuments        LeadDocument[]
+  leadInteractions     LeadInteraction[]
+  paymentTransactions  PaymentTransaction[]
+  user                 User?                  @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model AdmissionApplication {

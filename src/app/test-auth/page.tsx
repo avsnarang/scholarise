@@ -14,7 +14,7 @@ import { Shield, CheckCircle, XCircle, AlertCircle, User, Lock, Key, Eye } from 
 
 export default function TestAuthPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { userPermissions, userRoles, isSuperAdmin, can } = usePermissions();
+  const { permissions, roles, isSuperAdmin, can } = usePermissions();
   const router = useRouter();
   const [testResults, setTestResults] = useState<Array<{
     test: string;
@@ -26,7 +26,7 @@ export default function TestAuthPage() {
     if (!isLoading && isAuthenticated) {
       runTests();
     }
-  }, [isLoading, isAuthenticated, userPermissions.length, userRoles.length, isSuperAdmin]);
+  }, [isLoading, isAuthenticated, permissions.length, roles.length, isSuperAdmin]);
 
   const runTests = async () => {
     const results = [];
@@ -43,18 +43,18 @@ export default function TestAuthPage() {
     // Test 2: Role Assignment
     results.push({
       test: "Role Assignment",
-      status: userRoles.length > 0 ? 'pass' as const : 'fail' as const,
-      message: userRoles.length > 0 
-        ? `User has roles: ${userRoles.join(', ')}` 
+      status: roles.length > 0 ? 'pass' as const : 'fail' as const,
+      message: roles.length > 0 
+        ? `User has roles: ${roles.map(role => role.role.name).join(', ')}` 
         : "User has no roles assigned"
     });
 
     // Test 3: Permission Loading
     results.push({
       test: "Permission Loading",
-      status: userPermissions.length > 0 ? 'pass' as const : 'fail' as const,
-      message: userPermissions.length > 0 
-        ? `User has ${userPermissions.length} permissions` 
+      status: permissions.length > 0 ? 'pass' as const : 'fail' as const,
+      message: permissions.length > 0 
+        ? `User has ${permissions.length} permissions` 
         : "User has no permissions"
     });
 
@@ -68,7 +68,7 @@ export default function TestAuthPage() {
     });
 
     // Test 5: Basic Permission Check
-    const hasAnyPermission = userPermissions.length > 0;
+    const hasAnyPermission = permissions.length > 0;
     results.push({
       test: "Basic Permission Check",
       status: hasAnyPermission ? 'pass' as const : 'fail' as const,
@@ -178,15 +178,15 @@ export default function TestAuthPage() {
                   <div>
                     <strong>Roles:</strong>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {userRoles.length > 0 ? userRoles.map(role => (
-                        <Badge key={role} variant="outline">{role}</Badge>
+                      {roles.length > 0 ? roles.map((roleAssignment, index) => (
+                        <Badge key={index} variant="outline">{roleAssignment.role.name}</Badge>
                       )) : <span className="text-gray-500">No roles assigned</span>}
                     </div>
                   </div>
                   <div>
                     <strong>Permissions:</strong>
                     <div className="text-gray-600 mt-1">
-                      {userPermissions.length} permissions granted
+                      {permissions.length} permissions granted
                     </div>
                   </div>
                 </div>
@@ -327,7 +327,7 @@ export default function TestAuthPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {userPermissions.length > 0 ? userPermissions.map(permission => (
+              {permissions.length > 0 ? permissions.map(permission => (
                 <Badge key={permission} variant="outline" className="text-xs">
                   {permission}
                 </Badge>

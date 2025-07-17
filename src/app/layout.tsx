@@ -1,5 +1,5 @@
 import { Montserrat, Lilita_One } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { PopupProvider } from "@/components/ui/custom-popup";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${montserrat.variable} ${lilitaOne.variable} font-sans`} suppressHydrationWarning>
-        <ClerkProvider>
+        <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <TRPCProvider>
               <PopupProvider>
@@ -42,7 +42,7 @@ export default function RootLayout({
               </PopupProvider>
             </TRPCProvider>
           </ThemeProvider>
-        </ClerkProvider>
+        </AuthProvider>
       </body>
     </html>
   );

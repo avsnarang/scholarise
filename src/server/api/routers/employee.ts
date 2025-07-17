@@ -2,14 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
-import { createEmployeeUser } from "@/utils/clerk";
-import { clerkClient } from "@clerk/nextjs/server";
-import { Clerk } from '@clerk/clerk-sdk-node';
-import { env } from '@/env';
-
-// Initialize Clerk client
-const secretKey = env.CLERK_SECRET_KEY;
-const clerk = Clerk({ secretKey: secretKey || "" });
+import { createEmployeeUser, updateUserMetadata, deleteUser, getUserById } from "@/utils/supabase-auth";
 
 // RBAC Permissions
 const RBAC_PERMISSIONS = {
@@ -629,32 +622,19 @@ export const employeeRouter = createTRPCRouter({
         }
       }
 
-      // If employee has a Clerk account, update the Clerk user
+      // If employee has a Supabase account, update the user metadata
       if (existingEmployee.clerkId) {
         try {
-          // Build the publicMetadata update
-          const userResponse = await clerk.users.getUser(existingEmployee.clerkId);
-          const currentMetadata = userResponse.publicMetadata;
-          
-          const updatedMetadata = {
-            ...currentMetadata,
-            // Update isActive if it's changed
-            ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-            // Update role information if it's changed
-            ...(roleChanged ? { 
-              roleId: input.roleId,
-              roleName: roleName 
-            } : {})
-          };
-          
-          // Update the Clerk user
-          await clerk.users.updateUser(existingEmployee.clerkId, {
+          // Update the Supabase user metadata
+          await updateUserMetadata(existingEmployee.clerkId, {
             firstName: input.firstName,
             lastName: input.lastName,
-            publicMetadata: updatedMetadata
+            isActive: input.isActive,
+            roleId: input.roleId,
+            roleName: roleName
           });
           
-          console.log(`Updated Clerk user ${existingEmployee.clerkId} with new information`);
+          console.log(`Updated Supabase user ${existingEmployee.clerkId} with new information`);
         } catch (error) {
           console.error("Error updating Clerk user:", error);
           // Don't throw here, just log the error and continue
@@ -834,13 +814,13 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
-      // If employee has a Clerk account, delete it
+      // If employee has a Supabase account, delete it
       if (employee.clerkId) {
         try {
-          console.log(`Deleting Clerk user for employee ${employee.id} (${employee.clerkId})`);
-          await clerk.users.deleteUser(employee.clerkId);
+          console.log(`Deleting Supabase user for employee ${employee.id} (${employee.clerkId})`);
+          await deleteUser(employee.clerkId);
         } catch (error) {
-          console.error("Error deleting Clerk user:", error);
+          console.error("Error deleting Supabase user:", error);
           // Don't throw here, just log the error and continue
         }
       }
@@ -882,10 +862,10 @@ export const employeeRouter = createTRPCRouter({
       for (const employee of employees) {
         if (employee.clerkId) {
           try {
-            console.log(`Deleting Clerk user for employee ${employee.firstName} ${employee.lastName} (${employee.clerkId})`);
-            await clerk.users.deleteUser(employee.clerkId);
+            console.log(`Deleting Supabase user for employee ${employee.firstName} ${employee.lastName} (${employee.clerkId})`);
+            await deleteUser(employee.clerkId);
           } catch (error) {
-            console.error(`Error deleting Clerk user for employee ${employee.id}:`, error);
+            console.error(`Error deleting Supabase user for employee ${employee.id}:`, error);
             // Don't throw here, just log the error and continue
           }
         }
@@ -1167,18 +1147,19 @@ export const employeeRouter = createTRPCRouter({
                   }
                 }
 
-                // Create Clerk user if requested
-                let clerkUserId: string | null = null;
+                // Create Supabase user if requested
+                let supabaseUserId: string | null = null;
                 if (employeeData.createUser && employeeData.email && employeeData.password) {
                   try {
-                    const clerkUser = await clerk.users.createUser({
-                      emailAddress: [employeeData.email],
-                      password: employeeData.password,
+                    const supabaseUser = await createEmployeeUser({
                       firstName: employeeData.firstName,
                       lastName: employeeData.lastName,
+                      email: employeeData.email,
+                      password: employeeData.password,
+                      branchId: ctx.user?.branchId || '1',
                     });
-                    clerkUserId = clerkUser.id;
-                    importMessages.push(`[INFO] Row ${rowNum}: Created Clerk user for ${employeeData.firstName} ${employeeData.lastName}`);
+                    supabaseUserId = supabaseUser.id;
+                    importMessages.push(`[INFO] Row ${rowNum}: Created Supabase user for ${employeeData.firstName} ${employeeData.lastName}`);
                   } catch (error) {
                     importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Clerk user: ${error instanceof Error ? error.message : 'Unknown error'}`);
                     // Continue without Clerk user
@@ -1259,7 +1240,7 @@ export const employeeRouter = createTRPCRouter({
                     
                     // Branch and Clerk ID
                     branchId: branchId,
-                    clerkId: clerkUserId,
+                    clerkId: supabaseUserId,
                   },
                 });
 

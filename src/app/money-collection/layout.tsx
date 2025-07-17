@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/hooks/useAuth";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { AppLayout } from "@/components/layout/app-layout";
 
@@ -10,17 +10,16 @@ export default function MoneyCollectionLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isLoaded } = useUser();
+  const { user, isAuthenticated } = useAuth();
   const { setCurrentBranchId, currentBranchId } = useBranchContext();
 
   useEffect(() => {
     const handleBranchSelection = async () => {
-      if (!isLoaded || !user) return;
+      if (!isAuthenticated || !user) return;
 
       try {
-        const userMetadata = user.publicMetadata;
-        const userRole = userMetadata.role as string;
-        const assignedBranchId = userMetadata.branchId as string;
+        const userRole = user.role as string;
+        const assignedBranchId = user.branchId as string;
 
         console.log("MoneyCollectionLayout - Current user role:", userRole);
         console.log("MoneyCollectionLayout - Assigned branch ID:", assignedBranchId);
@@ -49,7 +48,7 @@ export default function MoneyCollectionLayout({
     };
 
     handleBranchSelection();
-  }, [isLoaded, user, setCurrentBranchId]);
+  }, [isAuthenticated, user, setCurrentBranchId]);
 
   // Log current branch ID after it might have changed
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function MoneyCollectionLayout({
   }, [currentBranchId]);
 
   // Show loading state while the branch is being selected
-  if (!isLoaded) {
+  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>

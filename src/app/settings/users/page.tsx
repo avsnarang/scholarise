@@ -112,7 +112,7 @@ function UserManagement() {
   const { toast } = useToast();
   
   // Fetch all roles
-  const { data: roles = [], isLoading: isLoadingRoles } = api.role.getAll.useQuery();
+  const { data: roles = [], isLoading: isLoadingRoles } = api.role.getAll.useQuery({});
   
   // Fetch teachers from the API
   const { data: teachersData, isLoading: isLoadingTeachers } = api.teacher.getAll.useQuery({
@@ -198,7 +198,7 @@ function UserManagement() {
   };
 
   // Mutation for assigning roles
-  const assignRoleMutation = api.role.assignRole.useMutation({
+  const assignRoleMutation = api.role.assignToUser.useMutation({
     onSuccess: () => {
       toast({
         title: "Role updated",

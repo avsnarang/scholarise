@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UploadCloud } from 'lucide-react'; // Icon for the button
 
 export default function UserProfilePage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [firstName, setFirstName] = useState("");
@@ -32,10 +32,10 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setFirstName(user.firstName || "");
-      setLastName(user.lastName || "");
+      setFirstName(user.name?.split(" ")[0] || "");
+      setLastName(user.name?.split(" ")[1] || "");
       // Set initial preview to user's current image or fallback
-      setPreviewImage(user.imageUrl || null); 
+      setPreviewImage(user.image || null); 
     }
   }, [user]);
 
@@ -45,13 +45,11 @@ export default function UserProfilePage() {
 
     setIsNameLoading(true);
     try {
-      await user.update({
-        firstName: firstName,
-        lastName: lastName,
-      });
+      // TODO: Implement user profile update API call
+      // For now, show success message (profile updates need backend implementation)
       toast({
-        title: "Success",
-        description: "Your name has been updated.",
+        title: "Success", 
+        description: "Profile update functionality coming soon.",
       });
     } catch (error: any) {
       console.error("Error updating name:", error);
@@ -88,13 +86,11 @@ export default function UserProfilePage() {
 
     setIsPasswordLoading(true);
     try {
-      await user.updatePassword({
-        currentPassword,
-        newPassword,
-      });
+      // TODO: Implement password update API call
+      // For now, show success message (password updates need backend implementation)
       toast({
         title: "Success",
-        description: "Your password has been updated.",
+        description: "Password update functionality coming soon.",
       });
       setCurrentPassword("");
       setNewPassword("");
@@ -124,16 +120,12 @@ export default function UserProfilePage() {
 
     setIsImageLoading(true);
     try {
-      await user.setProfileImage({ file: selectedFile });
+      // TODO: Implement image upload API call
+      // For now, show success message (image uploads need backend implementation)
       toast({
         title: "Success",
-        description: "Profile picture updated.",
+        description: "Profile picture upload functionality coming soon.",
       });
-      // Update previewImage with the new URL from Clerk after successful upload
-      // This ensures the displayed image is the one stored by Clerk
-      if (user.imageUrl) { // Check if imageUrl was updated
-        setPreviewImage(user.imageUrl); 
-      }
       setSelectedFile(null);
       if(fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -146,7 +138,7 @@ export default function UserProfilePage() {
         variant: "destructive",
       });
        // Revert to the original image if upload fails
-      setPreviewImage(user.imageUrl || null); 
+      setPreviewImage(user.image || null); 
     } finally {
       setIsImageLoading(false);
     }
@@ -176,10 +168,10 @@ export default function UserProfilePage() {
               <Label>Avatar</Label>
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24 border">
-                  <AvatarImage src={previewImage || undefined} alt={user.fullName || "User"} />
+                  <AvatarImage src={previewImage || undefined} alt={user.name || "User"} />
                   <AvatarFallback className="text-2xl">
-                    {user.firstName?.[0]?.toUpperCase() || ""}
-                    {user.lastName?.[0]?.toUpperCase() || "U"}
+                    {user.name?.split(' ')[0]?.[0]?.toUpperCase() || ""}
+                    {user.name?.split(' ')[1]?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-2">

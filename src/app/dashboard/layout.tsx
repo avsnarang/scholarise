@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/hooks/useAuth";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { AppLayout } from "@/components/layout/app-layout";
 
@@ -12,17 +12,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isLoaded } = useUser();
+  const { user, isAuthenticated } = useAuth();
   const { setCurrentBranchId } = useBranchContext();
 
   useEffect(() => {
     const handleBranchSelection = async () => {
-      if (!isLoaded || !user) return;
+      if (!isAuthenticated || !user) return;
 
       try {
-        const userMetadata = user.publicMetadata;
-        const userRole = userMetadata.role as UserRole;
-        const assignedBranchId = userMetadata.branchId as string;
+        const userRole = user.role as UserRole;
+        const assignedBranchId = user.branchId as string;
 
         // If user is SuperAdmin, default to Paonta Sahib branch
         if (userRole === "SuperAdmin") {
@@ -46,10 +45,10 @@ export default function DashboardLayout({
     };
 
     handleBranchSelection();
-  }, [isLoaded, user, setCurrentBranchId]);
+  }, [isAuthenticated, user, setCurrentBranchId]);
 
   // You might want to show a loading state while the branch is being selected
-  if (!isLoaded) {
+  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>

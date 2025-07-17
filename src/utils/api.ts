@@ -9,6 +9,7 @@ import { createTRPCNext } from "@trpc/next";
 import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
+import { supabase } from "@/lib/supabase/client";
 
 import { type AppRouter } from "@/server/api/root";
 
@@ -35,6 +36,18 @@ const commonLinks = [
   httpBatchLink({
     url: `${getBaseUrl()}/api/trpc`,
     transformer: superjson,
+    headers: async () => {
+      // Get the current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        return {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+      }
+      
+      return {};
+    },
   }),
 ];
 

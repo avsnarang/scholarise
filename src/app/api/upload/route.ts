@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server"; 
+import { getServerUser } from '@/lib/supabase/auth'; 
 import { createClient } from '@supabase/supabase-js';
 import formidable from "formidable";
 import fs from "fs";
@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export async function POST(request: NextRequest) {
   try {
     // Use Clerk's auth helper for App Router
-    const user = await currentUser();
+    const user = await getServerUser();
     const userId = user?.id;
     
     if (!userId) {

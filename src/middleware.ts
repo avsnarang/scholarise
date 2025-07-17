@@ -1,23 +1,29 @@
-import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from '@supabase/supabase-js';
+import { env } from '@/env';
 
-// Define matchers for different route types
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/login(.*)',
-  '/sign-in(.*)',
-  '/sso-callback(.*)',
-]);
+// Define route matchers
+const isPublicRoute = (pathname: string): boolean => {
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/sign-in',
+    '/auth/callback',
+  ];
+  return publicRoutes.some(route => pathname === route || pathname.startsWith(route));
+};
 
-const isApiRoute = createRouteMatcher([
-  '/api/health',
-  '/api/trpc/health',
-  '/api/webhooks/clerk',
-]);
+const isApiRoute = (pathname: string): boolean => {
+  const apiRoutes = [
+    '/api/health',
+    '/api/trpc/health',
+  ];
+  return apiRoutes.some(route => pathname === route || pathname.startsWith(route));
+};
 
-const isTrpcRoute = createRouteMatcher([
-  '/api/trpc(.*)',
-]);
+const isTrpcRoute = (pathname: string): boolean => {
+  return pathname.startsWith('/api/trpc');
+};
 
 // Define route-to-permission mapping
 const routePermissions: Record<string, string[]> = {
@@ -158,126 +164,22 @@ const routePermissions: Record<string, string[]> = {
   '/toggle-admin': ['manage_roles'],
 };
 
-// Define permissions for each role (mirroring the RBAC system)
-const rolePermissions: Record<string, string[]> = {
-  'super_admin': [
-    'view_dashboard',
-    'view_students', 'create_student', 'edit_student', 'delete_student',
-    'manage_admissions', 'manage_transfer_certificates',
-    'view_money_collection', 'create_money_collection', 'edit_money_collection', 'delete_money_collection',
-    'view_teachers', 'create_teacher', 'edit_teacher', 'delete_teacher',
-    'view_employees', 'create_employee', 'edit_employee', 'delete_employee',
-    'view_departments', 'create_department', 'edit_department', 'delete_department',
-    'view_designations', 'create_designation', 'edit_designation', 'delete_designation',
-    'view_classes', 'create_class', 'edit_class', 'delete_class', 'manage_class_students',
-    'view_attendance', 'mark_attendance', 'view_attendance_reports',
-    'view_leaves', 'manage_leave_applications', 'manage_leave_policies',
-    'view_salary', 'manage_salary_structures', 'manage_teacher_salaries', 'manage_employee_salaries',
-    'view_transport', 'manage_transport_routes', 'manage_transport_stops', 'manage_transport_assignments',
-    'view_fees', 'manage_fees', 'view_finance_module', 'manage_fee_heads', 'manage_fee_terms',
-    'manage_classwise_fees', 'collect_fees', 'view_finance_reports',
-    'view_question_papers', 'create_question_paper', 'manage_question_papers',
-    'view_examinations', 'manage_exam_types', 'manage_exam_configurations', 'enter_marks',
-    'manage_assessments', 'manage_grade_scales', 'view_exam_reports',
-    'view_reports', 'view_settings', 'manage_branches', 'manage_academic_sessions',
-    'manage_subjects', 'manage_roles', 'manage_attendance_config',
-    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
-    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
-  ],
-  'admin': [
-    'view_dashboard',
-    'view_students', 'create_student', 'edit_student', 'delete_student',
-    'manage_admissions', 'manage_transfer_certificates',
-    'view_money_collection', 'create_money_collection', 'edit_money_collection', 'delete_money_collection',
-    'view_teachers', 'create_teacher', 'edit_teacher', 'delete_teacher',
-    'view_employees', 'create_employee', 'edit_employee', 'delete_employee',
-    'view_departments', 'create_department', 'edit_department', 'delete_department',
-    'view_designations', 'create_designation', 'edit_designation', 'delete_designation',
-    'view_classes', 'create_class', 'edit_class', 'delete_class', 'manage_class_students',
-    'view_attendance', 'mark_attendance', 'view_attendance_reports',
-    'view_leaves', 'manage_leave_applications', 'manage_leave_policies',
-    'view_salary', 'manage_salary_structures', 'manage_teacher_salaries', 'manage_employee_salaries',
-    'view_transport', 'manage_transport_routes', 'manage_transport_stops', 'manage_transport_assignments',
-    'view_fees', 'manage_fees', 'view_reports', 'view_settings',
-    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
-    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
-  ],
-  'principal': [
-    'view_dashboard',
-    'view_students', 'create_student', 'edit_student',
-    'manage_admissions', 'manage_transfer_certificates',
-    'view_money_collection', 'create_money_collection', 'edit_money_collection',
-    'view_teachers', 'view_employees', 'view_departments', 'view_designations',
-    'view_classes', 'create_class', 'edit_class', 'manage_class_students',
-    'view_attendance', 'mark_attendance', 'view_attendance_reports',
-    'view_leaves', 'manage_leave_applications', 'manage_leave_policies',
-    'view_salary', 'view_transport', 'view_fees',
-    'view_question_papers', 'create_question_paper', 'manage_question_papers',
-    'view_examinations', 'manage_exam_types', 'manage_exam_configurations', 'enter_marks',
-    'manage_assessments', 'manage_grade_scales', 'view_exam_reports',
-    'view_reports', 'view_settings', 'manage_academic_sessions', 'manage_subjects',
-    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_all_courtesy_call_feedback',
-    'edit_courtesy_call_feedback', 'delete_courtesy_call_feedback'
-  ],
-  'teacher': [
-    'view_dashboard', 'view_students', 'view_classes',
-    'view_attendance', 'mark_attendance',
-    'view_leaves', 'manage_leave_applications',
-    'view_question_papers', 'create_question_paper',
-    'view_examinations', 'enter_marks', 'view_exam_reports',
-    'view_courtesy_calls', 'create_courtesy_call_feedback', 'view_own_courtesy_call_feedback',
-    'edit_courtesy_call_feedback'
-  ],
-  'accountant': [
-    'view_dashboard', 'view_students',
-    'view_money_collection', 'create_money_collection', 'edit_money_collection', 'delete_money_collection',
-    'view_salary', 'manage_salary_structures', 'manage_teacher_salaries', 'manage_employee_salaries',
-    'view_fees', 'manage_fees', 'view_reports',
-    'view_finance_module', 'manage_fee_heads', 'manage_fee_terms',
-    'manage_classwise_fees', 'collect_fees', 'view_finance_reports'
-  ],
-  'receptionist': [
-    'view_dashboard', 'view_students', 'view_teachers',
-    'view_money_collection', 'create_money_collection',
-    'manage_admissions', 'view_attendance', 'view_transport'
-  ],
-  'transport_manager': [
-    'view_dashboard', 'view_students', 'view_transport',
-    'manage_transport_routes', 'manage_transport_stops', 'manage_transport_assignments'
-  ],
-  'staff': [
-    'view_dashboard', 'view_students',
-    'view_leaves', 'manage_leave_applications',
-    'view_attendance', 'mark_self_attendance'
-  ],
-  'employee': [
-    'view_dashboard', 'view_students',
-    'view_leaves', 'manage_leave_applications',
-    'view_attendance', 'mark_self_attendance'
-  ]
-};
+// Note: Role-permission mappings removed in favor of database-driven RBAC system
+// Permissions are now checked via user metadata populated by the database system
 
-// Helper function to check if user has required permissions based on their roles
-function hasRequiredPermissions(userRoles: string[], requiredPermissions: string[]): boolean {
+// Helper function to check if user has required permissions
+// Now checks permissions directly from user metadata (populated by database RBAC system)
+function hasRequiredPermissions(userPermissions: string[], requiredPermissions: string[]): boolean {
   if (!requiredPermissions || requiredPermissions.length === 0) {
     return true;
   }
 
-  if (!userRoles || userRoles.length === 0) {
+  if (!userPermissions || userPermissions.length === 0) {
     return false;
   }
 
-  // Get all permissions for the user's roles
-  const allUserPermissions = new Set<string>();
-  
-  for (const role of userRoles) {
-    const normalizedRole = role.toLowerCase().replace(/\s+/g, '_');
-    const permissions = rolePermissions[normalizedRole] || [];
-    permissions.forEach(permission => allUserPermissions.add(permission));
-  }
-
   // Check if user has any of the required permissions
-  return requiredPermissions.some(permission => allUserPermissions.has(permission));
+  return requiredPermissions.some(permission => userPermissions.includes(permission));
 }
 
 // Helper function to match dynamic routes
@@ -309,58 +211,71 @@ function getRequiredPermissions(pathname: string): string[] {
   return [];
 }
 
-export default clerkMiddleware(async (auth, req) => {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
   // Handle public routes (no authentication required)
-  if (isPublicRoute(req) || isApiRoute(req)) {
-    return;
+  if (isPublicRoute(pathname) || isApiRoute(pathname)) {
+    return NextResponse.next();
   }
 
   // Make tRPC routes public but accessible to auth methods
-  if (isTrpcRoute(req)) {
-    return;
+  if (isTrpcRoute(pathname)) {
+    return NextResponse.next();
   }
 
-  // For all other routes, ensure the user is authenticated
-  const { userId, sessionClaims } = await auth();
+  // Create Supabase client
+  const supabase = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        storage: {
+          getItem: (key: string) => {
+            return req.cookies.get(key)?.value || null;
+          },
+          setItem: (key: string, value: string) => {
+            // We can't set cookies in middleware, but this is required by the interface
+          },
+          removeItem: (key: string) => {
+            // We can't remove cookies in middleware, but this is required by the interface
+          },
+        },
+      },
+    }
+  );
+
+  // Check for authenticated session
+  const { data: { session }, error } = await supabase.auth.getSession();
   
-  if (!userId) {
+  if (error || !session) {
     const url = new URL('/sign-in', req.url);
     // Preserve the original URL as a redirect parameter
     url.searchParams.set('redirectUrl', pathname);
     return NextResponse.redirect(url);
   }
   
-  // Check if user is active
-  if (sessionClaims?.metadata && (sessionClaims.metadata as any).isActive === false) {
-    const url = new URL('/sign-in?error=account_inactive', req.url);
-    return NextResponse.redirect(url);
-  }
+  const user = session.user;
   
-  // Get user data from Clerk to access publicMetadata (where role info is stored)
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
+  // Get user permissions from user metadata (populated by database RBAC system)
+  const userRole = (user.user_metadata?.role as string) || '';
+  const userRoles = (user.user_metadata?.roles as string[]) || [];
+  const userPermissions = (user.user_metadata?.permissions as string[]) || [];
   
-  // Get user role information from publicMetadata (not sessionClaims.metadata)
-  const userRole = (user.publicMetadata?.role as string) || '';
-  const userRoles = (user.publicMetadata?.roles as string[]) || [];
-  
-  // Normalize roles array
+  // Normalize roles array for super admin check
   const allUserRoles = [userRole, ...userRoles].filter(Boolean);
   
   // Debug logging for troubleshooting
   console.log('Middleware Auth Debug:', {
     pathname,
-    userId,
+    userId: user.id,
     userRole,
     userRoles,
-    allUserRoles,
-    publicMetadata: user.publicMetadata
+    userPermissions,
+    userMetadata: user.user_metadata
   });
   
   // Check if user is super admin (bypass all permission checks)
-  // Use the same logic as usePermissions hook for consistency
   const isSuperAdmin = allUserRoles.some(role => {
     if (typeof role === 'string') {
       return role === 'super_admin' || 
@@ -372,25 +287,22 @@ export default clerkMiddleware(async (auth, req) => {
     return false;
   });
 
-  // Temporary debug bypass - same as in usePermissions hook
-  const isDebugSuperAdmin = userId === 'user_2y1xEACdC5UpJaTuVRuuzH75bOA';
   
   console.log('Super Admin Check:', { 
     isSuperAdmin, 
-    allUserRoles, 
-    isDebugSuperAdmin,
-    finalSuperAdminStatus: isSuperAdmin || isDebugSuperAdmin 
+    allUserRoles,
+    finalSuperAdminStatus: isSuperAdmin 
   });
 
-  if (isSuperAdmin || isDebugSuperAdmin) {
+  if (isSuperAdmin) {
     console.log('Super admin detected, bypassing permission checks');
-    return;
+    return NextResponse.next();
   }
 
   // Don't check permissions for dashboard route to prevent redirect loops
   if (pathname === '/dashboard') {
     console.log('Dashboard route detected, skipping permission checks');
-    return;
+    return NextResponse.next();
   }
 
   // Get required permissions for this route
@@ -403,12 +315,12 @@ export default clerkMiddleware(async (auth, req) => {
   });
 
   if (requiredPermissions.length > 0) {
-    // Check if user has required permissions
-    const hasPermission = hasRequiredPermissions(allUserRoles, requiredPermissions);
+    // Check if user has required permissions using database-driven permissions
+    const hasPermission = hasRequiredPermissions(userPermissions, requiredPermissions);
     
     console.log('Permission Check Result:', {
       hasPermission,
-      userRoles: allUserRoles,
+      userPermissions,
       requiredPermissions
     });
     
@@ -422,8 +334,8 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // User is authenticated and has required permissions, proceed
-  return;
-});
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

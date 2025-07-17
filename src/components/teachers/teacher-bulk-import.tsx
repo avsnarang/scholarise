@@ -321,11 +321,11 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
     try {
       await bulkImportMutation.mutateAsync({
         type: 'teacher',
+        operation: 'bulk_import',
         title: `Bulk Teacher Import - ${previewData.length} teachers`,
         description: `Importing ${previewData.length} teachers from ${file.name}`,
         items: previewData,
-        branchId: currentBranchId,
-        priority: 5
+        branchId: currentBranchId
       });
     } catch (error) {
       console.error("Error creating background task:", error);

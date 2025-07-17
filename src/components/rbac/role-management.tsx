@@ -57,8 +57,14 @@ export function RoleManagement() {
   });
 
   // Queries
-  const { data: roles = [], isLoading: isLoadingRoles, refetch: refetchRoles } = api.role.getAll.useQuery();
-  const { data: permissions = [], isLoading: isLoadingPermissions } = api.role.getAllPermissions.useQuery();
+  const { data: roles = [], isLoading: isLoadingRoles, refetch: refetchRoles } = api.role.getAll.useQuery({});
+  const { data: rawPermissions = [], isLoading: isLoadingPermissions } = api.permission.getAll.useQuery({});
+  
+  // Map permissions to ensure description is never null
+  const permissions = rawPermissions.map(permission => ({
+    ...permission,
+    description: permission.description || ''
+  }));
 
   // Mutations
   const createRoleMutation = api.role.create.useMutation({
@@ -73,36 +79,10 @@ export function RoleManagement() {
     },
   });
 
-  const updatePermissionsMutation = api.role.updatePermissions.useMutation({
-    onSuccess: () => {
-      toast.success("Role permissions updated successfully");
-      refetchRoles();
-      setIsEditDialogOpen(false);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update role permissions");
-    },
-  });
-
-  const seedDefaultRolesMutation = api.role.seedDefaultRoles.useMutation({
-    onSuccess: () => {
-      toast.success("Default roles seeded successfully");
-      refetchRoles();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to seed default roles");
-    },
-  });
-
-  const clearCacheMutation = api.role.clearCache.useMutation({
-    onSuccess: () => {
-      toast.success("Cache cleared successfully");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to clear cache");
-    },
-  });
+  // TODO: Implement these mutations in the role router
+  // const updatePermissionsMutation = api.role.updatePermissions.useMutation({...});
+  // const seedDefaultRolesMutation = api.role.seedDefaultRoles.useMutation({...});
+  // const clearCacheMutation = api.role.clearCache.useMutation({...});
 
   const resetForm = () => {
     setFormData({
@@ -119,14 +99,17 @@ export function RoleManagement() {
 
   const handleUpdatePermissions = () => {
     if (!selectedRole) return;
-    updatePermissionsMutation.mutate({
-      roleId: selectedRole.id,
-      permissions: formData.permissions,
-    });
+    // TODO: Implement update permissions API
+    toast.error("Update permissions not yet implemented");
   };
 
-  const handleEditRole = (role: RoleWithPermissions) => {
-    setSelectedRole(role);
+  const handleEditRole = (role: any) => {
+    // Convert the role to match RoleWithPermissions interface
+    const roleWithPermissions: RoleWithPermissions = {
+      ...role,
+      description: role.description || undefined,
+    };
+    setSelectedRole(roleWithPermissions);
     setFormData({
       name: role.name,
       description: role.description || "",
@@ -178,15 +161,15 @@ export function RoleManagement() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => clearCacheMutation.mutate()}
-            disabled={clearCacheMutation.isPending}
+            onClick={() => toast.info("Feature coming soon")}
+            disabled={true}
           >
             Clear Cache
           </Button>
           <Button
             variant="outline"
-            onClick={() => seedDefaultRolesMutation.mutate()}
-            disabled={seedDefaultRolesMutation.isPending}
+            onClick={() => toast.info("Feature coming soon")}
+            disabled={true}
           >
             Seed Default Roles
           </Button>
@@ -330,7 +313,7 @@ export function RoleManagement() {
             onPermissionToggle={handlePermissionToggle}
             onSave={handleUpdatePermissions}
             onCancel={() => setIsEditDialogOpen(false)}
-            isLoading={updatePermissionsMutation.isPending}
+            isLoading={false}
             isEdit={true}
           />
         </DialogContent>

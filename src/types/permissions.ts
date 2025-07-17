@@ -112,6 +112,7 @@ export enum Permission {
   
   // Courtesy Calls Feedback permissions
   VIEW_COURTESY_CALLS = "view_courtesy_calls",
+  VIEW_COURTESY_CALLS_DASHBOARD = "view_courtesy_calls_dashboard",
   CREATE_COURTESY_CALL_FEEDBACK = "create_courtesy_call_feedback",
   VIEW_OWN_COURTESY_CALL_FEEDBACK = "view_own_courtesy_call_feedback",
   VIEW_ALL_COURTESY_CALL_FEEDBACK = "view_all_courtesy_call_feedback",

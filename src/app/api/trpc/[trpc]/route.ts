@@ -1,6 +1,6 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { type NextRequest } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { createClient } from '@supabase/supabase-js';
 
 import { env } from "@/env";
 import { appRouter } from "@/server/api/root";
@@ -17,9 +17,99 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleRequest(req: NextRequest) {
-  // Use Clerk's auth helper for App Router
-  const user = await currentUser();
-  const userId = user?.id || null;
+  // Create Supabase client for auth with all possible cookie keys
+  const supabase = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        storage: {
+          getItem: (key: string) => {
+            return req.cookies.get(key)?.value || null;
+          },
+          setItem: () => {},
+          removeItem: () => {},
+        },
+      },
+    }
+  );
+
+  // Try multiple approaches to get the session
+  let session = null;
+  let user = null;
+  let userId = null;
+
+  // Approach 1: Try getSession first
+  const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+  if (supabaseSession?.user) {
+    session = supabaseSession;
+    user = supabaseSession.user;
+    userId = user.id;
+  }
+
+  // Approach 2: If no session, try to extract access token from cookies directly
+  if (!session) {
+    // Generate the correct cookie name based on the actual Supabase URL
+    const supabaseHostname = new URL(env.NEXT_PUBLIC_SUPABASE_URL).hostname;
+    const projectId = supabaseHostname.split('.')[0];
+    const cookieName = `sb-${projectId}-auth-token`;
+    
+        const accessToken = req.cookies.get(cookieName)?.value;
+    if (accessToken) {
+      try {
+        const { data: { user: tokenUser } } = await supabase.auth.getUser(accessToken);
+        if (tokenUser) {
+          user = tokenUser;
+          userId = tokenUser.id;
+        }
+      } catch (error: unknown) {
+        // Ignore token validation errors
+      }
+    }
+  }
+
+  // Approach 3: Check for authorization header as fallback
+  if (!user && req.headers.get('authorization')) {
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    if (token) {
+      try {
+        const { data: { user: headerUser } } = await supabase.auth.getUser(token);
+        if (headerUser) {
+          user = headerUser;
+          userId = headerUser.id;
+        }
+      } catch (error: unknown) {
+        // Ignore token validation errors
+      }
+    }
+  }
+
+  // Approach 4: Check common cookie names for Supabase auth tokens
+  if (!user) {
+    const cookieNames = [
+      `sb-${new URL(env.NEXT_PUBLIC_SUPABASE_URL).hostname.split('.')[0]}-auth-token`,
+      'sb-access-token',
+      'supabase-auth-token',
+      'supabase.auth.token'
+    ];
+    
+    for (const cookieName of cookieNames) {
+      const token = req.cookies.get(cookieName)?.value;
+      if (token) {
+        try {
+          const { data: { user: cookieUser } } = await supabase.auth.getUser(token);
+          if (cookieUser) {
+            user = cookieUser;
+            userId = cookieUser.id;
+            break;
+          }
+        } catch (error: unknown) {
+          // Continue to next cookie name
+        }
+      }
+    }
+  }
 
   return fetchRequestHandler({
     endpoint: "/api/trpc",
@@ -32,10 +122,10 @@ async function handleRequest(req: NextRequest) {
         auth: { userId },
         user: user ? {
           id: user.id,
-          role: user.publicMetadata?.role as string,
-          roles: user.publicMetadata?.roles as string[],
-          isHQ: user.publicMetadata?.isHQ as boolean,
-          branchId: user.publicMetadata?.branchId as string,
+          role: user.user_metadata?.role as string,
+          roles: user.user_metadata?.roles as string[],
+          isHQ: user.user_metadata?.isHQ as boolean,
+          branchId: user.user_metadata?.branchId as string,
         } : null,
         db,
       };

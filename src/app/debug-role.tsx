@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -9,8 +8,8 @@ import { Role } from "@/types/permissions";
 
 export default function DebugRole() {
   const { user } = useAuth();
-  const { isSuperAdmin: permissionIsSuperAdmin, userRoles } = usePermissions();
-  const { user: clerkUser } = useUser();
+  const { isSuperAdmin: permissionIsSuperAdmin, roles } = usePermissions();
+  const { user: userFromUseAuth } = useAuth();
   const { isSuperAdmin: roleIsSuperAdmin } = useUserRole();
   
   // Get superadmin checks in all formats
@@ -34,7 +33,7 @@ export default function DebugRole() {
           
           <div>
             <h3 className="font-semibold mb-2">User Roles from usePermissions:</h3>
-            <p>Roles: {JSON.stringify(userRoles)}</p>
+            <p>Roles: {JSON.stringify(roles)}</p>
             <p>Is Super Admin (permissions): {String(permissionIsSuperAdmin)}</p>
             <p>Is Super Admin (useUserRole): {String(roleIsSuperAdmin)}</p>
           </div>
@@ -49,7 +48,7 @@ export default function DebugRole() {
           <div>
             <h3 className="font-semibold mb-2">Raw Clerk User (publicMetadata):</h3>
             <pre className="bg-muted p-4 rounded-md overflow-auto text-xs">
-              {JSON.stringify(clerkUser?.publicMetadata, null, 2)}
+              {JSON.stringify(userFromUseAuth, null, 2)}
             </pre>
           </div>
         </CardContent>

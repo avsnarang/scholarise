@@ -400,7 +400,7 @@ export default function LeaveDashboardPage() {
                       You haven't submitted any leave applications yet.
                     </p>
                     <Button asChild className="bg-[#00501B] hover:bg-[#004016]">
-                      <a href="/leaves/dashboard">Apply for Leave</a>
+                      <a href="/leaves/application">Apply for Leave</a>
                     </Button>
                   </div>
                 )}

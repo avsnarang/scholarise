@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { Role } from '@/types/permissions';
+import { getServerUser } from '@/lib/supabase/auth';
+import { updateUserMetadata } from '@/utils/supabase-auth';
 
 export async function POST(request: Request) {
   try {
     // Verify the current user is authenticated
-    const { userId: currentUserId } = await auth();
+    const currentUser = await getServerUser();
     
-    if (!currentUserId) {
+    if (!currentUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const { userId } = body;
     
     // Verify the user is updating their own account
-    if (userId !== currentUserId) {
+    if (userId !== currentUser.id) {
       return NextResponse.json(
         { error: 'You can only update your own account' },
         { status: 403 }
@@ -27,12 +27,9 @@ export async function POST(request: Request) {
     }
     
     // Update the user's metadata
-    const client = await clerkClient();
-    await client.users.updateUser(userId, {
-      publicMetadata: {
-        role: Role.SUPER_ADMIN,
-        roles: [Role.SUPER_ADMIN],
-      }
+    await updateUserMetadata(userId, {
+      role: 'SuperAdmin',
+      roles: ['SuperAdmin'],
     });
     
     return NextResponse.json({ 

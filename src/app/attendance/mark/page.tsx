@@ -53,7 +53,7 @@ import { api } from "@/utils/api";
 import { useAttendanceLocations, useRecordAttendance } from "@/utils/attendance-api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import type { AttendanceLocation } from "@prisma/client";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -104,7 +104,7 @@ type CombinedLocation = Location & Partial<AttendanceLocation>;
 export default function MarkAttendancePage() {
   const router = useRouter();
   const { currentBranchId } = useBranchContext();
-  const { data: session } = useSession();
+  const { user, session } = useAuth();
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, userId, teacherId, employeeId } = useUserRole();
   const { can } = usePermissions();
   const utils = api.useUtils();

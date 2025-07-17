@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/server/db';
-import { auth } from '@clerk/nextjs/server';
+import { getServerUser } from '@/lib/supabase/auth';
 import { AssessmentCalculator } from '@/lib/assessment-calculator';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -133,8 +133,8 @@ async function recalculateFinalScores(studentAssessmentKeys: string[], userId: s
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
             const createData: any = {
               studentId,
               assessmentSchemaId,
-              enteredBy: userId,
+              enteredBy: user.id,
               branchId,
             };
             
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   rawScore: Number(marksObtained),
                   calculatedScore: Number(marksObtained),
-                  enteredBy: userId,
+                  enteredBy: user.id,
                   updatedAt: new Date(),
                 },
               });
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
                   componentId,
                   rawScore: Number(marksObtained),
                   calculatedScore: Number(marksObtained),
-                  enteredBy: userId,
+                  enteredBy: user.id,
                 },
               });
             }
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
                     where: { id: existingSubScore.id },
                     data: {
                       score: numericSubScore,
-                      enteredBy: userId,
+                      enteredBy: user.id,
                       updatedAt: new Date(),
                     },
                   });
@@ -327,7 +327,7 @@ export async function POST(request: NextRequest) {
                       subCriteriaId,
                       componentScoreId: componentScore.id,
                       score: numericSubScore,
-                      enteredBy: userId,
+                      enteredBy: user.id,
                     },
                   });
                 }
@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
     if (studentsToRecalculate.size > 0) {
       // Run this in the background to avoid blocking the response
       setImmediate(() => {
-        recalculateFinalScores(Array.from(studentsToRecalculate), userId)
+        recalculateFinalScores(Array.from(studentsToRecalculate), user.id)
           .catch(error => {
             console.error('Error in background final score calculation:', error);
           });
@@ -372,8 +372,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getServerUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

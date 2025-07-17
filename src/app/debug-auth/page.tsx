@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@/hooks/useAuth";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,8 @@ import { Copy, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 export default function DebugAuthPage() {
-  const { userId, sessionClaims, getToken } = useAuth();
-  const { user } = useUser();
-  const { isSuperAdmin, userRoles, userPermissions } = usePermissions();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isSuperAdmin, roles, permissions } = usePermissions();
   const [refreshing, setRefreshing] = useState(false);
 
   const copyToClipboard = (text: string) => {
@@ -26,21 +25,23 @@ export default function DebugAuthPage() {
   };
 
   const debugData = {
-    userId,
-    sessionClaims,
-    userFromUseUser: user ? {
+    userId: user?.id,
+    isAuthenticated,
+    isLoading,
+    userFromAuth: user ? {
       id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      emailAddress: user.primaryEmailAddress?.emailAddress,
-      publicMetadata: user.publicMetadata,
-      unsafeMetadata: user.unsafeMetadata,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      roles: user.roles,
+      branchId: user.branchId,
     } : null,
     userFromPermissionsHook: {
       isSuperAdmin,
-      userRoles,
-      userPermissions: userPermissions.slice(0, 10), // Show first 10 permissions
-      totalPermissions: userPermissions.length
+      userRoles: roles,
+      userPermissions: permissions.slice(0, 10), // Show first 10 permissions
+      totalPermissions: permissions.length
     }
   };
 
@@ -70,7 +71,7 @@ export default function DebugAuthPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
               <div className="text-center">
                 <div className="text-sm text-gray-600">User ID</div>
-                <div className="font-mono text-sm">{userId || 'Not found'}</div>
+                <div className="font-mono text-sm">{user?.id || 'Not found'}</div>
               </div>
               <div className="text-center">
                 <div className="text-sm text-gray-600">Super Admin Status</div>
@@ -80,7 +81,7 @@ export default function DebugAuthPage() {
               </div>
               <div className="text-center">
                 <div className="text-sm text-gray-600">Total Permissions</div>
-                <div className="font-semibold">{userPermissions.length}</div>
+                <div className="font-semibold">{permissions.length}</div>
               </div>
             </div>
 
@@ -89,7 +90,7 @@ export default function DebugAuthPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">Session Claims</h3>
                 <Button
-                  onClick={() => copyToClipboard(JSON.stringify(sessionClaims, null, 2))}
+                  onClick={() => copyToClipboard(JSON.stringify(debugData, null, 2))}
                   size="sm"
                   variant="outline"
                 >
@@ -98,7 +99,7 @@ export default function DebugAuthPage() {
                 </Button>
               </div>
               <pre className="bg-gray-100 p-4 rounded-lg text-xs overflow-auto max-h-60 font-mono">
-                {JSON.stringify(sessionClaims, null, 2)}
+                {JSON.stringify(debugData, null, 2)}
               </pre>
             </div>
 
@@ -107,7 +108,7 @@ export default function DebugAuthPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">User Metadata (from useUser)</h3>
                 <Button
-                  onClick={() => copyToClipboard(JSON.stringify(debugData.userFromUseUser, null, 2))}
+                  onClick={() => copyToClipboard(JSON.stringify(debugData.userFromAuth, null, 2))}
                   size="sm"
                   variant="outline"
                 >
@@ -116,7 +117,7 @@ export default function DebugAuthPage() {
                 </Button>
               </div>
               <pre className="bg-gray-100 p-4 rounded-lg text-xs overflow-auto max-h-60 font-mono">
-                {JSON.stringify(debugData.userFromUseUser, null, 2)}
+                                    {JSON.stringify(debugData.userFromAuth, null, 2)}
               </pre>
             </div>
 
@@ -142,8 +143,8 @@ export default function DebugAuthPage() {
             <div>
               <h3 className="font-semibold mb-2">User Roles</h3>
               <div className="flex flex-wrap gap-2">
-                {userRoles.length > 0 ? userRoles.map(role => (
-                  <Badge key={role} variant="outline">{role}</Badge>
+                {roles.length > 0 ? roles.map((roleAssignment, index) => (
+                  <Badge key={`role-${index}`} variant="outline">{roleAssignment.role.name}</Badge>
                 )) : <span className="text-gray-500">No roles found</span>}
               </div>
             </div>
@@ -155,25 +156,25 @@ export default function DebugAuthPage() {
                 <div>
                   <div className="text-sm font-medium">publicMetadata.role</div>
                   <div className="font-mono text-sm bg-gray-100 p-2 rounded">
-                    {user?.publicMetadata?.role as string || 'Not set'}
+                    {user?.role || 'Not set'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium">publicMetadata.roles</div>
                   <div className="font-mono text-sm bg-gray-100 p-2 rounded">
-                    {JSON.stringify(user?.publicMetadata?.roles) || 'Not set'}
+                    {JSON.stringify(user?.roles) || 'Not set'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium">sessionClaims.metadata.role</div>
                   <div className="font-mono text-sm bg-gray-100 p-2 rounded">
-                    {(sessionClaims?.metadata as any)?.role || 'Not set'}
+                    {'Not available in Supabase auth'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium">sessionClaims.metadata.roles</div>
                   <div className="font-mono text-sm bg-gray-100 p-2 rounded">
-                    {JSON.stringify((sessionClaims?.metadata as any)?.roles) || 'Not set'}
+                    {'Not available in Supabase auth'}
                   </div>
                 </div>
               </div>

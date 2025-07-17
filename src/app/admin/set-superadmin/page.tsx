@@ -4,21 +4,17 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Role } from "@/types/permissions";
 
 export default function SetSuperAdminPage() {
   const { user } = useAuth();
-  const { user: clerkUser } = useUser();
-  const { session } = useClerk();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const makeSuperAdmin = async () => {
-    if (!clerkUser) {
+    if (!user) {
       setError("No authenticated user found");
       return;
     }
@@ -28,21 +24,19 @@ export default function SetSuperAdminPage() {
     setError("");
 
     try {
-      // First, try using the updateUser method from Clerk
-      if (clerkUser) {
-        await clerkUser.update({
-          unsafeMetadata: {
-            role: Role.SUPER_ADMIN,
-            roles: [Role.SUPER_ADMIN],
-          },
-        });
-      } else {
-        setError("User not found");
-        setIsLoading(false);
-        return;
+      // Use the API call method to update user metadata
+      const response = await fetch('/api/set-superadmin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user role');
       }
-
-      // Set success message
+      
       setMessage("Successfully set user as Super Admin! Reloading in 2 seconds...");
       
       // Force a reload after 2 seconds to reflect the changes
@@ -50,34 +44,8 @@ export default function SetSuperAdminPage() {
         window.location.reload();
       }, 2000);
     } catch (err) {
-      console.error("First method failed:", err);
-      
-      // Try the alternative method if the first one fails
-      try {
-        const metadata = {
-          role: Role.SUPER_ADMIN,
-          roles: [Role.SUPER_ADMIN],
-        };
-        
-        // Use the direct API call method
-        await fetch('/api/set-superadmin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId: clerkUser.id }),
-        });
-        
-        setMessage("Successfully set user as Super Admin using alternative method! Reloading in 2 seconds...");
-        
-        // Force a reload after 2 seconds
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } catch (secondErr) {
-        setError(`Both update methods failed. Please contact support.`);
-        console.error("Second method failed:", secondErr);
-      }
+      setError(`Failed to update user role. Please contact support.`);
+      console.error("Error updating user role:", err);
     } finally {
       setIsLoading(false);
     }

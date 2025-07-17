@@ -2,13 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { type Prisma } from "@prisma/client";
-import { createTeacherUser } from "@/utils/clerk";
-import { Clerk } from "@clerk/clerk-sdk-node";
-import { env } from '@/env';
-
-// Initialize Clerk client
-const secretKey = env.CLERK_SECRET_KEY;
-const clerk = Clerk({ secretKey: secretKey || "" });
+import { createTeacherUser, updateUserMetadata, deleteUser } from "@/utils/supabase-auth";
 
 export const teacherRouter = createTRPCRouter({
   getStats: publicProcedure
@@ -358,10 +352,9 @@ export const teacherRouter = createTRPCRouter({
         if (
           input.createUser &&
           input.officialEmail &&
-          input.password &&
-          process.env.NODE_ENV === "production"
+          input.password
         ) {
-          console.log("Attempting to create Clerk user for teacher using official email in production");
+          console.log("Attempting to create Clerk user for teacher using official email");
           try {
             // Get branch code for Clerk user creation
             const branch = await ctx.db.branch.findUnique({
@@ -454,11 +447,10 @@ export const teacherRouter = createTRPCRouter({
             });
           }
         } else {
-          console.log("Skipping Clerk user creation as conditions not met or not in production:", {
+          console.log("Skipping Clerk user creation as conditions not met:", {
             createUser: input.createUser,
             hasOfficialEmail: !!input.officialEmail,
             hasPassword: !!input.password,
-            isProduction: process.env.NODE_ENV === "production",
           });
         }
 
@@ -687,8 +679,19 @@ export const teacherRouter = createTRPCRouter({
         });
       }
       
-      // Check if role has been updated
-      const roleChanged = input.roleId !== undefined && input.roleId !== (teacher as Record<string, unknown>).roleId;
+      // Check if role has been updated by comparing with existing UserRole
+      let currentRoleId: string | undefined = undefined;
+      if (teacher.clerkId) {
+        const existingUserRole = await ctx.db.userRole.findFirst({
+          where: {
+            teacherId: input.id,
+            isActive: true,
+          },
+        });
+        currentRoleId = existingUserRole?.roleId;
+      }
+      
+      const roleChanged = input.roleId !== undefined && input.roleId !== currentRoleId;
       let roleName = undefined;
       
       // Get the role name if roleId is provided and it's different from the current one
@@ -705,29 +708,16 @@ export const teacherRouter = createTRPCRouter({
         }
       }
       
-      // If teacher has a Clerk account, update the Clerk user
+      // If teacher has a Supabase account, update the user metadata
       if (teacher.clerkId) {
         try {
-          // Build the publicMetadata update
-          const userResponse = await clerk.users.getUser(teacher.clerkId);
-          const currentMetadata = userResponse.publicMetadata;
-          
-          const updatedMetadata = {
-            ...currentMetadata,
-            // Update isActive if it's changed
-            ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-            // Update role information if it's changed
-            ...(roleChanged ? { 
-              roleId: input.roleId,
-              roleName: roleName 
-            } : {})
-          };
-          
-          // Update the Clerk user
-          await clerk.users.updateUser(teacher.clerkId, {
+          // Update the Supabase user metadata
+          await updateUserMetadata(teacher.clerkId, {
             firstName: input.firstName,
             lastName: input.lastName,
-            publicMetadata: updatedMetadata
+            isActive: input.isActive,
+            roleId: input.roleId,
+            roleName: roleName
           });
           
           console.log(`Updated Clerk user ${teacher.clerkId} with new information`);
@@ -817,32 +807,31 @@ export const teacherRouter = createTRPCRouter({
         userId: input.userId,
       };
 
-      // Handle the roleId update using raw SQL to avoid type issues
-      let updatedTeacher;
-      if (input.roleId !== undefined) {
-        // First update all other fields using Prisma
-        updatedTeacher = await ctx.db.teacher.update({
-          where: { id: input.id },
-          data: updateData,
+      // Update teacher data
+      const updatedTeacher = await ctx.db.teacher.update({
+        where: { id: input.id },
+        data: updateData,
+      });
+
+      // Handle role update through UserRole relationship if roleId is provided
+      if (input.roleId !== undefined && updatedTeacher.clerkId) {
+        // Remove existing user role assignments for this teacher
+        await ctx.db.userRole.deleteMany({
+          where: {
+            teacherId: input.id,
+          },
         });
-        
-        // Then update roleId using raw SQL
-        await ctx.db.$executeRaw`
-          UPDATE "Teacher"
-          SET "roleId" = ${input.roleId}
-          WHERE id = ${input.id}
-        `;
-        
-        // Fetch the updated teacher to return
-        updatedTeacher = await ctx.db.teacher.findUnique({
-          where: { id: input.id },
-        });
-      } else {
-        // If no roleId update, just use the normal Prisma update
-        updatedTeacher = await ctx.db.teacher.update({
-          where: { id: input.id },
-          data: updateData,
-        });
+
+        // Add new role assignment if roleId is provided (not null)
+        if (input.roleId) {
+          await ctx.db.userRole.create({
+            data: {
+              userId: updatedTeacher.clerkId,
+              teacherId: input.id,
+              roleId: input.roleId,
+            },
+          });
+        }
       }
 
       return updatedTeacher;
@@ -863,13 +852,13 @@ export const teacherRouter = createTRPCRouter({
         });
       }
       
-      // If teacher has a Clerk account, delete it
+      // If teacher has a Supabase account, delete it
       if (teacher.clerkId) {
         try {
-          console.log(`Deleting Clerk user for teacher ${teacher.id} (${teacher.clerkId})`);
-          await clerk.users.deleteUser(teacher.clerkId);
+          console.log(`Deleting Supabase user for teacher ${teacher.id} (${teacher.clerkId})`);
+          await deleteUser(teacher.clerkId);
         } catch (error) {
-          console.error("Error deleting Clerk user:", error);
+          console.error("Error deleting Supabase user:", error);
           // Don't throw here, just log the error and continue
         }
       }
@@ -908,10 +897,10 @@ export const teacherRouter = createTRPCRouter({
       for (const teacher of teachers) {
         if (teacher.clerkId) {
           try {
-            console.log(`Deleting Clerk user for teacher ${teacher.firstName} ${teacher.lastName} (${teacher.clerkId})`);
-            await clerk.users.deleteUser(teacher.clerkId);
+            console.log(`Deleting Supabase user for teacher ${teacher.firstName} ${teacher.lastName} (${teacher.clerkId})`);
+            await deleteUser(teacher.clerkId);
           } catch (error) {
-            console.error(`Error deleting Clerk user for teacher ${teacher.id}:`, error);
+            console.error(`Error deleting Supabase user for teacher ${teacher.id}:`, error);
             // Don't throw here, just log the error and continue
           }
         }
@@ -1238,17 +1227,18 @@ export const teacherRouter = createTRPCRouter({
                   }
                 }
 
-                // Create Clerk user if requested
-                let clerkUserId: string | null = null;
+                // Create Supabase user if requested
+                let supabaseUserId: string | null = null;
                 if (teacherData.createUser && teacherData.email && teacherData.password) {
                   try {
-                    const clerkUser = await clerk.users.createUser({
-                      emailAddress: [teacherData.email],
-                      password: teacherData.password,
+                    const supabaseUser = await createTeacherUser({
                       firstName: teacherData.firstName,
                       lastName: teacherData.lastName,
+                      email: teacherData.email,
+                      password: teacherData.password,
+                      branchId: ctx.user?.branchId || '1',
                     });
-                    clerkUserId = clerkUser.id;
+                    supabaseUserId = supabaseUser.id;
                     importMessages.push(`[INFO] Row ${rowNum}: Created Clerk user for ${teacherData.firstName} ${teacherData.lastName}`);
                   } catch (error) {
                     importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Clerk user: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1328,9 +1318,9 @@ export const teacherRouter = createTRPCRouter({
                     softwareLicenses: teacherData.softwareLicenses,
                     assetReturnStatus: teacherData.assetReturnStatus,
                     
-                    // Branch and Clerk ID
+                    // Branch and Supabase ID
                     branchId: branchId,
-                    clerkId: clerkUserId,
+                    clerkId: supabaseUserId,
                   },
                 });
 

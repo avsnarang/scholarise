@@ -30,15 +30,71 @@ import {
   BarChart3,
   MonitorSpeaker,
 } from "lucide-react"
-import { useClerk } from "@clerk/nextjs"
 import { type Prisma } from "@prisma/client"
 import { useBranchContext } from "@/hooks/useBranchContext"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useUserRole } from "@/hooks/useUserRole"
 import { Permission, Role } from "@/types/permissions"
-import { navItemPermissions, moduleViewPermissions } from "@/utils/rbac"
 import { api } from "@/utils/api"
+
+// Simple permission mapping to replace legacy RBAC system
+const navPermissions = {
+  dashboard: ["view_dashboard"],
+  admission: ["manage_admissions"],
+  students: ["view_students"],
+  transfer: ["manage_transfer_certificates"],
+  teachers: ["view_teachers"],
+  employees: ["view_employees"],
+  createTeacher: ["create_teacher"],
+  createEmployee: ["create_employee"],
+  departments: ["view_departments"],
+  designations: ["view_designations"],
+  classes: ["view_classes"],
+  classStudents: ["manage_class_students"],
+  attendance: ["view_attendance"],
+  markAttendance: ["mark_attendance"],
+  leaves: ["view_leaves"],
+  leaveApplications: ["manage_leave_applications"],
+  leavePolicies: ["manage_leave_policies"],
+  finance: ["view_finance_module"],
+  feeHeads: ["manage_fee_heads"],
+  feeTerms: ["manage_fee_terms"],
+  classwiseFees: ["manage_classwise_fees"],
+  feeCollection: ["collect_fees"],
+  moneyCollection: ["view_money_collection"],
+  salary: ["view_salary"],
+  salaryStructures: ["manage_salary_structures"],
+  teacherSalaries: ["manage_teacher_salaries"],
+  employeeSalaries: ["manage_employee_salaries"],
+  salaryIncrements: ["manage_salary_increments"],
+  salaryPayments: ["process_salary_payments"],
+  transport: ["view_transport"],
+  transportRoutes: ["manage_transport_routes"],
+  transportStops: ["manage_transport_stops"],
+  transportAssignments: ["manage_transport_assignments"],
+  settings: ["view_settings"],
+  branches: ["manage_branches"],
+  academicSessions: ["manage_academic_sessions"],
+  subjects: ["manage_subjects"],
+  users: ["manage_roles"],
+  attendanceConfig: ["manage_attendance_config"],
+  questionPapers: ["view_question_papers"],
+  createQuestionPaper: ["create_question_paper"],
+  manageQuestionPapers: ["manage_question_papers"],
+  examination: ["view_examinations"],
+  manageAssessments: ["manage_assessments"],
+  gradeScales: ["manage_grade_scales"],
+  terms: ["manage_academic_sessions"],
+  enterMarks: ["enter_marks"],
+  courtesyCalls: ["view_courtesy_calls"],
+  viewOwnCourtesyCallFeedback: ["view_own_courtesy_call_feedback"],
+  viewAllCourtesyCallFeedback: ["view_all_courtesy_call_feedback"],
+  attendanceReports: ["view_attendance_reports"],
+  examReports: ["view_exam_reports"],
+  financeReports: ["view_finance_reports"],
+  reports: ["view_reports"],
+};
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -47,7 +103,6 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar"
 import { usePathname } from "next/navigation"
-import { useSession } from "@clerk/nextjs"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,12 +141,11 @@ export * from "@/components/ui/app-sidebar";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { signOut } = useClerk();
+  const { user, logout } = useAuth();
 
   // Fetch user-specific branches from API
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getUserBranches.useQuery();
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
-  const { user } = useAuth();
   const { canAccess, isSuperAdmin, can } = usePermissions();
   const { isTeacher } = useUserRole();
 
@@ -269,32 +323,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Admissions",
       href: "/admissions/dashboard",
       icon: School,
-      permissions: navItemPermissions.admission,
+              permissions: [Permission.MANAGE_ADMISSIONS],
       children: [
         {
           title: "Dashboard",
           href: "/admissions/dashboard",
-          permissions: navItemPermissions.admission,
+          permissions: [Permission.MANAGE_ADMISSIONS],
         },
         {
           title: "Leads",
           href: "/admissions/leads",
-          permissions: navItemPermissions.admission,
+          permissions: [Permission.MANAGE_ADMISSIONS],
         },
         {
           title: "Applications",
           href: "/admissions/applications",
-          permissions: navItemPermissions.admission,
+          permissions: [Permission.MANAGE_ADMISSIONS],
         },
         {
           title: "Staff",
           href: "/admissions/staff",
-          permissions: navItemPermissions.admission,
+          permissions: [Permission.VIEW_EMPLOYEES],
         },
         {
           title: "Settings",
           href: "/admissions/settings",
-          permissions: navItemPermissions.admission,
+          permissions: [Permission.MANAGE_ADMISSIONS],
         },
       ],
     },
@@ -302,22 +356,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Students",
       href: "/students/dashboard",
       icon: GraduationCap,
-      permissions: navItemPermissions.students,
+      permissions: [Permission.VIEW_STUDENTS],
       children: [
         {
           title: "All Students",
           href: "/students",
-          permissions: navItemPermissions.students,
+          permissions: [Permission.VIEW_STUDENTS],
         },
         {
           title: "Assign Roll Numbers",
           href: "/students/assign-roll-number",
-          permissions: navItemPermissions.students,
+          permissions: [Permission.EDIT_STUDENT],
         },
         {
           title: "Transfer Certificates",
           href: "/students/transfer",
-          permissions: navItemPermissions.transfer,
+          permissions: [Permission.MANAGE_TRANSFER_CERTIFICATES],
         },
       ],
     },
@@ -325,54 +379,49 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Staff",
       href: "/staff",
       icon: Users,
-      permissions: [
-        ...new Set([
-          ...navItemPermissions.teachers,
-          ...navItemPermissions.employees,
-        ]),
-      ],
+      permissions: [Permission.VIEW_TEACHERS, Permission.VIEW_EMPLOYEES],
       children: [
         {
           title: "Teachers",
           href: "/staff/teachers",
-          permissions: navItemPermissions.teachers,
+          permissions: [Permission.VIEW_TEACHERS],
           children: [
             {
               title: "Dashboard",
               href: "/teachers/dashboard",
-              permissions: navItemPermissions.teachers,
+              permissions: [Permission.VIEW_TEACHERS],
             },
             {
               title: "All Teachers",
               href: "/staff/teachers",
-              permissions: navItemPermissions.teachers,
+              permissions: [Permission.VIEW_TEACHERS],
             },
           ],
         },
         {
           title: "Add Teacher",
           href: "/staff/teachers/create",
-          permissions: navItemPermissions.createTeacher,
+          permissions: [Permission.CREATE_TEACHER],
         },
         {
           title: "Employees",
           href: "/staff/employees",
-          permissions: navItemPermissions.employees,
+          permissions: [Permission.VIEW_EMPLOYEES],
         },
         {
           title: "Add Employee",
           href: "/staff/employees/create",
-          permissions: navItemPermissions.createEmployee,
+          permissions: [Permission.CREATE_EMPLOYEE],
         },
         {
           title: "Departments",
           href: "/staff/departments/list",
-          permissions: navItemPermissions.departments,
+          permissions: [Permission.VIEW_DEPARTMENTS],
         },
         {
           title: "Designations",
           href: "/staff/designations/list",
-          permissions: navItemPermissions.designations,
+          permissions: [Permission.VIEW_DESIGNATIONS],
         },
       ],
     },
@@ -380,22 +429,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Classes",
       href: "/classes",
       icon: Building,
-      permissions: navItemPermissions.classes,
+      permissions: [Permission.VIEW_CLASSES],
       children: [
         {
           title: "All Classes",
           href: "/classes",
-          permissions: navItemPermissions.classes,
+          permissions: [Permission.VIEW_CLASSES],
         },
         {
           title: "Class Students",
           href: "/classes/students",
-          permissions: navItemPermissions.classStudents,
+          permissions: [Permission.MANAGE_CLASS_STUDENTS],
         },
         {
           title: "Subject Assignments",
           href: "/classes/assignments",
-          permissions: navItemPermissions.teachers,
+          permissions: [Permission.VIEW_TEACHERS],
         },
       ],
     },
@@ -403,22 +452,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Attendance",
       href: "/attendance",
       icon: Clock,
-      permissions: navItemPermissions.attendance,
+      permissions: [Permission.VIEW_ATTENDANCE, Permission.MARK_ATTENDANCE, Permission.MARK_SELF_ATTENDANCE, Permission.MARK_ALL_STAFF_ATTENDANCE],
       children: [
         {
           title: "Dashboard",
           href: "/attendance",
-          permissions: navItemPermissions.attendance,
+          permissions: [Permission.VIEW_ATTENDANCE],
         },
         {
           title: "Mark Attendance",
           href: "/attendance/mark",
-          permissions: navItemPermissions.markAttendance,
+          permissions: [Permission.MARK_ATTENDANCE],
         },
         {
           title: "Student Attendance",
           href: "/attendance/students",
-          permissions: navItemPermissions.attendance,
+          permissions: [Permission.VIEW_ATTENDANCE],
         },
       ],
     },
@@ -426,17 +475,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Leave Management",
       href: "/leave-management",
       icon: Calendar,
-      permissions: navItemPermissions.leaves,
+      permissions: [Permission.VIEW_LEAVES, Permission.MANAGE_LEAVE_POLICIES, Permission.MANAGE_LEAVE_APPLICATIONS],
       children: [
                   {
             title: "Apply for Leave",
             href: "/leave-management/application",
-            permissions: navItemPermissions.leaveApplications,
+            permissions: [Permission.MANAGE_LEAVE_APPLICATIONS],
           },
           {
             title: "Manage Leave Policies",
             href: "/leave-management/policies",
-            permissions: navItemPermissions.leavePolicies,
+            permissions: [Permission.MANAGE_LEAVE_POLICIES],
           },
       ],
     },
@@ -444,42 +493,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Finance",
       href: "/finance",
       icon: CreditCard,
-      permissions: navItemPermissions.finance,
+      permissions: [Permission.VIEW_FINANCE_MODULE],
       children: [
         {
           title: "Dashboard",
           href: "/finance",
-          permissions: navItemPermissions.finance,
+          permissions: [Permission.VIEW_FINANCE_MODULE],
         },
         {
           title: "Fee Heads",
           href: "/finance/fee-head",
-          permissions: navItemPermissions.feeHeads,
+          permissions: [Permission.MANAGE_FEE_HEADS],
         },
         {
           title: "Fee Terms",
           href: "/finance/fee-term",
-          permissions: navItemPermissions.feeTerms,
+          permissions: [Permission.MANAGE_FEE_TERMS],
         },
         {
           title: "Classwise Fees",
           href: "/finance/classwise-fee",
-          permissions: navItemPermissions.classwiseFees,
+          permissions: [Permission.MANAGE_CLASSWISE_FEES],
         },
         {
           title: "Fee Collection",
           href: "/finance/fee-collection",
-          permissions: navItemPermissions.feeCollection,
+          permissions: [Permission.COLLECT_FEES],
         },
         {
           title: "Concession Types",
           href: "/finance/concession-types",
-          permissions: navItemPermissions.finance,
+          permissions: [Permission.VIEW_FINANCE_MODULE],
         },
         {
           title: "Student Concessions",
           href: "/finance/student-concessions",
-          permissions: navItemPermissions.finance,
+          permissions: [Permission.VIEW_FINANCE_MODULE],
         },
       ],
     },
@@ -487,7 +536,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Money Collection",
       href: "/money-collection",
       icon: DollarSign,
-      permissions: navItemPermissions.moneyCollection,
+      permissions: [Permission.VIEW_MONEY_COLLECTION, Permission.CREATE_MONEY_COLLECTION],
       children: [
         {
           title: "All Collections",
@@ -505,42 +554,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Salary Management",
       href: "/salary",
       icon: DollarSign,
-      permissions: navItemPermissions.salary,
+      permissions: [Permission.VIEW_SALARY],
       children: [
         {
           title: "Overview",
           href: "/salary",
-          permissions: navItemPermissions.salary,
+          permissions: [Permission.VIEW_SALARY],
         },
         {
           title: "Salary Structures",
           href: "/salary/structures",
-          permissions: navItemPermissions.salaryStructures,
+          permissions: [Permission.MANAGE_SALARY_STRUCTURES],
         },
         {
           title: "Teacher Salaries",
           href: "/salary/teachers/assign",
-          permissions: navItemPermissions.teacherSalaries,
+          permissions: [Permission.MANAGE_TEACHER_SALARIES],
         },
         {
           title: "Employee Salaries",
           href: "/salary/employees/assign",
-          permissions: navItemPermissions.employeeSalaries,
+          permissions: [Permission.MANAGE_EMPLOYEE_SALARIES],
         },
         {
           title: "Salary Increments",
           href: "/salary/increments",
-          permissions: navItemPermissions.salaryIncrements,
+          permissions: [Permission.MANAGE_SALARY_INCREMENTS],
         },
         {
           title: "Increment History",
           href: "/salary/increments/history",
-          permissions: navItemPermissions.salaryIncrements,
+          permissions: [Permission.MANAGE_SALARY_INCREMENTS],
         },
         {
           title: "Process Payments",
           href: "/salary/payments",
-          permissions: navItemPermissions.salaryPayments,
+          permissions: [Permission.PROCESS_SALARY_PAYMENTS],
         },
       ],
     },
@@ -548,22 +597,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Transport",
       href: "/transport",
       icon: Bus,
-      permissions: navItemPermissions.transport,
+      permissions: [Permission.VIEW_TRANSPORT],
       children: [
         {
           title: "Routes",
           href: "/transport/routes",
-          permissions: navItemPermissions.transportRoutes,
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
         },
         {
           title: "Stops",
           href: "/transport/stops",
-          permissions: navItemPermissions.transportStops,
+          permissions: [Permission.MANAGE_TRANSPORT_STOPS],
         },
         {
           title: "Assignments",
           href: "/transport/assignments",
-          permissions: navItemPermissions.transportAssignments,
+          permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
         },
       ],
     },
@@ -571,89 +620,89 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Settings",
       href: "/settings",
       icon: Settings,
-      permissions: navItemPermissions.settings,
+      permissions: [Permission.VIEW_SETTINGS],
       children: [
         {
           title: "Branches",
           href: "/settings/branches",
-          permissions: navItemPermissions.branches,
+          permissions: [Permission.MANAGE_BRANCHES],
         },
         {
           title: "Academic Sessions",
           href: "/settings/academic-sessions",
-          permissions: navItemPermissions.academicSessions,
+          permissions: [Permission.MANAGE_ACADEMIC_SESSIONS],
         },
         {
           title: "Subjects",
           href: "/settings/subjects",
-          permissions: navItemPermissions.subjects,
+          permissions: [Permission.MANAGE_SUBJECTS],
         },
         {
           title: "Users",
           href: "/settings/users",
-          permissions: navItemPermissions.users,
+          permissions: [Permission.MANAGE_ROLES],
         },
         {
-          title: "RBAC Settings",
-          href: "/settings/rbac",
+          title: "Roles",
+          href: "/settings/roles",
           permissions: [Permission.MANAGE_ROLES],
         },
         {
           title: "Attendance Configuration",
           href: "/settings/attendance-config",
-          permissions: navItemPermissions.attendanceConfig,
+          permissions: [Permission.MANAGE_ATTENDANCE_CONFIG],
         },
         {
           title: "Email Configuration",
           href: "/settings/email-config",
-          permissions: navItemPermissions.settings,
+          permissions: [Permission.VIEW_SETTINGS],
         },
         {
           title: "Background Services",
           href: "/settings/background-services",
-          permissions: navItemPermissions.settings,
+          permissions: [Permission.VIEW_SETTINGS],
         },
         {
           title: "AI Configuration",
           href: "/settings/ai-configuration",
-          permissions: navItemPermissions.questionPapers,
+          permissions: [Permission.VIEW_SETTINGS],
         },
       ],
     },
   ];
 
-  // LMS section items (learning management and educational features)
+  // Learning Management System section items
   const lmsItems = [
     {
       title: "Question Papers",
       href: "/question-papers",
       icon: BookOpen,
-      permissions: navItemPermissions.questionPapers,
+      permissions: [Permission.VIEW_QUESTION_PAPERS, Permission.MANAGE_QUESTION_PAPERS],
       children: [
         {
           title: "Dashboard",
           href: "/question-papers",
-          permissions: navItemPermissions.questionPapers,
+          permissions: [Permission.VIEW_QUESTION_PAPERS],
         },
         {
           title: "Create Blueprint",
           href: "/question-papers/blueprints/create",
-          permissions: navItemPermissions.createQuestionPaper,
+          permissions: [Permission.CREATE_QUESTION_PAPER],
         },
         {
           title: "Create Question Paper",
           href: "/question-papers/create",
-          permissions: navItemPermissions.createQuestionPaper,
+          permissions: [Permission.CREATE_QUESTION_PAPER],
         },
         {
           title: "All Question Papers",
           href: "/question-papers/list",
-          permissions: navItemPermissions.questionPapers,
+          permissions: [Permission.VIEW_QUESTION_PAPERS],
         },
         {
           title: "Manage Question Papers",
           href: "/question-papers/manage",
-          permissions: navItemPermissions.manageQuestionPapers,
+          permissions: [Permission.MANAGE_QUESTION_PAPERS],
         },
       ],
     },
@@ -661,66 +710,71 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Examination",
       href: "/examination",
       icon: ClipboardCheck,
-      permissions: navItemPermissions.examination,
+      permissions: [Permission.VIEW_EXAMINATIONS],
       children: [
         {
           title: "Dashboard",
           href: "/examination",
-          permissions: navItemPermissions.examination,
+          permissions: [Permission.VIEW_EXAMINATIONS],
         },
         {
           title: "Configuration",
           href: "/examination/config",
-          permissions: navItemPermissions.examination,
+          permissions: [Permission.MANAGE_EXAM_CONFIGURATIONS],
           children: [
             {
               title: "Assessment Schemas",
               href: "/examination/assessment-schemas",
-              permissions: navItemPermissions.manageAssessments,
+              permissions: [Permission.MANAGE_ASSESSMENTS],
             },
             {
               title: "Grade Configuration",
               href: "/examination/grade-scales",
-              permissions: navItemPermissions.gradeScales,
+              permissions: [Permission.MANAGE_GRADE_SCALES],
             },
             {
               title: "Term Configuration",
               href: "/examination/config/terms",
-              permissions: navItemPermissions.terms,
+              permissions: [Permission.MANAGE_ACADEMIC_SESSIONS],
             },
           ],
         },
         {
           title: "Score Entry",
           href: "/examination/score-entry",
-          permissions: navItemPermissions.enterMarks,
+          permissions: [Permission.ENTER_MARKS],
         },
         {
           title: "Results & Analytics",
           href: "/examination/results-dashboard",
-          permissions: navItemPermissions.examination,
+          permissions: [Permission.VIEW_EXAMINATIONS],
         },
       ],
     },
   ];
 
-  // Reports section items (analytics, reporting, and feedback features)
+  // Reports section items
   const reportsItems = [
     {
       title: "Courtesy Calls",
-      href: "/courtesy-calls/teacher",
+      href: "/courtesy-calls",
       icon: MessageSquare,
-      permissions: navItemPermissions.courtesyCalls,
+      permissions: [
+        Permission.VIEW_COURTESY_CALLS,
+        Permission.VIEW_OWN_COURTESY_CALL_FEEDBACK,
+        Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK,
+        Permission.VIEW_COURTESY_CALLS_DASHBOARD,
+      ],
       children: [
         {
           title: "Teacher View",
           href: "/courtesy-calls/teacher",
-          permissions: navItemPermissions.viewOwnCourtesyCallFeedback,
+          permissions: [Permission.VIEW_OWN_COURTESY_CALL_FEEDBACK],
         },
         {
           title: "Head View",
           href: "/courtesy-calls/head",
-          permissions: navItemPermissions.viewAllCourtesyCallFeedback,
+          permissions: [Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK],
         },
       ],
     },
@@ -728,25 +782,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Attendance Reports",
       href: "/attendance/reports",
       icon: BarChart3,
-      permissions: navItemPermissions.attendanceReports,
+      permissions: [Permission.VIEW_ATTENDANCE_REPORTS],
     },
     {
       title: "Examination Reports",
       href: "/examination/reports",
       icon: FileText,
-      permissions: navItemPermissions.examReports,
+      permissions: [Permission.VIEW_EXAM_REPORTS],
     },
     {
       title: "Finance Reports",
       href: "/finance/reports",
       icon: CreditCard,
-      permissions: navItemPermissions.financeReports,
+      permissions: [Permission.VIEW_FINANCE_REPORTS],
     },
     {
       title: "System Reports",
       href: "/reports",
       icon: FileText,
-      permissions: navItemPermissions.reports,
+      permissions: [Permission.VIEW_REPORTS],
     },
   ];
 
@@ -755,26 +809,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return effectiveIsSuperAdmin
       ? items  // Superadmin or force mode sees everything
       : items.filter(item => {
-          // Generic approach: First check module view permission based on module title
-          const viewPermission = moduleViewPermissions[item.title];
+          // Check if user has any of the item's permissions
+          const hasItemPermission = canAccess(item.permissions);
           
-          if (viewPermission) {
-            // Check permission directly using can() 
-            const hasViewPermission = can(viewPermission);
-            
-            if (hasViewPermission) {
-              return true;
-            }
+          if (hasItemPermission) {
+            return true;
           }
           
-          // If no match in moduleViewPermissions mapping or permission check failed,
-          // fall back to standard permission checks from the navItemPermissions
-          const hasPermissionViaStandard = canAccess(item.permissions);
-          
-          // Also check if any child items are accessible
+          // If no match in permission check, check if any child items are accessible
           const hasPermissionViaChildren = item.children?.some(child => canAccess(child.permissions));
           
-          const shouldShow = hasPermissionViaStandard || hasPermissionViaChildren;
+          const shouldShow = hasPermissionViaChildren;
           
           return shouldShow;
         }).map(item => {
@@ -812,7 +857,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filteredReportsItems = isHardcodedSuperAdmin ? reportsItems : filterMenuItems(reportsItems);
 
   // Check if main dashboard should be shown
-  const showMainDashboard = effectiveIsSuperAdmin || canAccess(navItemPermissions.dashboard);
+  const showMainDashboard = effectiveIsSuperAdmin || canAccess([Permission.VIEW_DASHBOARD]);
 
   console.log('🔍 Filtered nav items:', {
     isHardcodedSuperAdmin,
@@ -839,7 +884,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleSignOut = async () => {
     try {
       // Sign out with redirect to login page
-      await signOut({ redirectUrl: "/sign-in" });
+      await logout();
     } catch (error) {
       console.error("Error signing out:", error);
       // Fallback: redirect to login page even if there's an error
@@ -1176,7 +1221,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <AvatarImage src={user.image || undefined} alt={user.name || "User"} />
                         <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
                           {(user.name 
-                            ? user.name.split(' ').map(n => n[0]?.[0] || '').join('').toUpperCase() 
+                            ? user.name.split(' ').map((n: string) => n[0]?.[0] || '').join('').toUpperCase() 
                             : 'U').slice(0,2)}
                         </AvatarFallback>
                       </Avatar>
@@ -1210,7 +1255,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <AvatarImage src={user?.image || undefined} alt={user?.name || "User"} />
                       <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
                         {(user?.name 
-                          ? user.name.split(' ').map(n => n[0]?.[0] || '').join('').toUpperCase() 
+                          ? user.name.split(' ').map((n: string) => n[0]?.[0] || '').join('').toUpperCase() 
                           : 'U').slice(0,2)}
                       </AvatarFallback>
                     </Avatar>

@@ -1,14 +1,12 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
-import { SessionProvider } from "next-auth/react";
+// SessionProvider no longer needed with Supabase auth
 
 export default function AttendanceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      <AppLayout title="Attendance" description="Manage attendance for teachers and students">
-        {children}
-      </AppLayout>
-    </SessionProvider>
+    <AppLayout title="Attendance" description="Manage attendance for teachers and students">
+      {children}
+    </AppLayout>
   );
 } 

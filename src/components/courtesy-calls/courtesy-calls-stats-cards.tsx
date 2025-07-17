@@ -42,7 +42,9 @@ export function CourtesyCallsStatsCards({
     fromDate,
     toDate
   }, {
-    enabled: !!(branchId || fallbackBranchId)
+    enabled: !!(branchId || fallbackBranchId),
+    staleTime: 5 * 60 * 1000, // 5 minutes - don't refetch if data is less than 5 minutes old
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
   // Calculate derived stats

@@ -1,13 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { createStudentUser, createParentUser } from "@/utils/clerk";
-import { Clerk } from '@clerk/clerk-sdk-node';
-import { env } from '@/env';
+import { createStudentUser, createParentUser, deleteUser } from "@/utils/supabase-auth";
 import { type Prisma } from "@prisma/client";
-
-// Initialize Clerk client for user deletion
-const clerk = Clerk({ secretKey: env.CLERK_SECRET_KEY || "" });
 
 export const studentRouter = createTRPCRouter({
   getStats: publicProcedure
@@ -548,7 +543,7 @@ export const studentRouter = createTRPCRouter({
             lastName: parentLastName,
             username: finalParentUsername,
             password: finalParentPassword,
-            email: parentEmail || undefined,
+            email: parentEmail || "",
             branchId: input.branchId,
           });
           clerkParentId = parentUser.id;
@@ -744,20 +739,20 @@ export const studentRouter = createTRPCRouter({
           where: { studentId: input.id },
         });
 
-        // Delete Clerk users
+        // Delete Supabase users
         if (student.clerkId) {
           try {
-            await clerk.users.deleteUser(student.clerkId);
+            await deleteUser(student.clerkId);
           } catch (error) {
-            console.error(`Error deleting Clerk user for student:`, error);
+            console.error(`Error deleting Supabase user for student:`, error);
           }
         }
 
         if (student.parent?.clerkId) {
           try {
-            await clerk.users.deleteUser(student.parent.clerkId);
+            await deleteUser(student.parent.clerkId);
           } catch (error) {
-            console.error(`Error deleting Clerk user for parent:`, error);
+            console.error(`Error deleting Supabase user for parent:`, error);
           }
         }
 
@@ -815,17 +810,17 @@ export const studentRouter = createTRPCRouter({
         for (const student of students) {
           if (student.clerkId) {
             try {
-              await clerk.users.deleteUser(student.clerkId);
+              await deleteUser(student.clerkId);
             } catch (error) {
-              console.error(`Error deleting Clerk user for student:`, error);
+              console.error(`Error deleting Supabase user for student:`, error);
             }
           }
 
           if (student.parent?.clerkId) {
             try {
-              await clerk.users.deleteUser(student.parent.clerkId);
+              await deleteUser(student.parent.clerkId);
             } catch (error) {
-              console.error(`Error deleting Clerk user for parent:`, error);
+              console.error(`Error deleting Supabase user for parent:`, error);
             }
           }
         }
