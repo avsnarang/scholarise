@@ -1374,14 +1374,7 @@ export const teacherRouter = createTRPCRouter({
                 }
               }
             },
-            subjectAssignments: {
-              where: { isActive: true },
-              include: {
-                subject: true,
-                class: true,
-                section: true
-              }
-            },
+
             leaveApplications: {
               where: {
                 createdAt: {

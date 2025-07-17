@@ -283,7 +283,7 @@ export default function CourtesyCallsDashboardPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Date Range</label>
                   <DatePickerWithRange
-                    date={dateRange}
+                    date={dateRange || { from: undefined, to: undefined }}
                     onDateChange={setDateRange}
                   />
                 </div>
@@ -346,7 +346,7 @@ export default function CourtesyCallsDashboardPage() {
                   icon={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
                   subtitle=""
                   trend={analyticsData?.summary.growthRate}
-                  isPositiveTrend={analyticsData?.summary.growthRate >= 0}
+                  isPositiveTrend={(analyticsData?.summary.growthRate ?? 0) >= 0}
                   isUpdating={isFetching && !isLoading}
                 />
 
@@ -354,8 +354,8 @@ export default function CourtesyCallsDashboardPage() {
                   title="Teacher Feedback"
                   value={analyticsData?.summary.teacherFeedback || 0}
                   icon={<UserCheck className="h-4 w-4 text-muted-foreground" />}
-                  subtitle={`${analyticsData?.summary.totalFeedback > 0 
-                    ? Math.round(((analyticsData?.summary.teacherFeedback || 0) / analyticsData.summary.totalFeedback) * 100)
+                  subtitle={`${(analyticsData?.summary.totalFeedback || 0) > 0 
+                    ? Math.round(((analyticsData?.summary.teacherFeedback || 0) / (analyticsData?.summary.totalFeedback || 1)) * 100)
                     : 0}% of total feedback`}
                   isUpdating={isFetching && !isLoading}
                 />
@@ -364,8 +364,8 @@ export default function CourtesyCallsDashboardPage() {
                   title="Head Feedback"
                   value={analyticsData?.summary.headFeedback || 0}
                   icon={<School className="h-4 w-4 text-muted-foreground" />}
-                  subtitle={`${analyticsData?.summary.totalFeedback > 0 
-                    ? Math.round(((analyticsData?.summary.headFeedback || 0) / analyticsData.summary.totalFeedback) * 100)
+                  subtitle={`${(analyticsData?.summary.totalFeedback || 0) > 0 
+                    ? Math.round(((analyticsData?.summary.headFeedback || 0) / (analyticsData?.summary.totalFeedback || 1)) * 100)
                     : 0}% of total feedback`}
                   isUpdating={isFetching && !isLoading}
                 />
@@ -382,7 +382,7 @@ export default function CourtesyCallsDashboardPage() {
               {/* Charts Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Feedback by Type Chart */}
-                {analyticsData?.charts?.feedbackByType?.length > 0 && (
+                {(analyticsData?.charts?.feedbackByType?.length || 0) > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Feedback Distribution</CardTitle>
@@ -404,7 +404,7 @@ export default function CourtesyCallsDashboardPage() {
                 )}
 
                 {/* Class-wise Distribution */}
-                {analyticsData?.charts?.classWiseDistribution?.length > 0 && (
+                {(analyticsData?.charts?.classWiseDistribution?.length || 0) > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Top Classes by Feedback</CardTitle>
@@ -433,7 +433,7 @@ export default function CourtesyCallsDashboardPage() {
             {/* Trends Tab */}
             <TabsContent value="trends" className="space-y-6">
               {/* Daily Trends Line Chart */}
-              {analyticsData?.charts?.dailyTrends?.length > 0 && (
+              {(analyticsData?.charts?.dailyTrends?.length || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Feedback Trends Over Time</CardTitle>
@@ -444,7 +444,7 @@ export default function CourtesyCallsDashboardPage() {
                   <CardContent>
                     <div className="h-80">
                       <LineChart
-                        data={analyticsData.charts.dailyTrends}
+                        data={analyticsData?.charts?.dailyTrends || []}
                         index="date"
                         categories={["Teacher", "Head", "Total"]}
                         colors={["blue", "green", "purple"]}
@@ -459,7 +459,7 @@ export default function CourtesyCallsDashboardPage() {
               )}
 
               {/* Weekly Volume Trends */}
-              {analyticsData.charts.dailyTrends.length > 0 && (
+              {(analyticsData?.charts?.dailyTrends?.length || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Weekly Volume Trends</CardTitle>
@@ -470,7 +470,7 @@ export default function CourtesyCallsDashboardPage() {
                   <CardContent>
                     <div className="h-80">
                       <AreaChart
-                        data={analyticsData.charts.dailyTrends}
+                        data={analyticsData?.charts?.dailyTrends || []}
                         index="date"
                         categories={["Total"]}
                         colors={["#3b82f6"]}
@@ -499,7 +499,7 @@ export default function CourtesyCallsDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analyticsData.recentActivity.map((activity, index) => (
+                    {(analyticsData?.recentActivity || []).map((activity, index) => (
                       <div
                         key={activity.id}
                         className="flex items-start justify-between p-4 bg-muted/50 rounded-lg"
@@ -535,7 +535,7 @@ export default function CourtesyCallsDashboardPage() {
                       </div>
                     ))}
                     
-                    {analyticsData.recentActivity.length === 0 && (
+                    {(analyticsData?.recentActivity?.length || 0) === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
                         No recent activity found for the selected period.
                       </div>

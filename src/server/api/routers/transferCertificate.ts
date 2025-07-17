@@ -135,9 +135,7 @@ export const transferCertificateRouter = createTRPCRouter({
       // Check if student exists and is active
       const student = await ctx.db.student.findUnique({
         where: { id: input.studentId },
-        include: {
-          transferCertificates: true,
-        },
+
       });
 
       if (!student) {
@@ -155,7 +153,9 @@ export const transferCertificateRouter = createTRPCRouter({
       }
 
       // Check if student already has an active transfer certificate
-      const existingTC = student.transferCertificates.find(tc => tc.id);
+      const existingTC = await ctx.db.transferCertificate.findFirst({
+        where: { studentId: input.studentId }
+      });
       if (existingTC) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -301,7 +301,7 @@ export const transferCertificateRouter = createTRPCRouter({
               isActive: true, // Only active students
             },
             {
-              transferCertificates: {
+              transferCertificate: {
                 none: {}, // Students without existing TCs
               },
             },
