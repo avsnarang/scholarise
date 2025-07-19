@@ -8,13 +8,6 @@ The communication system has been successfully migrated from WATI API to Twilio 
 
 Add these to your `.env` file:
 
-```bash
-# Twilio Configuration
-TWILIO_ACCOUNT_SID=ACe8fce7f3cd8cabb29d7c9b5026fd8325
-TWILIO_AUTH_TOKEN=7c0f38979ea4ccbc53522b89510b4fdf
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-```
-
 ## 📁 **Files Modified**
 
 ### 1. **Database Schema** - `prisma/schema.prisma`
