@@ -163,15 +163,55 @@ export class TwilioApiClient {
         throw new Error(`Invalid Account SID format: ${accountSid}`);
       }
       
-      return {
-        result: true,
-        data: {
-          accountSid: accountSid.substring(0, 8) + '...',  // Show partial for security
-          status: 'Connected',
-          fromNumber: this.fromNumber
-        },
-        info: 'Twilio API connection successful'
-      };
+      // Make an actual API call to verify authentication
+      console.log('🌐 Making real API call to verify authentication...');
+      try {
+        // Fetch account details to verify auth
+        const account = await this.twilioClient.api.v2010.accounts(accountSid).fetch();
+        console.log('✅ Real API call successful - account status:', account.status);
+        
+        // Also verify WhatsApp messaging capabilities if possible
+        let whatsappStatus = 'Unknown';
+        try {
+          // Try to list WhatsApp senders to verify WhatsApp permissions
+          const whatsappSenders = await this.twilioClient.messaging.v1.services.list({ limit: 1 });
+          whatsappStatus = whatsappSenders.length > 0 ? 'Available' : 'No services configured';
+        } catch (whatsappError) {
+          console.warn('WhatsApp capability check failed:', whatsappError);
+          whatsappStatus = 'Check required';
+        }
+        
+        return {
+          result: true,
+          data: {
+            accountSid: accountSid.substring(0, 8) + '...',
+            status: account.status,
+            fromNumber: this.fromNumber,
+            whatsappStatus,
+            realApiCall: true
+          },
+          info: 'Twilio API connection and authentication verified'
+        };
+      } catch (apiError: any) {
+        console.error('❌ Real API call failed:', apiError);
+        
+        // Parse Twilio-specific errors
+        let errorMessage = apiError.message || 'API call failed';
+        if (apiError.code === 20003) {
+          errorMessage = 'Authentication failed: Invalid Account SID or Auth Token';
+        } else if (apiError.status === 401) {
+          errorMessage = 'Authentication failed: Invalid credentials';
+        } else if (apiError.status === 403) {
+          errorMessage = 'Authentication failed: Account permissions issue';
+        }
+        
+        return {
+          result: false,
+          error: errorMessage,
+          info: 'Real API authentication failed'
+        };
+      }
+      
     } catch (error: any) {
       console.error('Twilio connection test failed:', error);
       console.error('Error details:', {
