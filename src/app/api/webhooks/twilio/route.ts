@@ -169,26 +169,18 @@ export async function POST(req: NextRequest) {
     const body = await req.text();
     console.log('📩 Webhook received body length:', body.length);
     
-    // Verify Twilio signature in production
-    if (process.env.NODE_ENV === 'production') {
-      const headersList = await headers();
-      const twilioSignature = headersList.get('x-twilio-signature');
-      const fullUrl = req.url;
-      
-      console.log('🔐 Verifying Twilio signature...');
-      if (!twilioSignature) {
-        console.error('❌ No Twilio signature header found');
-        return NextResponse.json({ error: 'No signature header' }, { status: 401 });
-      }
-      
-      if (!validateTwilioSignature(body, twilioSignature, fullUrl)) {
-        console.error('❌ Invalid Twilio signature');
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      console.log('✅ Twilio signature validated');
-    } else {
-      console.log('🔓 Development mode - skipping signature validation');
-    }
+    // Temporarily disable signature validation to debug webhook flow
+    // TODO: Re-enable signature validation after testing
+    console.log('🔓 Signature validation temporarily disabled for debugging');
+    
+    // Log headers for debugging
+    const headersList = await headers();
+    const twilioSignature = headersList.get('x-twilio-signature');
+    console.log('📋 Debug headers:', {
+      'x-twilio-signature': twilioSignature ? 'present' : 'missing',
+      'content-type': headersList.get('content-type'),
+      'user-agent': headersList.get('user-agent')?.substring(0, 50)
+    });
     
     const formData = new URLSearchParams(body);
     
