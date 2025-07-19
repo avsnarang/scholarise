@@ -50,6 +50,8 @@ export function RoleManagement() {
   const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<any>(null);
   const [formData, setFormData] = useState<RoleFormData>({
     name: "",
     description: "",
@@ -60,10 +62,11 @@ export function RoleManagement() {
   const { data: roles = [], isLoading: isLoadingRoles, refetch: refetchRoles } = api.role.getAll.useQuery({});
   const { data: rawPermissions = [], isLoading: isLoadingPermissions } = api.permission.getAll.useQuery({});
   
-  // Map permissions to ensure description is never null
+  // Map permissions to ensure description is never null and add category
   const permissions = rawPermissions.map(permission => ({
     ...permission,
-    description: permission.description || ''
+    description: permission.description || '',
+    category: permission.category || 'Other'
   }));
 
   // Mutations
@@ -79,10 +82,48 @@ export function RoleManagement() {
     },
   });
 
-  // TODO: Implement these mutations in the role router
-  // const updatePermissionsMutation = api.role.updatePermissions.useMutation({...});
-  // const seedDefaultRolesMutation = api.role.seedDefaultRoles.useMutation({...});
-  // const clearCacheMutation = api.role.clearCache.useMutation({...});
+  const updatePermissionsMutation = api.role.updatePermissions.useMutation({
+    onSuccess: () => {
+      toast.success("Role permissions updated successfully");
+      refetchRoles();
+      setIsEditDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update role permissions");
+    },
+  });
+
+  const seedDefaultRolesMutation = api.role.seedDefaultRoles.useMutation({
+    onSuccess: () => {
+      toast.success("Default roles seeded successfully");
+      refetchRoles();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to seed default roles");
+    },
+  });
+
+  const clearCacheMutation = api.role.clearCache.useMutation({
+    onSuccess: () => {
+      toast.success("Cache cleared successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to clear cache");
+    },
+  });
+
+  const deleteRoleMutation = api.role.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Role deleted successfully");
+      refetchRoles();
+      setIsDeleteDialogOpen(false);
+      setRoleToDelete(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete role");
+    },
+  });
 
   const resetForm = () => {
     setFormData({
@@ -99,8 +140,22 @@ export function RoleManagement() {
 
   const handleUpdatePermissions = () => {
     if (!selectedRole) return;
-    // TODO: Implement update permissions API
-    toast.error("Update permissions not yet implemented");
+    if (updatePermissionsMutation.mutate) {
+      updatePermissionsMutation.mutate({
+        roleId: selectedRole.id,
+        permissions: formData.permissions,
+      });
+    }
+  };
+
+  const handleDeleteRole = (role: any) => {
+    setRoleToDelete(role);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteRole = () => {
+    if (!roleToDelete) return;
+    deleteRoleMutation.mutate({ id: roleToDelete.id });
   };
 
   const handleEditRole = (role: any) => {
@@ -126,8 +181,6 @@ export function RoleManagement() {
         : [...prev.permissions, permission],
     }));
   };
-
-
 
   // Permission check
   if (!can(Permission.MANAGE_ROLES)) {
@@ -161,15 +214,15 @@ export function RoleManagement() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => toast.info("Feature coming soon")}
-            disabled={true}
+            onClick={() => clearCacheMutation.mutate()}
+            disabled={clearCacheMutation.isPending}
           >
             Clear Cache
           </Button>
           <Button
             variant="outline"
-            onClick={() => toast.info("Feature coming soon")}
-            disabled={true}
+            onClick={() => seedDefaultRolesMutation.mutate()}
+            disabled={seedDefaultRolesMutation.isPending}
           >
             Seed Default Roles
           </Button>
@@ -246,7 +299,7 @@ export function RoleManagement() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {role.permissions.length} permissions
+                        {role.permissions?.length || 0} permissions
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -283,6 +336,7 @@ export function RoleManagement() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteRole(role)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -313,9 +367,53 @@ export function RoleManagement() {
             onPermissionToggle={handlePermissionToggle}
             onSave={handleUpdatePermissions}
             onCancel={() => setIsEditDialogOpen(false)}
-            isLoading={false}
+            isLoading={updatePermissionsMutation.isPending}
             isEdit={true}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Role Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Delete Role
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the role "{roleToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setRoleToDelete(null);
+              }}
+              disabled={deleteRoleMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteRole}
+              disabled={deleteRoleMutation.isPending}
+            >
+              {deleteRoleMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Role
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

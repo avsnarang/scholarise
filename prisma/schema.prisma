@@ -63,6 +63,10 @@ model Branch {
   attendanceLocations        AttendanceLocation[]
   attendanceWindows          AttendanceWindow[]
   locationTypes              LocationType[]
+  whatsappTemplates          WhatsAppTemplate[]
+  communicationMessages      CommunicationMessage[]
+  communicationSettings      CommunicationSettings?
+  conversations              Conversation[]
 }
 
 model User {
@@ -2216,4 +2220,280 @@ enum AssessmentPermissionType {
   SUBJECT_COORDINATOR
   TEACHER
   VIEW_ONLY
+}
+
+// Communication Module Models
+model WhatsAppTemplate {
+  id                    String                 @id @default(cuid())
+  name                  String
+  description           String?
+  watiTemplateId        String?                @unique // Template ID from Wati API (optional)
+  twilioContentSid      String?                @unique // Twilio Content SID (optional)
+  templateBody          String                 // Template content
+  templateVariables     String[]               @default([]) // Variables that can be customized
+  category              String                 // Category like "utility", "marketing", etc.
+  language              String                 @default("en")
+  status                WhatsAppTemplateStatus @default(PENDING)
+  isActive              Boolean                @default(true)
+  branchId              String?                // Optional - templates are now global but can track origin branch
+  createdBy             String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  
+  // Relations
+  branch                Branch?                @relation(fields: [branchId], references: [id])
+  messages              CommunicationMessage[]
+  
+  @@index([branchId])
+  @@index([status])
+  @@index([isActive])
+}
+
+model CommunicationMessage {
+  id                    String              @id @default(cuid())
+  title                 String
+  templateId            String?
+  customMessage         String?             // For custom messages not using templates
+  messageType           MessageType         @default(WHATSAPP)
+  recipientType         RecipientType
+  status                MessageStatus       @default(PENDING)
+  scheduledAt           DateTime?           // For scheduled messages
+  sentAt                DateTime?
+  totalRecipients       Int                 @default(0)
+  successfulSent        Int                 @default(0)
+  failed                Int                 @default(0)
+  watiMessageId         String?             // ID from Wati API (optional)
+  twilioMessageId       String?             // ID from Twilio API (optional)
+  branchId              String
+  createdBy             String
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  branch                Branch              @relation(fields: [branchId], references: [id])
+  template              WhatsAppTemplate?   @relation(fields: [templateId], references: [id])
+  recipients            MessageRecipient[]
+  logs                  CommunicationLog[]
+  
+  @@index([branchId])
+  @@index([status])
+  @@index([messageType])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+model MessageRecipient {
+  id                    String              @id @default(cuid())
+  messageId             String
+  recipientType         String              // "student", "teacher", "employee", "parent"
+  recipientId           String              // ID of the recipient
+  recipientName         String
+  recipientPhone        String
+  status                RecipientStatus     @default(PENDING)
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  readAt                DateTime?
+  watiMessageId         String?             // Individual message ID from Wati (optional)
+  twilioMessageId       String?             // Individual message ID from Twilio (optional)
+  errorMessage          String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  message               CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+  @@index([recipientType])
+  @@index([status])
+}
+
+model CommunicationLog {
+  id                    String              @id @default(cuid())
+  messageId             String?
+  action                String              // "template_created", "message_sent", "delivery_confirmed", etc.
+  description           String
+  metadata              Json?               // Additional data
+  userId                String
+  createdAt             DateTime            @default(now())
+  
+  // Relations
+  message               CommunicationMessage? @relation(fields: [messageId], references: [id])
+  
+  @@index([messageId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Communication Enums
+enum WhatsAppTemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+}
+
+enum MessageType {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum RecipientType {
+  INDIVIDUAL_STUDENTS
+  ENTIRE_CLASS
+  SPECIFIC_SECTION
+  MULTIPLE_CLASSES
+  ALL_TEACHERS
+  SPECIFIC_TEACHERS
+  ALL_EMPLOYEES
+  SPECIFIC_EMPLOYEES
+  PARENTS
+  CUSTOM_GROUP
+}
+
+enum MessageStatus {
+  DRAFT
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+  SCHEDULED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+// Communication Settings Model
+model CommunicationSettings {
+  id                              String   @id @default(cuid())
+  branchId                        String   @unique
+  
+  // Wati API Configuration (optional)
+  watiApiUrl                      String?
+  watiApiToken                    String?
+  watiPhoneNumberId               String?
+  watiIsActive                    Boolean  @default(false)
+  
+  // Twilio API Configuration (optional)
+  twilioAccountSid                String?
+  twilioAuthToken                 String?
+  twilioWhatsAppFrom              String?
+  twilioIsActive                  Boolean  @default(false)
+  
+  // Template Settings
+  templateAutoSyncEnabled         Boolean  @default(true)
+  templateSyncInterval            Int      @default(24) // hours
+  templateDefaultCategory         String?  @default("UTILITY")
+  templateDefaultLanguage         String   @default("en")
+  
+  // Message Settings
+  messageEnableScheduling         Boolean  @default(true)
+  messageMaxRecipientsPerMessage  Int      @default(1000)
+  messageRetryFailedMessages      Boolean  @default(true)
+  messageMaxRetryAttempts         Int      @default(3)
+  messageRetryDelay               Int      @default(30) // seconds
+  
+  // Notification Settings
+  notificationEmailEnabled        Boolean  @default(false)
+  notificationEmail               String?
+  notifyOnFailures                Boolean  @default(true)
+  notifyOnSuccess                 Boolean  @default(false)
+  notificationDailySummary        Boolean  @default(true)
+  
+  // General Settings
+  isActive                        Boolean  @default(true)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+  createdBy                       String?
+  updatedBy                       String?
+  
+  // Relations
+  branch                          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  
+  @@index([branchId])
+  @@index([isActive])
+}
+
+// Chat System Models for Bidirectional Communication
+model Conversation {
+  id                    String              @id @default(cuid())
+  participantType       String              // "student", "teacher", "employee", "parent"
+  participantId         String              // ID of the participant (student/teacher/employee/parent)
+  participantName       String              // Cached name for display
+  participantPhone      String              // Phone number (WhatsApp number)
+  branchId              String
+  lastMessageAt         DateTime?           // Last message timestamp for sorting
+  lastMessageContent    String?             // Preview of last message
+  lastMessageFrom       ChatMessageDirection // Who sent the last message
+  unreadCount           Int                 @default(0) // Unread messages from participant
+  isActive              Boolean             @default(true)
+  metadata              Json?               // Additional data (class info, etc.)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  branch                Branch              @relation(fields: [branchId], references: [id])
+  messages              ChatMessage[]
+  
+  @@unique([branchId, participantPhone]) // One conversation per phone number per branch
+  @@index([branchId])
+  @@index([participantType])
+  @@index([participantPhone])
+  @@index([lastMessageAt])
+  @@index([isActive])
+}
+
+model ChatMessage {
+  id                    String              @id @default(cuid())
+  conversationId        String
+  direction             ChatMessageDirection // INCOMING or OUTGOING
+  content               String              // Message content
+  messageType           ChatMessageType     @default(TEXT)
+  twilioMessageId       String?             // Twilio message SID
+  status                ChatMessageStatus   @default(SENT)
+  readAt                DateTime?           // When message was read
+  sentBy                String?             // User ID who sent the message (for outgoing)
+  mediaUrl              String?             // URL for media messages
+  mediaType             String?             // Type of media (image, document, etc.)
+  metadata              Json?               // Additional Twilio metadata
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  conversation          Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([conversationId])
+  @@index([direction])
+  @@index([createdAt])
+  @@index([twilioMessageId])
+  @@index([status])
+}
+
+// Chat Enums
+enum ChatMessageDirection {
+  INCOMING    // Message from user to school
+  OUTGOING    // Message from school to user
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  AUDIO
+  VIDEO
+  LOCATION
+}
+
+enum ChatMessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }

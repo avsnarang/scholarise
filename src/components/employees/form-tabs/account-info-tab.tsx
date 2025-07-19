@@ -1,7 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import type { EmployeeFormValues } from "@/server/api/employee-types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/utils/api";
@@ -14,19 +13,18 @@ interface AccountInfoTabProps {
 
 export function AccountInfoTab({ isEdit = false }: AccountInfoTabProps) {
   const { control, watch, getValues } = useFormContext<EmployeeFormValues>();
-  const createUser = watch("createUser");
   const currentEmail = watch("email");
   const currentRoleId = watch("roleId");
   
-  // Check if the user has an existing clerk account
+  // Check if the user has an existing account
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   
-  // Check when component mounts and when createUser changes
+  // Check when component mounts for existing accounts
   useEffect(() => {
-    if (isEdit && createUser) {
+    if (isEdit && currentEmail) {
       setHasExistingAccount(true);
     }
-  }, [isEdit, createUser]);
+  }, [isEdit, currentEmail]);
   
   // Fetch roles from the API
   const { data: dbRoles, isLoading: isLoadingRoles } = api.role.getAll.useQuery({});
@@ -62,149 +60,110 @@ export function AccountInfoTab({ isEdit = false }: AccountInfoTabProps) {
         </div>
       )}
       
-      <FormField
-        control={control}
-        name="createUser"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <FormLabel>
-                {hasExistingAccount ? "User Account Status" : "Create Login Account"}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Email */}
+        <FormField
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center">
+                Email <span className="text-red-500 ml-1">*</span>
               </FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  placeholder="employee@company.com" 
+                  type="email"
+                />
+              </FormControl>
+              <FormDescription>
+                This email will be used for system login
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Password */}
+        <FormField
+          control={control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center">
+                {hasExistingAccount ? "Update Password" : "Password"} <span className="text-red-500 ml-1">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  placeholder={hasExistingAccount ? "Leave blank to keep current password" : "Minimum 8 characters"} 
+                  type="password" 
+                />
+              </FormControl>
               <FormDescription>
                 {hasExistingAccount 
-                  ? "This employee has a login account that can access the system"
-                  : "Create a user account that can login to the system"
-                }
+                  ? "Enter new password only if you want to change it" 
+                  : "Minimum 8 characters required"}
               </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={hasExistingAccount} // Disable toggle for existing accounts
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-      {createUser && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
-          {/* Email */}
-          <FormField
-            control={control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {/* Role */}
+        <FormField
+          control={control}
+          name="roleId"
+          render={({ field }) => {
+            const currentRole = dbRoles?.find((role: any) => role.id === currentRoleId);
+            
+            return (
+              <FormItem className="md:col-span-2">
                 <FormLabel className="flex items-center">
-                  Email <span className="text-red-500 ml-1">*</span>
-                  {hasExistingAccount && currentEmail && (
+                  Role <span className="text-red-500 ml-1">*</span>
+                  {hasExistingAccount && currentRole && (
                     <span className="ml-2 text-xs font-normal text-green-600">
-                      (Current: {currentEmail})
+                      (Current: {currentRole.name.replace(/_/g, " ")})
                     </span>
                   )}
                 </FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    placeholder={hasExistingAccount ? "Update email address" : "Email address"} 
-                    type="email" 
-                  />
-                </FormControl>
+                <Select 
+                  onValueChange={field.onChange} 
+                  value={field.value || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {dbRoles?.map((role: any) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        <div className="flex items-center">
+                          <Badge 
+                            variant="outline" 
+                            className={`${getRoleBadgeColor(role.name)} text-xs font-normal mr-2`}
+                          >
+                            {role.name.replace(/_/g, " ")}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({role.description || role.name})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormDescription>
-                  {hasExistingAccount 
-                    ? "Current login email - update if needed" 
-                    : "This will be used for login"
-                  }
+                  Determines what the employee can access in the system
                 </FormDescription>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-
-          {/* Password */}
-          <FormField
-            control={control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center">
-                  {hasExistingAccount ? "Update Password" : "Password"} <span className="text-red-500 ml-1">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    placeholder={hasExistingAccount ? "Leave blank to keep current password" : "Password"} 
-                    type="password" 
-                  />
-                </FormControl>
-                <FormDescription>
-                  {hasExistingAccount 
-                    ? "Enter new password only if you want to change it" 
-                    : "Minimum 8 characters"}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          {/* Role */}
-          <FormField
-            control={control}
-            name="roleId"
-            render={({ field }) => {
-              const currentRole = dbRoles?.find((role: any) => role.id === currentRoleId);
-              
-              return (
-                <FormItem>
-                  <FormLabel className="flex items-center">
-                    Role <span className="text-red-500 ml-1">*</span>
-                    {hasExistingAccount && currentRole && (
-                      <span className="ml-2 text-xs font-normal text-green-600">
-                        (Current: {currentRole.name.replace(/_/g, " ")})
-                      </span>
-                    )}
-                  </FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {dbRoles?.map((role: any) => (
-                        <SelectItem key={role.id} value={role.id}>
-                          <div className="flex items-center">
-                            <Badge 
-                              variant="outline" 
-                              className={`${getRoleBadgeColor(role.name)} text-xs font-normal mr-2`}
-                            >
-                              {role.name.replace(/_/g, " ")}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground ml-2">
-                              ({role.description || role.name})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {hasExistingAccount 
-                      ? "Current user role - update if needed" 
-                      : "This determines what the user can access"
-                    }
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-        </div>
-      )}
+            );
+          }}
+        />
+      </div>
     </div>
   );
 } 

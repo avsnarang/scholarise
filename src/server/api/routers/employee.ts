@@ -131,14 +131,14 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
-      // If employee has a clerkId, fetch user role information (but use stored email)
+      // If employee has a userId, fetch user role information
       let userRoles: any[] = [];
-      if (employee.clerkId) {
+      if (employee.userId) {
         try {
-          // Get user role information - similar to teacher implementation
+          // Get user role information using the userId field
           userRoles = await ctx.db.userRole.findMany({
             where: {
-              userId: employee.clerkId,
+              userId: employee.userId,
               employeeId: employee.id,
             },
             include: {
@@ -255,15 +255,10 @@ export const employeeRouter = createTRPCRouter({
         // Use non-null assertion to ensure TypeScript recognizes this can't be undefined
         const primaryBranchId = input.branchAccess[0]!;
         
-        // Create a Clerk user account if requested
-        let clerkUserId = null;
-        if (
-          input.createUser &&
-          input.email &&
-          input.password &&
-          process.env.NODE_ENV === "production"
-        ) {
-          console.log("Attempting to create Clerk user for employee in production");
+        // Create a Supabase user account (always required for employees)
+        let supabaseUserId = null;
+        if (input.createUser && input.email && input.password) {
+          console.log("Attempting to create Supabase user for employee");
           try {
             // Generate a username from the email
             const email = input.email || '';
@@ -313,21 +308,40 @@ export const employeeRouter = createTRPCRouter({
                 roleName: roleName,
               });
 
-              clerkUserId = employeeUser.id;
-              console.log("Created Clerk user for employee:", clerkUserId);
-            } catch (clerkError) {
-              console.error("Failed to create Clerk user:", clerkError);
+              supabaseUserId = employeeUser.id;
+              console.log("Created Supabase user for employee:", supabaseUserId);
+
+              // Also create the User record in our database
+              try {
+                await ctx.db.user.create({
+                  data: {
+                    id: employeeUser.id,
+                    authIdentifier: input.email,
+                    email: input.email,
+                    firstName: input.firstName,
+                    lastName: input.lastName,
+                    userType: 'employee',
+                    isActive: true,
+                  },
+                });
+                console.log("Created User record in database");
+              } catch (userError) {
+                console.error("Failed to create User record (user may already exist):", userError);
+                // Don't throw error here as Supabase user was created successfully
+              }
+            } catch (supabaseError) {
+              console.error("Failed to create Supabase user:", supabaseError);
               
               // Format the error message to be more user-friendly
               let errorMessage = "Failed to create user account";
-              if (clerkError instanceof Error) {
-                errorMessage = clerkError.message;
+              if (supabaseError instanceof Error) {
+                errorMessage = supabaseError.message;
               }
               
               throw new TRPCError({
                 code: "BAD_REQUEST",
                 message: errorMessage,
-                cause: clerkError,
+                cause: supabaseError,
               });
             }
           } catch (error) {
@@ -350,111 +364,120 @@ export const employeeRouter = createTRPCRouter({
             });
           }
         } else {
-          console.log("Skipping Clerk user creation as conditions not met or not in production:", {
+          console.log("Skipping Supabase user creation as required fields not provided:", {
             createUser: input.createUser,
             hasEmail: !!input.email,
             hasPassword: !!input.password,
-            isProduction: process.env.NODE_ENV === "production",
           });
         }
 
-        console.log("Creating employee record in database, clerkId:", clerkUserId);
+        console.log("Creating employee record in database, supabaseUserId:", supabaseUserId);
         
+        // Prepare employee data
+        const employeeData: any = {
+          // Personal Info
+          firstName: input.firstName,
+          lastName: input.lastName,
+          dateOfBirth: input.dateOfBirth,
+          gender: input.gender,
+          bloodGroup: input.bloodGroup,
+          maritalStatus: input.maritalStatus,
+          nationality: input.nationality,
+          religion: input.religion,
+          panNumber: input.panNumber,
+          aadharNumber: input.aadharNumber,
+          
+          // Contact Information
+          address: input.address,
+          city: input.city,
+          state: input.state,
+          country: input.country,
+          pincode: input.pincode,
+          permanentAddress: input.permanentAddress,
+          permanentCity: input.permanentCity,
+          permanentState: input.permanentState,
+          permanentCountry: input.permanentCountry,
+          permanentPincode: input.permanentPincode,
+          phone: input.phone,
+          alternatePhone: input.alternatePhone,
+          personalEmail: input.personalEmail,
+          emergencyContactName: input.emergencyContactName,
+          emergencyContactPhone: input.emergencyContactPhone,
+          emergencyContactRelation: input.emergencyContactRelation,
+          
+          // Educational Qualifications
+          qualification: input.qualification,
+          specialization: input.specialization,
+          professionalQualifications: input.professionalQualifications,
+          specialCertifications: input.specialCertifications,
+          yearOfCompletion: input.yearOfCompletion,
+          institution: input.institution,
+          experience: input.experience,
+          bio: input.bio,
+          
+          // Employment Details
+          employeeCode: input.employeeCode,
+          designation: input.designation,
+          department: input.department,
+          joinDate: input.joinDate ?? new Date(),
+          reportingManager: input.reportingManager,
+          employeeType: input.employeeType,
+          previousExperience: input.previousExperience,
+          previousEmployer: input.previousEmployer,
+          confirmationDate: input.confirmationDate,
+          // Using explicit branch relation instead of direct ID
+          branch: {
+            connect: {
+              id: primaryBranchId
+            }
+          },
+          isActive: input.isActive ?? true,
+          
+          // Salary & Banking Details
+          salaryStructure: input.salaryStructure,
+          pfNumber: input.pfNumber,
+          esiNumber: input.esiNumber,
+          uanNumber: input.uanNumber,
+          bankName: input.bankName,
+          accountNumber: input.accountNumber,
+          ifscCode: input.ifscCode,
+          
+          // IT & Asset Allocation
+          officialEmail: input.email || input.officialEmail,
+          deviceIssued: input.deviceIssued,
+          accessCardId: input.accessCardId,
+          softwareLicenses: input.softwareLicenses,
+          assetReturnStatus: input.assetReturnStatus,
+        };
+
+        // Connect to User record if we have one
+        if (supabaseUserId) {
+          employeeData.user = {
+            connect: { id: supabaseUserId }
+          };
+        }
+
         // Create employee record with primary branch
         const employee = await ctx.db.employee.create({
-          data: {
-            // Personal Info
-            firstName: input.firstName,
-            lastName: input.lastName,
-            dateOfBirth: input.dateOfBirth,
-            gender: input.gender,
-            bloodGroup: input.bloodGroup,
-            maritalStatus: input.maritalStatus,
-            nationality: input.nationality,
-            religion: input.religion,
-            panNumber: input.panNumber,
-            aadharNumber: input.aadharNumber,
-            
-            // Contact Information
-            address: input.address,
-            city: input.city,
-            state: input.state,
-            country: input.country,
-            pincode: input.pincode,
-            permanentAddress: input.permanentAddress,
-            permanentCity: input.permanentCity,
-            permanentState: input.permanentState,
-            permanentCountry: input.permanentCountry,
-            permanentPincode: input.permanentPincode,
-            phone: input.phone,
-            alternatePhone: input.alternatePhone,
-            personalEmail: input.personalEmail,
-            emergencyContactName: input.emergencyContactName,
-            emergencyContactPhone: input.emergencyContactPhone,
-            emergencyContactRelation: input.emergencyContactRelation,
-            
-            // Educational Qualifications
-            qualification: input.qualification,
-            specialization: input.specialization,
-            professionalQualifications: input.professionalQualifications,
-            specialCertifications: input.specialCertifications,
-            yearOfCompletion: input.yearOfCompletion,
-            institution: input.institution,
-            experience: input.experience,
-            bio: input.bio,
-            
-            // Employment Details
-            employeeCode: input.employeeCode,
-            designation: input.designation,
-            department: input.department,
-            joinDate: input.joinDate ?? new Date(),
-            reportingManager: input.reportingManager,
-            employeeType: input.employeeType,
-            previousExperience: input.previousExperience,
-            previousEmployer: input.previousEmployer,
-            confirmationDate: input.confirmationDate,
-            // Using explicit branch relation instead of direct ID
-            branch: {
-              connect: {
-                id: primaryBranchId
-              }
-            },
-            isActive: input.isActive ?? true,
-            
-            // Salary & Banking Details
-            salaryStructure: input.salaryStructure,
-            pfNumber: input.pfNumber,
-            esiNumber: input.esiNumber,
-            uanNumber: input.uanNumber,
-            bankName: input.bankName,
-            accountNumber: input.accountNumber,
-            ifscCode: input.ifscCode,
-            
-            // IT & Asset Allocation
-            officialEmail: input.email || input.officialEmail,
-            deviceIssued: input.deviceIssued,
-            accessCardId: input.accessCardId,
-            softwareLicenses: input.softwareLicenses,
-            assetReturnStatus: input.assetReturnStatus,
-            
-            // Add clerkId if user was created
-            ...(clerkUserId ? { 
-              clerkId: clerkUserId
-            } : {})
-          },
+          data: employeeData,
         });
 
-        // Assign role to the user if a clerk user was created and roleId is provided
-        if (clerkUserId && input.roleId) {
+        // Assign role to the user if a Supabase user was created and roleId is provided
+        if (supabaseUserId && input.roleId) {
           console.log("Assigning role to employee:", input.roleId);
           try {
             await ctx.db.userRole.create({
               data: {
-                userId: clerkUserId,
+                userId: supabaseUserId,
                 roleId: input.roleId,
                 employeeId: employee.id,
               },
             });
+            
+            // Sync permissions to Supabase metadata
+            const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
+            await syncUserPermissions(supabaseUserId);
+            console.log("Successfully assigned role and synced permissions for employee:", supabaseUserId);
           } catch (error) {
             console.error("Error assigning role to employee:", error);
           }
@@ -790,6 +813,11 @@ export const employeeRouter = createTRPCRouter({
               },
             });
             console.log(`Assigned role ${input.roleId} to employee ${existingEmployee.id}`);
+            
+            // Sync permissions to Supabase metadata
+            const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
+            await syncUserPermissions(existingEmployee.clerkId);
+            console.log(`Successfully synced permissions for employee ${existingEmployee.id}`);
           }
         } catch (error) {
           console.error("Error updating employee role assignment:", error);

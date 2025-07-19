@@ -64,9 +64,11 @@ export function EnhancedCalendar({
   // Day names
   const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 
-  // Generate years for dropdown (e.g., 20 years before and after current year)
+  // Generate years for dropdown (from 1940 to current year + 5)
   const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: 41 }, (_, i) => currentYear - 20 + i)
+  const startYear = 1940
+  const endYear = currentYear + 5
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
 
   // Handle month and year selection
   const handleMonthChange = (newMonth: string) => {

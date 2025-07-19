@@ -12,6 +12,13 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string(),
     SUPABASE_SERVICE_ROLE_KEY: z.string(),
     DATABASE_URL: z.string().url(),
+    WATI_API_TOKEN: z.string().optional(),
+    WATI_BASE_URL: z.string().url().optional(),
+    
+    // Twilio API Configuration
+    TWILIO_ACCOUNT_SID: z.string().optional(),
+    TWILIO_AUTH_TOKEN: z.string().optional(),
+    TWILIO_WHATSAPP_FROM: z.string().optional(),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -44,6 +51,13 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    WATI_API_TOKEN: process.env.WATI_API_TOKEN,
+    WATI_BASE_URL: process.env.WATI_BASE_URL,
+    
+    // Twilio API Configuration
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
 
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,

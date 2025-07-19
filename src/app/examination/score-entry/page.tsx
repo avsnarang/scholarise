@@ -336,24 +336,41 @@ function ScoreEntryContent() {
 
   // Component-specific save handler
   const handleSaveScoresForComponent = async (componentId: string, scores: any[]) => {
-    if (!selectedSchema) return;
+    console.log('DEBUG: handleSaveScoresForComponent called with:', { componentId, scoresCount: scores.length, scores });
+    
+    if (!selectedSchema) {
+      console.log('DEBUG: No selected schema, returning');
+      return;
+    }
     
     try {
       if (selectedSchema.type === 'schema') {
+        const payload = scores.map(score => ({
+          ...score,
+          branchId: currentBranchId,
+        }));
+        
+        console.log('DEBUG: About to send API request with payload:', payload);
+        
         const response = await fetch('/api/assessment-scores', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(scores.map(score => ({
-            ...score,
-            branchId: currentBranchId,
-          }))),
+          body: JSON.stringify(payload),
         });
 
+        console.log('DEBUG: API response status:', response.status);
+        console.log('DEBUG: API response ok:', response.ok);
+
         if (!response.ok) {
-          throw new Error('Failed to save scores');
+          const errorResult = await response.json();
+          console.error('Failed to save scores:', errorResult);
+          throw new Error(`Failed to save scores: ${errorResult.error || 'Unknown error'}`);
         }
+        
+        const result = await response.json();
+        console.log('DEBUG: API response data:', result);
       } else if (selectedSchema.type === 'configuration') {
         for (const score of scores) {
           const response = await fetch('/api/trpc/examination.createAssessmentMarks', {

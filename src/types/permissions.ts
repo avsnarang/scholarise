@@ -119,6 +119,18 @@ export enum Permission {
   EDIT_COURTESY_CALL_FEEDBACK = "edit_courtesy_call_feedback",
   DELETE_COURTESY_CALL_FEEDBACK = "delete_courtesy_call_feedback",
   
+  // Communication permissions
+  VIEW_COMMUNICATION = "view_communication",
+  CREATE_COMMUNICATION_MESSAGE = "create_communication_message",
+  SEND_COMMUNICATION_MESSAGE = "send_communication_message",
+  MANAGE_WHATSAPP_TEMPLATES = "manage_whatsapp_templates",
+  VIEW_COMMUNICATION_LOGS = "view_communication_logs",
+  MANAGE_COMMUNICATION_SETTINGS = "manage_communication_settings",
+  SEND_TO_ALL_STUDENTS = "send_to_all_students",
+  SEND_TO_ALL_TEACHERS = "send_to_all_teachers",
+  SEND_TO_ALL_EMPLOYEES = "send_to_all_employees",
+  SEND_TO_PARENTS = "send_to_parents",
+  
   // Reports permissions
   VIEW_REPORTS = "view_reports",
   

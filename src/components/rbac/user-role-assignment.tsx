@@ -82,7 +82,9 @@ export function UserRoleAssignmentComponent({
     name: role.name,
     description: role.description || undefined,
     isSystem: role.isSystem,
+    permissions: role.permissions || []
   }));
+
   const { data: userRoles = [], refetch: refetchUserRoles } = api.role.getUserRoles.useQuery(
     { userId: selectedUserId },
     { enabled: !!selectedUserId }
@@ -143,6 +145,7 @@ export function UserRoleAssignmentComponent({
     removeRoleMutation.mutate({
       userId: roleAssignment.userId,
       roleId: roleAssignment.roleId,
+      branchId: roleAssignment.branchId || undefined,
     });
   };
 
@@ -286,7 +289,7 @@ export function UserRoleAssignmentComponent({
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {rolesData.find(r => r.id === role?.id)?.rolePermissions?.length || 0} permissions
+                            {role?.permissions?.length || 0} permissions
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -381,7 +384,7 @@ export function UserRoleAssignmentComponent({
 
 interface AssignRoleFormProps {
   formData: UserRoleFormData;
-  roles: Array<{ id: string; name: string; description?: string; isSystem: boolean }>;
+  roles: Array<{ id: string; name: string; description?: string; isSystem: boolean; permissions: any[] }>;
   teachers: Array<{ id: string; firstName: string; lastName: string }>;
   employees: Array<{ id: string; firstName: string; lastName: string }>;
   onFormDataChange: (data: UserRoleFormData) => void;
@@ -490,6 +493,9 @@ function AssignRoleForm({
           <div className="flex items-center gap-2">
             <Badge variant={selectedRole.isSystem ? "default" : "outline"}>
               {selectedRole.isSystem ? "System Role" : "Custom Role"}
+            </Badge>
+            <Badge variant="secondary">
+              {selectedRole.permissions?.length || 0} permissions
             </Badge>
           </div>
         </div>

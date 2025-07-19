@@ -1,0 +1,79 @@
+"use client";
+
+import React, { useState } from "react";
+import { WhatsAppChatLayout } from "@/components/chat/whatsapp-chat-layout";
+import { WhatsAppChat } from "@/components/chat/whatsapp-chat";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchContext } from "@/hooks/useBranchContext";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+export default function ChatPage() {
+  const { hasPermission } = usePermissions();
+  const { currentBranchId } = useBranchContext();
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+  // Check permissions and branch access
+  if (!currentBranchId) {
+    return (
+      <WhatsAppChatLayout
+        selectedConversationId={selectedConversationId}
+        onConversationSelect={setSelectedConversationId}
+      >
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="p-8 max-w-md text-center">
+            <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Branch Selected</h3>
+            <p className="text-gray-500 mb-4">
+              Please select a branch to access WhatsApp conversations.
+            </p>
+            <Link href="/communication">
+              <Button>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Communication
+              </Button>
+            </Link>
+          </Card>
+        </div>
+      </WhatsAppChatLayout>
+    );
+  }
+
+  if (!hasPermission("view_communication_logs")) {
+    return (
+      <WhatsAppChatLayout
+        selectedConversationId={selectedConversationId}
+        onConversationSelect={setSelectedConversationId}
+      >
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="p-8 max-w-md text-center">
+            <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+            <p className="text-gray-500 mb-4">
+              You don't have permission to view WhatsApp conversations.
+            </p>
+            <Link href="/communication">
+              <Button>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Communication
+              </Button>
+            </Link>
+          </Card>
+        </div>
+      </WhatsAppChatLayout>
+    );
+  }
+
+  return (
+    <WhatsAppChatLayout
+      selectedConversationId={selectedConversationId}
+      onConversationSelect={setSelectedConversationId}
+    >
+      <WhatsAppChat 
+        conversationId={selectedConversationId}
+      />
+    </WhatsAppChatLayout>
+  );
+} 

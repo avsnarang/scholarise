@@ -34,6 +34,8 @@ import { financeRouter } from "./routers/finance";
 import { backgroundTasksRouter } from "./routers/background-tasks";
 import { examinationRouter } from "./routers/examination";
 import { courtesyCallsRouter } from "./routers/courtesy-calls";
+import { communicationRouter } from "./routers/communication";
+import { chatRouter } from "./routers/chat";
 
 /**
  * This is the primary router for your server.
@@ -76,6 +78,8 @@ export const appRouter = createTRPCRouter({
   backgroundTasks: backgroundTasksRouter,
   examination: examinationRouter,
   courtesyCalls: courtesyCallsRouter,
+  communication: communicationRouter,
+  chat: chatRouter,
 });
 
 // export type definition of API

@@ -30,7 +30,7 @@ export const roleRouter = createTRPCRouter({
         whereConditions.isActive = true;
       }
 
-      return ctx.db.rbacRole.findMany({
+      const roles = await ctx.db.rbacRole.findMany({
         where: whereConditions,
         include: {
           rolePermissions: {
@@ -51,6 +51,12 @@ export const roleRouter = createTRPCRouter({
           { name: "asc" },
         ],
       });
+
+      // Transform the data to include permissions as an array of strings
+      return roles.map(role => ({
+        ...role,
+        permissions: role.rolePermissions.map(rp => rp.permission.name),
+      }));
     }),
 
   // Get role by ID
@@ -82,7 +88,11 @@ export const roleRouter = createTRPCRouter({
         });
       }
 
-      return role;
+      // Transform the data to include permissions as an array of strings
+      return {
+        ...role,
+        permissions: role.rolePermissions.map(rp => rp.permission.name),
+      };
     }),
 
   // Create new role
@@ -92,6 +102,7 @@ export const roleRouter = createTRPCRouter({
         name: z.string().min(1, "Role name is required"),
         description: z.string().optional(),
         branchId: z.string().optional(),
+        permissions: z.array(z.string()).default([]),
         permissionIds: z.array(z.string()).default([]),
       })
     )
@@ -108,6 +119,9 @@ export const roleRouter = createTRPCRouter({
         });
       }
 
+      // Use permissions array if provided, otherwise use permissionIds for backward compatibility
+      const permissionList = input.permissions.length > 0 ? input.permissions : input.permissionIds;
+
       // Create role and assign permissions in a transaction
       return ctx.db.$transaction(async (tx) => {
         const role = await tx.rbacRole.create({
@@ -120,17 +134,235 @@ export const roleRouter = createTRPCRouter({
         });
 
         // Assign permissions if provided
-        if (input.permissionIds.length > 0) {
-          await tx.rolePermission.createMany({
-            data: input.permissionIds.map((permissionId) => ({
-              roleId: role.id,
-              permissionId,
-            })),
+        if (permissionList.length > 0) {
+          // Get permission IDs by name
+          const permissions = await tx.permission.findMany({
+            where: {
+              name: { in: permissionList },
+            },
+          });
+
+          if (permissions.length > 0) {
+            await tx.rolePermission.createMany({
+              data: permissions.map((permission: any) => ({
+                roleId: role.id,
+                permissionId: permission.id,
+              })),
+            });
+          }
+        }
+
+        // Return the created role with permissions in the correct format
+        const createdRoleWithPermissions = await tx.rbacRole.findUnique({
+          where: { id: role.id },
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        });
+
+        return {
+          ...createdRoleWithPermissions,
+          permissions: createdRoleWithPermissions?.rolePermissions.map(rp => rp.permission.name) || [],
+        };
+      });
+    }),
+
+  // Update role permissions
+  updatePermissions: protectedProcedure
+    .input(
+      z.object({
+        roleId: z.string(),
+        permissions: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if role exists and is not a system role
+      const existingRole = await ctx.db.rbacRole.findUnique({
+        where: { id: input.roleId },
+      });
+
+      if (!existingRole) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Role not found",
+        });
+      }
+
+      if (existingRole.isSystem) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Cannot modify system roles",
+        });
+      }
+
+      return ctx.db.$transaction(async (tx) => {
+        // Remove existing permissions
+        await tx.rolePermission.deleteMany({
+          where: { roleId: input.roleId },
+        });
+
+        // Add new permissions
+        if (input.permissions.length > 0) {
+          // Get permission IDs by name
+          const permissions = await tx.permission.findMany({
+            where: {
+              name: { in: input.permissions },
+            },
+          });
+
+          if (permissions.length > 0) {
+            await tx.rolePermission.createMany({
+              data: permissions.map((permission: any) => ({
+                roleId: input.roleId,
+                permissionId: permission.id,
+              })),
+            });
+          }
+        }
+
+        // Return updated role with permissions
+        const updatedRole = await tx.rbacRole.findUnique({
+          where: { id: input.roleId },
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        });
+
+        if (!updatedRole) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Role not found after update",
           });
         }
 
-        return role;
+        // Transform the data to include permissions as an array of strings
+        return {
+          ...updatedRole,
+          permissions: updatedRole.rolePermissions.map(rp => rp.permission.name),
+        };
       });
+    }),
+
+  // Seed default roles
+  seedDefaultRoles: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const defaultRoles = [
+        {
+          name: "Super Admin",
+          description: "Full system access with all permissions",
+          permissions: [
+            "manage_roles",
+            "manage_branches",
+            "manage_academic_sessions",
+            "manage_subjects",
+            "manage_classes",
+            "manage_students",
+            "manage_teachers",
+            "manage_employees",
+            "view_finance",
+            "manage_finance",
+            "view_settings",
+            "manage_settings",
+          ],
+        },
+        {
+          name: "School Admin",
+          description: "School-level administration access",
+          permissions: [
+            "manage_classes",
+            "manage_students",
+            "manage_teachers",
+            "view_finance",
+            "manage_finance",
+            "view_settings",
+          ],
+        },
+        {
+          name: "Teacher",
+          description: "Teacher access for classes and students",
+          permissions: [
+            "view_students",
+            "manage_attendance",
+            "view_classes",
+          ],
+        },
+        {
+          name: "Finance Officer",
+          description: "Finance and billing management",
+          permissions: [
+            "view_students",
+            "view_finance",
+            "manage_finance",
+          ],
+        },
+      ];
+
+      const createdRoles = [];
+
+      for (const roleData of defaultRoles) {
+        // Check if role already exists
+        const existingRole = await ctx.db.rbacRole.findUnique({
+          where: { name: roleData.name },
+        });
+
+        if (!existingRole) {
+          const role = await ctx.db.$transaction(async (tx) => {
+            const newRole = await tx.rbacRole.create({
+              data: {
+                name: roleData.name,
+                description: roleData.description,
+                isSystem: true,
+              },
+            });
+
+            // Get permission IDs by name
+            const permissions = await tx.permission.findMany({
+              where: {
+                name: { in: roleData.permissions },
+              },
+            });
+
+            if (permissions.length > 0) {
+              await tx.rolePermission.createMany({
+                data: permissions.map((permission: any) => ({
+                  roleId: newRole.id,
+                  permissionId: permission.id,
+                })),
+              });
+            }
+
+            return newRole;
+          });
+
+          createdRoles.push(role);
+        }
+      }
+
+      return {
+        message: `Seeded ${createdRoles.length} default roles`,
+        createdRoles,
+      };
+    }),
+
+  // Clear cache (placeholder for Redis or other caching systems)
+  clearCache: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      // In a real implementation, this would clear Redis cache or other caching mechanism
+      // For now, we'll just return a success message
+      
+      // Could also refresh any in-memory caches if implemented
+      return {
+        message: "RBAC cache cleared successfully",
+        timestamp: new Date().toISOString(),
+      };
     }),
 
   // Update role
@@ -322,6 +554,7 @@ export const roleRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         roleId: z.string(),
+        branchId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

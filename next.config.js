@@ -22,28 +22,39 @@ const config = {
       },
     ];
   },
-  // Webpack configuration removed for now to isolate the build issue
-  // webpack: (config, { isServer }) => {
-  //   // If it's on the client side, provide empty modules for Node.js specific modules
-  //   if (!isServer) {
-  //     config.resolve.fallback = {
-  //       ...config.resolve.fallback,
-  //       fs: false,
-  //       http: false,
-  //       https: false,
-  //       url: false,
-  //       path: false,
-  //       zlib: false,
-  //       stream: false,
-  //       crypto: false,
-  //       buffer: false,
-  //       util: false,
-  //       os: false,
-  //     };
-  //   }
+  // Webpack configuration to handle Node.js modules in client-side bundles
+  webpack: (config, { isServer }) => {
+    // If it's on the client side, provide empty modules for Node.js specific modules
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        http: false,
+        https: false,
+        url: false,
+        path: false,
+        zlib: false,
+        stream: false,
+        crypto: false,
+        buffer: false,
+        util: false,
+        os: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
+        assert: false,
+        constants: false,
+        querystring: false,
+        timers: false,
+        'https-proxy-agent': false,
+        'http2': false,
+        'perf_hooks': false,
+      };
+    }
     
-  //   return config;
-  // },
+    return config;
+  },
 };
 
 export default config;

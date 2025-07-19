@@ -87,6 +87,10 @@ const navPermissions = {
   gradeScales: ["manage_grade_scales"],
   terms: ["manage_academic_sessions"],
   enterMarks: ["enter_marks"],
+  communication: ["view_communication"],
+  sendMessage: ["create_communication_message"],
+  manageTemplates: ["manage_whatsapp_templates"],
+  communicationHistory: ["view_communication_logs"],
   courtesyCalls: ["view_courtesy_calls"],
   viewOwnCourtesyCallFeedback: ["view_own_courtesy_call_feedback"],
   viewAllCourtesyCallFeedback: ["view_all_courtesy_call_feedback"],
@@ -163,6 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     icon?: any;
     permissions: Permission[];
     children?: NavItem[];
+    target?: string;
   }
 
   // Find the selected branch using currentBranchId
@@ -433,7 +438,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       children: [
         {
           title: "All Classes",
-          href: "/classes",
+          href: "/classes/list",
           permissions: [Permission.VIEW_CLASSES],
         },
         {
@@ -593,29 +598,63 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-    {
-      title: "Transport",
-      href: "/transport",
-      icon: Bus,
-      permissions: [Permission.VIEW_TRANSPORT],
-      children: [
-        {
-          title: "Routes",
-          href: "/transport/routes",
-          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-        },
-        {
-          title: "Stops",
-          href: "/transport/stops",
-          permissions: [Permission.MANAGE_TRANSPORT_STOPS],
-        },
-        {
-          title: "Assignments",
-          href: "/transport/assignments",
-          permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
-        },
-      ],
-    },
+      {
+        title: "Communication",
+        href: "/communication",
+        icon: MessageSquare,
+        permissions: [Permission.VIEW_COMMUNICATION],
+        children: [
+          {
+            title: "WhatsApp Chat",
+            href: "/chat",
+            permissions: [Permission.VIEW_COMMUNICATION_LOGS],
+            target: "_blank",
+          },
+          {
+            title: "Send Message",
+            href: "/communication/send",
+            permissions: [Permission.CREATE_COMMUNICATION_MESSAGE],
+          },
+          {
+            title: "Templates",
+            href: "/communication/templates",
+            permissions: [Permission.MANAGE_WHATSAPP_TEMPLATES],
+          },
+          {
+            title: "Message History",
+            href: "/communication/history",
+            permissions: [Permission.VIEW_COMMUNICATION_LOGS],
+          },
+          {
+            title: "Settings",
+            href: "/communication/settings",
+            permissions: [Permission.MANAGE_COMMUNICATION_SETTINGS],
+          },
+        ],
+      },
+      {
+        title: "Transport",
+        href: "/transport",
+        icon: Bus,
+        permissions: [Permission.VIEW_TRANSPORT],
+        children: [
+          {
+            title: "Routes",
+            href: "/transport/routes",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Stops",
+            href: "/transport/stops",
+            permissions: [Permission.MANAGE_TRANSPORT_STOPS],
+          },
+          {
+            title: "Assignments",
+            href: "/transport/assignments",
+            permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
+          },
+        ],
+      },
     {
       title: "Settings",
       href: "/settings",
@@ -743,6 +782,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Score Entry",
           href: "/examination/score-entry",
           permissions: [Permission.ENTER_MARKS],
+        },
+        {
+          title: "Report Cards",
+          href: "/examination/report-cards",
+          permissions: [Permission.VIEW_EXAMINATIONS],
         },
         {
           title: "Results & Analytics",
@@ -896,7 +940,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return items.map((item) => (
       <div key={item.title} className="relative">
         <SidebarMenuItem>
-          <Link href={item.href} className="flex-1">
+          <Link href={item.href} className="flex-1" target={item.target}>
             <SidebarMenuButton 
               className={`${!isCollapsed && item.children && item.children.length > 0 ? 'pr-10' : ''}`}
               isActive={isActive(item.href)}
@@ -962,6 +1006,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <Link 
                             href={showDisabled ? "#" : child.href}
                             onClick={e => showDisabled && e.preventDefault()}
+                            target={child.target}
                           >
                             <span>{child.title}</span>
                           </Link>
@@ -1008,6 +1053,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                   <Link 
                                     href={!grandchildEnabled ? "#" : grandchild.href}
                                     onClick={e => !grandchildEnabled && e.preventDefault()}
+                                    target={grandchild.target}
                                   >
                                     <span>{grandchild.title}</span>
                                   </Link>

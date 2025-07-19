@@ -62,7 +62,14 @@ const navigationItems = [
     colorVariant: "secondary" as const,
     count: null,
   },
-
+  {
+    title: "Report Cards",
+    href: "/examination/report-cards",
+    icon: FileText,
+    description: "Generate PDF reports",
+    colorVariant: "primary" as const,
+    count: null,
+  },
   {
     title: "Reports",
     href: "/examination/reports",

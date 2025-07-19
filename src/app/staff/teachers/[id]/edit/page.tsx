@@ -157,7 +157,7 @@ export default function EditTeacherPage() {
           </div>
         </div>
         <Button variant="outline" size="sm" asChild className="w-fit">
-          <Link href={`/teachers/${teacherId}`} className="flex items-center gap-2">
+          <Link href={`/staff/teachers/${teacherId}`} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Teacher Details
           </Link>

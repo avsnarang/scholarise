@@ -165,45 +165,18 @@ export const employeeFormSchema = z.object({
   softwareLicenses: z.string().optional(),
   assetReturnStatus: z.string().optional(),
   
-  // User Account
-  createUser: z.boolean().default(false),
-  email: z.string().optional().refine((val) => val === "" || !val || z.string().email().safeParse(val).success, "Invalid email format"),
+  // User Account - Always required for employees
+  email: z.string().email("Valid email is required"),
   password: z.string().optional(),
-  roleId: z.string().optional(),
+  roleId: z.string().min(1, "Role is required"),
 }).superRefine((data, ctx) => {
-  // If createUser is true, validate email and role
-  if (data.createUser) {
-    if (!data.email || data.email.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Email is required when creating a user account",
-        path: ["email"],
-      });
-    } else if (!z.string().email().safeParse(data.email).success) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Invalid email format",
-        path: ["email"],
-      });
-    }
-    
-    if (!data.roleId || data.roleId.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Role is required when creating a user account",
-        path: ["roleId"],
-      });
-    }
-    
-    // Only validate password length if password is provided
-    // In edit mode, password can be empty (meaning keep existing password)
-    if (data.password && data.password.length > 0 && data.password.length < 8) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Password must be at least 8 characters",
-        path: ["password"],
-      });
-    }
+  // Validate password for new employees (in edit mode, password is optional)
+  if (data.password && data.password.length > 0 && data.password.length < 8) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Password must be at least 8 characters",
+      path: ["password"],
+    });
   }
 });
 
@@ -221,6 +194,7 @@ export function convertFormToApiInput(formValues: EmployeeFormValues): EmployeeA
     joinDate: formValues.joinDate ? new Date(formValues.joinDate) : undefined,
     confirmationDate: formValues.confirmationDate ? new Date(formValues.confirmationDate) : undefined,
     branchAccess: formValues.branchAccess || [],
+    createUser: true, // Always create user accounts for employees
   };
 }
 
@@ -259,16 +233,16 @@ export function convertApiToFormValues(apiData: any): EmployeeFormValues {
     return value == null ? "" : String(value);
   };
 
-  // Check if user already has a Clerk account
-  const hasClerkAccount = !!(apiData.clerkId || apiData.userId);
+  // Check if user already has a user account (Supabase)
+  const hasUserAccount = !!(apiData.userId || apiData.clerkId);
 
   // Extract roleId from userRoles if available (similar to teacher implementation)
   const roleId = apiData.userRoles && apiData.userRoles.length > 0 
     ? apiData.userRoles[0].roleId 
     : (apiData.roleId || "");
 
-  // Use officialEmail as the login email for existing users (like teachers)
-  const loginEmail = hasClerkAccount 
+  // Use officialEmail as the login email for existing users
+  const loginEmail = hasUserAccount 
     ? (apiData.officialEmail || apiData.email || "")
     : (apiData.email || "");
 
@@ -346,10 +320,9 @@ export function convertApiToFormValues(apiData: any): EmployeeFormValues {
     softwareLicenses: safeString(apiData.softwareLicenses),
     assetReturnStatus: safeString(apiData.assetReturnStatus),
     
-    // User Account
-    createUser: hasClerkAccount || apiData.createUser || false,
-    email: safeString(loginEmail),
+    // User Account - Always required for employees
+    email: safeString(loginEmail) || safeString(apiData.officialEmail) || "",
     password: safeString(apiData.password),
-    roleId: safeString(roleId),
+    roleId: roleId || "",
   };
 } 

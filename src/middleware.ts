@@ -130,6 +130,14 @@ const routePermissions: Record<string, string[]> = {
   '/courtesy-calls': ['view_courtesy_calls'],
   '/courtesy-calls/teacher': ['view_courtesy_calls', 'view_own_courtesy_call_feedback'],
   '/courtesy-calls/head': ['view_courtesy_calls', 'view_all_courtesy_call_feedback'],
+  
+  // Communication
+  '/communication': ['view_communication'],
+  '/communication/send': ['create_communication_message'],
+  '/communication/templates': ['manage_whatsapp_templates'],
+  '/communication/history': ['view_communication_logs'],
+  '/communication/settings': ['manage_communication_settings'],
+  
   '/question-papers/view': ['view_question_papers'],
   
   // Settings

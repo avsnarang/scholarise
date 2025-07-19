@@ -95,14 +95,18 @@ const teacherFormSchema = z.object({
   assetReturnStatus: z.string().optional(),
   
   // User Account (always required for teachers)
-  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  password: z.string().optional(),
   roleId: z.string().min(1, "Role is required"),
 }).refine((data) => {
-  // Password is only required for new teachers, not for existing teachers being updated
+  // Password validation: only required for new teachers (when it's not edit mode)
+  // In edit mode, password is optional and only validated if provided
+  if (data.password && data.password.length > 0 && data.password.length < 8) {
+    return false;
+  }
   return true;
 }, {
-  message: "All fields are required",
-  path: ["roleId"],
+  message: "Password must be at least 8 characters if provided",
+  path: ["password"],
 });
 
 export type TeacherFormValues = z.infer<typeof teacherFormSchema>;

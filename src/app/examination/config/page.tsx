@@ -66,6 +66,13 @@ const examinationGroups = [
         disabled: false,
       },
       {
+        title: "Report Cards",
+        description: "Generate PDF report cards using templates",
+        icon: <FileText className="h-6 w-6" />,
+        href: "/examination/report-cards",
+        disabled: false,
+      },
+      {
         title: "Reports",
         description: "Generate examination reports and transcripts",
         icon: <FileText className="h-6 w-6" />,

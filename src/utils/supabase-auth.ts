@@ -244,45 +244,8 @@ export async function createTeacherUser({
 
     console.log("Supabase user created successfully:", data.user.id);
 
-    // Create user role assignment in database
-    try {
-      // Find or create the Teacher role or use the specified role
-      let teacherRole;
-      if (roleId) {
-        teacherRole = await db.rbacRole.findUnique({
-          where: { id: roleId }
-        });
-      } else {
-        teacherRole = await db.rbacRole.findFirst({
-          where: { name: roleName || 'Teacher' }
-        });
-      }
-
-      if (!teacherRole) {
-        teacherRole = await db.rbacRole.create({
-          data: {
-            name: roleName || 'Teacher',
-            description: `${roleName || 'Teacher'} role with standard permissions`,
-            isSystem: true,
-            permissions: ['view_dashboard', 'view_students', 'view_classes', 'view_attendance', 'mark_attendance'], // Legacy permissions
-          }
-        });
-      }
-
-      // Assign the role to the user
-      await db.userRole.create({
-        data: {
-          userId: data.user.id,
-          roleId: teacherRole.id,
-          branchId,
-        }
-      });
-
-      console.log("Teacher role assigned successfully");
-    } catch (roleError) {
-      console.error("Error assigning role to teacher:", roleError);
-      // Don't throw error here as user was already created
-    }
+    // Role assignment will be handled by the calling router function
+    // which has access to the teacherId after the teacher record is created
 
     return data.user;
   } catch (error) {
@@ -376,45 +339,8 @@ export async function createEmployeeUser({
 
     console.log("Supabase user created successfully:", data.user.id);
 
-    // Create user role assignment in database
-    try {
-      // Find or create the Employee role or use the specified role
-      let employeeRole;
-      if (roleId) {
-        employeeRole = await db.rbacRole.findUnique({
-          where: { id: roleId }
-        });
-      } else {
-        employeeRole = await db.rbacRole.findFirst({
-          where: { name: roleName || 'Employee' }
-        });
-      }
-
-      if (!employeeRole) {
-        employeeRole = await db.rbacRole.create({
-          data: {
-            name: roleName || 'Employee',
-            description: `${roleName || 'Employee'} role with standard permissions`,
-            isSystem: true,
-            permissions: ['view_dashboard'], // Legacy permissions
-          }
-        });
-      }
-
-      // Assign the role to the user
-      await db.userRole.create({
-        data: {
-          userId: data.user.id,
-          roleId: employeeRole.id,
-          branchId,
-        }
-      });
-
-      console.log("Employee role assigned successfully");
-    } catch (roleError) {
-      console.error("Error assigning role to employee:", roleError);
-      // Don't throw error here as user was already created
-    }
+    // Role assignment will be handled by the calling router function
+    // which has access to the employeeId after the employee record is created
 
     return data.user;
   } catch (error) {

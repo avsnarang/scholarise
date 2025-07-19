@@ -91,19 +91,29 @@ export const teacherRouter = createTRPCRouter({
       const cursor = input?.cursor;
 
       // Build the where clause dynamically to avoid type issues
-      const whereClause: any = {
-        branchId: input?.branchId,
-        isActive: input?.isActive,
-      };
+      const whereClause: any = {};
+
+      // Only add filters if they have values
+      if (input?.branchId) {
+        whereClause.branchId = input.branchId;
+      }
+      if (input?.isActive !== undefined) {
+        whereClause.isActive = input.isActive;
+      }
+
+      // Collect all conditions that need to be combined
+      const allConditions: any[] = [];
 
       // Add search conditions if search is provided
       if (input?.search) {
-        whereClause.OR = [
-          { firstName: { contains: input.search, mode: "insensitive" } },
-          { lastName: { contains: input.search, mode: "insensitive" } },
-          { qualification: { contains: input.search, mode: "insensitive" } },
-          { specialization: { contains: input.search, mode: "insensitive" } },
-        ];
+        allConditions.push({
+          OR: [
+            { firstName: { contains: input.search, mode: "insensitive" } },
+            { lastName: { contains: input.search, mode: "insensitive" } },
+            { qualification: { contains: input.search, mode: "insensitive" } },
+            { specialization: { contains: input.search, mode: "insensitive" } },
+          ]
+        });
       }
 
       // Handle advanced filters
@@ -143,13 +153,24 @@ export const teacherRouter = createTRPCRouter({
             default:
               return {};
           }
-        });
+        }).filter(condition => Object.keys(condition).length > 0);
 
-        // Add the conditions to the where clause using AND or OR
-        if (logicOperator === "and") {
-          whereClause.AND = filterConditions;
+        // Add the filter conditions as a group
+        if (filterConditions.length > 0) {
+          if (logicOperator === "and") {
+            allConditions.push({ AND: filterConditions });
+          } else {
+            allConditions.push({ OR: filterConditions });
+          }
+        }
+      }
+
+      // Combine all conditions with AND if there are multiple condition groups
+      if (allConditions.length > 0) {
+        if (allConditions.length === 1) {
+          Object.assign(whereClause, allConditions[0]);
         } else {
-          whereClause.OR = filterConditions;
+          whereClause.AND = allConditions;
         }
       }
 
@@ -557,6 +578,11 @@ export const teacherRouter = createTRPCRouter({
                 },
               });
               console.log("UserRole record created successfully for teacher");
+              
+              // Sync permissions to Supabase metadata
+              const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
+              await syncUserPermissions(clerkUserId);
+              console.log("Successfully synced permissions for teacher:", clerkUserId);
             } catch (roleError) {
               console.error("Error creating UserRole record:", roleError);
               // Don't throw here as the teacher has been created successfully
@@ -815,22 +841,32 @@ export const teacherRouter = createTRPCRouter({
 
       // Handle role update through UserRole relationship if roleId is provided
       if (input.roleId !== undefined && updatedTeacher.clerkId) {
-        // Remove existing user role assignments for this teacher
-        await ctx.db.userRole.deleteMany({
-          where: {
-            teacherId: input.id,
-          },
-        });
-
-        // Add new role assignment if roleId is provided (not null)
-        if (input.roleId) {
-          await ctx.db.userRole.create({
-            data: {
-              userId: updatedTeacher.clerkId,
+        try {
+          // Remove existing user role assignments for this teacher
+          await ctx.db.userRole.deleteMany({
+            where: {
               teacherId: input.id,
-              roleId: input.roleId,
             },
           });
+
+          // Add new role assignment if roleId is provided (not null)
+          if (input.roleId) {
+            await ctx.db.userRole.create({
+              data: {
+                userId: updatedTeacher.clerkId,
+                teacherId: input.id,
+                roleId: input.roleId,
+              },
+            });
+            console.log(`Assigned role ${input.roleId} to teacher ${input.id}`);
+          }
+          
+          // Sync permissions to Supabase metadata
+          const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
+          await syncUserPermissions(updatedTeacher.clerkId);
+          console.log(`Successfully synced permissions for teacher ${input.id}`);
+        } catch (error) {
+          console.error("Error updating teacher role assignment:", error);
         }
       }
 
@@ -1374,7 +1410,13 @@ export const teacherRouter = createTRPCRouter({
                 }
               }
             },
-
+            SubjectTeacher: {
+              include: {
+                subject: true,
+                class: true,
+                section: true
+              }
+            },
             leaveApplications: {
               where: {
                 createdAt: {
@@ -1458,7 +1500,7 @@ export const teacherRouter = createTRPCRouter({
         const totalClasses = teacher.sections.length;
         
         // Get subject assignments count
-        const totalSubjects = teacher.subjectAssignments.length;
+        const totalSubjects = teacher.SubjectTeacher.length;
 
         // Calculate leave statistics
         const totalLeaveBalance = teacher.leaveBalances.reduce((sum: any, balance: any) => sum + balance.totalDays, 0);
@@ -1471,7 +1513,7 @@ export const teacherRouter = createTRPCRouter({
             firstName: teacher.firstName,
             lastName: teacher.lastName,
             designation: teacher.designation,
-            subjects: teacher.subjects,
+            subjects: teacher.subjects || [],
             employeeCode: teacher.employeeCode
           },
           stats: {
@@ -1490,7 +1532,7 @@ export const teacherRouter = createTRPCRouter({
             className: section.class.name,
             studentCount: section._count.students
           })),
-          subjectAssignments: teacher.subjectAssignments.map((assignment: any) => ({
+          subjectAssignments: teacher.SubjectTeacher.map((assignment: any) => ({
             id: assignment.id,
             subjectName: assignment.subject.name,
             className: assignment.class.name,

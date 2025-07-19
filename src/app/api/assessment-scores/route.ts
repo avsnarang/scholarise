@@ -132,17 +132,61 @@ async function recalculateFinalScores(studentAssessmentKeys: string[], userId: s
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=== ASSESSMENT SCORES API CALLED ===');
   try {
-    const user = await getServerUser();
+    // Enhanced authentication with better error handling
+    let user;
+    try {
+      user = await getServerUser();
+      console.log('AUTH: User authenticated:', user ? 'Yes' : 'No');
+    } catch (authError) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json({ 
+        error: 'Authentication service unavailable',
+        details: authError instanceof Error ? authError.message : 'Unknown auth error'
+      }, { status: 500 });
+    }
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await request.json();
+    // Enhanced data parsing with validation
+    let data;
+    try {
+      data = await request.json();
+      console.log('DATA: Received', Array.isArray(data) ? data.length : 0, 'items');
+      console.log('DATA: First item:', Array.isArray(data) && data.length > 0 ? data[0] : 'none');
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      return NextResponse.json({ 
+        error: 'Invalid JSON data',
+        details: parseError instanceof Error ? parseError.message : 'JSON parse failed'
+      }, { status: 400 });
+    }
     
     if (!Array.isArray(data)) {
       return NextResponse.json({ error: 'Expected array of score data' }, { status: 400 });
     }
+
+    if (data.length === 0) {
+      return NextResponse.json({ error: 'No scores to save' }, { status: 400 });
+    }
+
+    // Validate data structure
+    const firstScore = data[0];
+    const requiredFields = ['studentId', 'assessmentSchemaId', 'branchId'];
+    const missingFields = requiredFields.filter(field => !firstScore[field]);
+    
+    if (missingFields.length > 0) {
+      return NextResponse.json({ 
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+        received: Object.keys(firstScore || {}),
+        sampleData: firstScore
+      }, { status: 400 });
+    }
+
+
 
     // Process in batches to avoid long transactions
     const BATCH_SIZE = 10;
@@ -155,22 +199,66 @@ export async function POST(request: NextRequest) {
     const studentsToRecalculate = new Set<string>();
 
     // Process each batch
-    for (const batch of batches) {
-      const results = await db.$transaction(async (tx) => {
-        const savedScores = [];
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      if (!batch) {
+        console.error(`Batch ${batchIndex} is undefined`);
+        continue;
+      }
+      
+      try {
+        const results = await db.$transaction(async (tx) => {
+          const savedScores = [];
 
-        for (const scoreData of batch) {
-          const {
-            studentId,
-            assessmentSchemaId,
-            componentId,
-            marksObtained,
-            comments,
-            branchId,
-          } = scoreData;
+          for (let itemIndex = 0; itemIndex < batch.length; itemIndex++) {
+            const scoreData = batch[itemIndex];
+            if (!scoreData) {
+              console.error(`Score data at index ${itemIndex} is undefined`);
+              continue;
+            }
+
+            const {
+              studentId,
+              assessmentSchemaId,
+              componentId,
+              marksObtained,
+              comments,
+              branchId,
+              // Handle attendance fields (from ComponentScoreEntry)
+              attendanceStatus,
+              attendanceReason,
+              attendanceNotes,
+              // Handle sub-criteria scores (from ComponentScoreEntry)
+              subCriteriaScores,
+            } = scoreData;
 
           if (!branchId) {
             throw new Error('branchId is required');
+          }
+
+          // Validate that the student exists
+          const studentExists = await tx.student.findUnique({
+            where: { id: studentId },
+            select: { 
+              id: true, 
+              isActive: true, 
+              branchId: true,
+              firstName: true,
+              lastName: true,
+              rollNumber: true 
+            }
+          });
+
+          if (!studentExists) {
+            throw new Error(`Student with ID ${studentId} not found in database`);
+          }
+
+          if (!studentExists.isActive) {
+            throw new Error(`Student with ID ${studentId} is not active`);
+          }
+
+          if (studentExists.branchId !== branchId) {
+            throw new Error(`Student ${studentId} belongs to branch ${studentExists.branchId}, but trying to save to branch ${branchId}`);
           }
 
           // Track students that need final score recalculation
@@ -191,6 +279,16 @@ export async function POST(request: NextRequest) {
           if (!assessmentSchema) {
             throw new Error(`Assessment schema not found: ${assessmentSchemaId}`);
           }
+
+          if (!assessmentSchema.isActive) {
+            throw new Error(`Assessment schema ${assessmentSchemaId} is not active`);
+          }
+
+          if (assessmentSchema.branchId !== branchId) {
+            throw new Error(`Assessment schema ${assessmentSchemaId} belongs to branch ${assessmentSchema.branchId}, but trying to save to branch ${branchId}`);
+          }
+
+
 
           // Find the specific component to validate against
           let targetComponent = null;
@@ -216,8 +314,8 @@ export async function POST(request: NextRequest) {
           }
 
           // Validate sub-criteria scores if provided
-          if (scoreData.subCriteriaScores && typeof scoreData.subCriteriaScores === 'object') {
-            for (const [subCriteriaId, subScore] of Object.entries(scoreData.subCriteriaScores)) {
+          if (subCriteriaScores && typeof subCriteriaScores === 'object') {
+            for (const [subCriteriaId, subScore] of Object.entries(subCriteriaScores)) {
               const numericSubScore = Number(subScore);
               if (isNaN(numericSubScore)) continue;
 
@@ -299,8 +397,8 @@ export async function POST(request: NextRequest) {
             }
 
             // Handle sub-criteria scores if provided
-            if (scoreData.subCriteriaScores && typeof scoreData.subCriteriaScores === 'object') {
-              for (const [subCriteriaId, subScore] of Object.entries(scoreData.subCriteriaScores)) {
+            if (subCriteriaScores && typeof subCriteriaScores === 'object') {
+              for (const [subCriteriaId, subScore] of Object.entries(subCriteriaScores)) {
                 const numericSubScore = Number(subScore);
                 if (isNaN(numericSubScore)) continue;
 
@@ -335,17 +433,23 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          if (studentScore) {
+                    if (studentScore) {
+            console.log('SAVE: Created/updated score for student', studentId);
             savedScores.push(studentScore as any);
           }
         }
 
+        console.log('BATCH: Saved', savedScores.length, 'scores in this batch');
         return savedScores;
-      }, {
-        timeout: 15000, // 15 seconds for batch processing
-      });
+        }, {
+          timeout: 15000, // 15 seconds for batch processing
+        });
 
-      allSavedScores.push(...results);
+        allSavedScores.push(...results);
+      } catch (batchError) {
+        console.error(`Error processing batch ${batchIndex + 1}:`, batchError);
+        throw new Error(`Failed to process batch ${batchIndex + 1}: ${batchError instanceof Error ? batchError.message : 'Unknown batch error'}`);
+      }
     }
 
     // Recalculate final scores separately (outside the main transaction)
@@ -360,11 +464,36 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.log('SUCCESS: Total scores processed:', allSavedScores.length);
     return NextResponse.json(allSavedScores);
   } catch (error) {
     console.error('Error saving assessment scores:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to save assessment scores';
+    let errorDetails = '';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+      
+      // Check for common database errors
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Database operation timed out. Please try saving fewer scores at once.';
+      } else if (error.message.includes('constraint')) {
+        errorMessage = 'Data validation failed. Please check your input data.';
+      } else if (error.message.includes('auth')) {
+        errorMessage = 'Authentication failed. Please refresh the page and try again.';
+      }
+    }
+    
+
+    
     return NextResponse.json(
-      { error: 'Failed to save assessment scores' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     );
   }

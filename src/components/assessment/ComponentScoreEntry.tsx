@@ -513,7 +513,12 @@ export function ComponentScoreEntry({
     } else {
       // For simple assessments, use the existing logic
       scoresToSave = Object.entries(scores)
-        .filter(([, score]) => score.trim() !== "")
+        .filter(([studentId, score]) => {
+          // Filter out internal tracking properties and empty scores
+          return studentId !== '_componentId' && 
+                 typeof score === 'string' && 
+                 score.trim() !== "";
+        })
         .map(([studentId, score]) => ({
           studentId,
           assessmentSchemaId: schema.id,
@@ -527,6 +532,11 @@ export function ComponentScoreEntry({
     }
 
     if (scoresToSave.length === 0) {
+      console.log('DEBUG: No scores to save. Raw scores data:', scores);
+      console.log('DEBUG: Sub-criteria scores data:', subCriteriaScores);
+      console.log('DEBUG: Students data:', students);
+      console.log('DEBUG: Has sub criteria:', hasSubCriteria);
+      
       toast({
         title: "No scores to save",
         description: hasSubCriteria 
@@ -537,14 +547,18 @@ export function ComponentScoreEntry({
       return;
     }
 
+    console.log('DEBUG: About to save scores:', scoresToSave);
     setIsSaving(true);
     try {
+      console.log('DEBUG: Calling onSave function...');
       await onSave(scoresToSave);
+      console.log('DEBUG: onSave completed successfully');
       toast({
         title: "Scores saved",
         description: `Successfully saved scores for ${scoresToSave.length} students.`,
       });
     } catch (error: any) {
+      console.error('DEBUG: Error in save process:', error);
       console.error('Error saving scores:', error);
       
       // Check if error is related to maximum score validation

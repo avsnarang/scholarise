@@ -212,9 +212,9 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
       softwareLicenses: "",
       assetReturnStatus: "",
       
-      createUser: false,
       email: "",
       password: "",
+      roleId: "",
     },
   });
 
@@ -282,7 +282,6 @@ export function EnhancedEmployeeForm({ initialData, isEdit = false }: EnhancedEm
   
   // Watch form values to provide better validation feedback
   const watchedValues = methods.watch();
-  const createUser = watchedValues.createUser;
 
   return (
     <FormProvider {...methods}>

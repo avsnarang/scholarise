@@ -44,8 +44,8 @@ export const studentRouter = createTRPCRouter({
               // Filter by session if provided
               ...(input?.sessionId
                 ? {
-                academicRecords: {
-                  some: {
+                    academicRecords: {
+                      some: {
                         sessionId: input.sessionId,
                       },
                     },
@@ -64,8 +64,8 @@ export const studentRouter = createTRPCRouter({
               // Filter by session if provided
               ...(input?.sessionId
                 ? {
-                academicRecords: {
-                  some: {
+                    academicRecords: {
+                      some: {
                         sessionId: input.sessionId,
                       },
                     },
@@ -90,11 +90,11 @@ export const studentRouter = createTRPCRouter({
 
         const sections =
           sectionIds.length > 0
-          ? await ctx.db.section.findMany({
-              where: { id: { in: sectionIds } },
-              select: { id: true, name: true, class: { select: { name: true } } },
-            })
-          : [];
+            ? await ctx.db.section.findMany({
+                where: { id: { in: sectionIds } },
+                select: { id: true, name: true, class: { select: { name: true } } },
+              })
+            : [];
 
         // Create a map of section counts
         const classCounts: Record<string, number> = {};
@@ -1727,4 +1727,81 @@ export const studentRouter = createTRPCRouter({
 
       return students;
     }),
+
+  getStudentsWithScores: publicProcedure
+    .input(
+      z.object({
+        studentIds: z.array(z.string()),
+        termIds: z.array(z.string()),
+        branchId: z.string(),
+        sessionId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { studentIds, termIds, branchId, sessionId } = input;
+
+      if (studentIds.length === 0) {
+        return [];
+      }
+
+      // Fetch students with their basic info and parent details
+      const students = await ctx.db.student.findMany({
+        where: {
+          id: { in: studentIds },
+          branchId,
+          isActive: true,
+        },
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+          parent: {
+            select: {
+              fatherName: true,
+              motherName: true,
+              guardianName: true,
+            },
+          },
+          academicRecords: {
+            where: {
+              sessionId,
+            },
+            include: {
+              session: true,
+            },
+          },
+        },
+      });
+
+      // For now, return students with empty assessment scores
+      // This can be enhanced later when the assessment schema is better understood
+      const studentsWithScores = students.map(student => ({
+        id: student.id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        rollNumber: student.rollNumber,
+        admissionNumber: student.admissionNumber,
+        fatherName: student.parent?.fatherName,
+        motherName: student.parent?.motherName,
+        guardianName: student.parent?.guardianName,
+        dateOfBirth: student.dateOfBirth,
+        assessmentScores: [], // Empty for now - can be populated later
+      }));
+
+      return studentsWithScores;
+    }),
 });
+
+// Helper function to calculate grade based on percentage
+function calculateGrade(percentage: number): string {
+  if (percentage >= 90) return "A+";
+  if (percentage >= 80) return "A";
+  if (percentage >= 70) return "B+";
+  if (percentage >= 60) return "B";
+  if (percentage >= 50) return "C+";
+  if (percentage >= 40) return "C";
+  if (percentage >= 33) return "D";
+  return "F";
+}
