@@ -187,8 +187,26 @@ export const chatRouter = createTRPCRouter({
           });
         }
 
-        // Send message via Twilio
-        const twilioClient = getDefaultTwilioClient();
+        // Initialize Twilio client with better error handling
+        let twilioClient;
+        try {
+          twilioClient = getDefaultTwilioClient();
+        } catch (error) {
+          console.error('Failed to initialize Twilio client for message sending:', error);
+          
+          // Check if it's a credentials issue
+          if (error instanceof Error && (error.message.includes('Missing:') || error.message.includes('required') || error.message.includes('WhatsApp messaging unavailable'))) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "WhatsApp messaging is not properly configured. Please contact your administrator to configure Twilio credentials.",
+            });
+          }
+          
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to initialize WhatsApp messaging service",
+          });
+        }
         
         const twilioResponse = await twilioClient.sendTextMessage(
           conversation.participantPhone,
@@ -196,9 +214,22 @@ export const chatRouter = createTRPCRouter({
         );
 
         if (!twilioResponse.result) {
+          // Enhanced error handling for common Twilio errors
+          let errorMessage = `Failed to send message: ${twilioResponse.error}`;
+          
+          if (twilioResponse.error?.includes('Authenticate') || twilioResponse.error?.includes('401')) {
+            errorMessage = "WhatsApp messaging authentication failed. Please contact your administrator to verify Twilio credentials.";
+          } else if (twilioResponse.error?.includes('21211')) {
+            errorMessage = "Invalid phone number format. Please check the recipient's phone number.";
+          } else if (twilioResponse.error?.includes('21408')) {
+            errorMessage = "Permission denied. Please verify your WhatsApp Business account permissions.";
+          } else if (twilioResponse.error?.includes('63016')) {
+            errorMessage = "The phone number is not registered with WhatsApp Business API.";
+          }
+          
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: `Failed to send message: ${twilioResponse.error}`,
+            message: errorMessage,
           });
         }
 
@@ -234,6 +265,13 @@ export const chatRouter = createTRPCRouter({
 
       } catch (error) {
         console.error('Error sending chat message:', error);
+        
+        // Re-throw TRPCError as-is
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        
+        // Handle other errors
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,

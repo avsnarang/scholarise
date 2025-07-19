@@ -95,21 +95,46 @@ export class TwilioApiClient {
       TWILIO_WHATSAPP_FROM: !!env.TWILIO_WHATSAPP_FROM
     });
     
+    // Enhanced validation for production environments
     if (!sid || !token) {
       const missingVars = [];
       if (!sid) missingVars.push('TWILIO_ACCOUNT_SID');
       if (!token) missingVars.push('TWILIO_AUTH_TOKEN');
-      throw new Error(`Twilio credentials are required. Missing: ${missingVars.join(', ')}. Please set these environment variables in your .env file.`);
+      
+      const errorMessage = `Twilio credentials are required for WhatsApp messaging. Missing: ${missingVars.join(', ')}. Please configure these environment variables in your production deployment.`;
+      
+      // In production, this is a critical error
+      if (env.NODE_ENV === 'production') {
+        console.error('🚨 CRITICAL: Missing Twilio credentials in production environment');
+        console.error('Required environment variables:', {
+          TWILIO_ACCOUNT_SID: 'Your Twilio Account SID (starts with AC)',
+          TWILIO_AUTH_TOKEN: 'Your Twilio Auth Token',
+          TWILIO_WHATSAPP_FROM: 'Your WhatsApp Business number (e.g., whatsapp:+14155238886)'
+        });
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    // Validate Account SID format
+    if (!sid.startsWith('AC')) {
+      throw new Error(`Invalid Twilio Account SID format. Expected format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, got: ${sid.substring(0, 8)}...`);
+    }
+    
+    // Validate Auth Token format (should be 32 characters)
+    if (token.length !== 32) {
+      console.warn(`⚠️ Twilio Auth Token length is ${token.length}, expected 32 characters. This may cause authentication issues.`);
     }
     
     // Initialize Twilio client
     try {
       const twilio = require('twilio');
       this.twilioClient = twilio(sid, token);
-      console.log('Twilio client initialized successfully');
+      console.log('✅ Twilio client initialized successfully');
+      console.log('- Client Account SID:', this.twilioClient.accountSid || 'Not available');
     } catch (error) {
-      console.error('Failed to initialize Twilio client:', error);
-      throw new Error('Failed to initialize Twilio client. Make sure twilio package is installed.');
+      console.error('❌ Failed to initialize Twilio client:', error);
+      throw new Error(`Failed to initialize Twilio client: ${error instanceof Error ? error.message : 'Unknown error'}. Make sure the twilio package is installed and credentials are valid.`);
     }
   }
 
@@ -403,9 +428,39 @@ let defaultClient: TwilioApiClient | null = null;
 
 export function getDefaultTwilioClient(): TwilioApiClient {
   if (!defaultClient) {
-    defaultClient = new TwilioApiClient();
+    try {
+      defaultClient = new TwilioApiClient();
+    } catch (error) {
+      // Log the error and re-throw with context
+      console.error('❌ Failed to create default Twilio client:', error);
+      
+      if (error instanceof Error) {
+        // Check if it's a credentials issue
+        if (error.message.includes('Missing:') || error.message.includes('required')) {
+          console.error('💡 Solution: Configure the following environment variables in your production deployment:');
+          console.error('   - TWILIO_ACCOUNT_SID: Your Twilio Account SID');
+          console.error('   - TWILIO_AUTH_TOKEN: Your Twilio Auth Token');
+          console.error('   - TWILIO_WHATSAPP_FROM: Your WhatsApp Business number');
+        }
+        
+        throw new Error(`WhatsApp messaging unavailable: ${error.message}`);
+      }
+      
+      throw new Error('WhatsApp messaging unavailable: Failed to initialize Twilio client');
+    }
   }
   return defaultClient;
+}
+
+// Helper function to reset the default client (useful when credentials change)
+export function resetDefaultTwilioClient(): void {
+  console.log('🔄 Resetting default Twilio client...');
+  defaultClient = null;
+}
+
+// Helper function to check if default client is initialized
+export function isDefaultTwilioClientInitialized(): boolean {
+  return defaultClient !== null;
 }
 
 // Helper function to get client with custom credentials

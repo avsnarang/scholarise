@@ -183,10 +183,29 @@ export default function CommunicationSettingsPage() {
           description: "Successfully connected to Twilio API.",
         });
       } else {
+        let description = data.error || "Failed to connect to Twilio API.";
+        
+        // Add specific troubleshooting tips
+        if (data.isConfigurationIssue) {
+          description += "\n\nConfiguration issues detected. Please check the environment variables listed above.";
+        }
+        
+        if (data.issues && data.issues.length > 0) {
+          description += `\n\nIssues found: ${data.issues.join(', ')}`;
+        }
+        
         toast({
           title: "Connection Failed",
-          description: data.error || "Failed to connect to Twilio API.",
+          description,
           variant: "destructive",
+        });
+        
+        // Log detailed information for debugging
+        console.error('Twilio connection test failed:', {
+          error: data.error,
+          envCheck: data.envCheck,
+          issues: data.issues,
+          isConfigurationIssue: data.isConfigurationIssue
         });
       }
       setTestingConnection(false);
@@ -194,7 +213,7 @@ export default function CommunicationSettingsPage() {
     onError: (error: any) => {
       toast({
         title: "Connection Test Failed",
-        description: error.message,
+        description: error.message + "\n\nCheck the browser console for more details.",
         variant: "destructive",
       });
       setTestingConnection(false);
@@ -219,6 +238,31 @@ export default function CommunicationSettingsPage() {
     },
   });
 
+  // Refresh Twilio client
+  const refreshClientMutation = api.communication.refreshTwilioClient.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Client Refreshed",
+          description: data.message || "Twilio client refreshed successfully",
+        });
+      } else {
+        toast({
+          title: "Refresh Failed",
+          description: data.error || "Failed to refresh Twilio client",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Refresh Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleTestConnection = async () => {
     setTestingConnection(true);
     try {
@@ -231,6 +275,14 @@ export default function CommunicationSettingsPage() {
   const handleDebugEnvironment = async () => {
     try {
       await debugEnvironmentMutation.mutateAsync();
+    } catch (error) {
+      // Error handled in mutation onError
+    }
+  };
+
+  const handleRefreshClient = async () => {
+    try {
+      await refreshClientMutation.mutateAsync();
     } catch (error) {
       // Error handled in mutation onError
     }
@@ -461,6 +513,16 @@ export default function CommunicationSettingsPage() {
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
                         Debug Environment
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleRefreshClient}
+                        disabled={refreshClientMutation.isPending}
+                      >
+                        <RefreshCw className={cn("mr-2 h-4 w-4", refreshClientMutation.isPending && "animate-spin")} />
+                        {refreshClientMutation.isPending ? "Refreshing..." : "Refresh Client"}
                       </Button>
                     </div>
                   </form>

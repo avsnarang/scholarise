@@ -8,13 +8,15 @@ const getTwilioUtils = async () => {
   const { 
     getDefaultTwilioClient, 
     formatTemplateVariables, 
-    createBroadcastName
+    createBroadcastName,
+    resetDefaultTwilioClient
   } = await import("@/utils/twilio-api");
   
   return {
     getDefaultTwilioClient,
     formatTemplateVariables,
-    createBroadcastName
+    createBroadcastName,
+    resetDefaultTwilioClient
   };
 };
 
@@ -779,23 +781,128 @@ export const communicationRouter = createTRPCRouter({
       };
     }),
 
+  // Refresh Twilio client (useful after environment variable changes)
+  refreshTwilioClient: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      try {
+        console.log('🔄 Refreshing Twilio client...');
+        
+        // Import the reset function
+        const { resetDefaultTwilioClient, getDefaultTwilioClient } = await getTwilioUtils();
+        
+        // Reset the existing client
+        resetDefaultTwilioClient();
+        console.log('✅ Default client reset');
+        
+        // Try to create a new client
+        const newClient = getDefaultTwilioClient();
+        console.log('✅ New Twilio client created successfully');
+        
+        // Test the new connection
+        const testResult = await newClient.testConnection();
+        console.log('📊 New client test result:', testResult);
+        
+        // Log the refresh
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "twilio_client_refresh",
+            description: testResult.result ? "Twilio client refreshed and tested successfully" : `Twilio client refresh failed: ${testResult.error}`,
+            metadata: JSON.parse(JSON.stringify({ testResult })),
+            userId: ctx.userId!,
+          }
+        });
+        
+        return {
+          success: testResult.result,
+          message: testResult.result ? "Twilio client refreshed successfully" : "Twilio client refresh failed",
+          error: testResult.error,
+          data: testResult.data
+        };
+        
+      } catch (error) {
+        console.error('❌ Failed to refresh Twilio client:', error);
+        
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Log the error
+        try {
+          await ctx.db.communicationLog.create({
+            data: {
+              action: "twilio_client_refresh",
+              description: `Twilio client refresh failed: ${errorMessage}`,
+              metadata: { error: errorMessage },
+              userId: ctx.userId!,
+            }
+          });
+        } catch (logError) {
+          console.error('Failed to log Twilio client refresh error:', logError);
+        }
+        
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+    }),
+
   // Test Twilio API connection
   testTwilioConnection: protectedProcedure
     .mutation(async ({ ctx }) => {
       try {
-        console.log('Starting Twilio connection test...');
+        console.log('🔍 Starting comprehensive Twilio connection test...');
+        
+        // First check environment variables
+        const { env } = await import("@/env.js");
+        const envCheck = {
+          hasAccountSid: !!env.TWILIO_ACCOUNT_SID,
+          hasAuthToken: !!env.TWILIO_AUTH_TOKEN,
+          hasWhatsAppFrom: !!env.TWILIO_WHATSAPP_FROM,
+          accountSidFormat: env.TWILIO_ACCOUNT_SID ? env.TWILIO_ACCOUNT_SID.startsWith('AC') : false,
+          accountSidLength: env.TWILIO_ACCOUNT_SID?.length || 0,
+          authTokenLength: env.TWILIO_AUTH_TOKEN?.length || 0,
+        };
+        
+        console.log('📋 Environment variables check:', envCheck);
+        
+        // Check for common issues
+        const issues = [];
+        if (!envCheck.hasAccountSid) issues.push('TWILIO_ACCOUNT_SID is missing');
+        if (!envCheck.hasAuthToken) issues.push('TWILIO_AUTH_TOKEN is missing');
+        if (!envCheck.hasWhatsAppFrom) issues.push('TWILIO_WHATSAPP_FROM is missing');
+        if (envCheck.hasAccountSid && !envCheck.accountSidFormat) issues.push('TWILIO_ACCOUNT_SID should start with "AC"');
+        if (envCheck.hasAuthToken && envCheck.authTokenLength !== 32) issues.push(`TWILIO_AUTH_TOKEN should be 32 characters (current: ${envCheck.authTokenLength})`);
+        
+        if (issues.length > 0) {
+          console.error('❌ Configuration issues found:', issues);
+          return {
+            success: false,
+            error: `Configuration issues: ${issues.join(', ')}`,
+            envCheck,
+            issues
+          };
+        }
+        
+        // Try to create Twilio client
         const { getDefaultTwilioClient } = await getTwilioUtils();
+        console.log('🔧 Creating Twilio client...');
         const twilioClient = getDefaultTwilioClient();
-        console.log('Twilio client created, calling testConnection...');
+        console.log('✅ Twilio client created successfully');
+        
+        // Test the connection
+        console.log('🌐 Testing connection...');
         const result = await twilioClient.testConnection();
-        console.log('testConnection result:', result);
+        console.log('📊 Connection test result:', result);
         
         // Log the test
         await ctx.db.communicationLog.create({
           data: {
             action: "twilio_connection_test",
             description: result.result ? "Twilio API connection test successful" : `Twilio API connection test failed: ${result.error}`,
-            metadata: result.result,
+            metadata: { 
+              result: result.result,
+              envCheck,
+              issues: issues.length > 0 ? issues : null 
+            },
             userId: ctx.userId!,
           }
         });
@@ -805,26 +912,32 @@ export const communicationRouter = createTRPCRouter({
           success: result.result,
           error: result.error,
           info: result.info,
-          data: result.data
+          data: result.data,
+          envCheck,
+          issues: issues.length > 0 ? issues : null
         };
       } catch (error) {
-        console.error('Twilio connection test failed:', error);
+        console.error('❌ Twilio connection test failed:', error);
         
         let errorMessage = 'Unknown error';
+        let isConfigurationIssue = false;
         
         if (error instanceof Error) {
-          if (error.message.includes('TWILIO_ACCOUNT_SID')) {
-            errorMessage = "TWILIO_ACCOUNT_SID environment variable is required. Please configure it in your .env file.";
-          } else if (error.message.includes('TWILIO_AUTH_TOKEN')) {
-            errorMessage = "TWILIO_AUTH_TOKEN environment variable is required. Please configure it in your .env file.";
+          errorMessage = error.message;
+          
+          // Categorize the error
+          if (error.message.includes('Missing:') || 
+              error.message.includes('required') || 
+              error.message.includes('WhatsApp messaging unavailable') ||
+              error.message.includes('Invalid Twilio Account SID format')) {
+            isConfigurationIssue = true;
+            errorMessage = `Configuration Error: ${error.message}`;
           } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            errorMessage = "Invalid Twilio credentials. Please check your Account SID and Auth Token.";
+            errorMessage = "Authentication failed: Invalid Twilio credentials. Please verify your Account SID and Auth Token.";
           } else if (error.message.includes('404')) {
             errorMessage = "Twilio API endpoint not found. Please verify your configuration.";
           } else if (error.message.includes('429')) {
             errorMessage = "Rate limit exceeded. Please try again later.";
-          } else {
-            errorMessage = error.message;
           }
         }
         
@@ -834,7 +947,11 @@ export const communicationRouter = createTRPCRouter({
             data: {
               action: "twilio_connection_test",
               description: `Twilio API connection test failed: ${errorMessage}`,
-              metadata: { error: errorMessage },
+              metadata: { 
+                error: errorMessage, 
+                isConfigurationIssue,
+                stack: error instanceof Error ? error.stack : undefined 
+              },
               userId: ctx.userId!,
             }
           });
@@ -844,7 +961,8 @@ export const communicationRouter = createTRPCRouter({
         
         return {
           success: false,
-          error: errorMessage
+          error: errorMessage,
+          isConfigurationIssue
         };
       }
     }),

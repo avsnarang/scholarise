@@ -15,10 +15,10 @@ export const env = createEnv({
     WATI_API_TOKEN: z.string().optional(),
     WATI_BASE_URL: z.string().url().optional(),
     
-    // Twilio API Configuration
-    TWILIO_ACCOUNT_SID: z.string().optional(),
-    TWILIO_AUTH_TOKEN: z.string().optional(),
-    TWILIO_WHATSAPP_FROM: z.string().optional(),
+    // Twilio API Configuration - Required in production for WhatsApp messaging
+    TWILIO_ACCOUNT_SID: z.string().min(1, "TWILIO_ACCOUNT_SID is required for WhatsApp messaging").optional(),
+    TWILIO_AUTH_TOKEN: z.string().min(1, "TWILIO_AUTH_TOKEN is required for WhatsApp messaging").optional(),
+    TWILIO_WHATSAPP_FROM: z.string().min(1, "TWILIO_WHATSAPP_FROM is required for WhatsApp messaging").optional(),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
