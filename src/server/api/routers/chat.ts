@@ -37,6 +37,20 @@ const updateConversationSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const checkMessageWindowSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+});
+
+const sendTemplateMessageSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  templateId: z.string().min(1, "Template ID is required"),
+  templateVariables: z.record(z.string()).optional(),
+});
+
+const getTemplatesSchema = z.object({
+  branchId: z.string().min(1, "Branch ID is required"),
+});
+
 export const chatRouter = createTRPCRouter({
   
   // Get all conversations for a branch
@@ -152,8 +166,28 @@ export const chatRouter = createTRPCRouter({
           });
         }
 
+        // Check WhatsApp 24-hour messaging window
+        const { checkWhatsAppMessageWindow, getDefaultTwilioClient } = await import("@/utils/twilio-api");
+        const messageWindow = checkWhatsAppMessageWindow(
+          conversation.lastMessageAt,
+          conversation.lastMessageFrom
+        );
+
+        // If outside the 24-hour window, prevent sending freeform messages
+        if (!messageWindow.canSendFreeform) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot send freeform message: ${messageWindow.reason}`,
+            cause: {
+              type: 'WHATSAPP_WINDOW_EXPIRED',
+              reason: messageWindow.reason,
+              lastIncomingMessageAt: messageWindow.lastIncomingMessageAt,
+              needsTemplate: true
+            }
+          });
+        }
+
         // Send message via Twilio
-        const { getDefaultTwilioClient } = await import("@/utils/twilio-api");
         const twilioClient = getDefaultTwilioClient();
         
         const twilioResponse = await twilioClient.sendTextMessage(
@@ -195,6 +229,7 @@ export const chatRouter = createTRPCRouter({
           success: true,
           message,
           twilioMessageId: twilioResponse.data?.sid,
+          windowInfo: messageWindow
         };
 
       } catch (error) {
@@ -402,6 +437,171 @@ export const chatRouter = createTRPCRouter({
         total,
         hasMore: input.offset + input.limit < total,
       };
+    }),
+
+  // Check WhatsApp messaging window status
+  checkMessageWindow: protectedProcedure
+    .input(checkMessageWindowSchema)
+    .query(async ({ ctx, input }) => {
+      const conversation = await ctx.db.conversation.findUnique({
+        where: { id: input.conversationId },
+        select: {
+          lastMessageAt: true,
+          lastMessageFrom: true,
+          participantName: true,
+          participantPhone: true,
+        }
+      });
+
+      if (!conversation) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Conversation not found",
+        });
+      }
+
+      const { checkWhatsAppMessageWindow } = await import("@/utils/twilio-api");
+      const windowInfo = checkWhatsAppMessageWindow(
+        conversation.lastMessageAt,
+        conversation.lastMessageFrom
+      );
+
+      return {
+        ...windowInfo,
+        conversationId: input.conversationId,
+        participantName: conversation.participantName,
+        participantPhone: conversation.participantPhone,
+      };
+    }),
+
+  // Get available WhatsApp templates
+  getTemplates: protectedProcedure
+    .input(getTemplatesSchema)
+    .query(async ({ ctx, input }) => {
+      const templates = await ctx.db.whatsAppTemplate.findMany({
+        where: {
+          OR: [
+            { branchId: input.branchId },
+            { branchId: null }, // Global templates
+          ],
+          isActive: true,
+          status: 'APPROVED',
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          templateBody: true,
+          templateVariables: true,
+          category: true,
+          language: true,
+          twilioContentSid: true,
+        },
+        orderBy: [
+          { category: 'asc' },
+          { name: 'asc' },
+        ],
+      });
+
+      return templates;
+    }),
+
+  // Send a template message (when outside 24-hour window)
+  sendTemplateMessage: protectedProcedure
+    .input(sendTemplateMessageSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Get conversation details
+        const conversation = await ctx.db.conversation.findUnique({
+          where: { id: input.conversationId },
+          include: { branch: true }
+        });
+
+        if (!conversation) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Conversation not found",
+          });
+        }
+
+        // Get template details
+        const template = await ctx.db.whatsAppTemplate.findUnique({
+          where: { id: input.templateId },
+        });
+
+        if (!template) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Template not found",
+          });
+        }
+
+        if (!template.twilioContentSid) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Template does not have a valid Twilio Content SID",
+          });
+        }
+
+        // Send template message via Twilio
+        const { getDefaultTwilioClient } = await import("@/utils/twilio-api");
+        const twilioClient = getDefaultTwilioClient();
+        
+        const twilioResponse = await twilioClient.sendTemplateMessage({
+          to: conversation.participantPhone,
+          contentSid: template.twilioContentSid,
+          contentVariables: input.templateVariables ? JSON.stringify(input.templateVariables) : '{}',
+        });
+
+        if (!twilioResponse.result) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Failed to send template message: ${twilioResponse.error}`,
+          });
+        }
+
+        // Create message record
+        const message = await ctx.db.chatMessage.create({
+          data: {
+            conversationId: input.conversationId,
+            direction: 'OUTGOING',
+            content: `[Template: ${template.name}]`, // Placeholder content for template messages
+            messageType: 'TEXT',
+            twilioMessageId: twilioResponse.data?.sid,
+            status: 'SENT',
+            sentBy: ctx.userId!,
+            metadata: {
+              templateId: input.templateId,
+              templateName: template.name,
+              templateVariables: input.templateVariables,
+            } as any,
+          }
+        });
+
+        // Update conversation
+        await ctx.db.conversation.update({
+          where: { id: input.conversationId },
+          data: {
+            lastMessageAt: new Date(),
+            lastMessageContent: `Template: ${template.name}`,
+            lastMessageFrom: 'OUTGOING',
+          }
+        });
+
+        return {
+          success: true,
+          message,
+          twilioMessageId: twilioResponse.data?.sid,
+          templateUsed: template.name,
+        };
+
+      } catch (error) {
+        console.error('Error sending template message:', error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to send template message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
     }),
 
 }); 

@@ -415,4 +415,58 @@ export function getTwilioClient(
   fromNumber?: string
 ): TwilioApiClient {
   return new TwilioApiClient(accountSid, authToken, fromNumber);
+}
+
+// WhatsApp Business API Helper Functions
+
+/**
+ * Checks if a conversation is within the 24-hour messaging window
+ * WhatsApp Business API allows freeform messages only within 24 hours of the last incoming message
+ */
+export interface WhatsAppMessageWindow {
+  canSendFreeform: boolean;
+  reason: string;
+  lastIncomingMessageAt?: Date;
+  hoursRemaining?: number;
+}
+
+export function checkWhatsAppMessageWindow(
+  lastMessageAt?: Date | null,
+  lastMessageFrom?: 'INCOMING' | 'OUTGOING' | null
+): WhatsAppMessageWindow {
+  // If no previous messages, freeform messages are not allowed (business-initiated conversation)
+  if (!lastMessageAt || !lastMessageFrom) {
+    return {
+      canSendFreeform: false,
+      reason: "No previous conversation. Use a template message to initiate contact."
+    };
+  }
+
+  // Only incoming messages open the 24-hour window
+  if (lastMessageFrom !== 'INCOMING') {
+    return {
+      canSendFreeform: false,
+      reason: "Last message was outgoing. Wait for user to respond or use a template message."
+    };
+  }
+
+  // Check if within 24-hour window
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const isWithinWindow = lastMessageAt > twentyFourHoursAgo;
+
+  if (isWithinWindow) {
+    const hoursRemaining = Math.max(0, 24 - (Date.now() - lastMessageAt.getTime()) / (60 * 60 * 1000));
+    return {
+      canSendFreeform: true,
+      reason: "Within 24-hour window from last incoming message",
+      lastIncomingMessageAt: lastMessageAt,
+      hoursRemaining: Math.round(hoursRemaining * 10) / 10 // Round to 1 decimal
+    };
+  }
+
+  return {
+    canSendFreeform: false,
+    reason: "24-hour window expired. Use a template message to re-engage.",
+    lastIncomingMessageAt: lastMessageAt
+  };
 } 

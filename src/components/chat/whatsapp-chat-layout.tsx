@@ -19,15 +19,19 @@ export function WhatsAppChatLayout({
   onConversationSelect 
 }: WhatsAppChatLayoutProps) {
   return (
-    <div className={cn("h-full bg-background", className)}>
+    <div className={cn("h-full bg-background flex", className)}>
       <SidebarProvider defaultOpen={true}>
-        <WhatsAppSidebar 
-          selectedConversationId={selectedConversationId}
-          onConversationSelect={onConversationSelect}
-        />
-        <SidebarInset className="flex flex-col">
-          {children}
-        </SidebarInset>
+        <div className="w-80 flex-shrink-0">
+          <WhatsAppSidebar 
+            selectedConversationId={selectedConversationId}
+            onConversationSelect={onConversationSelect}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <SidebarInset className="flex flex-col h-full w-full">
+            {children}
+          </SidebarInset>
+        </div>
       </SidebarProvider>
     </div>
   );
