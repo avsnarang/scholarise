@@ -108,8 +108,8 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       phone: { contains: cleanPhone }
     },
     include: {
-      designation: true,
-      department: true
+      designationRef: true,
+      departmentRef: true
     }
   });
 
@@ -120,8 +120,8 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       name: `${employee.firstName} ${employee.lastName}`,
       metadata: {
         employeeCode: employee.employeeCode,
-        designation: employee.designation?.name,
-        department: employee.department?.name
+        designation: employee.designationRef?.title,
+        department: employee.departmentRef?.name
       }
     };
   }
@@ -211,32 +211,34 @@ export async function POST(req: NextRequest) {
     const participant = await identifyParticipant(payload.From, branch.id);
 
     // Find or create conversation
-    let conversation = await db.chatConversation.findFirst({
+    let conversation = await db.conversation.findUnique({
       where: {
-        branchId: branch.id,
-        participantType: participant.type.toUpperCase() as any,
-        participantId: participant.id,
-        phoneNumber: payload.From
+        branchId_participantPhone: {
+          branchId: branch.id,
+          participantPhone: payload.From
+        }
       }
     });
 
     if (!conversation) {
-      conversation = await db.chatConversation.create({
+      conversation = await db.conversation.create({
         data: {
           branchId: branch.id,
-          participantType: participant.type.toUpperCase() as any,
+          participantType: participant.type,
           participantId: participant.id,
           participantName: participant.name,
-          phoneNumber: payload.From,
+          participantPhone: payload.From,
           lastMessageAt: new Date(),
-          unreadCount: 0,
-          metadata: participant.metadata as any
+          lastMessageContent: payload.Body.substring(0, 100),
+          lastMessageFrom: 'INCOMING',
+          unreadCount: 1,
+          metadata: participant.metadata
         }
       });
       console.log(`Created new conversation ${conversation.id} for ${payload.From} (fallback)`);
     } else {
       // Update conversation with latest activity
-      await db.chatConversation.update({
+      await db.conversation.update({
         where: { id: conversation.id },
         data: {
           lastMessageAt: new Date(),

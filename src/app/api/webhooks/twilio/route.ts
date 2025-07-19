@@ -151,11 +151,15 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
   console.log('🔵 WEBHOOK STARTED:', new Date().toISOString());
   
+  // Declare variables outside try block for access in catch block
+  let isFallback = false;
+  let attempt = 1;
+  
   try {
     // Check if this is a fallback attempt
     const url = new URL(req.url);
-    const isFallback = url.searchParams.get('fallback') === 'true';
-    const attempt = parseInt(url.searchParams.get('attempt') || '1');
+    isFallback = url.searchParams.get('fallback') === 'true';
+    attempt = parseInt(url.searchParams.get('attempt') || '1');
     
     if (isFallback) {
       console.warn(`⚠️ Fallback webhook triggered - Attempt ${attempt}`);
