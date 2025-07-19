@@ -3,7 +3,8 @@ import { db } from "@/server/db";
 import { headers } from "next/headers";
 import { env } from "@/env.js";
 
-// Webhook signature verification (optional but recommended for production)
+// Import the same helper functions from the main webhook
+// Webhook signature verification
 function validateTwilioSignature(body: string, signature: string, url: string): boolean {
   if (!env.TWILIO_AUTH_TOKEN) return false;
   
@@ -74,7 +75,8 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       metadata: {
         class: student.section?.class?.name,
         section: student.section?.name,
-        parentInfo: student.parent
+        rollNumber: student.rollNumber,
+        parentName: student.parent?.fatherName || student.parent?.motherName
       }
     };
   }
@@ -94,7 +96,7 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       name: `${teacher.firstName} ${teacher.lastName}`,
       metadata: {
         employeeCode: teacher.employeeCode,
-        designation: teacher.designation
+        department: 'Teaching'
       }
     };
   }
@@ -106,8 +108,8 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       phone: { contains: cleanPhone }
     },
     include: {
-      designationRef: true,
-      departmentRef: true
+      designation: true,
+      department: true
     }
   });
 
@@ -118,13 +120,13 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
       name: `${employee.firstName} ${employee.lastName}`,
       metadata: {
         employeeCode: employee.employeeCode,
-        designation: employee.designationRef?.title,
-        department: employee.departmentRef?.name
+        designation: employee.designation?.name,
+        department: employee.department?.name
       }
     };
   }
 
-  // If not found in any specific category, treat as unknown contact
+  // If no match found, return unknown contact
   return {
     type: 'unknown',
     id: `unknown_${cleanPhone}`,
@@ -133,13 +135,8 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
   };
 }
 
-// Helper function to determine branch from phone number (you may need to customize this)
+// Helper function to determine branch from phone number
 async function determineBranch(toNumber: string) {
-  // For now, get the first branch. In a multi-branch setup, you might:
-  // 1. Have different WhatsApp numbers for different branches
-  // 2. Use the 'To' number to determine which branch
-  // 3. Have a default branch for unknown numbers
-  
   const branch = await db.branch.findFirst({
     orderBy: { order: 'asc' }
   });
@@ -148,42 +145,22 @@ async function determineBranch(toNumber: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const startTime = Date.now();
-  console.log('🔵 WEBHOOK STARTED:', new Date().toISOString());
-  
   try {
-    // Check if this is a fallback attempt
-    const url = new URL(req.url);
-    const isFallback = url.searchParams.get('fallback') === 'true';
-    const attempt = parseInt(url.searchParams.get('attempt') || '1');
+    console.warn('🔄 FALLBACK WEBHOOK TRIGGERED - Primary webhook failed');
     
-    if (isFallback) {
-      console.warn(`⚠️ Fallback webhook triggered - Attempt ${attempt}`);
-    }
-    
-    // Get the raw body for Twilio signature verification (optional but recommended)
+    // Get the raw body for Twilio signature verification
     const body = await req.text();
-    console.log('📩 Webhook received body length:', body.length);
     
     // Verify Twilio signature in production
     if (process.env.NODE_ENV === 'production') {
       const headersList = await headers();
       const twilioSignature = headersList.get('x-twilio-signature');
-      const fullUrl = req.url;
+      const url = req.url;
       
-      console.log('🔐 Verifying Twilio signature...');
-      if (!twilioSignature) {
-        console.error('❌ No Twilio signature header found');
-        return NextResponse.json({ error: 'No signature header' }, { status: 401 });
-      }
-      
-      if (!validateTwilioSignature(body, twilioSignature, fullUrl)) {
-        console.error('❌ Invalid Twilio signature');
+      if (!twilioSignature || !validateTwilioSignature(body, twilioSignature, url)) {
+        console.error('Invalid Twilio signature in fallback webhook');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      console.log('✅ Twilio signature validated');
-    } else {
-      console.log('🔓 Development mode - skipping signature validation');
     }
     
     const formData = new URLSearchParams(body);
@@ -202,75 +179,70 @@ export async function POST(req: NextRequest) {
       WaId: formData.get('WaId') || undefined,
     };
 
-    console.log('📋 WEBHOOK PAYLOAD:', {
-      MessageSid: payload.MessageSid,
-      From: payload.From,
-      To: payload.To,
-      Body: payload.Body?.substring(0, 100) + (payload.Body?.length > 100 ? '...' : ''),
-      NumMedia: payload.NumMedia,
-      ProfileName: payload.ProfileName,
-      WaId: payload.WaId
-    });
+    console.log('Fallback webhook payload:', payload);
 
     // Validate required fields
     if (!payload.MessageSid || !payload.From || !payload.To) {
-      console.error('❌ Invalid webhook payload - missing required fields:', {
-        MessageSid: !!payload.MessageSid,
-        From: !!payload.From,
-        To: !!payload.To
-      });
+      console.error('Invalid fallback webhook payload - missing required fields');
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
-    console.log('✅ Payload validation passed');
 
     // Determine which branch this message belongs to
     const branch = await determineBranch(payload.To);
     if (!branch) {
-      console.error('No branch found for incoming message');
-      return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+      console.error('No branch found for fallback webhook');
+      return NextResponse.json({ error: 'No branch configured' }, { status: 400 });
     }
 
-    // Identify the participant (student, teacher, employee, etc.)
+    // Check if message already exists (to prevent duplicates)
+    const existingMessage = await db.chatMessage.findFirst({
+      where: { twilioMessageId: payload.MessageSid }
+    });
+
+    if (existingMessage) {
+      console.log(`Message ${payload.MessageSid} already processed - skipping duplicate in fallback`);
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
+        { headers: { 'Content-Type': 'text/xml' } }
+      );
+    }
+
+    // Identify who sent the message
     const participant = await identifyParticipant(payload.From, branch.id);
 
-    // Check if conversation already exists
-    let conversation = await db.conversation.findUnique({
+    // Find or create conversation
+    let conversation = await db.chatConversation.findFirst({
       where: {
-        branchId_participantPhone: {
-          branchId: branch.id,
-          participantPhone: payload.From
-        }
+        branchId: branch.id,
+        participantType: participant.type.toUpperCase() as any,
+        participantId: participant.id,
+        phoneNumber: payload.From
       }
     });
 
-    // Create conversation if it doesn't exist
     if (!conversation) {
-      conversation = await db.conversation.create({
+      conversation = await db.chatConversation.create({
         data: {
           branchId: branch.id,
-          participantType: participant.type,
+          participantType: participant.type.toUpperCase() as any,
           participantId: participant.id,
           participantName: participant.name,
-          participantPhone: payload.From,
+          phoneNumber: payload.From,
           lastMessageAt: new Date(),
-          lastMessageContent: payload.Body.substring(0, 100),
-          lastMessageFrom: 'INCOMING',
-          unreadCount: 1,
-          metadata: participant.metadata
+          unreadCount: 0,
+          metadata: participant.metadata as any
         }
       });
+      console.log(`Created new conversation ${conversation.id} for ${payload.From} (fallback)`);
     } else {
-      // Update existing conversation
-      await db.conversation.update({
+      // Update conversation with latest activity
+      await db.chatConversation.update({
         where: { id: conversation.id },
         data: {
           lastMessageAt: new Date(),
-          lastMessageContent: payload.Body.substring(0, 100),
-          lastMessageFrom: 'INCOMING',
           unreadCount: { increment: 1 },
-          // Update participant info in case it changed
           participantName: participant.name,
-          metadata: participant.metadata
+          metadata: participant.metadata as any
         }
       });
     }
@@ -309,17 +281,18 @@ export async function POST(req: NextRequest) {
         metadata: {
           twilioPayload: payload as any,
           profileName: payload.ProfileName,
-          waId: payload.WaId
+          waId: payload.WaId,
+          processedByFallback: true // Mark as processed by fallback
         } as any
       }
     });
 
-    const processingTime = Date.now() - startTime;
-    console.log(`✅ WEBHOOK SUCCESS: Message processed in ${processingTime}ms`);
-    console.log(`📨 Message from ${payload.From} saved to conversation ${conversation.id}`);
-    console.log('🟢 WEBHOOK COMPLETED:', new Date().toISOString());
+    console.log(`✅ Fallback webhook successfully processed message from ${payload.From} to conversation ${conversation.id}`);
 
-    // Return TwiML response (empty for now)
+    // Send notification about fallback processing
+    console.warn(`⚠️ MESSAGE PROCESSED BY FALLBACK WEBHOOK - Check primary webhook health`);
+
+    // Return TwiML response
     return new NextResponse(
       `<?xml version="1.0" encoding="UTF-8"?>
        <Response></Response>`,
@@ -331,20 +304,13 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    const processingTime = Date.now() - startTime;
-    console.error(`🔴 WEBHOOK FAILED after ${processingTime}ms:`, error);
+    console.error('❌ CRITICAL: Fallback webhook also failed:', error);
     
-    // Enhanced error logging for fallback scenarios
-    if (isFallback) {
-      console.error(`❌ Fallback webhook also failed - Attempt ${attempt}:`, error);
-    } else {
-      console.error('❌ Primary webhook failed:', error);
-    }
-    
-    console.error('🔴 WEBHOOK ERROR COMPLETED:', new Date().toISOString());
+    // This is critical - both primary and fallback failed
+    // You might want to send an alert here
     
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: 'Fallback webhook failed' }, 
       { status: 500 }
     );
   }
