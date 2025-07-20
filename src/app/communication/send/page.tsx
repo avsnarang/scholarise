@@ -200,8 +200,10 @@ export default function SendMessagePage() {
     branchId: currentBranchId!,
     classIds: selectedClassIds.length > 0 ? selectedClassIds : undefined,
     sectionIds: selectedSectionIds.length > 0 ? selectedSectionIds : undefined,
+    contactType: ["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType) ? contactType as ("STUDENT" | "FATHER" | "MOTHER")[] : undefined,
   }, {
     enabled: !!currentBranchId && !!recipientType,
+    refetchOnMount: true,
   });
 
   // Get selected template
@@ -220,6 +222,13 @@ export default function SendMessagePage() {
     setSelectedSectionIds([]);
     setSearchTerm("");
   }, [recipientType]);
+
+  // Clear selected recipients when contact type changes for student-related recipients
+  useEffect(() => {
+    if (["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType)) {
+      setSelectedRecipients([]);
+    }
+  }, [contactType, recipientType]);
 
   // Update form when controlled state changes
   useEffect(() => {
@@ -1116,7 +1125,37 @@ export default function SendMessagePage() {
                 </CardHeader>
                 <CardContent>
                   {(() => {
-                    const finalRecipients = requiresIndividualSelection ? selectedRecipients : (recipients || []);
+                    // Calculate final recipients based on recipient type
+                    let finalRecipients: Recipient[] = [];
+                    
+                    if (recipientType === "TEACHERS") {
+                      // Use selected teachers
+                      finalRecipients = selectedTeachers.map(teacherId => {
+                        const teacher = teachers.find(t => t.id === teacherId);
+                        return {
+                          id: teacherId,
+                          name: `${teacher?.firstName} ${teacher?.lastName}`,
+                          phone: teacher?.phone || '',
+                          type: "teacher",
+                        };
+                      }).filter(r => r.phone);
+                    } else if (recipientType === "EMPLOYEES") {
+                      // Use selected employees
+                      finalRecipients = selectedEmployees.map(employeeId => {
+                        const employee = employees.find(e => e.id === employeeId);
+                        return {
+                          id: employeeId,
+                          name: `${employee?.firstName} ${employee?.lastName}`,
+                          phone: employee?.phone || '',
+                          type: "employee",
+                        };
+                      }).filter(r => r.phone);
+                    } else if (requiresIndividualSelection) {
+                      finalRecipients = selectedRecipients;
+                    } else {
+                      finalRecipients = recipients || [];
+                    }
+                    
                     return finalRecipients.length === 0 ? (
                       <div className="text-center py-8">
                         <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -1129,10 +1168,30 @@ export default function SendMessagePage() {
                           <Badge variant="outline">{finalRecipients.length}</Badge>
                         </div>
                         
+                        {/* Contact Type Breakdown for Student-related recipients */}
+                        {["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType) && contactType.length > 0 && (
+                          <div className="space-y-2">
+                            <span className="text-xs font-medium text-gray-600">Contact Types:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {contactType.map(type => {
+                                const typeCount = finalRecipients.filter(r => r.type === type.toLowerCase()).length;
+                                return (
+                                  <Badge key={type} variant="secondary" className="text-xs">
+                                    {type === "STUDENT" ? "Student" : type === "FATHER" ? "Father" : "Mother"}: {typeCount}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="max-h-32 space-y-1 overflow-y-auto">
                           {finalRecipients.slice(0, 10).map((recipient) => (
-                            <div key={recipient.id} className="text-xs text-gray-500">
-                              {recipient.name}
+                            <div key={recipient.id} className="text-xs text-gray-500 flex justify-between">
+                              <span>{recipient.name}</span>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {recipient.type}
+                              </Badge>
                             </div>
                           ))}
                           {finalRecipients.length > 10 && (
