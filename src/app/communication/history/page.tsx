@@ -558,6 +558,16 @@ export default function MessageHistoryPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Detailed Log Button */}
+                    <div className="border-t pt-4">
+                      <Button asChild className="w-full">
+                        <Link href={`/communication/history/${selectedMessage.id}/detailed-log`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Detailed Log
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="py-8 text-center">

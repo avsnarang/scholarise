@@ -461,7 +461,7 @@ export const communicationRouter = createTRPCRouter({
             templateId: input.templateId,
             customMessage: input.customMessage,
             recipientType: input.recipientType as any,
-            totalRecipients: recipientsWithValidPhones.length,
+            totalRecipients: input.recipients.length, // Use all recipients, not just valid phones
             branchId: input.branchId,
             createdBy: ctx.userId!,
             scheduledAt: input.scheduledAt,
@@ -587,19 +587,48 @@ export const communicationRouter = createTRPCRouter({
           }
         });
 
-        // Create recipient records
-        await ctx.db.messageRecipient.createMany({
-          data: recipientsWithValidPhones.map((recipient, index) => ({
+        // Create recipient records for ALL recipients (including those with invalid phones)
+        const allRecipientRecords = input.recipients.map((recipient, index) => {
+          const hasValidPhone = recipient.phone && recipient.phone.trim() !== '';
+          const cleanPhone = recipient.phone?.replace(/\D/g, '') || '';
+          const isPhoneValid = cleanPhone.length >= 10;
+          
+          let status = "FAILED" as any;
+          let errorMessage = null;
+          let twilioMessageId = null;
+          let sentAt = null;
+          
+          if (!hasValidPhone) {
+            errorMessage = "No phone number provided";
+          } else if (!isPhoneValid) {
+            errorMessage = "Invalid phone number format";
+          } else {
+            // Find this recipient in the twilioResponse results
+            const validIndex = recipientsWithValidPhones.findIndex(r => r.id === recipient.id);
+            if (validIndex !== -1 && twilioResponse.data?.results?.[validIndex]) {
+              const result = twilioResponse.data.results[validIndex];
+              status = result.success ? "SENT" as any : "FAILED" as any;
+              twilioMessageId = result.messageId;
+              errorMessage = result.success ? null : result.error;
+              sentAt = result.success ? new Date() : null;
+            }
+          }
+          
+          return {
             messageId: message.id,
             recipientType: recipient.type,
             recipientId: recipient.id,
             recipientName: recipient.name,
-            recipientPhone: recipient.phone,
-            status: twilioResponse.data?.results?.[index]?.success ? "SENT" : "FAILED",
-            sentAt: twilioResponse.data?.results?.[index]?.success ? new Date() : undefined,
-            twilioMessageId: twilioResponse.data?.results?.[index]?.messageId,
-            errorMessage: twilioResponse.data?.results?.[index]?.error,
-          }))
+            recipientPhone: recipient.phone || "",
+            status,
+            sentAt,
+            twilioMessageId,
+            errorMessage,
+          };
+        });
+
+        await ctx.db.messageRecipient.createMany({
+          data: allRecipientRecords
         });
 
         // Log the communication activity
@@ -1073,6 +1102,82 @@ export const communicationRouter = createTRPCRouter({
         totalRecipients,
         successfulDeliveries,
         deliveryRate: totalRecipients > 0 ? (successfulDeliveries / totalRecipients) * 100 : 0
+      };
+    }),
+
+  // Export detailed delivery log as CSV
+  exportDeliveryLog: protectedProcedure
+    .input(z.object({
+      messageId: z.string().min(1, "Message ID is required"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const messageDetails = await ctx.db.communicationMessage.findUnique({
+        where: { id: input.messageId },
+        include: {
+          recipients: {
+            orderBy: { createdAt: "asc" }
+          },
+          template: true,
+          branch: { select: { name: true, code: true } }
+        }
+      });
+
+      if (!messageDetails) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Message not found",
+        });
+      }
+
+      // Generate CSV data
+      const csvHeaders = [
+        "Recipient Name",
+        "Recipient Type", 
+        "Phone Number",
+        "Phone Status",
+        "Delivery Status",
+        "Sent Time",
+        "Delivered Time",
+        "Error Message",
+        "Twilio Message ID"
+      ];
+
+      const csvRows = messageDetails.recipients.map(recipient => {
+        const hasValidPhone = recipient.recipientPhone && recipient.recipientPhone.trim() !== '';
+        const cleanPhone = recipient.recipientPhone?.replace(/\D/g, '') || '';
+        const isPhoneValid = cleanPhone.length >= 10;
+        
+        let phoneStatus = "Valid";
+        if (!hasValidPhone) {
+          phoneStatus = "No Phone Number";
+        } else if (!isPhoneValid) {
+          phoneStatus = "Invalid Format";
+        }
+
+        return [
+          recipient.recipientName,
+          recipient.recipientType.charAt(0).toUpperCase() + recipient.recipientType.slice(1),
+          recipient.recipientPhone || "N/A",
+          phoneStatus,
+          recipient.status,
+          recipient.sentAt ? new Date(recipient.sentAt).toLocaleString() : "Not sent",
+          "N/A", // deliveredAt - would need webhook integration
+          recipient.errorMessage || "N/A",
+          recipient.twilioMessageId || "N/A"
+        ];
+      });
+
+      // Convert to CSV string
+      const csvContent = [
+        csvHeaders.join(","),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(","))
+      ].join("\n");
+
+      return {
+        csvContent,
+        filename: `delivery-log-${messageDetails.title.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`,
+        messageTitle: messageDetails.title,
+        totalRecipients: messageDetails.recipients.length
       };
     })
 }); 
