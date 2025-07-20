@@ -14,21 +14,30 @@ export const parentRouter = createTRPCRouter({
         fatherEducation: z.string().optional(),
         fatherOccupation: z.string().optional(),
         fatherMobile: z.string().optional(),
-        fatherEmail: z.string().email().optional().nullable(),
+        fatherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         // Mother information
         motherName: z.string().optional(),
         motherDob: z.string().optional().transform(val => val ? new Date(val) : undefined),
         motherEducation: z.string().optional(),
         motherOccupation: z.string().optional(),
         motherMobile: z.string().optional(),
-        motherEmail: z.string().email().optional().nullable(),
+        motherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         // Guardian information
         guardianName: z.string().optional(),
         guardianDob: z.string().optional().transform(val => val ? new Date(val) : undefined),
         guardianEducation: z.string().optional(),
         guardianOccupation: z.string().optional(),
         guardianMobile: z.string().optional(),
-        guardianEmail: z.string().email().optional().nullable(),
+        guardianEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         // Additional information
         parentAnniversary: z.string().optional().transform(val => val ? new Date(val) : undefined),
         monthlyIncome: z.string().optional(),
@@ -312,19 +321,28 @@ export const parentRouter = createTRPCRouter({
         fatherEducation: z.string().optional(),
         fatherOccupation: z.string().optional(),
         fatherMobile: z.string().optional(),
-        fatherEmail: z.string().email().optional().nullable(),
+        fatherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         motherName: z.string().optional(),
         motherDob: z.string().optional().transform(val => val ? new Date(val) : undefined),
         motherEducation: z.string().optional(),
         motherOccupation: z.string().optional(),
         motherMobile: z.string().optional(),
-        motherEmail: z.string().email().optional().nullable(),
+        motherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         guardianName: z.string().optional(),
         guardianDob: z.string().optional().transform(val => val ? new Date(val) : undefined),
         guardianEducation: z.string().optional(),
         guardianOccupation: z.string().optional(),
         guardianMobile: z.string().optional(),
-        guardianEmail: z.string().email().optional().nullable(),
+        guardianEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         parentAnniversary: z.string().optional().transform(val => val ? new Date(val) : undefined),
         monthlyIncome: z.string().optional(),
         

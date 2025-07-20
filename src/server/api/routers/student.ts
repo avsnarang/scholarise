@@ -9,13 +9,13 @@ export const studentRouter = createTRPCRouter({
     .input(
       z
         .object({
-        branchId: z.string().optional(),
-        sessionId: z.string().optional(),
+          branchId: z.string().optional(),
+          sessionId: z.string().optional(),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      console.log('Getting student stats with input:', input);
+      console.log("Getting student stats with input:", input);
 
       try {
         // Use a single query with Prisma's aggregation to get all counts at once
@@ -54,7 +54,7 @@ export const studentRouter = createTRPCRouter({
             },
             _count: true,
           }),
-          
+
           // Get gender distribution
           ctx.db.student.groupBy({
             by: ["gender"],
@@ -92,7 +92,11 @@ export const studentRouter = createTRPCRouter({
           sectionIds.length > 0
             ? await ctx.db.section.findMany({
                 where: { id: { in: sectionIds } },
-                select: { id: true, name: true, class: { select: { name: true } } },
+                select: {
+                  id: true,
+                  name: true,
+                  class: { select: { name: true } },
+                },
               })
             : [];
 
@@ -107,7 +111,7 @@ export const studentRouter = createTRPCRouter({
             }
           }
         });
-        
+
         // Process gender distribution
         const genderDistribution: Record<string, number> = {};
         genderCounts.forEach((group) => {
@@ -126,26 +130,28 @@ export const studentRouter = createTRPCRouter({
 
         return result;
       } catch (error) {
-        console.error('Error getting student stats:', error);
+        console.error("Error getting student stats:", error);
         throw error;
       }
     }),
 
   getAll: publicProcedure
     .input(
-      z.object({
-        branchId: z.string().optional().nullable(),
-        sectionId: z.string().optional().nullable(),
-        search: z.string().optional().nullable(),
-        sessionId: z.string().optional().nullable(),
-        limit: z.number().min(1).max(500).nullish(),
-        cursor: z.string().nullish(),
-        filters: z.record(z.string(), z.any()).nullish(),
-        academicSessionId: z.string().optional(),
-        sortBy: z.string().optional().nullable(),
-        sortOrder: z.enum(["asc", "desc"]).optional().nullable(),
-        fetchAllIds: z.boolean().optional(),
-      }).optional(),
+      z
+        .object({
+          branchId: z.string().optional().nullable(),
+          sectionId: z.string().optional().nullable(),
+          search: z.string().optional().nullable(),
+          sessionId: z.string().optional().nullable(),
+          limit: z.number().min(1).max(500).nullish(),
+          cursor: z.string().nullish(),
+          filters: z.record(z.string(), z.any()).nullish(),
+          academicSessionId: z.string().optional(),
+          sortBy: z.string().optional().nullable(),
+          sortOrder: z.enum(["asc", "desc"]).optional().nullable(),
+          fetchAllIds: z.boolean().optional(),
+        })
+        .optional(),
     )
     .query(async ({ ctx, input = {} }) => {
       const limit = input.fetchAllIds ? undefined : (input.limit ?? 10);
@@ -155,32 +161,58 @@ export const studentRouter = createTRPCRouter({
         AND: [
           input.branchId ? { branchId: input.branchId } : {},
           input.sectionId ? { sectionId: input.sectionId } : {},
-          input.sessionId ? { 
-            academicRecords: { 
-              some: { 
-                sessionId: input.sessionId 
-              } 
-            } 
-          } : {},
-          (input.academicSessionId && !input.sessionId) ? { 
-            academicRecords: { 
-              some: { 
-                sessionId: input.academicSessionId 
-              } 
-            } 
-          } : {},
+          input.sessionId
+            ? {
+                academicRecords: {
+                  some: {
+                    sessionId: input.sessionId,
+                  },
+                },
+              }
+            : {},
+          input.academicSessionId && !input.sessionId
+            ? {
+                academicRecords: {
+                  some: {
+                    sessionId: input.academicSessionId,
+                  },
+                },
+              }
+            : {},
           input.search
             ? {
                 OR: [
-                  { firstName: { contains: input.search, mode: 'insensitive' } },
-                  { lastName: { contains: input.search, mode: 'insensitive' } },
-                  { admissionNumber: { contains: input.search, mode: 'insensitive' } },
+                  {
+                    firstName: { contains: input.search, mode: "insensitive" },
+                  },
+                  { lastName: { contains: input.search, mode: "insensitive" } },
+                  {
+                    admissionNumber: {
+                      contains: input.search,
+                      mode: "insensitive",
+                    },
+                  },
                   {
                     parent: {
                       OR: [
-                        { fatherName: { contains: input.search, mode: 'insensitive' } },
-                        { motherName: { contains: input.search, mode: 'insensitive' } },
-                        { guardianName: { contains: input.search, mode: 'insensitive' } },
+                        {
+                          fatherName: {
+                            contains: input.search,
+                            mode: "insensitive",
+                          },
+                        },
+                        {
+                          motherName: {
+                            contains: input.search,
+                            mode: "insensitive",
+                          },
+                        },
+                        {
+                          guardianName: {
+                            contains: input.search,
+                            mode: "insensitive",
+                          },
+                        },
                       ],
                     },
                   },
@@ -189,24 +221,24 @@ export const studentRouter = createTRPCRouter({
             : {},
           ...(filters && Object.keys(filters).length > 0
             ? Object.entries(filters).map(([field, value]) => {
-                if (field === 'isActive') {
-                  return { [field]: value === 'true' || value === true };
+                if (field === "isActive") {
+                  return { [field]: value === "true" || value === true };
                 }
-                if (typeof value === 'string') {
-                  return { [field]: { contains: value, mode: 'insensitive' } };
+                if (typeof value === "string") {
+                  return { [field]: { contains: value, mode: "insensitive" } };
                 }
                 return { [field]: value };
               })
             : []),
         ],
       };
-      
+
       const orderBy: Prisma.StudentOrderByWithRelationInput[] = [];
       if (sortBy && sortOrder) {
-        if (sortBy === 'name') {
+        if (sortBy === "name") {
           orderBy.push({ firstName: sortOrder });
           orderBy.push({ lastName: sortOrder });
-        } else if (sortBy === 'class') {
+        } else if (sortBy === "class") {
           orderBy.push({ section: { class: { displayOrder: sortOrder } } });
           orderBy.push({ section: { class: { name: sortOrder } } });
           orderBy.push({ section: { name: sortOrder } });
@@ -214,8 +246,8 @@ export const studentRouter = createTRPCRouter({
           orderBy.push({ [sortBy]: sortOrder });
         }
       } else {
-        orderBy.push({ section: { class: { displayOrder: 'asc' } } });
-        orderBy.push({ firstName: 'asc' });
+        orderBy.push({ section: { class: { displayOrder: "asc" } } });
+        orderBy.push({ firstName: "asc" });
       }
 
       if (fetchAllIds) {
@@ -224,7 +256,7 @@ export const studentRouter = createTRPCRouter({
           select: { id: true },
           orderBy: orderBy,
         });
-        const studentIds = studentData.map(s => s.id);
+        const studentIds = studentData.map((s) => s.id);
         return {
           itemIds: studentIds,
           totalCount: studentIds.length,
@@ -246,11 +278,12 @@ export const studentRouter = createTRPCRouter({
             parent: true,
             academicRecords: {
               where: {
-                sessionId: input.sessionId || input.academicSessionId || undefined,
+                sessionId:
+                  input.sessionId || input.academicSessionId || undefined,
               },
               include: {
-                session: true
-              }
+                session: true,
+              },
             },
             // Include the most recent feedback for each student
             courtesyCallFeedbacks: {
@@ -286,7 +319,7 @@ export const studentRouter = createTRPCRouter({
   getById: publicProcedure
     .input(
       z.object({
-      id: z.string().min(1, "Student ID is required"),
+        id: z.string().min(1, "Student ID is required"),
         branchId: z.string().optional(),
       }),
     )
@@ -366,19 +399,28 @@ export const studentRouter = createTRPCRouter({
         fatherDob: z.date().nullish(),
         fatherOccupation: z.string().nullish(),
         fatherMobile: z.string().nullish(),
-        fatherEmail: z.string().email().nullish(),
+        fatherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         fatherAadharNumber: z.string().nullish(),
         motherName: z.string().nullish(),
         motherDob: z.date().nullish(),
         motherOccupation: z.string().nullish(),
         motherMobile: z.string().nullish(),
-        motherEmail: z.string().email().nullish(),
+        motherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         motherAadharNumber: z.string().nullish(),
         guardianName: z.string().nullish(),
         guardianDob: z.date().nullish(),
         guardianOccupation: z.string().nullish(),
         guardianMobile: z.string().nullish(),
-        guardianEmail: z.string().email().nullish(),
+        guardianEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
         guardianAadharNumber: z.string().nullish(),
         religion: z.string().optional().nullish(),
         nationality: z.string().optional().nullish(),
@@ -421,7 +463,7 @@ export const studentRouter = createTRPCRouter({
       // Get branch code for Clerk user creation
       const branch = await ctx.db.branch.findUnique({
         where: { id: input.branchId },
-        select: { code: true }
+        select: { code: true },
       });
 
       if (!branch) {
@@ -440,29 +482,43 @@ export const studentRouter = createTRPCRouter({
       let finalStudentPassword = password;
 
       if (!finalStudentUsername || !finalStudentPassword) {
-        const emailDomain = branch.code === 'PS' ? 'ps.tsh.edu.in' :
-                           branch.code === 'JUN' ? 'jun.tsh.edu.in' :
-                           branch.code === 'MAJ' ? 'majra.tsh.edu.in' : 'tsh.edu.in';
-        
-        finalStudentUsername = finalStudentUsername || `${input.admissionNumber}@${emailDomain}`;
-        finalStudentPassword = finalStudentPassword || (branch.code === 'PS' ? 'TSHPS@12345' :
-                      branch.code === 'JUN' ? 'TSHJ@12345' :
-                      branch.code === 'MAJ' ? 'TSHM@12345' : 'TSH@12345');
+        const emailDomain =
+          branch.code === "PS"
+            ? "ps.tsh.edu.in"
+            : branch.code === "JUN"
+              ? "jun.tsh.edu.in"
+              : branch.code === "MAJ"
+                ? "majra.tsh.edu.in"
+                : "tsh.edu.in";
 
-        console.log(`Auto-generated STUDENT credentials: username=${finalStudentUsername}`);
+        finalStudentUsername =
+          finalStudentUsername || `${input.admissionNumber}@${emailDomain}`;
+        finalStudentPassword =
+          finalStudentPassword ||
+          (branch.code === "PS"
+            ? "TSHPS@12345"
+            : branch.code === "JUN"
+              ? "TSHJ@12345"
+              : branch.code === "MAJ"
+                ? "TSHM@12345"
+                : "TSH@12345");
+
+        console.log(
+          `Auto-generated STUDENT credentials: username=${finalStudentUsername}`,
+        );
       }
 
       // STEP 1: Create Clerk user for STUDENT
       console.log("=== STEP 1: CREATING STUDENT CLERK USER ===");
-      console.log("Student Clerk creation check:", { 
-        finalStudentUsername, 
+      console.log("Student Clerk creation check:", {
+        finalStudentUsername,
         hasPassword: !!finalStudentPassword,
         admissionNumber: input.admissionNumber,
         branchCode: branch.code,
         firstName: input.firstName,
-        lastName: input.lastName
+        lastName: input.lastName,
       });
-      
+
       if (finalStudentUsername && finalStudentPassword) {
         try {
           const studentUser = await createStudentUser({
@@ -474,9 +530,15 @@ export const studentRouter = createTRPCRouter({
             branchId: input.branchId,
           });
           clerkStudentId = studentUser.id;
-          console.log("✅ SUCCESS: Created Clerk user for STUDENT:", clerkStudentId);
+          console.log(
+            "✅ SUCCESS: Created Clerk user for STUDENT:",
+            clerkStudentId,
+          );
         } catch (error) {
-          console.error("❌ ERROR: Failed to create Clerk user for STUDENT:", error);
+          console.error(
+            "❌ ERROR: Failed to create Clerk user for STUDENT:",
+            error,
+          );
         }
       }
 
@@ -485,59 +547,68 @@ export const studentRouter = createTRPCRouter({
       let finalParentPassword = parentPassword;
 
       if (!finalParentUsername || !finalParentPassword) {
-        finalParentUsername = finalParentUsername || `P${input.admissionNumber}`;
-        finalParentPassword = finalParentPassword || (branch.code === 'PS' ? 'TSHPS@12345' :
-                      branch.code === 'JUN' ? 'TSHJ@12345' :
-                      branch.code === 'MAJ' ? 'TSHM@12345' : 'TSH@12345');
+        finalParentUsername =
+          finalParentUsername || `P${input.admissionNumber}`;
+        finalParentPassword =
+          finalParentPassword ||
+          (branch.code === "PS"
+            ? "TSHPS@12345"
+            : branch.code === "JUN"
+              ? "TSHJ@12345"
+              : branch.code === "MAJ"
+                ? "TSHM@12345"
+                : "TSH@12345");
 
-        console.log(`Auto-generated PARENT credentials: username=${finalParentUsername}`);
+        console.log(
+          `Auto-generated PARENT credentials: username=${finalParentUsername}`,
+        );
       }
 
       // STEP 2: Create Clerk user for PARENT
       console.log("=== STEP 2: CREATING PARENT CLERK USER ===");
-      console.log("Parent Clerk creation check:", { 
-        finalParentUsername, 
+      console.log("Parent Clerk creation check:", {
+        finalParentUsername,
         hasPassword: !!finalParentPassword,
         fatherName,
         motherName,
-        guardianName
+        guardianName,
       });
 
       if (finalParentUsername && finalParentPassword) {
         try {
           // Extract parent name with proper first/last name splitting
-          let parentFirstName = '';
+          let parentFirstName = "";
           let parentLastName = input.lastName as string; // Default to student's last name
-          
+
           if (fatherName) {
             // Split father's name into first and last parts
             const fatherNameParts = fatherName.trim().split(/\s+/);
             parentFirstName = fatherNameParts[0] || fatherName;
             if (fatherNameParts.length > 1) {
-              parentLastName = fatherNameParts.slice(1).join(' ');
+              parentLastName = fatherNameParts.slice(1).join(" ");
             }
           } else if (motherName) {
             // Split mother's name into first and last parts
             const motherNameParts = motherName.trim().split(/\s+/);
             parentFirstName = motherNameParts[0] || motherName;
             if (motherNameParts.length > 1) {
-              parentLastName = motherNameParts.slice(1).join(' ');
+              parentLastName = motherNameParts.slice(1).join(" ");
             }
           } else if (guardianName) {
             // Split guardian's name into first and last parts
             const guardianNameParts = guardianName.trim().split(/\s+/);
             parentFirstName = guardianNameParts[0] || guardianName;
             if (guardianNameParts.length > 1) {
-              parentLastName = guardianNameParts.slice(1).join(' ');
+              parentLastName = guardianNameParts.slice(1).join(" ");
             }
           } else {
             // Fallback to student's name if no parent names provided
             parentFirstName = input.firstName as string;
             parentLastName = input.lastName as string;
           }
-          
+
           const parentEmail = fatherEmail || motherEmail || guardianEmail;
-          
+
           const parentUser = await createParentUser({
             firstName: parentFirstName,
             lastName: parentLastName,
@@ -547,9 +618,15 @@ export const studentRouter = createTRPCRouter({
             branchId: input.branchId,
           });
           clerkParentId = parentUser.id;
-          console.log("✅ SUCCESS: Created Clerk user for PARENT:", clerkParentId);
+          console.log(
+            "✅ SUCCESS: Created Clerk user for PARENT:",
+            clerkParentId,
+          );
         } catch (error) {
-          console.error("❌ ERROR: Failed to create Clerk user for PARENT:", error);
+          console.error(
+            "❌ ERROR: Failed to create Clerk user for PARENT:",
+            error,
+          );
         }
       }
 
@@ -589,11 +666,13 @@ export const studentRouter = createTRPCRouter({
           username: finalStudentUsername,
           password: finalStudentPassword,
           clerkId: clerkStudentId,
-          ...(siblings?.length ? {
-            siblings: {
-              connect: siblings.map(id => ({ id })),
-            },
-          } : {}),
+          ...(siblings?.length
+            ? {
+                siblings: {
+                  connect: siblings.map((id) => ({ id })),
+                },
+              }
+            : {}),
         },
         include: {
           section: {
@@ -621,7 +700,9 @@ export const studentRouter = createTRPCRouter({
                 status: "ENROLLED",
               },
             });
-            console.log(`Created AcademicRecord for student ${student.firstName} ${student.lastName}`);
+            console.log(
+              `Created AcademicRecord for student ${student.firstName} ${student.lastName}`,
+            );
           } catch (error) {
             console.error(`Failed to create AcademicRecord:`, error);
           }
@@ -638,7 +719,10 @@ export const studentRouter = createTRPCRouter({
         admissionNumber: z.string().min(1).optional(),
         firstName: z.string().min(1).optional(),
         lastName: z.string().min(1).optional(),
-        dateOfBirth: z.string().optional().transform(val => val ? new Date(val) : undefined),
+        dateOfBirth: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
         gender: z.enum(["Male", "Female", "Other"]).optional(),
         address: z.string().optional(),
         phone: z.string().optional(),
@@ -654,7 +738,10 @@ export const studentRouter = createTRPCRouter({
         cbse12RollNumber: z.string().optional(),
         sectionId: z.string().optional(),
         parentId: z.string().optional(),
-        dateOfAdmission: z.string().optional().transform(val => val ? new Date(val) : undefined),
+        dateOfAdmission: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
         isActive: z.boolean().default(true),
         // Address fields
         permanentAddress: z.string().optional(),
@@ -672,13 +759,100 @@ export const studentRouter = createTRPCRouter({
         lastClassAttended: z.string().optional(),
         mediumOfInstruction: z.string().optional(),
         recognisedByStateBoard: z.boolean().optional(),
+        // Parent information
+        fatherName: z.string().optional(),
+        fatherDob: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
+        fatherEducation: z.string().optional(),
+        fatherOccupation: z.string().optional(),
+        fatherMobile: z.string().optional(),
+        fatherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
+        fatherAadharNumber: z.string().optional(),
+        motherName: z.string().optional(),
+        motherDob: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
+        motherEducation: z.string().optional(),
+        motherOccupation: z.string().optional(),
+        motherMobile: z.string().optional(),
+        motherEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
+        motherAadharNumber: z.string().optional(),
+        guardianName: z.string().optional(),
+        guardianDob: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
+        guardianEducation: z.string().optional(),
+        guardianOccupation: z.string().optional(),
+        guardianMobile: z.string().optional(),
+        guardianEmail: z.string().optional().nullable().refine(
+          (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+          { message: "Invalid email format" }
+        ),
+        guardianAadharNumber: z.string().optional(),
+        parentAnniversary: z
+          .string()
+          .optional()
+          .transform((val) => (val ? new Date(val) : undefined)),
+        monthlyIncome: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
+      console.log("🔄 Student update mutation called");
+      console.log("📋 Input received:", input);
+
+      const {
+        id,
+        // Extract parent fields
+        fatherName,
+        fatherDob,
+        fatherEducation,
+        fatherOccupation,
+        fatherMobile,
+        fatherEmail,
+        fatherAadharNumber,
+        motherName,
+        motherDob,
+        motherEducation,
+        motherOccupation,
+        motherMobile,
+        motherEmail,
+        motherAadharNumber,
+        guardianName,
+        guardianDob,
+        guardianEducation,
+        guardianOccupation,
+        guardianMobile,
+        guardianEmail,
+        guardianAadharNumber,
+        parentAnniversary,
+        monthlyIncome,
+        // Rest are student fields
+        ...studentData
+      } = input;
+
+      console.log("👨‍👩‍👧‍👦 Parent fields extracted:", {
+        fatherName,
+        motherName,
+        guardianName,
+        fatherEmail,
+        motherEmail,
+        guardianEmail,
+      });
+      console.log("👤 Student data extracted:", studentData);
 
       const student = await ctx.db.student.findUnique({
         where: { id },
+        include: { parent: true },
       });
 
       if (!student) {
@@ -688,10 +862,17 @@ export const studentRouter = createTRPCRouter({
         });
       }
 
-      if (data.admissionNumber) {
+      console.log("👤 Found student:", {
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`,
+        parentId: student.parentId,
+        hasParent: !!student.parent,
+      });
+
+      if (studentData.admissionNumber) {
         const existingStudent = await ctx.db.student.findFirst({
           where: {
-            admissionNumber: data.admissionNumber,
+            admissionNumber: studentData.admissionNumber,
             branchId: student.branchId,
             id: { not: id },
           },
@@ -705,9 +886,95 @@ export const studentRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.student.update({
-        where: { id },
-        data,
+      // Use transaction to update both student and parent
+      return ctx.db.$transaction(async (prisma) => {
+        console.log("🔄 Starting transaction");
+
+        // Update parent data if parentId exists and parent fields are provided
+        if (student.parentId) {
+          console.log(
+            "👨‍👩‍👧‍👦 Processing parent update for parentId:",
+            student.parentId,
+          );
+
+          const parentUpdateData: any = {};
+
+          // Only include fields that are provided (not undefined)
+          if (fatherName !== undefined)
+            parentUpdateData.fatherName = fatherName;
+          if (fatherDob !== undefined) parentUpdateData.fatherDob = fatherDob;
+          if (fatherEducation !== undefined)
+            parentUpdateData.fatherEducation = fatherEducation;
+          if (fatherOccupation !== undefined)
+            parentUpdateData.fatherOccupation = fatherOccupation;
+          if (fatherMobile !== undefined)
+            parentUpdateData.fatherMobile = fatherMobile;
+          if (fatherEmail !== undefined)
+            parentUpdateData.fatherEmail = fatherEmail;
+          if (fatherAadharNumber !== undefined)
+            parentUpdateData.fatherAadharNumber = fatherAadharNumber;
+          if (motherName !== undefined)
+            parentUpdateData.motherName = motherName;
+          if (motherDob !== undefined) parentUpdateData.motherDob = motherDob;
+          if (motherEducation !== undefined)
+            parentUpdateData.motherEducation = motherEducation;
+          if (motherOccupation !== undefined)
+            parentUpdateData.motherOccupation = motherOccupation;
+          if (motherMobile !== undefined)
+            parentUpdateData.motherMobile = motherMobile;
+          if (motherEmail !== undefined)
+            parentUpdateData.motherEmail = motherEmail;
+          if (motherAadharNumber !== undefined)
+            parentUpdateData.motherAadharNumber = motherAadharNumber;
+          if (guardianName !== undefined)
+            parentUpdateData.guardianName = guardianName;
+          if (guardianDob !== undefined)
+            parentUpdateData.guardianDob = guardianDob;
+          if (guardianEducation !== undefined)
+            parentUpdateData.guardianEducation = guardianEducation;
+          if (guardianOccupation !== undefined)
+            parentUpdateData.guardianOccupation = guardianOccupation;
+          if (guardianMobile !== undefined)
+            parentUpdateData.guardianMobile = guardianMobile;
+          if (guardianEmail !== undefined)
+            parentUpdateData.guardianEmail = guardianEmail;
+          if (guardianAadharNumber !== undefined)
+            parentUpdateData.guardianAadharNumber = guardianAadharNumber;
+          if (parentAnniversary !== undefined)
+            parentUpdateData.parentAnniversary = parentAnniversary;
+          if (monthlyIncome !== undefined)
+            parentUpdateData.monthlyIncome = monthlyIncome;
+
+          console.log("📝 Parent update data:", parentUpdateData);
+          console.log(
+            "📊 Parent fields to update count:",
+            Object.keys(parentUpdateData).length,
+          );
+
+          // Update parent if there's any parent data to update
+          if (Object.keys(parentUpdateData).length > 0) {
+            console.log("✅ Updating parent with data:", parentUpdateData);
+            await prisma.parent.update({
+              where: { id: student.parentId },
+              data: parentUpdateData,
+            });
+            console.log("✅ Parent updated successfully");
+          } else {
+            console.log("ℹ️ No parent data to update");
+          }
+        } else {
+          console.log("⚠️ Student has no parentId, skipping parent update");
+        }
+
+        console.log("👤 Updating student with data:", studentData);
+        // Update student data
+        const updatedStudent = await prisma.student.update({
+          where: { id },
+          data: studentData,
+        });
+        console.log("✅ Student updated successfully");
+
+        return updatedStudent;
       });
     }),
 
@@ -783,8 +1050,8 @@ export const studentRouter = createTRPCRouter({
         include: { parent: true },
       });
 
-      const foundIds = students.map(s => s.id);
-      const notFoundIds = input.ids.filter(id => !foundIds.includes(id));
+      const foundIds = students.map((s) => s.id);
+      const notFoundIds = input.ids.filter((id) => !foundIds.includes(id));
 
       if (notFoundIds.length > 0) {
         throw new TRPCError({
@@ -792,7 +1059,7 @@ export const studentRouter = createTRPCRouter({
           message: `Some students not found: ${notFoundIds.join(", ")}`,
         });
       }
-      
+
       return ctx.db.$transaction(async (prisma) => {
         await prisma.academicRecord.deleteMany({
           where: { studentId: { in: input.ids } },
@@ -825,7 +1092,9 @@ export const studentRouter = createTRPCRouter({
           }
         }
 
-        const parentIds = students.map(s => s.parentId).filter(Boolean) as string[];
+        const parentIds = students
+          .map((s) => s.parentId)
+          .filter(Boolean) as string[];
         if (parentIds.length > 0) {
           await prisma.parent.deleteMany({
             where: { id: { in: parentIds } },
@@ -842,8 +1111,8 @@ export const studentRouter = createTRPCRouter({
   bulkUpdateClass: protectedProcedure
     .input(
       z.object({
-      ids: z.array(z.string()),
-      sectionId: z.string(),
+        ids: z.array(z.string()),
+        sectionId: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -867,8 +1136,8 @@ export const studentRouter = createTRPCRouter({
   bulkUpdateStatus: protectedProcedure
     .input(
       z.object({
-      ids: z.array(z.string()),
-      isActive: z.boolean(),
+        ids: z.array(z.string()),
+        isActive: z.boolean(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -881,10 +1150,10 @@ export const studentRouter = createTRPCRouter({
   fuzzySearchStudents: publicProcedure
     .input(
       z.object({
-      searchTerm: z.string().min(1),
-      excludeStudentId: z.string().optional(),
-      branchId: z.string().optional(),
-      limit: z.number().min(1).max(10).optional().default(5),
+        searchTerm: z.string().min(1),
+        excludeStudentId: z.string().optional(),
+        branchId: z.string().optional(),
+        limit: z.number().min(1).max(10).optional().default(5),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -916,10 +1185,7 @@ export const studentRouter = createTRPCRouter({
           },
           parent: true,
         },
-        orderBy: [
-          { admissionNumber: "asc" },
-          { firstName: "asc" },
-        ],
+        orderBy: [{ admissionNumber: "asc" }, { firstName: "asc" }],
       });
 
       return students;
@@ -928,8 +1194,8 @@ export const studentRouter = createTRPCRouter({
   toggleStatus: protectedProcedure
     .input(
       z.object({
-      id: z.string(),
-      isActive: z.boolean(),
+        id: z.string(),
+        isActive: z.boolean(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -955,8 +1221,8 @@ export const studentRouter = createTRPCRouter({
       z.object({
         students: z.array(
           z.object({
-        id: z.string(),
-        rollNumber: z.string().optional(),
+            id: z.string(),
+            rollNumber: z.string().optional(),
           }),
         ),
       }),
@@ -968,8 +1234,10 @@ export const studentRouter = createTRPCRouter({
         students.map((student) =>
           ctx.db.student.update({
             where: { id: student.id },
-            data: { 
-              rollNumber: student.rollNumber ? parseInt(student.rollNumber) : undefined,
+            data: {
+              rollNumber: student.rollNumber
+                ? parseInt(student.rollNumber)
+                : undefined,
             } as Prisma.StudentUpdateInput,
           }),
         ),
@@ -981,8 +1249,8 @@ export const studentRouter = createTRPCRouter({
   getByAdmissionNumber: publicProcedure
     .input(
       z.object({
-      admissionNumber: z.string(),
-      branchId: z.string().optional(),
+        admissionNumber: z.string(),
+        branchId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -1039,9 +1307,9 @@ export const studentRouter = createTRPCRouter({
   addSibling: protectedProcedure
     .input(
       z.object({
-      studentId: z.string(),
-      siblingId: z.string(),
-      relationshipType: z.string(),
+        studentId: z.string(),
+        siblingId: z.string(),
+        relationshipType: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1119,8 +1387,14 @@ export const studentRouter = createTRPCRouter({
       await ctx.db.studentSibling.deleteMany({
         where: {
           OR: [
-            { studentId: relationship.studentId, siblingId: relationship.siblingId },
-            { studentId: relationship.siblingId, siblingId: relationship.studentId },
+            {
+              studentId: relationship.studentId,
+              siblingId: relationship.siblingId,
+            },
+            {
+              studentId: relationship.siblingId,
+              siblingId: relationship.studentId,
+            },
           ],
         },
       });
@@ -1135,11 +1409,11 @@ export const studentRouter = createTRPCRouter({
         branchId: z.string(),
         sessionId: z.string(),
         batchSize: z.number().min(1).max(100).optional().default(50),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const { students, branchId, sessionId, batchSize } = input;
-      
+
       if (!students || students.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -1150,7 +1424,7 @@ export const studentRouter = createTRPCRouter({
       // Get branch code for Clerk user creation
       const branch = await ctx.db.branch.findUnique({
         where: { id: branchId },
-        select: { code: true }
+        select: { code: true },
       });
 
       if (!branch) {
@@ -1166,7 +1440,13 @@ export const studentRouter = createTRPCRouter({
       const allProcessedStudents = [];
 
       // Helper function to create Clerk users outside of database transaction
-      const createClerkUsers = async (studentData: any, studentUsername: string, studentPassword: string, parentUsername: string, parentPassword: string) => {
+      const createClerkUsers = async (
+        studentData: any,
+        studentUsername: string,
+        studentPassword: string,
+        parentUsername: string,
+        parentPassword: string,
+      ) => {
         let clerkStudentId: string | null = null;
         let clerkParentId: string | null = null;
 
@@ -1182,39 +1462,47 @@ export const studentRouter = createTRPCRouter({
           clerkStudentId = studentUser.id;
         } catch (error) {
           // Non-blocking error - continue with import
-          console.error(`Failed to create Clerk user for student ${studentData.firstName} ${studentData.lastName}:`, error);
+          console.error(
+            `Failed to create Clerk user for student ${studentData.firstName} ${studentData.lastName}:`,
+            error,
+          );
         }
 
         try {
           // Extract parent name with proper first/last name splitting
-          let parentFirstName = '';
+          let parentFirstName = "";
           let parentLastName = studentData.lastName as string;
-          
+
           if (studentData.fatherName) {
             const fatherNameParts = studentData.fatherName.trim().split(/\s+/);
             parentFirstName = fatherNameParts[0] || studentData.fatherName;
             if (fatherNameParts.length > 1) {
-              parentLastName = fatherNameParts.slice(1).join(' ');
+              parentLastName = fatherNameParts.slice(1).join(" ");
             }
           } else if (studentData.motherName) {
             const motherNameParts = studentData.motherName.trim().split(/\s+/);
             parentFirstName = motherNameParts[0] || studentData.motherName;
             if (motherNameParts.length > 1) {
-              parentLastName = motherNameParts.slice(1).join(' ');
+              parentLastName = motherNameParts.slice(1).join(" ");
             }
           } else if (studentData.guardianName) {
-            const guardianNameParts = studentData.guardianName.trim().split(/\s+/);
+            const guardianNameParts = studentData.guardianName
+              .trim()
+              .split(/\s+/);
             parentFirstName = guardianNameParts[0] || studentData.guardianName;
             if (guardianNameParts.length > 1) {
-              parentLastName = guardianNameParts.slice(1).join(' ');
+              parentLastName = guardianNameParts.slice(1).join(" ");
             }
           } else {
             parentFirstName = studentData.firstName as string;
             parentLastName = studentData.lastName as string;
           }
-          
-          const parentEmail = studentData.fatherEmail || studentData.motherEmail || studentData.guardianEmail;
-          
+
+          const parentEmail =
+            studentData.fatherEmail ||
+            studentData.motherEmail ||
+            studentData.guardianEmail;
+
           const parentUser = await createParentUser({
             firstName: parentFirstName,
             lastName: parentLastName,
@@ -1226,7 +1514,10 @@ export const studentRouter = createTRPCRouter({
           clerkParentId = parentUser.id;
         } catch (error) {
           // Non-blocking error - continue with import
-          console.error(`Failed to create Clerk user for parent of ${studentData.firstName} ${studentData.lastName}:`, error);
+          console.error(
+            `Failed to create Clerk user for parent of ${studentData.firstName} ${studentData.lastName}:`,
+            error,
+          );
         }
 
         return { clerkStudentId, clerkParentId };
@@ -1238,10 +1529,14 @@ export const studentRouter = createTRPCRouter({
         batches.push(students.slice(i, i + batchSize));
       }
 
-      importMessages.push(`[INFO] Processing ${students.length} students in ${batches.length} batches of ${batchSize} each`);
+      importMessages.push(
+        `[INFO] Processing ${students.length} students in ${batches.length} batches of ${batchSize} each`,
+      );
 
       for (const [batchIndex, batch] of batches.entries()) {
-        importMessages.push(`[INFO] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} students)`);
+        importMessages.push(
+          `[INFO] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} students)`,
+        );
 
         try {
           // Step 1: Pre-process and validate batch data
@@ -1255,9 +1550,12 @@ export const studentRouter = createTRPCRouter({
             parentUsername: string;
             parentPassword: string;
             rowNum: number;
-            clerkPromise: Promise<{ clerkStudentId: string | null; clerkParentId: string | null }>;
+            clerkPromise: Promise<{
+              clerkStudentId: string | null;
+              clerkParentId: string | null;
+            }>;
           }> = [];
-          
+
           for (const [index, studentData] of batch.entries()) {
             const globalIndex = batchIndex * batchSize + index;
             const rowNum = globalIndex + 1;
@@ -1266,7 +1564,7 @@ export const studentRouter = createTRPCRouter({
               // Parse dates
               const parseDate = (dateStr: string) => {
                 if (!dateStr) return null;
-                const parts = dateStr.split('/');
+                const parts = dateStr.split("/");
                 if (parts.length === 3) {
                   const day = parseInt(parts[0]!, 10);
                   const month = parseInt(parts[1]!, 10) - 1;
@@ -1277,10 +1575,13 @@ export const studentRouter = createTRPCRouter({
               };
 
               const dateOfBirth = parseDate(studentData.dateOfBirth as string);
-              const dateOfAdmission = parseDate(studentData.dateOfAdmission as string) || new Date();
+              const dateOfAdmission =
+                parseDate(studentData.dateOfAdmission as string) || new Date();
 
               if (!dateOfBirth) {
-                importMessages.push(`[ERROR] Row ${rowNum}: Invalid date of birth format`);
+                importMessages.push(
+                  `[ERROR] Row ${rowNum}: Invalid date of birth format`,
+                );
                 errorCount++;
                 continue;
               }
@@ -1294,7 +1595,9 @@ export const studentRouter = createTRPCRouter({
               });
 
               if (existingStudent) {
-                importMessages.push(`[ERROR] Row ${rowNum}: Student with admission number '${studentData.admissionNumber}' already exists`);
+                importMessages.push(
+                  `[ERROR] Row ${rowNum}: Student with admission number '${studentData.admissionNumber}' already exists`,
+                );
                 errorCount++;
                 continue;
               }
@@ -1303,60 +1606,82 @@ export const studentRouter = createTRPCRouter({
               let assignedSectionId: string | undefined = undefined;
 
               // Debug: Log the student data for section lookup
-              console.log(`🔍 DEBUG Row ${rowNum} - ${studentData.firstName} ${studentData.lastName}:`, {
-                sectionId: studentData.sectionId,
-                classId: studentData.classId,
-                className: studentData.className,
-                sectionName: studentData.sectionName,
-                branchId: branchId
-              });
+              console.log(
+                `🔍 DEBUG Row ${rowNum} - ${studentData.firstName} ${studentData.lastName}:`,
+                {
+                  sectionId: studentData.sectionId,
+                  classId: studentData.classId,
+                  className: studentData.className,
+                  sectionName: studentData.sectionName,
+                  branchId: branchId,
+                },
+              );
 
               if (studentData.sectionId) {
-                console.log(`🔍 Attempting sectionId lookup for: ${studentData.sectionId}`);
+                console.log(
+                  `🔍 Attempting sectionId lookup for: ${studentData.sectionId}`,
+                );
                 const section = await ctx.db.section.findFirst({
-                  where: { 
-                    id: studentData.sectionId, 
+                  where: {
+                    id: studentData.sectionId,
                     class: { branchId, isActive: true }, // Removed sessionId requirement
-                    isActive: true 
-                  }
+                    isActive: true,
+                  },
                 });
                 console.log(`🔍 Section lookup result:`, section);
                 if (section) {
                   assignedSectionId = section.id;
                   console.log(`✅ Found section: ${assignedSectionId}`);
                 } else {
-                  console.log(`❌ No section found for sectionId: ${studentData.sectionId}`);
+                  console.log(
+                    `❌ No section found for sectionId: ${studentData.sectionId}`,
+                  );
                 }
               } else if (studentData.classId) {
                 // Workaround: Check if classId is actually a sectionId
-                console.log(`🔍 Attempting classId as sectionId lookup for: ${studentData.classId}`);
+                console.log(
+                  `🔍 Attempting classId as sectionId lookup for: ${studentData.classId}`,
+                );
                 const section = await ctx.db.section.findFirst({
-                  where: { 
-                    id: studentData.classId, 
+                  where: {
+                    id: studentData.classId,
                     class: { branchId, isActive: true },
-                    isActive: true 
-                  }
+                    isActive: true,
+                  },
                 });
                 console.log(`🔍 ClassId as sectionId lookup result:`, section);
                 if (section) {
                   assignedSectionId = section.id;
-                  console.log(`✅ Found section using classId: ${assignedSectionId}`);
+                  console.log(
+                    `✅ Found section using classId: ${assignedSectionId}`,
+                  );
                 } else {
-                  console.log(`❌ ClassId is not a valid sectionId, trying as actual classId...`);
+                  console.log(
+                    `❌ ClassId is not a valid sectionId, trying as actual classId...`,
+                  );
                   // Original classId logic
                   const sectionByClass = await ctx.db.section.findFirst({
-                    where: { classId: studentData.classId, class: { branchId, isActive: true } }
+                    where: {
+                      classId: studentData.classId,
+                      class: { branchId, isActive: true },
+                    },
                   });
                   if (sectionByClass) {
                     assignedSectionId = sectionByClass.id;
-                    console.log(`✅ Found section by classId: ${assignedSectionId}`);
+                    console.log(
+                      `✅ Found section by classId: ${assignedSectionId}`,
+                    );
                   }
                 }
               } else {
                 console.log(`❌ No sectionId provided in student data`);
               }
 
-              if (!assignedSectionId && studentData.className && studentData.sectionName) {
+              if (
+                !assignedSectionId &&
+                studentData.className &&
+                studentData.sectionName
+              ) {
                 const section = await ctx.db.section.findFirst({
                   where: {
                     name: studentData.sectionName,
@@ -1383,7 +1708,7 @@ export const studentRouter = createTRPCRouter({
                     },
                     isActive: true,
                   },
-                  orderBy: { name: 'asc' },
+                  orderBy: { name: "asc" },
                 });
                 if (section) {
                   assignedSectionId = section.id;
@@ -1391,26 +1716,49 @@ export const studentRouter = createTRPCRouter({
               }
 
               if (!assignedSectionId) {
-                importMessages.push(`[ERROR] Row ${rowNum}: Could not determine section for student ${studentData.firstName} ${studentData.lastName}`);
+                importMessages.push(
+                  `[ERROR] Row ${rowNum}: Could not determine section for student ${studentData.firstName} ${studentData.lastName}`,
+                );
                 errorCount++;
                 continue;
               }
 
               // Generate credentials
-              const emailDomain = branch.code === 'PS' ? 'ps.tsh.edu.in' :
-                                 branch.code === 'JUN' ? 'jun.tsh.edu.in' :
-                                 branch.code === 'MAJ' ? 'majra.tsh.edu.in' : 'tsh.edu.in';
-              
-              const studentUsername = studentData.username || `${studentData.admissionNumber}@${emailDomain}`;
-              const studentPassword = studentData.password || (branch.code === 'PS' ? 'TSHPS@12345' :
-                            branch.code === 'JUN' ? 'TSHJ@12345' :
-                            branch.code === 'MAJ' ? 'TSHM@12345' : 'TSH@12345');
+              const emailDomain =
+                branch.code === "PS"
+                  ? "ps.tsh.edu.in"
+                  : branch.code === "JUN"
+                    ? "jun.tsh.edu.in"
+                    : branch.code === "MAJ"
+                      ? "majra.tsh.edu.in"
+                      : "tsh.edu.in";
 
-              const parentUsername = studentData.parentUsername || `P${studentData.admissionNumber}`;
-              const parentPassword = studentData.parentPassword || studentPassword;
+              const studentUsername =
+                studentData.username ||
+                `${studentData.admissionNumber}@${emailDomain}`;
+              const studentPassword =
+                studentData.password ||
+                (branch.code === "PS"
+                  ? "TSHPS@12345"
+                  : branch.code === "JUN"
+                    ? "TSHJ@12345"
+                    : branch.code === "MAJ"
+                      ? "TSHM@12345"
+                      : "TSH@12345");
+
+              const parentUsername =
+                studentData.parentUsername || `P${studentData.admissionNumber}`;
+              const parentPassword =
+                studentData.parentPassword || studentPassword;
 
               // Step 2: Create Clerk users outside transaction (parallel for batch)
-              const clerkPromises = createClerkUsers(studentData, studentUsername, studentPassword, parentUsername, parentPassword);
+              const clerkPromises = createClerkUsers(
+                studentData,
+                studentUsername,
+                studentPassword,
+                parentUsername,
+                parentPassword,
+              );
 
               processedBatchData.push({
                 studentData,
@@ -1424,153 +1772,191 @@ export const studentRouter = createTRPCRouter({
                 rowNum,
                 clerkPromise: clerkPromises,
               });
-
             } catch (error) {
-              importMessages.push(`[ERROR] Row ${rowNum}: Failed to process student data - ${error}`);
+              importMessages.push(
+                `[ERROR] Row ${rowNum}: Failed to process student data - ${error}`,
+              );
               errorCount++;
             }
           }
 
           // Step 3: Wait for all Clerk user creations to complete
           const clerkResults = await Promise.allSettled(
-            processedBatchData.map(item => item.clerkPromise)
+            processedBatchData.map((item) => item.clerkPromise),
           );
 
           // Step 4: Process database operations in a transaction with increased timeout
-          const batchResults = await ctx.db.$transaction(async (prisma) => {
-            const processedStudents = [];
+          const batchResults = await ctx.db.$transaction(
+            async (prisma) => {
+              const processedStudents = [];
 
-            for (const [index, item] of processedBatchData.entries()) {
-              try {
-                const clerkResult = clerkResults[index];
-                let clerkStudentId: string | null = null;
-                let clerkParentId: string | null = null;
+              for (const [index, item] of processedBatchData.entries()) {
+                try {
+                  const clerkResult = clerkResults[index];
+                  let clerkStudentId: string | null = null;
+                  let clerkParentId: string | null = null;
 
-                if (clerkResult?.status === 'fulfilled') {
-                  clerkStudentId = clerkResult.value.clerkStudentId;
-                  clerkParentId = clerkResult.value.clerkParentId;
-                }
+                  if (clerkResult?.status === "fulfilled") {
+                    clerkStudentId = clerkResult.value.clerkStudentId;
+                    clerkParentId = clerkResult.value.clerkParentId;
+                  }
 
-                // Create parent record
-                const parentData = await prisma.parent.create({
-                  data: {
-                    fatherName: item.studentData.fatherName || null,
-                    fatherDob: item.studentData.fatherDob ? item.dateOfBirth : null,
-                    fatherOccupation: item.studentData.fatherOccupation || null,
-                    fatherMobile: item.studentData.fatherMobile || null,
-                    fatherEmail: item.studentData.fatherEmail || null,
-                    fatherAadharNumber: item.studentData.fatherAadharNumber ?? null,
-                    motherName: item.studentData.motherName || null,
-                    motherDob: item.studentData.motherDob ? item.dateOfBirth : null,
-                    motherOccupation: item.studentData.motherOccupation || null,
-                    motherMobile: item.studentData.motherMobile || null,
-                    motherEmail: item.studentData.motherEmail || null,
-                    motherAadharNumber: item.studentData.motherAadharNumber ?? null,
-                    guardianName: item.studentData.guardianName || null,
-                    guardianDob: item.studentData.guardianDob ? item.dateOfBirth : null,
-                    guardianOccupation: item.studentData.guardianOccupation || null,
-                    guardianMobile: item.studentData.guardianMobile || null,
-                    guardianEmail: item.studentData.guardianEmail || null,
-                    guardianAadharNumber: item.studentData.guardianAadharNumber ?? null,
-                    parentAnniversary: null,
-                    monthlyIncome: null,
-                    clerkId: clerkParentId,
-                  },
-                });
-
-                // Create student record
-                const student = await prisma.student.create({
-                  data: {
-                    admissionNumber: item.studentData.admissionNumber,
-                    firstName: item.studentData.firstName,
-                    lastName: item.studentData.lastName,
-                    dateOfBirth: item.dateOfBirth,
-                    dateOfAdmission: item.dateOfAdmission,
-                    gender: item.studentData.gender,
-                    email: item.studentData.email || null,
-                    personalEmail: item.studentData.personalEmail || null,
-                    phone: item.studentData.phone || null,
-                    address: item.studentData.address || null,
-                    permanentAddress: item.studentData.permanentAddress || null,
-                    permanentCity: item.studentData.permanentCity || null,
-                    permanentState: item.studentData.permanentState || null,
-                    permanentCountry: item.studentData.permanentCountry || null,
-                    permanentZipCode: item.studentData.permanentZipCode || null,
-                    correspondenceAddress: item.studentData.correspondenceAddress || null,
-                    correspondenceCity: item.studentData.correspondenceCity || null,
-                    correspondenceState: item.studentData.correspondenceState || null,
-                    correspondenceCountry: item.studentData.correspondenceCountry || null,
-                    correspondenceZipCode: item.studentData.correspondenceZipCode || null,
-                    previousSchool: item.studentData.previousSchool || null,
-                    lastClassAttended: item.studentData.lastClassAttended || null,
-                    mediumOfInstruction: item.studentData.mediumOfInstruction || null,
-                    recognisedByStateBoard: item.studentData.recognisedByStateBoard || false,
-                    schoolCity: item.studentData.schoolCity || null,
-                    schoolState: item.studentData.schoolState || null,
-                    reasonForLeaving: item.studentData.reasonForLeaving || null,
-                    bloodGroup: item.studentData.bloodGroup || null,
-                    branchId,
-                    sectionId: item.assignedSectionId,
-                    parentId: parentData.id,
-                    username: item.studentUsername,
-                    password: item.studentPassword,
-                    clerkId: clerkStudentId,
-                    isActive: true,
-                    religion: item.studentData.religion || null,
-                    nationality: item.studentData.nationality || null,
-                    caste: item.studentData.caste || null,
-                    aadharNumber: item.studentData.aadharNumber || null,
-                    udiseId: item.studentData.udiseId || null,
-                    cbse10RollNumber: item.studentData.cbse10RollNumber || null,
-                    cbse12RollNumber: item.studentData.cbse12RollNumber || null,
-                  },
-                  include: {
-                    section: {
-                      include: {
-                        class: true,
-                      },
-                    },
-                  },
-                });
-
-                // Create Academic Record for the current session
-                if (student.section?.class?.id) {
-                  await prisma.academicRecord.create({
+                  // Create parent record
+                  const parentData = await prisma.parent.create({
                     data: {
-                      studentId: student.id,
-                      sessionId,
-                      classId: student.section.class.id,
-                      status: "ENROLLED",
+                      fatherName: item.studentData.fatherName || null,
+                      fatherDob: item.studentData.fatherDob
+                        ? item.dateOfBirth
+                        : null,
+                      fatherOccupation:
+                        item.studentData.fatherOccupation || null,
+                      fatherMobile: item.studentData.fatherMobile || null,
+                      fatherEmail: item.studentData.fatherEmail || null,
+                      fatherAadharNumber:
+                        item.studentData.fatherAadharNumber ?? null,
+                      motherName: item.studentData.motherName || null,
+                      motherDob: item.studentData.motherDob
+                        ? item.dateOfBirth
+                        : null,
+                      motherOccupation:
+                        item.studentData.motherOccupation || null,
+                      motherMobile: item.studentData.motherMobile || null,
+                      motherEmail: item.studentData.motherEmail || null,
+                      motherAadharNumber:
+                        item.studentData.motherAadharNumber ?? null,
+                      guardianName: item.studentData.guardianName || null,
+                      guardianDob: item.studentData.guardianDob
+                        ? item.dateOfBirth
+                        : null,
+                      guardianOccupation:
+                        item.studentData.guardianOccupation || null,
+                      guardianMobile: item.studentData.guardianMobile || null,
+                      guardianEmail: item.studentData.guardianEmail || null,
+                      guardianAadharNumber:
+                        item.studentData.guardianAadharNumber ?? null,
+                      parentAnniversary: null,
+                      monthlyIncome: null,
+                      clerkId: clerkParentId,
                     },
                   });
+
+                  // Create student record
+                  const student = await prisma.student.create({
+                    data: {
+                      admissionNumber: item.studentData.admissionNumber,
+                      firstName: item.studentData.firstName,
+                      lastName: item.studentData.lastName,
+                      dateOfBirth: item.dateOfBirth,
+                      dateOfAdmission: item.dateOfAdmission,
+                      gender: item.studentData.gender,
+                      email: item.studentData.email || null,
+                      personalEmail: item.studentData.personalEmail || null,
+                      phone: item.studentData.phone || null,
+                      address: item.studentData.address || null,
+                      permanentAddress:
+                        item.studentData.permanentAddress || null,
+                      permanentCity: item.studentData.permanentCity || null,
+                      permanentState: item.studentData.permanentState || null,
+                      permanentCountry:
+                        item.studentData.permanentCountry || null,
+                      permanentZipCode:
+                        item.studentData.permanentZipCode || null,
+                      correspondenceAddress:
+                        item.studentData.correspondenceAddress || null,
+                      correspondenceCity:
+                        item.studentData.correspondenceCity || null,
+                      correspondenceState:
+                        item.studentData.correspondenceState || null,
+                      correspondenceCountry:
+                        item.studentData.correspondenceCountry || null,
+                      correspondenceZipCode:
+                        item.studentData.correspondenceZipCode || null,
+                      previousSchool: item.studentData.previousSchool || null,
+                      lastClassAttended:
+                        item.studentData.lastClassAttended || null,
+                      mediumOfInstruction:
+                        item.studentData.mediumOfInstruction || null,
+                      recognisedByStateBoard:
+                        item.studentData.recognisedByStateBoard || false,
+                      schoolCity: item.studentData.schoolCity || null,
+                      schoolState: item.studentData.schoolState || null,
+                      reasonForLeaving:
+                        item.studentData.reasonForLeaving || null,
+                      bloodGroup: item.studentData.bloodGroup || null,
+                      branchId,
+                      sectionId: item.assignedSectionId,
+                      parentId: parentData.id,
+                      username: item.studentUsername,
+                      password: item.studentPassword,
+                      clerkId: clerkStudentId,
+                      isActive: true,
+                      religion: item.studentData.religion || null,
+                      nationality: item.studentData.nationality || null,
+                      caste: item.studentData.caste || null,
+                      aadharNumber: item.studentData.aadharNumber || null,
+                      udiseId: item.studentData.udiseId || null,
+                      cbse10RollNumber:
+                        item.studentData.cbse10RollNumber || null,
+                      cbse12RollNumber:
+                        item.studentData.cbse12RollNumber || null,
+                    },
+                    include: {
+                      section: {
+                        include: {
+                          class: true,
+                        },
+                      },
+                    },
+                  });
+
+                  // Create Academic Record for the current session
+                  if (student.section?.class?.id) {
+                    await prisma.academicRecord.create({
+                      data: {
+                        studentId: student.id,
+                        sessionId,
+                        classId: student.section.class.id,
+                        status: "ENROLLED",
+                      },
+                    });
+                  }
+
+                  processedStudents.push(student);
+                  successCount++;
+                  importMessages.push(
+                    `[SUCCESS] Row ${item.rowNum}: Successfully imported ${item.studentData.firstName} ${item.studentData.lastName}`,
+                  );
+                } catch (error) {
+                  importMessages.push(
+                    `[ERROR] Row ${item.rowNum}: Failed to import student - ${error}`,
+                  );
+                  errorCount++;
                 }
-
-                processedStudents.push(student);
-                successCount++;
-                importMessages.push(`[SUCCESS] Row ${item.rowNum}: Successfully imported ${item.studentData.firstName} ${item.studentData.lastName}`);
-
-              } catch (error) {
-                importMessages.push(`[ERROR] Row ${item.rowNum}: Failed to import student - ${error}`);
-                errorCount++;
               }
-            }
 
-            return processedStudents;
-          }, {
-            maxWait: 30000, // 30 seconds max wait
-            timeout: 20000, // 20 seconds timeout per batch
-          });
+              return processedStudents;
+            },
+            {
+              maxWait: 30000, // 30 seconds max wait
+              timeout: 20000, // 20 seconds timeout per batch
+            },
+          );
 
           allProcessedStudents.push(...batchResults);
-          importMessages.push(`[INFO] Batch ${batchIndex + 1} completed: ${batchResults.length} students processed`);
-
+          importMessages.push(
+            `[INFO] Batch ${batchIndex + 1} completed: ${batchResults.length} students processed`,
+          );
         } catch (error) {
-          importMessages.push(`[ERROR] Batch ${batchIndex + 1} failed: ${error}`);
+          importMessages.push(
+            `[ERROR] Batch ${batchIndex + 1} failed: ${error}`,
+          );
           // Continue with next batch instead of failing entirely
         }
       }
 
-      importMessages.push(`[SUMMARY] Import completed: ${successCount} successful, ${errorCount} errors`);
+      importMessages.push(
+        `[SUMMARY] Import completed: ${successCount} successful, ${errorCount} errors`,
+      );
 
       return {
         count: successCount,
@@ -1587,13 +1973,16 @@ export const studentRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      console.log("🔍 Getting next admission number for branch:", input.branchId);
+      console.log(
+        "🔍 Getting next admission number for branch:",
+        input.branchId,
+      );
       const startTime = Date.now();
-      
+
       // Get branch information
       const branch = await ctx.db.branch.findUnique({
         where: { id: input.branchId },
-        select: { code: true, name: true }
+        select: { code: true, name: true },
       });
 
       if (!branch) {
@@ -1627,21 +2016,21 @@ export const studentRouter = createTRPCRouter({
           branchId: input.branchId,
           admissionNumber: {
             gte: prefix + "0000", // Greater than or equal to prefix + 0000
-            lt: prefix + "9999",  // Less than prefix + 9999
-          }
+            lt: prefix + "9999", // Less than prefix + 9999
+          },
         },
         orderBy: {
-          admissionNumber: "desc"
+          admissionNumber: "desc",
         },
         select: {
-          admissionNumber: true
-        }
+          admissionNumber: true,
+        },
       });
 
       console.log("👥 Last student found:", lastStudent);
 
       let nextNumber: string;
-      
+
       if (!lastStudent) {
         // This is the first student, start with prefix + 0001
         nextNumber = `${prefix}0001`;
@@ -1650,7 +2039,7 @@ export const studentRouter = createTRPCRouter({
         // Extract the numeric part from the last admission number
         const lastNumber = lastStudent.admissionNumber;
         const numericPart = lastNumber.replace(prefix, "");
-        
+
         // Convert to number, increment, and pad with zeros
         const nextNumericValue = parseInt(numericPart) + 1;
         const paddedNext = nextNumericValue.toString().padStart(4, "0");
@@ -1662,11 +2051,13 @@ export const studentRouter = createTRPCRouter({
         nextAdmissionNumber: nextNumber,
         prefix,
         branchCode: branch.code,
-        branchName: branch.name
+        branchName: branch.name,
       };
 
       const endTime = Date.now();
-      console.log(`✅ getNextAdmissionNumber completed in ${endTime - startTime}ms`);
+      console.log(
+        `✅ getNextAdmissionNumber completed in ${endTime - startTime}ms`,
+      );
       console.log("✅ Final result:", result);
       return result;
     }),
@@ -1686,8 +2077,8 @@ export const studentRouter = createTRPCRouter({
       const whereClause: Prisma.StudentWhereInput = {
         branchId,
         isActive: true,
-        ...(sectionId && sectionId !== 'all' ? { sectionId } : {}),
-        ...(sessionId 
+        ...(sectionId && sectionId !== "all" ? { sectionId } : {}),
+        ...(sessionId
           ? {
               academicRecords: {
                 some: {
@@ -1700,8 +2091,7 @@ export const studentRouter = createTRPCRouter({
               section: {
                 classId,
               },
-            }
-        ),
+            }),
       };
 
       const students = await ctx.db.student.findMany({
@@ -1719,10 +2109,7 @@ export const studentRouter = createTRPCRouter({
           },
           parent: true,
         },
-        orderBy: [
-          { rollNumber: 'asc' },
-          { firstName: 'asc' },
-        ],
+        orderBy: [{ rollNumber: "asc" }, { firstName: "asc" }],
       });
 
       return students;
@@ -1735,7 +2122,7 @@ export const studentRouter = createTRPCRouter({
         termIds: z.array(z.string()),
         branchId: z.string(),
         sessionId: z.string(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const { studentIds, termIds, branchId, sessionId } = input;
@@ -1777,7 +2164,7 @@ export const studentRouter = createTRPCRouter({
 
       // For now, return students with empty assessment scores
       // This can be enhanced later when the assessment schema is better understood
-      const studentsWithScores = students.map(student => ({
+      const studentsWithScores = students.map((student) => ({
         id: student.id,
         firstName: student.firstName,
         lastName: student.lastName,

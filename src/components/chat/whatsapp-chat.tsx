@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -44,7 +44,14 @@ import {
   Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
+import { format, formatDistanceToNow, formatRelative, isToday, isYesterday } from "date-fns";
+import { getWindowStatusExplanation } from "@/utils/chat-window-utils";
+import { 
+  formatWindowTimer, 
+  getTimerStatusText,
+  REALTIME_INTERVALS,
+  logRealtimeEvent 
+} from "@/utils/chat-realtime-utils";
 import { useToast } from "@/components/ui/use-toast";
 
 interface WhatsAppChatProps {
@@ -62,6 +69,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   // API calls
   const { data: conversation, isLoading: conversationLoading, error: conversationError } = api.chat.getConversation.useQuery(
@@ -69,17 +77,20 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
     { enabled: !!conversationId }
   );
 
-  const { data: messagesData, isLoading: messagesLoading } = api.chat.getMessages.useQuery(
+  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = api.chat.getMessages.useQuery(
     { conversationId: conversationId! },
     { 
       enabled: !!conversationId,
-      refetchInterval: 3000 // Refresh every 3 seconds
+      refetchInterval: REALTIME_INTERVALS.MESSAGES // ⚡ Realtime message polling
     }
   );
 
-  const { data: messageWindow } = api.chat.checkMessageWindow.useQuery(
+  const { data: messageWindow, refetch: refetchMessageWindow } = api.chat.checkMessageWindow.useQuery(
     { conversationId: conversationId! },
-    { enabled: !!conversationId }
+    { 
+      enabled: !!conversationId,
+      refetchInterval: REALTIME_INTERVALS.WINDOW_STATUS // ⚡ Realtime window status
+    }
   );
 
   const { data: templates } = api.chat.getTemplates.useQuery(
@@ -94,6 +105,9 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
       if (messageInputRef.current) {
         messageInputRef.current.focus();
       }
+      // ⚡ Immediate realtime updates
+      refetchMessages();
+      refetchMessageWindow();
     },
     onError: (error) => {
       setIsLoading(false);
@@ -110,6 +124,9 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
       setShowTemplateSelector(false);
       setSelectedTemplate("");
       setTemplateVariables({});
+      // ⚡ Immediate realtime updates
+      refetchMessages();
+      refetchMessageWindow();
       toast({
         title: "Template message sent",
         description: "Your template message has been sent successfully.",
@@ -129,26 +146,72 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
 
   // Helper functions
   const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const getParticipantIcon = (type: string) => {
+  // Helper function to safely parse time remaining
+  const getTimeInfo = (timeStr: string) => {
+    if (!timeStr || timeStr === "EXPIRED") {
+      return { hours: 0, minutes: 0, totalMinutes: 0 };
+    }
+    
+    const parts = timeStr.split(':').map(Number);
+    const hours = parts[0] || 0;
+    const minutes = parts[1] || 0;
+    const totalMinutes = hours * 60 + minutes;
+    
+    return { hours, minutes, totalMinutes };
+  };
+
+  // Get enhanced contact type display text
+  const getContactTypeDisplay = (conversation: any) => {
+    if (conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
+      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      // Clean up the display text (remove "Phone" suffix for cleaner display)
+      return contactType?.replace(' Phone', '') || 'Contact';
+    }
+    
+    // Fallback to capitalize participantType
+    return conversation?.participantType?.charAt(0).toUpperCase() + conversation?.participantType?.slice(1) || 'Unknown';
+  };
+
+  // Get participant icon based on enhanced contact details
+  const getParticipantIcon = (conversation: any) => {
+    // Check if we have enhanced contact details
+    if (conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
+      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      
+      switch (contactType) {
+        case "Student Phone":
+          return <GraduationCap className="w-4 h-4 text-blue-500" />;
+        case "Father Phone":
+          return <Users className="w-4 h-4 text-blue-600" />;
+        case "Mother Phone":
+          return <Users className="w-4 h-4 text-pink-500" />;
+        case "Guardian Phone":
+          return <Users className="w-4 h-4 text-purple-500" />;
+        case "Teacher Phone":
+          return <UserCheck className="w-4 h-4 text-green-500" />;
+        case "Employee Phone":
+          return <Briefcase className="w-4 h-4 text-purple-500" />;
+        default:
+          return <MessageCircle className="w-4 h-4 text-gray-500" />;
+      }
+    }
+    
+    // Fallback to old participantType logic
+    const type = conversation?.participantType || 'unknown';
     switch (type) {
-      case "STUDENT":
-        return <GraduationCap className="w-3 h-3 text-blue-500" />;
-      case "TEACHER":
-        return <UserCheck className="w-3 h-3 text-green-500" />;
-      case "EMPLOYEE":
-        return <Briefcase className="w-3 h-3 text-purple-500" />;
-      case "PARENT":
-        return <Users className="w-3 h-3 text-orange-500" />;
+      case "student":
+        return <GraduationCap className="w-4 h-4 text-blue-500" />;
+      case "teacher":
+        return <UserCheck className="w-4 h-4 text-green-500" />;
+      case "employee":
+        return <Briefcase className="w-4 h-4 text-purple-500" />;
+      case "parent":
+        return <Users className="w-4 h-4 text-orange-500" />;
       default:
-        return <Users className="w-3 h-3 text-gray-500" />;
+        return <MessageCircle className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -178,13 +241,54 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
     }
   };
 
-  // Scroll to bottom
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messagesData]);
 
-  // Message handlers
-  const handleSendMessage = async () => {
+  // ⚡ Enhanced real-time timer for 24-hour window with immediate updates
+  useEffect(() => {
+    if (!messageWindow?.canSendFreeform || !messageWindow?.lastIncomingMessageAt) {
+      setTimeRemaining("");
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date();
+      const lastIncoming = new Date(messageWindow.lastIncomingMessageAt!);
+      const windowExpiry = new Date(lastIncoming.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+      const timeLeft = windowExpiry.getTime() - now.getTime();
+
+      if (timeLeft <= 0) {
+        setTimeRemaining("EXPIRED");
+        // Refresh window status when expired
+        refetchMessageWindow();
+        // Show notification when timer expires
+        toast({
+          title: "24-Hour Window Expired",
+          description: "You can now only send pre-approved template messages until the customer responds again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      setTimeRemaining(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    // Update immediately when messageWindow changes (e.g., new incoming message)
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [messageWindow?.canSendFreeform, messageWindow?.lastIncomingMessageAt, messageWindow, toast, refetchMessageWindow]);
+
+  const sendMessage = useCallback(async () => {
     if (!messageContent.trim() || !conversationId || isLoading) return;
 
     setIsLoading(true);
@@ -192,7 +296,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
       conversationId,
       content: messageContent.trim(),
     });
-  };
+  }, [messageContent, conversationId, isLoading, sendMessageMutation]);
 
   const handleSendTemplateMessage = async () => {
     if (!selectedTemplate || !conversationId) return;
@@ -207,7 +311,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      sendMessage();
     }
   };
 
@@ -344,7 +448,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 p-1 bg-background rounded-full shadow-sm border">
-                    {getParticipantIcon(conversation?.participantType || 'UNKNOWN')}
+                    {getParticipantIcon(conversation)}
                   </div>
                   <div className="absolute -top-1 -left-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background shadow-sm animate-pulse"></div>
                 </div>
@@ -354,16 +458,53 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                     {conversation?.participantName || 'Unknown Contact'}
                   </h4>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">
-                      {conversation?.participantType || 'Unknown'}
-                    </Badge>
+                    {/* Enhanced contact type display */}
+                    {conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata ? (
+                      <>
+                        <Badge variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                          {getContactTypeDisplay(conversation)}
+                        </Badge>
+                        {(conversation.metadata.contactDetails as any)?.studentName && (
+                          <Badge variant="secondary" className="text-xs">
+                            {(conversation.metadata.contactDetails as any)?.studentName}
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        {conversation?.participantType || 'Unknown'}
+                      </Badge>
+                    )}
                     <span className="text-muted-foreground/60">•</span>
                     <span className="font-mono text-xs">
                       {conversation?.participantPhone?.replace('whatsapp:', '') || 'No phone'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-1">
+                  {/* Additional metadata display */}
+                  {conversation?.metadata && typeof conversation.metadata === 'object' && (
+                    (('class' in conversation.metadata) || ('section' in conversation.metadata) || ('designation' in conversation.metadata)) && (
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        {('class' in conversation.metadata) && (conversation.metadata.class as string) && (
+                          <span className="bg-muted/50 px-2 py-1 rounded">
+                            Class {conversation.metadata.class as string}
+                          </span>
+                        )}
+                        {('section' in conversation.metadata) && (conversation.metadata.section as string) && (
+                          <span className="bg-muted/50 px-2 py-1 rounded">
+                            Section {conversation.metadata.section as string}
+                          </span>
+                        )}
+                        {('designation' in conversation.metadata) && (conversation.metadata.designation as string) && (
+                          <span className="bg-muted/50 px-2 py-1 rounded">
+                            {conversation.metadata.designation as string}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  )}
+                  
+                  <div className="flex items-center gap-2 mt-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                     <span className="text-xs text-muted-foreground">
                       {conversation?.lastMessageAt 
@@ -371,8 +512,43 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                         : "No recent activity"
                       }
                     </span>
+                    
+                    {/* Minimal window status indicator */}
+                    {messageWindow?.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
+                      <>
+                        <span className="text-muted-foreground/60">•</span>
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs",
+                          formatWindowTimer(timeRemaining).color
+                        )}>
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            formatWindowTimer(timeRemaining).color.replace('text-', 'bg-')
+                          )}></div>
+                          <span className="font-medium">
+                            {getTimerStatusText(timeRemaining)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    
                     <Badge variant="secondary" className="text-xs ml-auto">
                       {conversation?._count?.messages || 0} messages
+                    </Badge>
+                    
+                    {/* ⚡ Enhanced: Show unread count */}
+                    {conversation?.unreadCount && conversation.unreadCount > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {conversation.unreadCount} unread
+                      </Badge>
+                    )}
+                    
+                    {/* 🐛 Debug: Show metadata status */}
+                    <Badge variant="outline" className="text-xs">
+                      {(() => {
+                        const meta = conversation?.metadata;
+                        return meta && typeof meta === 'object' && meta !== null && !Array.isArray(meta) && 'contactDetails' in meta ? '✓ Enhanced' : '⚠️ Basic';
+                      })()}
                     </Badge>
                   </div>
                 </div>
@@ -380,6 +556,22 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
               
               {/* Header Actions */}
               <div className="flex items-center gap-2">
+                {/* Minimal Timer Display */}
+                {messageWindow?.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
+                  <div className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono",
+                    (() => {
+                      const { urgency } = formatWindowTimer(timeRemaining);
+                      if (urgency === 'high') return "bg-red-100/80 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+                      if (urgency === 'medium') return "bg-orange-100/80 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300";
+                      return "bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+                    })()
+                  )}>
+                    <Clock className="w-3 h-3" />
+                    <span className="font-semibold tracking-wide">{formatWindowTimer(timeRemaining).display}</span>
+                  </div>
+                )}
+                
                 <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-accent/50">
                   <Search className="h-4 w-4" />
                 </Button>
@@ -582,17 +774,29 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
       {/* Message Window Status */}
       {hasPermission("create_communication_message") && conversation && messageWindow && (
         <div className="border-t border-border/50 bg-card/80 backdrop-blur-sm">
-          {/* Window Status Alert */}
-          {!messageWindow.canSendFreeform && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-4 mt-4"
-            >
-              <Alert className="border-destructive/20 bg-destructive/5 backdrop-blur-sm shadow-sm">
+          {/* Enhanced Window Status Display */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 my-4"
+          >
+            <Alert className={cn(
+              "backdrop-blur-sm shadow-sm",
+              messageWindow.canSendFreeform 
+                ? "border-primary/20 bg-primary/5" 
+                : "border-destructive/20 bg-destructive/5"
+            )}>
+              {messageWindow.canSendFreeform ? (
+                <Clock className="h-4 w-4 text-primary" />
+              ) : (
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                <AlertDescription className="text-destructive font-medium">
-                  <strong>24-Hour Window Expired:</strong> {messageWindow.reason}
+              )}
+              <AlertDescription className={cn(
+                "font-medium",
+                messageWindow.canSendFreeform ? "text-primary" : "text-destructive"
+              )}>
+                {getWindowStatusExplanation(messageWindow)}
+                {!messageWindow.canSendFreeform && (
                   <Button
                     variant="link"
                     size="sm"
@@ -601,26 +805,10 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                   >
                     Use Template Message →
                   </Button>
-                </AlertDescription>
-              </Alert>
-            </motion.div>
-          )}
-
-          {/* Window Status Info (when within window) */}
-          {messageWindow.canSendFreeform && messageWindow.hoursRemaining && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-4 my-4"
-            >
-              <Alert className="border-primary/20 bg-primary/5 backdrop-blur-sm shadow-sm">
-                <Clock className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-primary font-medium">
-                  <strong>Freeform Messaging Active:</strong> {messageWindow.hoursRemaining.toFixed(1)} hours remaining
-                </AlertDescription>
-              </Alert>
-            </motion.div>
-          )}
+                )}
+              </AlertDescription>
+            </Alert>
+          </motion.div>
 
           {/* Template Selector */}
           <AnimatePresence>
@@ -840,7 +1028,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
 
               {/* Send Button */}
               <Button
-                onClick={handleSendMessage}
+                onClick={sendMessage}
                 disabled={!messageContent.trim() || isLoading || (messageWindow && !messageWindow.canSendFreeform)}
                 size="icon"
                 className={cn(

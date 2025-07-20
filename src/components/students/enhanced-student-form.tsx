@@ -18,8 +18,8 @@ import { OtherInfoTab } from "./form-tabs/other-info-tab";
 import { SiblingDetailsTab } from "./form-tabs/sibling-details-tab";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
-// Define the form schema with all fields from all tabs
-const studentSchema = z.object({
+// Base schema with all fields
+const baseStudentSchema = z.object({
   // Student Information Tab
   admissionNumber: z.string().min(1, "Admission number is required"),
   firstName: z.string().min(1, "First name is required")
@@ -28,8 +28,6 @@ const studentSchema = z.object({
     .transform(val => val.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')),
   classId: z.string().min(1, "Class is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
-  dateOfAdmission: z.string().min(1, "Date of admission is required"),
-  dateOfJoining: z.string().min(1, "Date of joining is required"),
   bloodGroup: z.string().optional(),
   gender: z.enum(["Male", "Female", "Other"]),
   otherGender: z.string().optional(),
@@ -77,9 +75,18 @@ const studentSchema = z.object({
   fatherMobile: z.string().optional(),
   motherMobile: z.string().optional(),
   guardianMobile: z.string().optional(),
-  fatherEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  motherEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
+  fatherEmail: z.string().optional().refine(
+    (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: "Invalid email format" }
+  ),
+  motherEmail: z.string().optional().refine(
+    (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: "Invalid email format" }
+  ),
+  guardianEmail: z.string().optional().refine(
+    (val) => !val || val === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: "Invalid email format" }
+  ),
   fatherAadharNumber: z.string().optional(),
   motherAadharNumber: z.string().optional(),
   guardianAadharNumber: z.string().optional(),
@@ -100,32 +107,48 @@ const studentSchema = z.object({
   siblingAdmissionNumber: z.string().optional(),
 });
 
-// Add validation for date sequence
-const enhancedStudentSchema = studentSchema.refine(
-  (data) => {
-    if (data.dateOfBirth && data.dateOfAdmission) {
-      return new Date(data.dateOfBirth) < new Date(data.dateOfAdmission);
-    }
-    return true;
-  },
-  {
-    message: "Date of admission must be after date of birth",
-    path: ["dateOfAdmission"],
-  }
-).refine(
-  (data) => {
-    if (data.dateOfAdmission && data.dateOfJoining) {
-      return new Date(data.dateOfAdmission) <= new Date(data.dateOfJoining);
-    }
-    return true;
-  },
-  {
-    message: "Date of joining must be on or after date of admission",
-    path: ["dateOfJoining"],
-  }
-);
+// Create schema - requires dates
+const createStudentSchema = baseStudentSchema.extend({
+  dateOfAdmission: z.string().min(1, "Date of admission is required"),
+  dateOfJoining: z.string().min(1, "Date of joining is required"),
+});
 
-export type StudentFormValues = z.infer<typeof enhancedStudentSchema>;
+// Edit schema - dates are optional
+const editStudentSchema = baseStudentSchema.extend({
+  dateOfAdmission: z.string().optional(),
+  dateOfJoining: z.string().optional(),
+});
+
+// Use conditional schema based on editing mode
+const getStudentSchema = (isEditing: boolean) => {
+  const schema = isEditing ? editStudentSchema : createStudentSchema;
+  
+  return schema.refine(
+    (data) => {
+      if (data.dateOfBirth && data.dateOfAdmission) {
+        return new Date(data.dateOfBirth) < new Date(data.dateOfAdmission);
+      }
+      return true;
+    },
+    {
+      message: "Date of admission must be after date of birth",
+      path: ["dateOfAdmission"],
+    }
+  ).refine(
+    (data) => {
+      if (data.dateOfAdmission && data.dateOfJoining) {
+        return new Date(data.dateOfAdmission) <= new Date(data.dateOfJoining);
+      }
+      return true;
+    },
+    {
+      message: "Date of joining must be on or after date of admission",
+      path: ["dateOfJoining"],
+    }
+  );
+};
+
+export type StudentFormValues = z.infer<typeof editStudentSchema>;
 
 interface EnhancedStudentFormProps {
   initialData?: Partial<StudentFormValues>;
@@ -142,7 +165,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
 
   // Create form methods
   const methods = useForm<StudentFormValues>({
-    resolver: zodResolver(enhancedStudentSchema),
+    resolver: zodResolver(getStudentSchema(isEditing)),
     defaultValues: {
       admissionNumber: initialData?.admissionNumber || "",
       firstName: initialData?.firstName || "",
@@ -419,8 +442,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
         // Handle update logic
         const student = initialData as { id: string; parentId?: string };
 
-        // Update student record with all fields
-        await updateStudent.mutateAsync({
+        const updatePayload = {
           id: student.id,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -455,7 +477,34 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
           lastClassAttended: data.lastClassAttended || "",
           mediumOfInstruction: data.mediumOfInstruction || "",
           recognisedByStateBoard: data.recognisedByStateBoard || false,
-        });
+          // Parent information
+          fatherName: data.fatherName || "",
+          fatherDob: data.fatherDob || undefined,
+          fatherEducation: data.fatherEducation || "",
+          fatherOccupation: data.fatherOccupation || "",
+          fatherMobile: data.fatherMobile || "",
+          fatherEmail: data.fatherEmail || "",
+          fatherAadharNumber: data.fatherAadharNumber || "",
+          motherName: data.motherName || "",
+          motherDob: data.motherDob || undefined,
+          motherEducation: data.motherEducation || "",
+          motherOccupation: data.motherOccupation || "",
+          motherMobile: data.motherMobile || "",
+          motherEmail: data.motherEmail || "",
+          motherAadharNumber: data.motherAadharNumber || "",
+          guardianName: data.guardianName || "",
+          guardianDob: data.guardianDob || undefined,
+          guardianEducation: data.guardianEducation || "",
+          guardianOccupation: data.guardianOccupation || "",
+          guardianMobile: data.guardianMobile || "",
+          guardianEmail: data.guardianEmail || "",
+          guardianAadharNumber: data.guardianAadharNumber || "",
+          parentAnniversary: data.parentAnniversary || undefined,
+          monthlyIncome: data.monthlyIncome || "",
+        };
+
+        // Update student record with all fields
+        await updateStudent.mutateAsync(updatePayload);
       } else {
         if (!branch?.id) {
           throw new Error("Branch ID is required");
@@ -506,7 +555,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
             lastName: data.lastName.trim(),
             gender: data.gender,
             dateOfBirth: new Date(data.dateOfBirth),
-            dateOfAdmission: new Date(data.dateOfAdmission),
+            dateOfAdmission: data.dateOfAdmission ? new Date(data.dateOfAdmission) : new Date(),
             branchId: branch?.id || "",
             sectionId: data.classId,
             email: data.schoolEmail ? data.schoolEmail.trim() || null : null,
@@ -553,99 +602,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
         }
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-
-      // Parse error message to provide user-friendly feedback
-      let errorMessage = "Failed to save student. Please check the form and try again.";
-
-      if (error instanceof Error) {
-        const errorString = error.message;
-        console.error("Full error message:", errorString);
-
-        // Email validation errors
-        if (errorString.includes("email") && (
-            errorString.includes("fatherEmail") ||
-            errorString.includes("motherEmail") ||
-            errorString.includes("guardianEmail") ||
-            errorString.includes("personalEmail") ||
-            errorString.includes("schoolEmail")
-          )) {
-          errorMessage = "Please check your email addresses. All email fields must either contain valid email addresses (like name@example.com) or be left completely empty.";
-        }
-        // Required field errors
-        else if (errorString.includes("required")) {
-          if (errorString.includes("admissionNumber")) {
-            errorMessage = "Admission number is required. Please enter a valid admission number.";
-          } else if (errorString.includes("firstName")) {
-            errorMessage = "First name is required. Please enter the student's first name.";
-          } else if (errorString.includes("lastName")) {
-            errorMessage = "Last name is required. Please enter the student's last name.";
-          } else if (errorString.includes("classId")) {
-            errorMessage = "Class selection is required. Please select a class for the student.";
-          } else if (errorString.includes("dateOfBirth")) {
-            errorMessage = "Date of birth is required. Please enter the student's date of birth.";
-          } else if (errorString.includes("dateOfAdmission")) {
-            errorMessage = "Date of admission is required. Please enter when the student was admitted.";
-          } else if (errorString.includes("dateOfJoining")) {
-            errorMessage = "Date of joining is required. Please enter when the student joined.";
-          } else {
-            errorMessage = "Some required fields are missing. Please fill in all required fields.";
-          }
-        }
-        // Date validation errors
-        else if (errorString.includes("Date of admission must be after date of birth")) {
-          errorMessage = "The admission date must be after the student's date of birth. Please correct the dates.";
-        }
-        else if (errorString.includes("Date of joining must be on or after date of admission")) {
-          errorMessage = "The joining date must be on or after the admission date. Please correct the dates.";
-        }
-        // Duplicate student errors
-        else if (errorString.includes("Admission number already exists")) {
-          errorMessage = "This admission number is already in use by another student. Please use a different admission number.";
-        }
-        // General create student error
-        else if (errorString.includes("Failed to create student")) {
-          errorMessage = "There was a problem creating the student record. This may be due to:";
-          errorMessage += "\n• Missing or invalid data in the form";
-          errorMessage += "\n• Server connection issues";
-          errorMessage += "\n• Insufficient permissions";
-          errorMessage += "\nPlease check your entries and try again, or contact support if the problem persists.";
-        }
-        // Unprocessable Entity error
-        else if (errorString.includes("Unprocessable Entity") ||
-                errorString.includes("UNPROCESSABLE_CONTENT") ||
-                errorString.includes("invalid data format")) {
-          errorMessage = "The system couldn't process your form submission due to format issues. Please check:";
-          errorMessage += "\n• Ensure all dates are valid (like MM/DD/YYYY)";
-          errorMessage += "\n• Ensure email addresses are properly formatted or completely empty";
-          errorMessage += "\n• Remove any special characters from text fields";
-          errorMessage += "\n• Ensure no fields exceed maximum length limits";
-        }
-        // Branch errors
-        else if (errorString.includes("Branch ID is required")) {
-          errorMessage = "Please select a branch before creating a student.";
-        }
-        // Server or permission errors
-        else if (errorString.includes("UNAUTHORIZED") || errorString.includes("unauthorized")) {
-          errorMessage = "You don't have permission to perform this action. Please contact an administrator.";
-        }
-        else if (errorString.includes("TIMEOUT") || errorString.includes("timeout")) {
-          errorMessage = "The request timed out. Please check your internet connection and try again.";
-        }
-        else if (errorString.includes("NOT_FOUND") || errorString.includes("not found")) {
-          errorMessage = "The requested resource was not found. This may be due to recent changes.";
-        }
-        else {
-          // Use the error message directly for other types of errors
-          errorMessage = errorString;
-        }
-      }
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error("Error in form submission:", error);
       setIsSubmitting(false);
     }
   };

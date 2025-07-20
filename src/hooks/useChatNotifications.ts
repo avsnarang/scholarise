@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useToast } from "@/components/ui/use-toast";
+import { REALTIME_INTERVALS } from "@/utils/chat-realtime-utils";
 
 interface ChatNotification {
   id: string;
@@ -38,21 +39,21 @@ export function useChatNotifications() {
   const [notifications, setNotifications] = useState<ChatNotification[]>([]);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
 
-  // Get unread conversations count
+  // Fetch conversations with faster polling for notifications
+  const { data: conversationsData, refetch: refetchConversations } = api.chat.getConversations.useQuery({
+    branchId: currentBranchId || "",
+    limit: 20,
+  }, {
+    enabled: !!currentBranchId,
+    refetchInterval: REALTIME_INTERVALS.NOTIFICATIONS, // ⚡ Realtime notifications
+  });
+
+  // Fetch stats with faster polling
   const { data: stats, refetch: refetchStats } = api.chat.getStats.useQuery({
     branchId: currentBranchId || "",
   }, {
     enabled: !!currentBranchId,
-    refetchInterval: 30000, // Check every 30 seconds
-  });
-
-  // Get recent conversations to check for new messages
-  const { data: conversationsData, refetch: refetchConversations } = api.chat.getConversations.useQuery({
-    branchId: currentBranchId || "",
-    limit: 10,
-  }, {
-    enabled: !!currentBranchId,
-    refetchInterval: 15000, // Check every 15 seconds
+    refetchInterval: REALTIME_INTERVALS.STATS, // ⚡ Realtime stats
   });
 
   // Check for new messages and create notifications

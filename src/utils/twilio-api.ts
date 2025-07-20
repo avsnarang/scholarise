@@ -1,4 +1,7 @@
 import { env } from "@/env.js";
+import { formatDistanceToNow } from "date-fns";
+
+console.log('🔧 Twilio API utility loaded');
 
 // Twilio API Request/Response interfaces
 export interface TwilioSendTemplateMessageRequest {
@@ -515,6 +518,28 @@ export function getTwilioClient(
 // WhatsApp Business API Helper Functions
 
 /**
+ * WhatsApp Business API 24-Hour Window Rules:
+ * 
+ * 1. When a CUSTOMER sends a message to your business → Opens 24-hour window
+ * 2. During this 24-hour window → Business can send UNLIMITED freeform messages
+ * 3. Each new CUSTOMER message → Resets the window to a fresh 24 hours
+ * 4. When window expires → Business can ONLY send pre-approved template messages
+ * 5. Template messages → Do NOT open new windows (only customer messages do)
+ * 6. Business-initiated conversations → Must start with template messages
+ * 
+ * Common Flow:
+ * Customer: "Hello" → 24hr window opens
+ * Business: "Hi! How can I help?" ✅ (freeform)
+ * Business: "We have new offers!" ✅ (freeform) 
+ * Business: "Any questions?" ✅ (freeform)
+ * [24 hours pass without customer response]
+ * Business: Must use template message ❌ (no freeform)
+ * Business: Sends template "We have updates for you"
+ * Customer: "Tell me more" → New 24hr window opens
+ * Business: "Here are the details..." ✅ (freeform again)
+ */
+
+/**
  * Checks if a conversation is within the 24-hour messaging window
  * WhatsApp Business API allows freeform messages only within 24 hours of the last incoming message
  */
@@ -523,45 +548,130 @@ export interface WhatsAppMessageWindow {
   reason: string;
   lastIncomingMessageAt?: Date;
   hoursRemaining?: number;
+  debugInfo?: {
+    lastMessageAt: Date | null;
+    lastMessageFrom: string | null;
+    currentTime: Date;
+    twentyFourHoursAgo: Date;
+    isWithinWindow: boolean;
+    timeDifference: number;
+  };
 }
 
 export function checkWhatsAppMessageWindow(
-  lastMessageAt?: Date | null,
+  lastIncomingMessageAt?: Date | null,
   lastMessageFrom?: 'INCOMING' | 'OUTGOING' | null
 ): WhatsAppMessageWindow {
-  // If no previous messages, freeform messages are not allowed (business-initiated conversation)
-  if (!lastMessageAt || !lastMessageFrom) {
+  const currentTime = new Date();
+  const twentyFourHoursAgo = new Date(currentTime.getTime() - 24 * 60 * 60 * 1000);
+  
+  // Create debug info with proper types
+  const debugInfo = {
+    lastMessageAt: lastIncomingMessageAt || null,
+    lastMessageFrom: lastMessageFrom || null,
+    currentTime,
+    twentyFourHoursAgo,
+    isWithinWindow: false,
+    timeDifference: 0
+  };
+
+  // If no incoming messages exist, freeform messages are not allowed (business-initiated conversation)
+  if (!lastIncomingMessageAt) {
     return {
       canSendFreeform: false,
-      reason: "No previous conversation. Use a template message to initiate contact."
+      reason: "No previous conversation. Use a template message to initiate contact.",
+      debugInfo
     };
   }
 
-  // Only incoming messages open the 24-hour window
-  if (lastMessageFrom !== 'INCOMING') {
+  // Convert to Date if it's a string (from database)
+  const messageDate = lastIncomingMessageAt instanceof Date ? lastIncomingMessageAt : new Date(lastIncomingMessageAt);
+  
+  // Validate the date
+  if (isNaN(messageDate.getTime())) {
     return {
       canSendFreeform: false,
-      reason: "Last message was outgoing. Wait for user to respond or use a template message."
+      reason: "Invalid last message timestamp. Use a template message.",
+      debugInfo: {
+        ...debugInfo,
+        lastMessageAt: messageDate
+      }
     };
   }
 
-  // Check if within 24-hour window
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const isWithinWindow = lastMessageAt > twentyFourHoursAgo;
+  debugInfo.lastMessageAt = messageDate;
+  debugInfo.timeDifference = currentTime.getTime() - messageDate.getTime();
+  
+  // Check if the last incoming message is within 24-hour window
+  const timeDifferenceMs = currentTime.getTime() - messageDate.getTime();
+  const timeDifferenceHours = timeDifferenceMs / (60 * 60 * 1000);
+  const isWithinWindow = timeDifferenceHours < 24;
+  
+  debugInfo.isWithinWindow = isWithinWindow;
 
   if (isWithinWindow) {
-    const hoursRemaining = Math.max(0, 24 - (Date.now() - lastMessageAt.getTime()) / (60 * 60 * 1000));
+    const hoursRemaining = Math.max(0, 24 - timeDifferenceHours);
+    
+    // Log successful window check for debugging
+    console.log('✅ 24-hour window check:', {
+      canSend: true,
+      lastIncomingMessageAt: messageDate.toISOString(),
+      currentTime: currentTime.toISOString(),
+      hoursElapsed: timeDifferenceHours.toFixed(2),
+      hoursRemaining: hoursRemaining.toFixed(2)
+    });
+    
     return {
       canSendFreeform: true,
       reason: "Within 24-hour window from last incoming message",
-      lastIncomingMessageAt: lastMessageAt,
-      hoursRemaining: Math.round(hoursRemaining * 10) / 10 // Round to 1 decimal
+      lastIncomingMessageAt: messageDate,
+      hoursRemaining: Math.round(hoursRemaining * 10) / 10, // Round to 1 decimal
+      debugInfo
     };
   }
+
+  // Log failed window check for debugging
+  console.log('❌ 24-hour window expired:', {
+    canSend: false,
+    lastIncomingMessageAt: messageDate.toISOString(),
+    currentTime: currentTime.toISOString(),
+    hoursElapsed: timeDifferenceHours.toFixed(2),
+    windowExpiredBy: (timeDifferenceHours - 24).toFixed(2) + ' hours'
+  });
 
   return {
     canSendFreeform: false,
     reason: "24-hour window expired. Use a template message to re-engage.",
-    lastIncomingMessageAt: lastMessageAt
+    lastIncomingMessageAt: messageDate,
+    debugInfo
   };
+}
+
+/**
+ * Get user-friendly explanation of WhatsApp messaging window status
+ */
+export function getWindowStatusExplanation(windowInfo: WhatsAppMessageWindow): string {
+  if (windowInfo.canSendFreeform) {
+    const hours = windowInfo.hoursRemaining || 0;
+    const hoursText = hours > 1 ? `${hours.toFixed(1)} hours` : `${Math.round(hours * 60)} minutes`;
+    
+    return `✅ You can send freeform messages for the next ${hoursText}. This window stays open as long as the customer responds within 24 hours of their last message.`;
+  }
+
+  if (windowInfo.reason.includes('No previous conversation')) {
+    return `❌ This is a new conversation. You must send a pre-approved template message first. Once the customer responds, you'll have 24 hours to send freeform messages.`;
+  }
+
+  if (windowInfo.reason.includes('Last message was outgoing')) {
+    return `❌ Your last message was outgoing. Wait for the customer to respond, or send a pre-approved template message. Customer responses open a new 24-hour window.`;
+  }
+
+  if (windowInfo.reason.includes('24-hour window expired')) {
+    const lastMessage = windowInfo.lastIncomingMessageAt;
+    const timeAgo = lastMessage ? formatDistanceToNow(lastMessage) : 'unknown time';
+    
+    return `❌ The 24-hour window expired ${timeAgo} ago. You can only send pre-approved template messages. When the customer responds, you'll get a new 24-hour window for freeform messages.`;
+  }
+
+  return `❌ ${windowInfo.reason}`;
 } 

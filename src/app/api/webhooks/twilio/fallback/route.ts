@@ -41,23 +41,12 @@ interface TwilioWebhookPayload {
 
 // Helper function to identify participant from phone number
 async function identifyParticipant(phoneNumber: string, branchId: string) {
-  // Clean phone number - remove whatsapp: prefix and normalize
-  const cleanPhone = phoneNumber.replace(/^whatsapp:/, '').replace(/^\+/, '');
+  const { phoneNumbersMatch } = await import("@/utils/phone-utils");
   
   // Try to find in students first (via parent phone numbers)
-  const student = await db.student.findFirst({
+  const students = await db.student.findMany({
     where: {
       branchId,
-      OR: [
-        { phone: { contains: cleanPhone } },
-        { parent: { 
-          OR: [
-            { fatherMobile: { contains: cleanPhone } },
-            { motherMobile: { contains: cleanPhone } },
-            { guardianMobile: { contains: cleanPhone } }
-          ]
-        }}
-      ]
     },
     include: {
       parent: true,
@@ -67,45 +56,127 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
     }
   });
 
-  if (student) {
-    return {
-      type: 'student',
-      id: student.id,
-      name: `${student.firstName} ${student.lastName}`,
-      metadata: {
-        class: student.section?.class?.name,
-        section: student.section?.name,
-        rollNumber: student.rollNumber,
-        parentName: student.parent?.fatherName || student.parent?.motherName
-      }
-    };
+  // Check each student's phone numbers for exact match
+  for (const student of students) {
+    // Check student's own phone
+    if (student.phone && phoneNumbersMatch(phoneNumber, student.phone)) {
+      return {
+        type: 'student',
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`,
+        contactType: 'student',
+        metadata: {
+          class: student.section?.class?.name,
+          section: student.section?.name,
+          rollNumber: student.rollNumber,
+          parentName: student.parent?.fatherName || student.parent?.motherName,
+          contactDetails: {
+            contactType: 'Student Phone',
+            displayName: `${student.firstName} ${student.lastName} (Student)`,
+            phoneUsed: student.phone
+          }
+        }
+      };
+    }
+
+    // Check father's phone
+    if (student.parent?.fatherMobile && phoneNumbersMatch(phoneNumber, student.parent.fatherMobile)) {
+      return {
+        type: 'student',
+        id: student.id,
+        name: `${student.parent.fatherName || 'Father'} (${student.firstName} ${student.lastName})`,
+        contactType: 'father',
+        metadata: {
+          class: student.section?.class?.name,
+          section: student.section?.name,
+          rollNumber: student.rollNumber,
+          parentName: student.parent.fatherName,
+          contactDetails: {
+            contactType: 'Father Phone',
+            displayName: `${student.parent.fatherName || 'Father'} (${student.firstName}'s Father)`,
+            phoneUsed: student.parent.fatherMobile,
+            studentName: `${student.firstName} ${student.lastName}`
+          }
+        }
+      };
+    }
+
+    // Check mother's phone
+    if (student.parent?.motherMobile && phoneNumbersMatch(phoneNumber, student.parent.motherMobile)) {
+      return {
+        type: 'student',
+        id: student.id,
+        name: `${student.parent.motherName || 'Mother'} (${student.firstName} ${student.lastName})`,
+        contactType: 'mother',
+        metadata: {
+          class: student.section?.class?.name,
+          section: student.section?.name,
+          rollNumber: student.rollNumber,
+          parentName: student.parent.motherName,
+          contactDetails: {
+            contactType: 'Mother Phone',
+            displayName: `${student.parent.motherName || 'Mother'} (${student.firstName}'s Mother)`,
+            phoneUsed: student.parent.motherMobile,
+            studentName: `${student.firstName} ${student.lastName}`
+          }
+        }
+      };
+    }
+
+    // Check guardian's phone
+    if (student.parent?.guardianMobile && phoneNumbersMatch(phoneNumber, student.parent.guardianMobile)) {
+      return {
+        type: 'student',
+        id: student.id,
+        name: `${student.parent.guardianName || 'Guardian'} (${student.firstName} ${student.lastName})`,
+        contactType: 'guardian',
+        metadata: {
+          class: student.section?.class?.name,
+          section: student.section?.name,
+          rollNumber: student.rollNumber,
+          parentName: student.parent.guardianName,
+          contactDetails: {
+            contactType: 'Guardian Phone',
+            displayName: `${student.parent.guardianName || 'Guardian'} (${student.firstName}'s Guardian)`,
+            phoneUsed: student.parent.guardianMobile,
+            studentName: `${student.firstName} ${student.lastName}`
+          }
+        }
+      };
+    }
   }
 
   // Try to find in teachers
-  const teacher = await db.teacher.findFirst({
+  const teachers = await db.teacher.findMany({
     where: {
       branchId,
-      phone: { contains: cleanPhone }
     }
   });
 
-  if (teacher) {
-    return {
-      type: 'teacher',
-      id: teacher.id,
-      name: `${teacher.firstName} ${teacher.lastName}`,
-      metadata: {
-        employeeCode: teacher.employeeCode,
-        department: 'Teaching'
-      }
-    };
+  for (const teacher of teachers) {
+    if (teacher.phone && phoneNumbersMatch(phoneNumber, teacher.phone)) {
+      return {
+        type: 'teacher',
+        id: teacher.id,
+        name: `${teacher.firstName} ${teacher.lastName}`,
+        contactType: 'teacher',
+        metadata: {
+          employeeCode: teacher.employeeCode,
+          department: 'Teaching',
+          contactDetails: {
+            contactType: 'Teacher Phone',
+            displayName: `${teacher.firstName} ${teacher.lastName} (Teacher)`,
+            phoneUsed: teacher.phone
+          }
+        }
+      };
+    }
   }
 
   // Try to find in employees
-  const employee = await db.employee.findFirst({
+  const employees = await db.employee.findMany({
     where: {
       branchId,
-      phone: { contains: cleanPhone }
     },
     include: {
       designationRef: true,
@@ -113,25 +184,40 @@ async function identifyParticipant(phoneNumber: string, branchId: string) {
     }
   });
 
-  if (employee) {
-    return {
-      type: 'employee',
-      id: employee.id,
-      name: `${employee.firstName} ${employee.lastName}`,
-      metadata: {
-        employeeCode: employee.employeeCode,
-        designation: employee.designationRef?.title,
-        department: employee.departmentRef?.name
-      }
-    };
+  for (const employee of employees) {
+    if (employee.phone && phoneNumbersMatch(phoneNumber, employee.phone)) {
+      return {
+        type: 'employee',
+        id: employee.id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        contactType: 'employee',
+        metadata: {
+          designation: employee.designation,
+          department: employee.departmentRef?.name || employee.designation,
+          contactDetails: {
+            contactType: 'Employee Phone',
+            displayName: `${employee.firstName} ${employee.lastName} (Employee)`,
+            phoneUsed: employee.phone
+          }
+        }
+      };
+    }
   }
 
   // If no match found, return unknown contact
   return {
     type: 'unknown',
-    id: `unknown_${cleanPhone}`,
-    name: `Unknown Contact (${cleanPhone})`,
-    metadata: {}
+    id: 'unknown',
+    name: 'Unknown Contact',
+    contactType: 'unknown',
+    metadata: {
+      phoneNumber: phoneNumber,
+      contactDetails: {
+        contactType: 'Unknown Contact',
+        displayName: 'Unknown Contact',
+        phoneUsed: phoneNumber
+      }
+    }
   };
 }
 

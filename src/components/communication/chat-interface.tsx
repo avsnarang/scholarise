@@ -34,6 +34,11 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { 
+  sortConversationsForRealtime,
+  REALTIME_INTERVALS,
+  logRealtimeEvent
+} from "@/utils/chat-realtime-utils";
 
 interface Conversation {
   id: string;
@@ -80,6 +85,57 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Get enhanced contact type display text
+  const getContactTypeDisplay = (conversation: Conversation) => {
+    if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
+      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      // Clean up the display text (remove "Phone" suffix for cleaner display)
+      return contactType?.replace(' Phone', '') || 'Contact';
+    }
+    
+    // Fallback to capitalize participantType
+    return conversation.participantType?.charAt(0).toUpperCase() + conversation.participantType?.slice(1) || 'Unknown';
+  };
+
+  // Get participant icon based on enhanced contact details
+  const getParticipantIcon = (conversation: Conversation) => {
+    // Check if we have enhanced contact details
+    if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
+      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      
+      switch (contactType) {
+        case "Student Phone":
+          return <GraduationCap className="w-3 h-3 text-blue-500" />;
+        case "Father Phone":
+          return <Users className="w-3 h-3 text-blue-600" />;
+        case "Mother Phone":
+          return <Users className="w-3 h-3 text-pink-500" />;
+        case "Guardian Phone":
+          return <Users className="w-3 h-3 text-purple-500" />;
+        case "Teacher Phone":
+          return <UserCheck className="w-3 h-3 text-green-500" />;
+        case "Employee Phone":
+          return <Briefcase className="w-3 h-3 text-purple-500" />;
+        default:
+          return <MessageCircle className="w-3 h-3 text-gray-500" />;
+      }
+    }
+    
+    // Fallback to old participantType logic
+    switch (conversation.participantType) {
+      case "student":
+        return <GraduationCap className="w-3 h-3 text-blue-500" />;
+      case "teacher":
+        return <UserCheck className="w-3 h-3 text-green-500" />;
+      case "employee":
+        return <Briefcase className="w-3 h-3 text-purple-500" />;
+      case "parent":
+        return <Users className="w-3 h-3 text-orange-500" />;
+      default:
+        return <MessageCircle className="w-3 h-3 text-gray-500" />;
+    }
+  };
+
   // Fetch conversations
   const { 
     data: conversationsData, 
@@ -92,7 +148,7 @@ export function ChatInterface() {
     limit: 50,
   }, {
     enabled: !!currentBranchId,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: REALTIME_INTERVALS.CONVERSATIONS, // ⚡ Realtime polling
   });
 
   // Fetch messages for selected conversation
@@ -105,7 +161,7 @@ export function ChatInterface() {
     limit: 100,
   }, {
     enabled: !!selectedConversationId,
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time feel
+    refetchInterval: REALTIME_INTERVALS.MESSAGES, // ⚡ Realtime message polling
   });
 
   // Get selected conversation details
@@ -117,6 +173,7 @@ export function ChatInterface() {
   const sendMessageMutation = api.chat.sendMessage.useMutation({
     onSuccess: () => {
       setMessageContent("");
+      // ⚡ Immediate realtime updates
       refetchMessages();
       refetchConversations();
       setTimeout(() => scrollToBottom(), 100);
@@ -133,7 +190,9 @@ export function ChatInterface() {
   // Mark as read mutation
   const markAsReadMutation = api.chat.markAsRead.useMutation({
     onSuccess: () => {
+      // ⚡ Immediate realtime updates for read state
       refetchConversations();
+      refetchMessages(); // Also refresh messages to update read status
     },
   });
 
@@ -142,12 +201,17 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Mark conversation as read when selected
+  // ⚡ Enhanced mark conversation as read when selected
   useEffect(() => {
-    if (selectedConversationId && (selectedConversation?.unreadCount ?? 0) > 0) {
-      markAsReadMutation.mutate({ conversationId: selectedConversationId });
+    if (selectedConversationId && selectedConversation && selectedConversation.unreadCount > 0) {
+      // Immediately mark as read when conversation is opened
+      markAsReadMutation.mutate({ 
+        conversationId: selectedConversationId,
+        // Mark all messages in conversation as read
+        messageIds: undefined // This will mark all unread messages as read
+      });
     }
-  }, [selectedConversationId]);
+  }, [selectedConversationId, selectedConversation?.unreadCount]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -177,22 +241,6 @@ export function ChatInterface() {
     }
   };
 
-  // Get participant icon
-  const getParticipantIcon = (type: string) => {
-    switch (type) {
-      case "student":
-        return <GraduationCap className="w-4 h-4 text-blue-500" />;
-      case "teacher":
-        return <UserCheck className="w-4 h-4 text-green-500" />;
-      case "employee":
-        return <Briefcase className="w-4 h-4 text-purple-500" />;
-      case "parent":
-        return <Users className="w-4 h-4 text-orange-500" />;
-      default:
-        return <MessageCircle className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
   // Get message status icon
   const getMessageStatusIcon = (message: ChatMessage) => {
     if (message.direction === 'INCOMING') return null;
@@ -214,7 +262,9 @@ export function ChatInterface() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const conversations = conversationsData?.conversations || [];
+  // ⚡ Sort conversations using realtime utility for optimal UX
+  const conversations = sortConversationsForRealtime(conversationsData?.conversations || []);
+  
   const messages = messagesData?.messages || [];
 
   if (!hasPermission("view_communication_logs")) {
@@ -241,16 +291,64 @@ export function ChatInterface() {
         <div className="p-4 border-b bg-background">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">Conversations</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                refetchConversations();
-                if (selectedConversationId) refetchMessages();
-              }}
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  refetchConversations();
+                  if (selectedConversationId) refetchMessages();
+                }}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+              
+              {/* 🚀 Diagnostic Button - Always Accessible */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  const branchId = currentBranchId;
+                  
+                  console.log('🚀 Running comprehensive system check...');
+                  console.log('This will check: phone identification, conversation metadata, unread counts, and database structure');
+                  
+                  try {
+                    const response = await fetch(`/api/debug/comprehensive-check?branchId=${encodeURIComponent(branchId || '')}`);
+                    const result = await response.json();
+                    
+                    console.log('\n🎯 COMPREHENSIVE CHECK RESULTS:');
+                    console.log('=====================================');
+                    console.log(result);
+                    
+                    if (result.recommendations?.length > 0) {
+                      console.log('\n💡 RECOMMENDATIONS:');
+                      result.recommendations.forEach((rec: string, i: number) => {
+                        console.log(`${i + 1}. ${rec}`);
+                      });
+                    }
+                    
+                    // Show summary in alert
+                    const issues = result.summary?.issues;
+                    const summary = [
+                      `📞 Phone matching: ${issues?.phoneMatchIssues?.length || 0} issues`,
+                      `📝 Metadata: ${issues?.missingEnhancedMetadata?.length || 0} conversations need updates`,
+                      `🔢 Unread counts: ${issues?.unreadCountIssues?.length || 0} conversations need fixing`
+                    ].join('\n');
+                    
+                    alert(`Comprehensive Check Complete!\n\n${summary}\n\nCheck browser console for detailed results.`);
+                    
+                  } catch (error) {
+                    console.error('Comprehensive check error:', error);
+                    alert('Comprehensive check failed. Check browser console for details.');
+                  }
+                }}
+                className="text-xs"
+                title="Run full system diagnostic"
+              >
+                🚀
+              </Button>
+            </div>
           </div>
           
           {/* Search */}
@@ -300,6 +398,96 @@ export function ChatInterface() {
             <div className="p-4 text-center text-gray-500 dark:text-gray-400">
               <MessageCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
               <p>No conversations found</p>
+              
+                             {/* 🐛 Debug: Add button to check data */}
+               <div className="mt-4 space-y-2">
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   onClick={() => {
+                     console.log('🔍 Debug - Branch ID:', currentBranchId);
+                     console.log('🔍 Debug - Search Term:', searchTerm);
+                     console.log('🔍 Debug - Participant Filter:', participantFilter);
+                     console.log('🔍 Debug - Conversations Data:', conversationsData);
+                     console.log('🔍 Debug - Loading State:', conversationsLoading);
+                     refetchConversations();
+                   }}
+                   className="text-xs"
+                 >
+                   🐛 Debug: Check Data
+                 </Button>
+                 
+                                   {/* 🐛 Debug: Test specific phone numbers */}
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   onClick={async () => {
+                     const phones = ['+919816900056', '+919816500056'];
+                     const branchId = currentBranchId;
+                     
+                     console.log('🔍 Testing specific phone numbers for contact type detection...');
+                     
+                     for (const phone of phones) {
+                       try {
+                         console.log(`\n📞 Testing: ${phone}`);
+                         const response = await fetch(`/api/debug/phone-lookup?phone=${encodeURIComponent(phone)}&branchId=${encodeURIComponent(branchId || '')}`);
+                         const result = await response.json();
+                         console.log(`Result for ${phone}:`, result);
+                       } catch (error) {
+                         console.error(`Error testing ${phone}:`, error);
+                       }
+                     }
+                   }}
+                   className="text-xs"
+                 >
+                   🔍 Test Phone Numbers
+                 </Button>
+                 
+                 {/* 🐛 Debug: Comprehensive system check */}
+                 <Button 
+                   variant="default" 
+                   size="sm"
+                   onClick={async () => {
+                     const branchId = currentBranchId;
+                     
+                     console.log('🚀 Running comprehensive system check...');
+                     console.log('This will check: phone identification, conversation metadata, unread counts, and database structure');
+                     
+                     try {
+                                               const response = await fetch(`/api/debug/comprehensive-check?branchId=${encodeURIComponent(branchId || '')}`);
+                        const result = await response.json();
+                        
+                        console.log('\n🎯 COMPREHENSIVE CHECK RESULTS:');
+                        console.log('=====================================');
+                        console.log(result);
+                        
+                        if (result.recommendations?.length > 0) {
+                          console.log('\n💡 RECOMMENDATIONS:');
+                          result.recommendations.forEach((rec: string, i: number) => {
+                            console.log(`${i + 1}. ${rec}`);
+                          });
+                        }
+                       
+                       // Show summary in alert
+                       const issues = result.summary?.issues;
+                       const summary = [
+                         `📞 Phone matching: ${issues?.phoneMatchIssues?.length || 0} issues`,
+                         `📝 Metadata: ${issues?.missingEnhancedMetadata?.length || 0} conversations need updates`,
+                         `🔢 Unread counts: ${issues?.unreadCountIssues?.length || 0} conversations need fixing`
+                       ].join('\n');
+                       
+                       alert(`Comprehensive Check Complete!\n\n${summary}\n\nCheck browser console for detailed results.`);
+                       
+                     } catch (error) {
+                       console.error('Comprehensive check error:', error);
+                       alert('Comprehensive check failed. Check browser console for details.');
+                     }
+                   }}
+                   className="text-xs font-semibold"
+                 >
+                   🚀 Run Full Diagnostic
+                 </Button>
+               </div>
             </div>
           ) : (
             <div className="p-2">
@@ -307,7 +495,7 @@ export function ChatInterface() {
                 <div
                   key={conversation.id}
                   className={cn(
-                    "flex items-center p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
+                    "relative flex items-center p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group",
                     selectedConversationId === conversation.id && "bg-muted"
                   )}
                   onClick={() => setSelectedConversationId(conversation.id)}
@@ -319,17 +507,23 @@ export function ChatInterface() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1">
-                      {getParticipantIcon(conversation.participantType)}
+                      {getParticipantIcon(conversation)}
                     </div>
                   </div>
                   
                   <div className="flex-1 ml-3 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium truncate">
-                        {conversation.participantName}
-                      </p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {conversation.participantName}
+                        </p>
+                        {/* ⚡ Enhanced: Show contact type prominently */}
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {getContactTypeDisplay(conversation)}
+                        </Badge>
+                      </div>
                       {conversation.lastMessageAt && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 shrink-0 ml-2">
                           {formatDistanceToNow(new Date(conversation.lastMessageAt), { addSuffix: true })}
                         </p>
                       )}
@@ -347,6 +541,63 @@ export function ChatInterface() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Delete button - appears on hover */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent selecting the conversation
+                      
+                      const confirmDelete = confirm(
+                        `Delete conversation with ${conversation.participantName}?\n\n` +
+                        `This will:\n` +
+                        `• Delete all messages in this conversation\n` +
+                        `• Remove the conversation from the sidebar\n` +
+                        `• When they message again, it will create a NEW conversation with enhanced metadata\n\n` +
+                        `This action cannot be undone.`
+                      );
+                      
+                      if (!confirmDelete) return;
+                      
+                      console.log(`🗑️ Deleting conversation: ${conversation.id}`);
+                      
+                      // Delete conversation
+                      fetch('/api/debug/delete-conversation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          conversationId: conversation.id
+                        })
+                      })
+                      .then(response => response.json())
+                      .then(result => {
+                        console.log('🗑️ Delete result:', result);
+                        
+                        if (result.success) {
+                          // Clear selection if this was the selected conversation
+                          if (selectedConversationId === conversation.id) {
+                            setSelectedConversationId(null);
+                          }
+                          
+                          // Refresh conversations
+                          refetchConversations();
+                          
+                          alert(`✅ Conversation deleted!\n\n${result.message}\n\nNext message from this contact will create a new conversation with enhanced metadata.`);
+                        } else {
+                          alert(`❌ Failed to delete conversation: ${result.error}`);
+                        }
+                      })
+                      .catch(error => {
+                        console.error('Delete error:', error);
+                        alert(`❌ Error deleting conversation: ${error}`);
+                      });
+                    }}
+                    title="Delete conversation"
+                  >
+                    🗑️
+                  </Button>
                 </div>
               ))}
             </div>
@@ -368,19 +619,163 @@ export function ChatInterface() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold">{selectedConversation.participantName}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold">{selectedConversation.participantName}</h4>
+                      {/* ⚡ Enhanced: Show contact type prominently in header */}
+                      <Badge variant="secondary" className="text-xs">
+                        {getContactTypeDisplay(selectedConversation)}
+                      </Badge>
+                    </div>
                     <p className="text-xs text-gray-500 flex items-center">
-                      {getParticipantIcon(selectedConversation.participantType)}
-                      <span className="ml-1 capitalize">{selectedConversation.participantType}</span>
+                      {getParticipantIcon(selectedConversation)}
+                      <span className="ml-1">
+                        <Phone className="w-3 h-3 mr-1" />
+                        {selectedConversation.participantPhone.replace('whatsapp:', '')}
+                      </span>
+                      {/* 🐛 Debug: Show metadata status */}
                       <span className="mx-1">•</span>
-                      <Phone className="w-3 h-3 mr-1" />
-                      {selectedConversation.participantPhone.replace('whatsapp:', '')}
+                                             <span className="text-xs text-muted-foreground">
+                         {(() => {
+                           const meta = selectedConversation.metadata;
+                           return meta && typeof meta === 'object' && meta !== null && !Array.isArray(meta) && 'contactDetails' in meta ? '✓ Enhanced' : '⚠️ Basic';
+                         })()}
+                       </span>
                     </p>
                   </div>
                 </div>
                 
-                <div className="text-xs text-gray-500">
-                  {selectedConversation._count.messages} messages
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-gray-500">
+                    {selectedConversation._count.messages} messages
+                  </div>
+                  {/* ⚡ Enhanced: Show unread count in header */}
+                  {selectedConversation.unreadCount > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {selectedConversation.unreadCount} unread
+                    </Badge>
+                  )}
+                  {/* 🐛 Debug: Manual refresh button */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      console.log('🔄 Manual refresh triggered');
+                      refetchConversations();
+                      refetchMessages();
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                  
+                  {/* 🐛 Debug: Phone lookup */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={async () => {
+                      const phone = selectedConversation.participantPhone.replace('whatsapp:', '');
+                      const branchId = currentBranchId;
+                      console.log(`🔍 Testing phone lookup for: ${phone} in branch: ${branchId}`);
+                      
+                      try {
+                        const response = await fetch(`/api/debug/phone-lookup?phone=${encodeURIComponent(phone)}&branchId=${encodeURIComponent(branchId ? branchId : '')}`);
+                        const result = await response.json();
+                        console.log('📞 Phone lookup result:', result);
+                        
+                        // Also check conversation status
+                        const convResponse = await fetch(`/api/debug/conversation-status?conversationId=${selectedConversation.id}`);
+                        const convResult = await convResponse.json();
+                        console.log('💬 Conversation status:', convResult);
+                      } catch (error) {
+                        console.error('Debug error:', error);
+                      }
+                    }}
+                    className="h-6 w-6 p-0"
+                    title="Debug phone lookup"
+                  >
+                    🔍
+                  </Button>
+                  
+                  {/* 🐛 Debug: Fix unread count */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={async () => {
+                      console.log(`🔧 Fixing unread count for conversation: ${selectedConversation.id}`);
+                      
+                      try {
+                        const response = await fetch('/api/debug/conversation-status', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            conversationId: selectedConversation.id,
+                            action: 'recalculate'
+                          })
+                        });
+                        const result = await response.json();
+                        console.log('🔧 Fix result:', result);
+                        
+                        // Refresh the conversation data
+                        refetchConversations();
+                        refetchMessages();
+                      } catch (error) {
+                        console.error('Fix error:', error);
+                      }
+                    }}
+                    className="h-6 w-6 p-0"
+                    title="Fix unread count"
+                  >
+                    🔧
+                  </Button>
+                  
+                  {/* 🗑️ Delete: Delete conversation */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={async () => {
+                      const confirmDelete = confirm(
+                        `Delete conversation with ${selectedConversation.participantName}?\n\n` +
+                        `This will:\n` +
+                        `• Delete all messages in this conversation\n` +
+                        `• Remove the conversation from the sidebar\n` +
+                        `• When they message again, it will create a NEW conversation with enhanced metadata\n\n` +
+                        `This action cannot be undone.`
+                      );
+                      
+                      if (!confirmDelete) return;
+                      
+                      console.log(`🗑️ Deleting conversation: ${selectedConversation.id}`);
+                      
+                      try {
+                        const response = await fetch('/api/debug/delete-conversation', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            conversationId: selectedConversation.id
+                          })
+                        });
+                        const result = await response.json();
+                        console.log('🗑️ Delete result:', result);
+                        
+                        if (result.success) {
+                          alert(`✅ Conversation deleted!\n\n${result.message}\n\nNext message from this contact will create a new conversation with enhanced metadata.`);
+                          
+                          // Clear selection and refresh conversations
+                          setSelectedConversationId(null);
+                          refetchConversations();
+                        } else {
+                          alert(`❌ Failed to delete conversation: ${result.error}`);
+                        }
+                      } catch (error) {
+                        console.error('Delete error:', error);
+                        alert(`❌ Error deleting conversation: ${error}`);
+                      }
+                    }}
+                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                    title="Delete conversation (will recreate with enhanced metadata on next message)"
+                  >
+                    🗑️
+                  </Button>
                 </div>
               </div>
             </div>

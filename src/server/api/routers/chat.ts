@@ -168,9 +168,20 @@ export const chatRouter = createTRPCRouter({
 
         // Check WhatsApp 24-hour messaging window
         const { checkWhatsAppMessageWindow, getDefaultTwilioClient } = await import("@/utils/twilio-api");
+        
+        // Get the actual last incoming message to properly calculate the 24-hour window
+        const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
+          where: {
+            conversationId: input.conversationId,
+            direction: 'INCOMING'
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true }
+        });
+
         const messageWindow = checkWhatsAppMessageWindow(
-          conversation.lastMessageAt,
-          conversation.lastMessageFrom
+          lastIncomingMessage?.createdAt || null,
+          lastIncomingMessage ? 'INCOMING' : null
         );
 
         // If outside the 24-hour window, prevent sending freeform messages
@@ -498,10 +509,20 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
+      // Get the actual last incoming message to properly calculate the 24-hour window
+      const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          direction: 'INCOMING'
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      });
+
       const { checkWhatsAppMessageWindow } = await import("@/utils/twilio-api");
       const windowInfo = checkWhatsAppMessageWindow(
-        conversation.lastMessageAt,
-        conversation.lastMessageFrom
+        lastIncomingMessage?.createdAt || null,
+        lastIncomingMessage ? 'INCOMING' : null
       );
 
       return {
@@ -509,6 +530,85 @@ export const chatRouter = createTRPCRouter({
         conversationId: input.conversationId,
         participantName: conversation.participantName,
         participantPhone: conversation.participantPhone,
+      };
+    }),
+
+  // Debug 24-hour window issues
+  debugMessageWindow: protectedProcedure
+    .input(z.object({
+      conversationId: z.string().min(1, "Conversation ID is required"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const conversation = await ctx.db.conversation.findUnique({
+        where: { id: input.conversationId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+            select: {
+              id: true,
+              direction: true,
+              content: true,
+              createdAt: true,
+              twilioMessageId: true,
+              status: true
+            }
+          }
+        }
+      });
+
+      if (!conversation) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Conversation not found",
+        });
+      }
+
+      const { checkWhatsAppMessageWindow } = await import("@/utils/twilio-api");
+      
+      // Get the actual last incoming message to properly calculate the 24-hour window
+      const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          direction: 'INCOMING'
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      });
+
+      const windowInfo = checkWhatsAppMessageWindow(
+        lastIncomingMessage?.createdAt || null,
+        lastIncomingMessage ? 'INCOMING' : null
+      );
+
+      // Additional debugging information
+      const lastOutgoingMessage = await ctx.db.chatMessage.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          direction: 'OUTGOING'
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return {
+        conversation: {
+          id: conversation.id,
+          participantName: conversation.participantName,
+          participantPhone: conversation.participantPhone,
+          lastMessageAt: conversation.lastMessageAt,
+          lastMessageFrom: conversation.lastMessageFrom,
+          lastMessageContent: conversation.lastMessageContent
+        },
+        windowInfo,
+        lastIncomingMessage,
+        lastOutgoingMessage,
+        recentMessages: conversation.messages,
+        calculatedWindow: {
+          currentTime: new Date(),
+          lastMessageAge: conversation.lastMessageAt 
+            ? ((new Date().getTime() - new Date(conversation.lastMessageAt).getTime()) / (60 * 60 * 1000)).toFixed(2) + ' hours'
+            : 'N/A'
+        }
       };
     }),
 
