@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   Send, 
   Users, 
@@ -30,10 +32,13 @@ import {
   UserCheck,
   Briefcase,
   School,
-  Building
+  Building,
+  Check,
+  ChevronsUpDown
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 const sendMessageSchema = z.object({
   title: z.string().min(1, "Message title is required"),
@@ -41,15 +46,15 @@ const sendMessageSchema = z.object({
   customMessage: z.string().optional(),
   recipientType: z.enum([
     "ALL_STUDENTS",
-    "INDIVIDUAL_STUDENTS",
+    "INDIVIDUAL_STUDENTS", 
     "ENTIRE_CLASS",
-    "SPECIFIC_SECTION",
-    "ALL_TEACHERS", 
-    "INDIVIDUAL_TEACHERS",
-    "ALL_EMPLOYEES",
-    "INDIVIDUAL_EMPLOYEES",
-    "PARENTS",
+    "INDIVIDUAL_SECTION",
+    "TEACHERS",
+    "EMPLOYEES",
   ]),
+  contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(), // For student-related selections
+  selectedTeachers: z.array(z.string()).optional(), // For individual teacher selection
+  selectedEmployees: z.array(z.string()).optional(), // For individual employee selection
   templateParameters: z.record(z.string()).optional(),
 });
 
@@ -76,6 +81,11 @@ export default function SendMessagePage() {
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [contactType, setContactType] = useState<string[]>(["STUDENT"]); // Default to student contact
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [classComboboxOpen, setClassComboboxOpen] = useState(false);
+  const [sectionComboboxOpen, setSectionComboboxOpen] = useState(false);
 
   const form = useForm<SendMessageFormData>({
     resolver: zodResolver(sendMessageSchema),
@@ -85,6 +95,9 @@ export default function SendMessagePage() {
       recipientType: "ALL_STUDENTS",
       templateId: "",
       templateParameters: {},
+      contactType: ["STUDENT"],
+      selectedTeachers: [],
+      selectedEmployees: [],
     },
   });
 
@@ -107,13 +120,21 @@ export default function SendMessagePage() {
         recipientType: "ALL_STUDENTS",
         templateId: "",
         templateParameters: {},
+        contactType: ["STUDENT"],
+        selectedTeachers: [],
+        selectedEmployees: [],
       });
       setSelectedRecipients([]);
       setSelectedClassIds([]);
       setSelectedSectionIds([]);
+      setSelectedTeachers([]);
+      setSelectedEmployees([]);
       setRecipientType("ALL_STUDENTS");
       setSelectedTemplateId("");
       setSearchTerm("");
+      setContactType(["STUDENT"]);
+      setClassComboboxOpen(false);
+      setSectionComboboxOpen(false);
     },
     onError: (error) => {
       toast({
@@ -140,6 +161,24 @@ export default function SendMessagePage() {
   }, {
     enabled: selectedClassIds.length > 0 && !!currentBranchId && !!currentSessionId,
   });
+
+  // Fetch teachers
+  const { data: teachersData } = api.teacher.getAll.useQuery({
+    branchId: currentBranchId!,
+  }, {
+    enabled: !!currentBranchId,
+  });
+
+  // Fetch employees
+  const { data: employeesData } = api.employee.getAll.useQuery({
+    branchId: currentBranchId!,
+  }, {
+    enabled: !!currentBranchId,
+  });
+
+  // Extract teachers and employees arrays
+  const teachers = teachersData?.items || [];
+  const employees = employeesData?.items || [];
 
   // Map individual recipient types to their corresponding ALL types for API call
   const getApiRecipientType = (type: string) => {
@@ -206,6 +245,20 @@ export default function SendMessagePage() {
 
   const handleRecipientTypeChange = (type: string) => {
     setRecipientType(type);
+    // Reset selections when changing recipient type
+    setSelectedRecipients([]);
+    setSelectedClassIds([]);
+    setSelectedSectionIds([]);
+    setSelectedTeachers([]);
+    setSelectedEmployees([]);
+    setSearchTerm("");
+    // Reset combobox states
+    setClassComboboxOpen(false);
+    setSectionComboboxOpen(false);
+    // Reset contact type to default for student-related selections
+    if (["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(type)) {
+      setContactType(["STUDENT"]);
+    }
   };
 
   const toggleRecipient = (recipient: Recipient) => {
@@ -253,15 +306,57 @@ export default function SendMessagePage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const requiresClassFilter = ["ENTIRE_CLASS", "SPECIFIC_SECTION"].includes(recipientType);
-  const requiresSectionFilter = recipientType === "SPECIFIC_SECTION";
+  const requiresClassFilter = ["ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType);
+  const requiresSectionFilter = recipientType === "INDIVIDUAL_SECTION";
   const requiresIndividualSelection = recipientType.includes("INDIVIDUAL_");
 
   const onSubmit = async (data: SendMessageFormData) => {
-    // Get final recipients list
+    // Get final recipients list based on recipient type
     let finalRecipients: Recipient[] = [];
     
-    if (requiresIndividualSelection) {
+    if (recipientType === "TEACHERS") {
+      // Use selected teachers
+      if (selectedTeachers.length === 0) {
+        toast({
+          title: "No Teachers Selected",
+          description: "Please select at least one teacher.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      finalRecipients = selectedTeachers.map(teacherId => {
+        const teacher = teachers.find(t => t.id === teacherId);
+        return {
+          id: teacherId,
+          name: `${teacher?.firstName} ${teacher?.lastName}`,
+          phone: teacher?.phone || '',
+          type: "teacher",
+        };
+      }).filter(r => r.phone);
+      
+    } else if (recipientType === "EMPLOYEES") {
+      // Use selected employees
+      if (selectedEmployees.length === 0) {
+        toast({
+          title: "No Employees Selected",
+          description: "Please select at least one employee.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      finalRecipients = selectedEmployees.map(employeeId => {
+        const employee = employees.find(e => e.id === employeeId);
+        return {
+          id: employeeId,
+          name: `${employee?.firstName} ${employee?.lastName}`,
+          phone: employee?.phone || '',
+          type: "employee",
+        };
+      }).filter(r => r.phone);
+      
+    } else if (requiresIndividualSelection) {
       finalRecipients = selectedRecipients;
     } else {
       finalRecipients = recipients || [];
@@ -270,7 +365,7 @@ export default function SendMessagePage() {
     if (finalRecipients.length === 0) {
       toast({
         title: "No Recipients Selected",
-        description: "Please select at least one recipient.",
+        description: "Please select at least one recipient with a valid phone number.",
         variant: "destructive",
       });
       return;
@@ -285,11 +380,26 @@ export default function SendMessagePage() {
       return;
     }
 
+    // Validate contact type selection for student-related recipients
+    if (["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType)) {
+      if (contactType.length === 0) {
+        toast({
+          title: "Contact Type Required",
+          description: "Please select at least one contact type (Student, Father, or Mother).",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       await sendMessageMutation.mutateAsync({
         ...data,
         recipients: finalRecipients as any,
         branchId: currentBranchId!,
+        contactType: contactType,
+        selectedTeachers: selectedTeachers,
+        selectedEmployees: selectedEmployees,
       } as any);
     } catch (error) {
       // Error handled in mutation onError
@@ -502,12 +612,9 @@ export default function SendMessagePage() {
                         { value: "ALL_STUDENTS", label: "All Students", icon: <GraduationCap className="w-4 h-4" /> },
                         { value: "INDIVIDUAL_STUDENTS", label: "Individual Students", icon: <GraduationCap className="w-4 h-4" /> },
                         { value: "ENTIRE_CLASS", label: "Entire Class", icon: <School className="w-4 h-4" /> },
-                        { value: "SPECIFIC_SECTION", label: "Specific Section", icon: <Building className="w-4 h-4" /> },
-                        { value: "ALL_TEACHERS", label: "All Teachers", icon: <UserCheck className="w-4 h-4" /> },
-                        { value: "INDIVIDUAL_TEACHERS", label: "Individual Teachers", icon: <UserCheck className="w-4 h-4" /> },
-                        { value: "ALL_EMPLOYEES", label: "All Employees", icon: <Briefcase className="w-4 h-4" /> },
-                        { value: "INDIVIDUAL_EMPLOYEES", label: "Individual Employees", icon: <Briefcase className="w-4 h-4" /> },
-                        { value: "PARENTS", label: "All Parents", icon: <Users className="w-4 h-4" /> }
+                        { value: "INDIVIDUAL_SECTION", label: "Individual Section", icon: <Building className="w-4 h-4" /> },
+                        { value: "TEACHERS", label: "Teachers", icon: <UserCheck className="w-4 h-4" /> },
+                        { value: "EMPLOYEES", label: "Employees", icon: <Briefcase className="w-4 h-4" /> }
                       ].map((option) => (
                         <Button
                           key={option.value}
@@ -525,70 +632,367 @@ export default function SendMessagePage() {
                     </div>
                   </div>
 
+                  {/* Contact Type Selection for Students */}
+                  {["ALL_STUDENTS", "INDIVIDUAL_STUDENTS", "ENTIRE_CLASS", "INDIVIDUAL_SECTION"].includes(recipientType) && (
+                    <div className="space-y-4">
+                      <Separator />
+                      <div>
+                        <label className="text-sm font-medium mb-3 block">Contact Type</label>
+                        <div className="flex gap-2">
+                          {[
+                            { value: "STUDENT", label: "Student Phone", icon: <GraduationCap className="w-4 h-4" /> },
+                            { value: "FATHER", label: "Father Phone", icon: <Users className="w-4 h-4" /> },
+                            { value: "MOTHER", label: "Mother Phone", icon: <Users className="w-4 h-4" /> }
+                          ].map((option) => (
+                            <Button
+                              key={option.value}
+                              type="button"
+                              variant={contactType.includes(option.value) ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => {
+                                setContactType(prev => {
+                                  if (prev.includes(option.value)) {
+                                    return prev.filter(type => type !== option.value);
+                                  } else {
+                                    return [...prev, option.value];
+                                  }
+                                });
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                {option.icon}
+                                <span className="text-xs">{option.label}</span>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Select which phone numbers to send messages to. You can select multiple options.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Teacher Multi-Select */}
+                  {recipientType === "TEACHERS" && (
+                    <div className="space-y-4">
+                      <Separator />
+                      <div>
+                        <label className="text-sm font-medium mb-3 block">Select Teachers</label>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Search teachers..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full"
+                          />
+                          
+                          {/* Select All Option */}
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded border">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="select-all-teachers"
+                                checked={selectedTeachers.length === teachers.length && teachers.length > 0}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedTeachers(teachers.map(t => t.id));
+                                  } else {
+                                    setSelectedTeachers([]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor="select-all-teachers"
+                                className="text-sm font-medium leading-none cursor-pointer"
+                              >
+                                Select All Teachers
+                              </label>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {teachers.length} total
+                            </span>
+                          </div>
+                          
+                          <div className="border rounded-md max-h-48 overflow-y-auto p-2 space-y-1">
+                            {teachers.filter(teacher => 
+                              `${teacher.firstName} ${teacher.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map((teacher) => (
+                              <div key={teacher.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                <Checkbox
+                                  id={`teacher-${teacher.id}`}
+                                  checked={selectedTeachers.includes(teacher.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedTeachers(prev => [...prev, teacher.id]);
+                                    } else {
+                                      setSelectedTeachers(prev => prev.filter(id => id !== teacher.id));
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`teacher-${teacher.id}`}
+                                  className="text-sm font-medium leading-none cursor-pointer flex-1"
+                                >
+                                  {teacher.firstName} {teacher.lastName}
+                                  {teacher.designation && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({teacher.designation})
+                                    </span>
+                                  )}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          {selectedTeachers.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              {selectedTeachers.length} teacher(s) selected
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Employee Multi-Select */}
+                  {recipientType === "EMPLOYEES" && (
+                    <div className="space-y-4">
+                      <Separator />
+                      <div>
+                        <label className="text-sm font-medium mb-3 block">Select Employees</label>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Search employees..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full"
+                          />
+                          
+                          {/* Select All Option */}
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded border">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="select-all-employees"
+                                checked={selectedEmployees.length === employees.length && employees.length > 0}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedEmployees(employees.map(e => e.id));
+                                  } else {
+                                    setSelectedEmployees([]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor="select-all-employees"
+                                className="text-sm font-medium leading-none cursor-pointer"
+                              >
+                                Select All Employees
+                              </label>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {employees.length} total
+                            </span>
+                          </div>
+                          
+                          <div className="border rounded-md max-h-48 overflow-y-auto p-2 space-y-1">
+                            {employees.filter(employee => 
+                              `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map((employee) => (
+                              <div key={employee.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                <Checkbox
+                                  id={`employee-${employee.id}`}
+                                  checked={selectedEmployees.includes(employee.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedEmployees(prev => [...prev, employee.id]);
+                                    } else {
+                                      setSelectedEmployees(prev => prev.filter(id => id !== employee.id));
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`employee-${employee.id}`}
+                                  className="text-sm font-medium leading-none cursor-pointer flex-1"
+                                >
+                                  {employee.firstName} {employee.lastName}
+                                  {employee.designation && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({employee.designation})
+                                    </span>
+                                  )}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          {selectedEmployees.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              {selectedEmployees.length} employee(s) selected
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Class/Section Filters */}
                   {(requiresClassFilter || requiresSectionFilter) && (
                     <div className="space-y-4">
                       <Separator />
-                      {/* Class Selection */}
+                      
+                      {/* Class Multi-Select Combobox */}
                       {requiresClassFilter && (
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Select Classes</label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                            {classes?.map((classItem) => (
-                              <div key={classItem.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`class-${classItem.id}`}
-                                  checked={selectedClassIds.includes(classItem.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedClassIds(prev => [...prev, classItem.id]);
-                                    } else {
-                                      setSelectedClassIds(prev => prev.filter(id => id !== classItem.id));
-                                      setSelectedSectionIds(prev => 
-                                        prev.filter(id => !sections?.find(s => s.id === id && s.classId === classItem.id))
+                          <label className="text-sm font-medium mb-3 block">Select Classes</label>
+                          <Popover open={classComboboxOpen} onOpenChange={setClassComboboxOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={classComboboxOpen}
+                                className="w-full justify-between h-auto min-h-10"
+                              >
+                                <div className="flex flex-wrap gap-1">
+                                  {selectedClassIds.length === 0 ? (
+                                    <span className="text-muted-foreground">Select classes...</span>
+                                  ) : (
+                                    selectedClassIds.map(classId => {
+                                      const classItem = classes?.find(c => c.id === classId);
+                                      return (
+                                        <Badge key={classId} variant="secondary" className="mr-1">
+                                          {classItem?.name}
+                                          <X 
+                                            className="ml-1 h-3 w-3 cursor-pointer" 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedClassIds(prev => prev.filter(id => id !== classId));
+                                              setSelectedSectionIds(prev => 
+                                                prev.filter(id => !sections?.find(s => s.id === id && s.classId === classId))
+                                              );
+                                            }}
+                                          />
+                                        </Badge>
                                       );
-                                    }
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`class-${classItem.id}`}
-                                  className="text-sm font-medium leading-none cursor-pointer"
-                                >
-                                  {classItem.name}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
+                                    })
+                                  )}
+                                </div>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search classes..." />
+                                <CommandList>
+                                  <CommandEmpty>No classes found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {classes?.map((classItem) => (
+                                      <CommandItem
+                                        key={classItem.id}
+                                        value={classItem.name}
+                                        onSelect={() => {
+                                          const isSelected = selectedClassIds.includes(classItem.id);
+                                          if (isSelected) {
+                                            setSelectedClassIds(prev => prev.filter(id => id !== classItem.id));
+                                            setSelectedSectionIds(prev => 
+                                              prev.filter(id => !sections?.find(s => s.id === id && s.classId === classItem.id))
+                                            );
+                                          } else {
+                                            setSelectedClassIds(prev => [...prev, classItem.id]);
+                                          }
+                                        }}
+                                      >
+                                        <Check
+                                          className={`mr-2 h-4 w-4 ${
+                                            selectedClassIds.includes(classItem.id) ? "opacity-100" : "opacity-0"
+                                          }`}
+                                        />
+                                        {classItem.name}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          {selectedClassIds.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {selectedClassIds.length} class(es) selected
+                            </p>
+                          )}
                         </div>
                       )}
 
-                      {/* Section Selection */}
+                      {/* Section Multi-Select Combobox */}
                       {requiresSectionFilter && selectedClassIds.length > 0 && (
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Select Sections</label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                            {sections?.map((section) => (
-                              <div key={section.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`section-${section.id}`}
-                                  checked={selectedSectionIds.includes(section.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedSectionIds(prev => [...prev, section.id]);
-                                    } else {
-                                      setSelectedSectionIds(prev => prev.filter(id => id !== section.id));
-                                    }
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`section-${section.id}`}
-                                  className="text-sm font-medium leading-none cursor-pointer"
-                                >
-                                  {section.name} ({section.class?.name})
-                                </label>
-                              </div>
-                            ))}
-                          </div>
+                          <label className="text-sm font-medium mb-3 block">Select Sections</label>
+                          <Popover open={sectionComboboxOpen} onOpenChange={setSectionComboboxOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={sectionComboboxOpen}
+                                className="w-full justify-between h-auto min-h-10"
+                              >
+                                <div className="flex flex-wrap gap-1">
+                                  {selectedSectionIds.length === 0 ? (
+                                    <span className="text-muted-foreground">Select sections...</span>
+                                  ) : (
+                                    selectedSectionIds.map(sectionId => {
+                                      const section = sections?.find(s => s.id === sectionId);
+                                      return (
+                                        <Badge key={sectionId} variant="secondary" className="mr-1">
+                                          {section?.name} ({section?.class?.name})
+                                          <X 
+                                            className="ml-1 h-3 w-3 cursor-pointer" 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedSectionIds(prev => prev.filter(id => id !== sectionId));
+                                            }}
+                                          />
+                                        </Badge>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search sections..." />
+                                <CommandList>
+                                  <CommandEmpty>No sections found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {sections?.filter(section => selectedClassIds.includes(section.classId)).map((section) => (
+                                      <CommandItem
+                                        key={section.id}
+                                        value={`${section.name} ${section.class?.name}`}
+                                        onSelect={() => {
+                                          const isSelected = selectedSectionIds.includes(section.id);
+                                          if (isSelected) {
+                                            setSelectedSectionIds(prev => prev.filter(id => id !== section.id));
+                                          } else {
+                                            setSelectedSectionIds(prev => [...prev, section.id]);
+                                          }
+                                        }}
+                                      >
+                                        <Check
+                                          className={`mr-2 h-4 w-4 ${
+                                            selectedSectionIds.includes(section.id) ? "opacity-100" : "opacity-0"
+                                          }`}
+                                        />
+                                        {section.name} ({section.class?.name})
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          {selectedSectionIds.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {selectedSectionIds.length} section(s) selected
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>

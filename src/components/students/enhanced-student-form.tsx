@@ -438,6 +438,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
           cbse10RollNumber: data.cbse10RollNumber || "",
           cbse12RollNumber: data.cbse12RollNumber || "",
           dateOfAdmission: data.dateOfAdmission || undefined,
+          sectionId: data.classId, // Add the missing sectionId field
           // Address fields
           permanentAddress: data.permanentAddress || "",
           permanentCity: data.permanentCity || "",

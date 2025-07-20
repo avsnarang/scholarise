@@ -37,16 +37,12 @@ const sendMessageSchema = z.object({
   templateId: z.string().optional(),
   customMessage: z.string().optional(),
   recipientType: z.enum([
+    "ALL_STUDENTS",
     "INDIVIDUAL_STUDENTS",
-    "ENTIRE_CLASS", 
-    "SPECIFIC_SECTION",
-    "MULTIPLE_CLASSES",
-    "ALL_TEACHERS",
-    "SPECIFIC_TEACHERS", 
-    "ALL_EMPLOYEES",
-    "SPECIFIC_EMPLOYEES",
-    "PARENTS",
-    "CUSTOM_GROUP"
+    "ENTIRE_CLASS",
+    "INDIVIDUAL_SECTION",
+    "TEACHERS",
+    "EMPLOYEES",
   ]),
   recipients: z.array(z.object({
     id: z.string(),
@@ -54,6 +50,9 @@ const sendMessageSchema = z.object({
     phone: z.string(),
     type: z.string(),
   })),
+  contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(), // For student-related selections
+  selectedTeachers: z.array(z.string()).optional(), // For individual teacher selection
+  selectedEmployees: z.array(z.string()).optional(), // For individual employee selection
   templateParameters: z.record(z.string()).optional(),
   scheduledAt: z.date().optional(),
   branchId: z.string().min(1, "Branch ID is required"),
@@ -300,18 +299,16 @@ export const communicationRouter = createTRPCRouter({
         "ALL_STUDENTS",
         "INDIVIDUAL_STUDENTS",
         "ENTIRE_CLASS",
-        "SPECIFIC_SECTION",
-        "ALL_TEACHERS", 
-        "INDIVIDUAL_TEACHERS",
-        "ALL_EMPLOYEES",
-        "INDIVIDUAL_EMPLOYEES",
-        "PARENTS",
+        "INDIVIDUAL_SECTION",
+        "TEACHERS",
+        "EMPLOYEES",
       ]),
       branchId: z.string().min(1, "Branch ID is required"),
       sessionId: z.string().optional(),
       classIds: z.array(z.string()).optional(),
       sectionIds: z.array(z.string()).optional(),
       searchTerm: z.string().optional(),
+      contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(), // For student contact selection
     }))
     .query(async ({ ctx, input }) => {
       let recipients: Array<{
@@ -334,7 +331,7 @@ export const communicationRouter = createTRPCRouter({
         case "ALL_STUDENTS":
         case "INDIVIDUAL_STUDENTS":
         case "ENTIRE_CLASS":
-        case "SPECIFIC_SECTION":
+        case "INDIVIDUAL_SECTION":
           const students = await ctx.db.student.findMany({
             where: {
               branchId: input.branchId,
@@ -345,83 +342,6 @@ export const communicationRouter = createTRPCRouter({
                 sectionId: { in: input.sectionIds }
               }),
               ...searchWhere
-            },
-            include: {
-              section: { 
-                include: { 
-                  class: { select: { name: true } } 
-                } 
-              },
-              parent: {
-                select: {
-                  fatherMobile: true,
-                  motherMobile: true,
-                  guardianMobile: true
-                }
-              }
-            }
-          });
-          
-          recipients = students.map(student => ({
-            id: student.id,
-            name: `${student.firstName} ${student.lastName}`,
-            phone: student.phone || 
-                   student.parent?.fatherMobile || 
-                   student.parent?.motherMobile || 
-                   student.parent?.guardianMobile || '',
-            type: "student",
-            className: student.section?.class?.name,
-          })).filter(r => r.phone);
-          break;
-
-        case "ALL_TEACHERS":
-        case "INDIVIDUAL_TEACHERS":
-          const teachers = await ctx.db.teacher.findMany({
-            where: {
-              branchId: input.branchId,
-              ...searchWhere
-            }
-          });
-          
-          recipients = teachers.map(teacher => ({
-            id: teacher.id,
-            name: `${teacher.firstName} ${teacher.lastName}`,
-            phone: teacher.phone || '',
-            type: "teacher",
-          })).filter(r => r.phone);
-          break;
-
-        case "ALL_EMPLOYEES":
-        case "INDIVIDUAL_EMPLOYEES":
-          const employees = await ctx.db.employee.findMany({
-            where: {
-              branchId: input.branchId,
-              ...searchWhere
-            }
-          });
-          
-          recipients = employees.map(employee => ({
-            id: employee.id,
-            name: `${employee.firstName} ${employee.lastName}`,
-            phone: employee.phone || '',
-            type: "employee",
-          })).filter(r => r.phone);
-          break;
-
-        case "PARENTS":
-          const parentsFromStudents = await ctx.db.student.findMany({
-            where: {
-              branchId: input.branchId,
-              ...(input.classIds && input.classIds.length > 0 && { 
-                section: { classId: { in: input.classIds } }
-              }),
-              parent: {
-                OR: [
-                  { fatherMobile: { not: null } },
-                  { motherMobile: { not: null } },
-                  { guardianMobile: { not: null } }
-                ]
-              }
             },
             include: {
               section: { 
@@ -442,41 +362,77 @@ export const communicationRouter = createTRPCRouter({
             }
           });
           
-          recipients = [];
-          parentsFromStudents.forEach(student => {
+          // Handle multiple contact types for student-related selections
+          const contactTypes = input.contactType || ["STUDENT"];
+          
+          students.forEach(student => {
             const studentName = `${student.firstName} ${student.lastName}`;
             const className = student.section?.class?.name;
             
-            if (student.parent?.fatherMobile) {
-              recipients.push({
-                id: `father-${student.id}`,
-                name: `${student.parent.fatherName || 'Father'} (${studentName})`,
-                phone: student.parent.fatherMobile,
-                type: "parent",
-                className
-              });
-            }
-            
-            if (student.parent?.motherMobile) {
-              recipients.push({
-                id: `mother-${student.id}`,
-                name: `${student.parent.motherName || 'Mother'} (${studentName})`,
-                phone: student.parent.motherMobile,
-                type: "parent",
-                className
-              });
-            }
-            
-            if (student.parent?.guardianMobile) {
-              recipients.push({
-                id: `guardian-${student.id}`,
-                name: `${student.parent.guardianName || 'Guardian'} (${studentName})`,
-                phone: student.parent.guardianMobile,
-                type: "parent",
-                className
-              });
+            contactTypes.forEach(contactType => {
+              let recipientPhone = '';
+              let recipientName = studentName;
+              let recipientId = student.id;
+              
+              switch (contactType) {
+                case "STUDENT":
+                  recipientPhone = student.phone || '';
+                  break;
+                case "FATHER":
+                  recipientPhone = student.parent?.fatherMobile || '';
+                  recipientName = `${student.parent?.fatherName || 'Father'} (${studentName})`;
+                  recipientId = `father-${student.id}`;
+                  break;
+                case "MOTHER":
+                  recipientPhone = student.parent?.motherMobile || '';
+                  recipientName = `${student.parent?.motherName || 'Mother'} (${studentName})`;
+                  recipientId = `mother-${student.id}`;
+                  break;
+              }
+              
+              if (recipientPhone) {
+                recipients.push({
+                  id: recipientId,
+                  name: recipientName,
+                  phone: recipientPhone,
+                  type: contactType.toLowerCase(),
+                  className,
+                });
+              }
+            });
+          });
+          break;
+
+        case "TEACHERS":
+          const teachers = await ctx.db.teacher.findMany({
+            where: {
+              branchId: input.branchId,
+              ...searchWhere
             }
           });
+          
+          recipients = teachers.map(teacher => ({
+            id: teacher.id,
+            name: `${teacher.firstName} ${teacher.lastName}`,
+            phone: teacher.phone || '',
+            type: "teacher",
+          })).filter(r => r.phone);
+          break;
+
+        case "EMPLOYEES":
+          const employees = await ctx.db.employee.findMany({
+            where: {
+              branchId: input.branchId,
+              ...searchWhere
+            }
+          });
+          
+          recipients = employees.map(employee => ({
+            id: employee.id,
+            name: `${employee.firstName} ${employee.lastName}`,
+            phone: employee.phone || '',
+            type: "employee",
+          })).filter(r => r.phone);
           break;
       }
 
@@ -504,7 +460,7 @@ export const communicationRouter = createTRPCRouter({
             title: input.title,
             templateId: input.templateId,
             customMessage: input.customMessage,
-            recipientType: input.recipientType,
+            recipientType: input.recipientType as any,
             totalRecipients: recipientsWithValidPhones.length,
             branchId: input.branchId,
             createdBy: ctx.userId!,
