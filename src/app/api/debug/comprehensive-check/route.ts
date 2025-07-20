@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     // Check 3: Specific phone numbers mentioned by user
     const testPhones = ['+919816900056', '+919816500056'];
-    const phoneResults = {};
+    const phoneResults: Record<string, any> = {};
 
     console.log('\n📞 Testing specific phone numbers...');
     for (const phone of testPhones) {

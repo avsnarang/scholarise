@@ -62,8 +62,7 @@ export async function POST(req: NextRequest) {
         motherName: "Test Mother", 
         motherMobile: "+919816400056", // Another test number
         guardianName: "Test Father", // Same as father in this case
-        guardianMobile: "+919816500056",
-        branchId: branch.id
+        guardianMobile: "+919816500056"
       }
     });
 
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
         lastName: "Student",
         phone: "+919816900056", // Student's own phone
         email: "test.student@example.com",
-        rollNumber: "TEST001",
+        rollNumber: 1,
         admissionNumber: "ADM001",
         sectionId: section.id,
         parentId: parent.id,
@@ -84,7 +83,7 @@ export async function POST(req: NextRequest) {
         dateOfBirth: new Date('2010-01-01'),
         gender: 'MALE',
         address: "Test Address",
-        admissionDate: new Date()
+        dateOfAdmission: new Date()
       }
     });
 

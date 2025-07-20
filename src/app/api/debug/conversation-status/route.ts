@@ -61,7 +61,9 @@ export async function GET(req: NextRequest) {
         createdAt: m.createdAt,
         readAt: m.readAt,
         status: m.status
-      }))
+      })),
+      fixApplied: false as boolean,
+      newUnreadCount: undefined as number | undefined
     };
 
     if (fix && analysis.needsFix) {

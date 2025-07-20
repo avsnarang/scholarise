@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const testPhones = ['+919816900056', '+919816500056'];
     const { phoneNumbersMatch } = await import("@/utils/phone-utils");
     
-    const phoneResults = {};
+    const phoneResults: Record<string, any> = {};
 
     // Get students for this branch
     const students = await db.student.findMany({
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
         withEnhancedMetadata: conversationIssues.filter(c => c.hasEnhancedMetadata).length,
         issues: conversationIssues.filter(c => c.hasIssue)
       },
-      recommendations: []
+      recommendations: [] as string[]
     };
 
     // Add recommendations
