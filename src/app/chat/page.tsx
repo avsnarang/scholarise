@@ -14,6 +14,12 @@ export default function ChatPage() {
   const { hasPermission } = usePermissions();
   const { currentBranchId } = useBranchContext();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Function to trigger refresh of conversation data
+  const handleMetadataRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Check permissions and branch access
   if (!currentBranchId) {
@@ -21,6 +27,7 @@ export default function ChatPage() {
       <WhatsAppChatLayout
         selectedConversationId={selectedConversationId}
         onConversationSelect={setSelectedConversationId}
+        onMetadataRefresh={handleMetadataRefresh}
       >
         <div className="flex-1 flex items-center justify-center p-6">
           <Card className="p-8 max-w-md text-center">
@@ -46,6 +53,7 @@ export default function ChatPage() {
       <WhatsAppChatLayout
         selectedConversationId={selectedConversationId}
         onConversationSelect={setSelectedConversationId}
+        onMetadataRefresh={handleMetadataRefresh}
       >
         <div className="flex-1 flex items-center justify-center p-6">
           <Card className="p-8 max-w-md text-center">
@@ -70,9 +78,11 @@ export default function ChatPage() {
     <WhatsAppChatLayout
       selectedConversationId={selectedConversationId}
       onConversationSelect={setSelectedConversationId}
+      onMetadataRefresh={handleMetadataRefresh}
     >
       <WhatsAppChat 
         conversationId={selectedConversationId}
+        refreshTrigger={refreshTrigger}
       />
     </WhatsAppChatLayout>
   );

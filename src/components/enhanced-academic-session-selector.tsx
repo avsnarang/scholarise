@@ -28,15 +28,17 @@ export function EnhancedAcademicSessionSelector() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-10 items-center gap-1 rounded-md border px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-        <Calendar size={16} className="shrink-0" />
-        <div className="flex items-center gap-1 truncate">
-          <span className="truncate font-medium">{sessionName}</span>
+      <DropdownMenuTrigger className="flex h-8 w-full items-center gap-2 rounded-lg bg-muted/30 hover:bg-muted/50 px-3 py-1 transition-colors">
+        <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="text-xs font-medium truncate">{sessionName}</span>
           {currentSession?.isActive && (
-            <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">Active</span>
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+              Active
+            </span>
           )}
         </div>
-        <ChevronDown size={14} className="shrink-0 opacity-50" />
+        <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="w-[280px]">
@@ -54,7 +56,7 @@ export function EnhancedAcademicSessionSelector() {
             <DropdownMenuItem
               key={session.id}
               onSelect={() => setCurrentSessionId(session.id)}
-              className="flex items-center justify-between px-3 py-2"
+              className="flex items-center justify-between px-3 py-2 cursor-pointer hover:cursor-pointer"
             >
               <div className="flex flex-col">
                 <span className="font-medium">{session.name}</span>

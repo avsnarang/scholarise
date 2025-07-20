@@ -13,19 +13,16 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-} from "@/components/ui/sidebar";
+
+// Removed Sidebar imports since we're using ResizablePanel now
 import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeSelector } from "@/components/theme-selector";
 import { 
   Search, 
   MessageCircle, 
@@ -42,7 +39,9 @@ import {
   ExternalLink,
   MessageSquare,
   Settings,
-  Calendar
+  Calendar,
+
+  BellOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -59,6 +58,7 @@ import {
 interface WhatsAppSidebarProps {
   selectedConversationId?: string | null;
   onConversationSelect?: (conversationId: string) => void;
+  onMetadataRefresh?: () => void; // Add callback for coordinated refresh
 }
 
 function StyledBranchSelector() {
@@ -90,7 +90,7 @@ function StyledBranchSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger className="flex h-8 w-full items-center gap-2 rounded-lg bg-muted/30 hover:bg-muted/50 px-3 py-1 transition-colors">
         <Building className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span className="text-xs font-medium truncate">{branchName}</span>
           <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
             {branchCode}
@@ -120,12 +120,12 @@ function StyledBranchSelector() {
               <DropdownMenuItem
                 key={branch.id}
                 onClick={() => setCurrentBranchId(branch.id)}
-                className="flex items-center justify-between px-3 py-2 cursor-pointer"
+                className="flex items-center justify-between px-3 py-2 cursor-pointer hover:cursor-pointer"
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-xs">{branch.name}</span>
                   {branch.city && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {branch.city}, {branch.state}
                     </span>
                   )}
@@ -151,7 +151,8 @@ function StyledBranchSelector() {
 
 export function WhatsAppSidebar({ 
   selectedConversationId, 
-  onConversationSelect 
+  onConversationSelect,
+  onMetadataRefresh
 }: WhatsAppSidebarProps) {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
@@ -171,7 +172,7 @@ export function WhatsAppSidebar({
     limit: 100,
   }, {
     enabled: !!currentBranchId && hasPermission("view_communication_logs"),
-    refetchInterval: REALTIME_INTERVALS.CONVERSATIONS, // ⚡ Realtime polling
+    refetchInterval: REALTIME_INTERVALS.CONVERSATIONS, // ⚡ Realtime polling will handle read state updates
   });
 
   // Fetch chat statistics with faster refresh
@@ -180,6 +181,21 @@ export function WhatsAppSidebar({
   }, {
     enabled: !!currentBranchId && hasPermission("view_communication_logs"),
     refetchInterval: REALTIME_INTERVALS.STATS, // ⚡ Realtime stats
+  });
+
+  // Refresh contact metadata mutation
+  const refreshMetadataMutation = api.chat.refreshContactMetadata.useMutation({
+    onSuccess: (data) => {
+      // Show success notification
+      console.log(`✅ Contact metadata refreshed: ${data.refreshed} conversations updated`);
+      // Immediately refresh conversations to show updated metadata
+      refetchConversations();
+      // Call parent callback to refresh other components (like chat header)
+      onMetadataRefresh?.();
+    },
+    onError: (error) => {
+      console.error('❌ Failed to refresh metadata:', error);
+    },
   });
 
   // Get enhanced contact type display text
@@ -245,30 +261,28 @@ export function WhatsAppSidebar({
 
   if (!hasPermission("view_communication_logs")) {
     return (
-      <Sidebar className="border-r bg-card/50">
-        <SidebarContent className="flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center space-y-4"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-30"></div>
-              <MessageSquare className="relative mx-auto h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">No Access</h3>
-              <p className="text-sm text-muted-foreground">Chat permissions required</p>
-            </div>
-          </motion.div>
-        </SidebarContent>
-      </Sidebar>
+      <div className="h-full bg-card border-r flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-4"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-30"></div>
+            <MessageSquare className="relative mx-auto h-10 w-10 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm">No Access</h3>
+            <p className="text-sm text-muted-foreground">Chat permissions required</p>
+          </div>
+        </motion.div>
+      </div>
     );
   }
 
   return (
-    <Sidebar className="border-r bg-card w-80 min-w-80 max-w-80" style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}>
-      <SidebarHeader className="border-b bg-background/95 backdrop-blur-sm">
+    <div className="h-full bg-card border-r flex flex-col">
+      <div className="border-b bg-background/95 backdrop-blur-sm flex-shrink-0">
         {/* Compact Header */}
         <div className="px-3 py-3 space-y-3">
           {/* Top Row - Logo and Navigation */}
@@ -283,6 +297,27 @@ export function WhatsAppSidebar({
             </div>
             
             <div className="flex items-center gap-1">
+              {/* Refresh Contact Metadata Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  if (!currentBranchId) {
+                    console.error('No branch selected');
+                    return;
+                  }
+                  refreshMetadataMutation.mutate({ branchId: currentBranchId });
+                }}
+                disabled={refreshMetadataMutation.isPending}
+                title="Force refresh contact metadata (Father/Mother/Student/Teacher/Employee categories)"
+              >
+                {refreshMetadataMutation.isPending ? (
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Users className="h-3 w-3" />
+                )}
+              </Button>
               <Link href="/communication">
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground">
                   <ArrowLeft className="h-3 w-3" />
@@ -298,46 +333,42 @@ export function WhatsAppSidebar({
 
           {/* Title and Stats */}
           <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                <MessageSquare className="h-3 w-3 text-primary" />
-                <h1 className="text-sm font-semibold">WhatsApp Chat</h1>
-              </div>
-              {totalUnread > 0 && (
-                <Badge variant="default" className="h-4 text-[10px] px-1">
-                  {formatUnreadCount(totalUnread)}
-                </Badge>
-              )}
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <h1 className="text-base font-semibold">WhatsApp Chat</h1>
+            </div>
+            {totalUnread > 0 && (
+              <Badge variant="default" className="h-4 text-xs px-1.5">
+                {formatUnreadCount(totalUnread)}
+              </Badge>
+            )}
           </div>
 
                     {/* Styled Controls Grid */}
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 gap-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3">
               <div>
-                <div className="flex items-center gap-1 mb-1">
-                  <Building className="h-2.5 w-2.5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground font-medium">Branch</span>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">Branch</span>
                 </div>
                 <StyledBranchSelector />
               </div>
               
               <div>
-                <div className="flex items-center gap-1 mb-1">
-                  <Calendar className="h-2.5 w-2.5 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground font-medium">Academic Session</span>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">Academic Session</span>
                 </div>
-                <div className="[&>button]:h-8 [&>button]:text-xs [&>button]:px-3 [&>button]:w-full [&>button]:bg-muted/30 [&>button]:hover:bg-muted/50 [&>button]:rounded-lg [&>button]:border-0">
-                  <EnhancedAcademicSessionSelector />
-                </div>
+                <EnhancedAcademicSessionSelector />
               </div>
               
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1">
-                    <Settings className="h-2.5 w-2.5 text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground font-medium">Theme</span>
-                  </div>
-                  <ThemeToggle />
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">Theme</span>
                 </div>
+                <ThemeSelector />
               </div>
             </div>
           </div>
@@ -366,12 +397,12 @@ export function WhatsAppSidebar({
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-sm">All Contacts</SelectItem>
-                <SelectItem value="student" className="text-sm">Students</SelectItem>
-                <SelectItem value="teacher" className="text-sm">Teachers</SelectItem>
-                <SelectItem value="employee" className="text-sm">Employees</SelectItem>
-                <SelectItem value="parent" className="text-sm">Parents</SelectItem>
-                <SelectItem value="unknown" className="text-sm">Unknown</SelectItem>
+                <SelectItem value="all" className="text-sm cursor-pointer hover:cursor-pointer">All Contacts</SelectItem>
+                <SelectItem value="student" className="text-sm cursor-pointer hover:cursor-pointer">Students</SelectItem>
+                <SelectItem value="teacher" className="text-sm cursor-pointer hover:cursor-pointer">Teachers</SelectItem>
+                <SelectItem value="employee" className="text-sm cursor-pointer hover:cursor-pointer">Employees</SelectItem>
+                <SelectItem value="parent" className="text-sm cursor-pointer hover:cursor-pointer">Parents</SelectItem>
+                <SelectItem value="unknown" className="text-sm cursor-pointer hover:cursor-pointer">Unknown</SelectItem>
               </SelectContent>
             </Select>
             
@@ -385,10 +416,10 @@ export function WhatsAppSidebar({
             </Button>
           </div>
         </div>
-      </SidebarHeader>
+      </div>
 
-      <SidebarContent className="w-full max-w-full overflow-hidden">
-        <ScrollArea className="flex-1 w-full max-w-full">
+      {/* Scrollable Content Area */}
+      <ScrollArea className="flex-1 w-full max-w-full">
           {conversationsLoading ? (
                         <div className="px-1 py-2 space-y-2 w-full max-w-full overflow-hidden">
               {[...Array(6)].map((_, i) => (
@@ -397,14 +428,17 @@ export function WhatsAppSidebar({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.1 }}
-                  className="animate-pulse w-full max-w-[272px] overflow-hidden"
+                  className="animate-pulse w-full max-w-full overflow-hidden"
                 >
-                  <div className="flex items-center space-x-3 p-3 rounded-lg w-full max-w-full overflow-hidden">
-                    <div className="h-9 w-9 bg-muted rounded-full shrink-0"></div>
-                    <div className="flex-1 space-y-2 min-w-0 overflow-hidden">
+                  <div className="flex items-center space-x-2 p-2 rounded-lg w-full max-w-full overflow-hidden">
+                    <div className="h-8 w-8 bg-muted rounded-full shrink-0"></div>
+                    <div className="flex-1 space-y-1.5 min-w-0 overflow-hidden">
                       <div className="h-3 bg-muted rounded w-3/4"></div>
                       <div className="h-2 bg-muted rounded w-1/2"></div>
-                      <div className="h-2 bg-muted rounded w-2/3"></div>
+                      <div className="flex justify-between items-center">
+                        <div className="h-2 bg-muted rounded w-1/2"></div>
+                        <div className="h-2 bg-muted rounded w-1/4"></div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -449,8 +483,8 @@ export function WhatsAppSidebar({
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.2, delay: index * 0.05 }}
                     className={cn(
-                      "relative flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 group",
-                      "w-full max-w-full overflow-hidden",
+                      "relative flex items-center p-2 rounded-lg cursor-pointer transition-all duration-200 group",
+                      "w-full min-w-0",
                       "hover:bg-accent/80 hover:shadow-sm border border-transparent",
                       selectedConversationId === conversation.id && 
                       "bg-primary/10 border-primary/20 shadow-sm",
@@ -460,7 +494,7 @@ export function WhatsAppSidebar({
                     onClick={() => onConversationSelect?.(conversation.id)}
                   >
                     <div className="relative shrink-0">
-                      <Avatar className="h-9 w-9 ring-1 ring-background shadow-sm">
+                      <Avatar className="h-8 w-8 ring-1 ring-background shadow-sm">
                         <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
                           {getInitials(conversation.participantName)}
                         </AvatarFallback>
@@ -470,7 +504,7 @@ export function WhatsAppSidebar({
                       </div>
                       {conversation.unreadCount > 0 && (
                         <div className={cn(
-                          "absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold",
+                          "absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full min-w-[12px] h-[12px] flex items-center justify-center text-[8px] font-bold",
                           getUnreadBadgeClasses(conversation.unreadCount)
                         )}>
                           {formatUnreadCount(conversation.unreadCount)}
@@ -478,26 +512,23 @@ export function WhatsAppSidebar({
                       )}
                     </div>
                     
-                                          <div className="flex-1 ml-3 min-w-0 max-w-[230px] overflow-hidden">
-                        <div className="flex items-center justify-between mb-1 gap-2">
+                    <div className="flex-1 ml-2 min-w-0">
+                        {/* Contact name - full width */}
+                        <div className="mb-1 min-w-0">
                           <h4 className={cn(
-                            "text-sm truncate text-foreground flex-1 min-w-0",
+                            "text-sm truncate text-foreground",
                             conversation.unreadCount > 0 ? "font-bold" : "font-semibold"
                           )}>
                             {conversation.participantName}
                           </h4>
-                          {conversation.lastMessageAt && (
-                            <p className="text-[10px] text-muted-foreground font-medium shrink-0">
-                              {formatDistanceToNow(new Date(conversation.lastMessageAt), { addSuffix: false })}
-                            </p>
-                          )}
                         </div>
                         
-                        <div className="flex items-center gap-1 mb-1 min-w-0 overflow-hidden">
+                        {/* Contact type and phone */}
+                        <div className="flex items-center gap-1 mb-1 min-w-0">
                           {/* Enhanced contact type display */}
                           {conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata ? (
                             <>
-                              <span className="text-[10px] font-medium text-primary capitalize shrink-0">
+                              <span className="text-xs font-medium text-primary capitalize shrink-0">
                                 {getContactTypeDisplay(conversation)}
                               </span>
                               {(conversation.metadata.contactDetails as any)?.studentName && (
@@ -510,78 +541,31 @@ export function WhatsAppSidebar({
                               )}
                             </>
                           ) : (
-                            <span className="text-[10px] font-medium text-muted-foreground capitalize shrink-0">
+                              <span className="text-xs font-medium text-muted-foreground capitalize shrink-0">
                               {conversation.participantType}
                             </span>
                           )}
                           <span className="text-muted-foreground text-[9px] shrink-0">•</span>
-                          <span className="text-[10px] text-muted-foreground truncate min-w-0 flex-1">
+                          <span className="text-xs text-muted-foreground truncate min-w-0 flex-1">
                             {conversation.participantPhone.replace('whatsapp:', '')}
                           </span>
                         </div>
                         
-                        <div className="flex items-center min-w-0 overflow-hidden">
-                          <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                        {/* Message preview with time - explicit width for truncation */}
+                        <div className="grid grid-cols-[1fr_auto] gap-2 w-full items-center">
+                          <span className="text-xs text-muted-foreground truncate">
                             {conversation.lastMessageFrom === 'INCOMING' ? '' : '✓ '}
                             {conversation.lastMessageContent || 'No messages yet'}
-                          </p>
+                          </span>
+                          {conversation.lastMessageAt && (
+                            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+                              {formatDistanceToNow(new Date(conversation.lastMessageAt), { addSuffix: false })}
+                            </span>
+                          )}
                         </div>
                       </div>
                       
-                      {/* Delete button - appears on hover */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-2 right-2 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent selecting the conversation
-                          
-                          const confirmDelete = confirm(
-                            `Delete conversation with ${conversation.participantName}?\n\n` +
-                            `This will:\n` +
-                            `• Delete all messages in this conversation\n` +
-                            `• Remove the conversation from the sidebar\n` +
-                            `• When they message again, it will create a NEW conversation with enhanced metadata\n\n` +
-                            `This action cannot be undone.`
-                          );
-                          
-                          if (!confirmDelete) return;
-                          
-                          console.log(`🗑️ Deleting conversation: ${conversation.id}`);
-                          
-                          // Delete conversation
-                          fetch('/api/debug/delete-conversation', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              conversationId: conversation.id
-                            })
-                          })
-                          .then(response => response.json())
-                          .then(result => {
-                            console.log('🗑️ Delete result:', result);
-                            
-                            if (result.success) {
-                              // Clear selection if this was the selected conversation
-                              if (selectedConversationId === conversation.id) {
-                                onConversationSelect?.('');
-                              }
-                              
-                              // Refresh conversations list
-                              refetchConversations();
-                            } else {
-                              alert(`❌ Failed to delete conversation: ${result.error}`);
-                            }
-                          })
-                          .catch(error => {
-                            console.error('Delete error:', error);
-                            alert(`❌ Error deleting conversation: ${error}`);
-                          });
-                        }}
-                        title="Delete conversation"
-                      >
-                        🗑️
-                      </Button>
+
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -589,16 +573,15 @@ export function WhatsAppSidebar({
           )}
         </ScrollArea>
 
-        {/* Footer Stats */}
-        <div className="p-2 border-t bg-background/50 backdrop-blur-sm">
-          <div className="text-center">
-            <p className="text-[10px] text-muted-foreground">
-              {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
-              {totalUnread > 0 && ` • ${totalUnread} unread`}
-            </p>
-          </div>
+      {/* Footer Stats - Always at bottom */}
+      <div className="flex-shrink-0 p-2 border-t bg-background/50 backdrop-blur-sm">
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+            {totalUnread > 0 && ` • ${totalUnread} unread`}
+          </p>
         </div>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 } 

@@ -13,6 +13,23 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { 
   Send, 
   Phone,
   Clock,
@@ -41,7 +58,11 @@ import {
   Image as ImageIcon,
   File,
   MapPin,
-  Settings
+  Settings,
+  Check,
+  Archive,
+  BellOff,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, formatRelative, isToday, isYesterday } from "date-fns";
@@ -56,9 +77,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface WhatsAppChatProps {
   conversationId: string | null;
+  refreshTrigger?: number; // Add refresh trigger prop
 }
 
-export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
+export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatProps) {
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -72,7 +94,7 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   // API calls
-  const { data: conversation, isLoading: conversationLoading, error: conversationError } = api.chat.getConversation.useQuery(
+  const { data: conversation, isLoading: conversationLoading, error: conversationError, refetch: refetchConversation } = api.chat.getConversation.useQuery(
     { conversationId: conversationId! },
     { enabled: !!conversationId }
   );
@@ -135,6 +157,28 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
     onError: (error) => {
       toast({
         title: "Failed to send template message",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // ✅ Add markAsRead mutation
+  const markAsReadMutation = api.chat.markAsRead.useMutation({
+    onSuccess: () => {
+      console.log('✅ Successfully marked conversation as read');
+      // Refetch conversation to update unread count in the chat header
+      refetchConversation();
+      // The sidebar will automatically refresh due to its real-time polling
+      toast({
+        title: "Marked as read",
+        description: "All messages in this conversation have been marked as read.",
+      });
+    },
+    onError: (error) => {
+      console.error('❌ Failed to mark as read:', error);
+      toast({
+        title: "Failed to mark as read",
         description: error.message,
         variant: "destructive",
       });
@@ -233,11 +277,14 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
   // Format message timestamp
   const formatMessageTime = (date: Date) => {
     if (isToday(date)) {
-      return format(date, "HH:mm");
+      // For today's messages: just show time in 12-hour format
+      return format(date, "h:mm a");
     } else if (isYesterday(date)) {
-      return "Yesterday";
+      // For yesterday: "Yesterday 2:30 PM"
+      return `Yesterday ${format(date, "h:mm a")}`;
     } else {
-      return format(date, "dd/MM/yyyy");
+      // For older messages: "19/07/2025 2:30 PM"
+      return `${format(date, "dd/MM/yyyy")} ${format(date, "h:mm a")}`;
     }
   };
 
@@ -245,6 +292,25 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messagesData]);
+
+  // ✅ Automatically mark conversation as read when opened (if it has unread messages)
+  useEffect(() => {
+    if (conversationId && conversation && conversation.unreadCount > 0) {
+      console.log(`🔄 Auto-marking conversation ${conversationId} as read (${conversation.unreadCount} unread messages)`);
+      markAsReadMutation.mutate({
+        conversationId: conversationId,
+        // Don't specify messageIds to mark ALL unread messages as read
+      });
+    }
+  }, [conversationId, conversation?.unreadCount]); // Only trigger when conversation ID changes or unread count changes
+
+  // Refresh conversation when metadata is updated
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 Refreshing conversation due to metadata update');
+      refetchConversation();
+    }
+  }, [refreshTrigger, refetchConversation]);
 
   // ⚡ Enhanced real-time timer for 24-hour window with immediate updates
   useEffect(() => {
@@ -431,119 +497,316 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/10">
-      {/* Modern Chat Header */}
+      {/* Compact Chat Header */}
       {conversationId && conversation && (
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card/80 backdrop-blur-md border-b border-border/50 shadow-sm"
+          className="bg-card/95 backdrop-blur-md border-b border-border/50 shadow-sm"
         >
-          <div className="p-4">
+          <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              {/* Left side - Contact info */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="relative">
-                  <Avatar className="h-12 w-12 ring-2 ring-primary/20 shadow-lg">
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold">
+                  <Avatar className="h-9 w-9 ring-1 ring-primary/20">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm">
                       {getInitials(conversation?.participantName || 'Unknown')}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-1 -right-1 p-1 bg-background rounded-full shadow-sm border">
+                  <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-background rounded-full shadow-sm border">
                     {getParticipantIcon(conversation)}
                   </div>
-                  <div className="absolute -top-1 -left-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background shadow-sm animate-pulse"></div>
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-lg text-foreground truncate">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-foreground truncate text-sm">
                     {conversation?.participantName || 'Unknown Contact'}
                   </h4>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {/* Enhanced contact type display */}
-                    {conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata ? (
-                      <>
-                        <Badge variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-primary/5 border-primary/20 text-primary shrink-0">
                           {getContactTypeDisplay(conversation)}
                         </Badge>
-                        {(conversation.metadata.contactDetails as any)?.studentName && (
-                          <Badge variant="secondary" className="text-xs">
-                            {(conversation.metadata.contactDetails as any)?.studentName}
-                          </Badge>
-                        )}
-                      </>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        {conversation?.participantType || 'Unknown'}
-                      </Badge>
-                    )}
-                    <span className="text-muted-foreground/60">•</span>
-                    <span className="font-mono text-xs">
-                      {conversation?.participantPhone?.replace('whatsapp:', '') || 'No phone'}
-                    </span>
                   </div>
                   
-                  {/* Additional metadata display */}
-                  {conversation?.metadata && typeof conversation.metadata === 'object' && (
-                    (('class' in conversation.metadata) || ('section' in conversation.metadata) || ('designation' in conversation.metadata)) && (
-                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        {('class' in conversation.metadata) && (conversation.metadata.class as string) && (
-                          <span className="bg-muted/50 px-2 py-1 rounded">
-                            Class {conversation.metadata.class as string}
-                          </span>
-                        )}
-                        {('section' in conversation.metadata) && (conversation.metadata.section as string) && (
-                          <span className="bg-muted/50 px-2 py-1 rounded">
-                            Section {conversation.metadata.section as string}
-                          </span>
-                        )}
-                        {('designation' in conversation.metadata) && (conversation.metadata.designation as string) && (
-                          <span className="bg-muted/50 px-2 py-1 rounded">
-                            {conversation.metadata.designation as string}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  )}
-                  
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">
-                      {conversation?.lastMessageAt 
-                        ? `Last seen ${formatDistanceToNow(conversation.lastMessageAt)} ago`
-                        : "No recent activity"
-                      }
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Phone className="w-3 h-3" />
+                    <span className="font-mono">
+                      {conversation?.participantPhone?.replace('whatsapp:', '') || 'No phone'}
                     </span>
                     
-                    {/* Minimal window status indicator */}
+                    {/* Window status indicator - minimal */}
                     {messageWindow?.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
                       <>
-                        <span className="text-muted-foreground/60">•</span>
+                        <span className="mx-1">•</span>
                         <div className={cn(
-                          "flex items-center gap-1 text-xs",
+                          "flex items-center gap-1",
                           formatWindowTimer(timeRemaining).color
                         )}>
-                          <div className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            formatWindowTimer(timeRemaining).color.replace('text-', 'bg-')
-                          )}></div>
-                          <span className="font-medium">
-                            {getTimerStatusText(timeRemaining)}
+                          <Clock className="w-3 h-3" />
+                          <span className="font-mono text-[10px] font-medium">
+                            {formatWindowTimer(timeRemaining).display}
                           </span>
                         </div>
                       </>
                     )}
-                    
-                    <Badge variant="secondary" className="text-xs ml-auto">
-                      {conversation?._count?.messages || 0} messages
-                    </Badge>
-                    
-                    {/* ⚡ Enhanced: Show unread count */}
-                    {conversation?.unreadCount && conversation.unreadCount > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {conversation.unreadCount} unread
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side - Actions */}
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
+                  <Search className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
+                  <PhoneCall className="h-3.5 w-3.5" />
+                </Button>
+                
+                {/* Three-dot menu moved from sidebar */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // ✅ Fix mark as read functionality
+                        if (!conversationId) {
+                          console.error('No conversation selected');
+                          return;
+                        }
+                        
+                        console.log(`🔄 Manually marking conversation ${conversationId} as read`);
+                        markAsReadMutation.mutate({
+                          conversationId: conversationId,
+                          // Don't specify messageIds to mark ALL unread messages as read
+                        });
+                      }}
+                      disabled={markAsReadMutation.isPending}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      {markAsReadMutation.isPending ? "Marking..." : "Mark as Read"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // Archive functionality
+                        console.log('Archive conversation:', conversationId);
+                      }}
+                    >
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // Mute/unmute functionality
+                        console.log('Toggle mute:', conversationId);
+                      }}
+                    >
+                      <BellOff className="h-4 w-4 mr-2" />
+                      Mute Notifications
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600"
+                      onClick={() => {
+                        const confirmDelete = confirm(
+                          `Delete conversation with ${conversation?.participantName}?\n\n` +
+                          `This will:\n` +
+                          `• Delete all messages in this conversation\n` +
+                          `• Remove the conversation from the sidebar\n` +
+                          `• When they message again, it will create a NEW conversation with enhanced metadata\n\n` +
+                          `This action cannot be undone.`
+                        );
+                        
+                        if (!confirmDelete) return;
+                        
+                        console.log(`🗑️ Deleting conversation: ${conversationId}`);
+                        
+                        // Delete conversation
+                        fetch('/api/debug/delete-conversation', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            conversationId: conversationId
+                          })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                          console.log('🗑️ Delete result:', result);
+                          
+                          if (result.success) {
+                            // Navigate back to chat list or close conversation
+                            window.location.href = '/chat';
+                          } else {
+                            alert(`❌ Failed to delete conversation: ${result.error}`);
+                          }
+                        })
+                        .catch(error => {
+                          console.error('Delete error:', error);
+                          alert(`❌ Error deleting conversation: ${error}`);
+                        });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Conversation
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                {/* Info Drawer Trigger */}
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
+                      <Info className="h-3.5 w-3.5" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="max-w-md ml-auto">
+                    <div className="mx-auto w-full max-w-sm">
+                      <DrawerHeader>
+                        <DrawerTitle className="flex items-center gap-2">
+                          {getParticipantIcon(conversation)}
+                          Contact Details
+                        </DrawerTitle>
+                        <DrawerDescription>
+                          Detailed information about this conversation
+                        </DrawerDescription>
+                      </DrawerHeader>
+                      
+                      <div className="p-4 space-y-4">
+                        {/* Contact Information */}
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <Users className="w-4 h-4" />
+                              Contact Information
+                            </h4>
+                            <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Name:</span>
+                                <span className="font-medium">{conversation.participantName}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Type:</span>
+                      <Badge variant="outline" className="text-xs">
+                                  {getContactTypeDisplay(conversation)}
                       </Badge>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Phone:</span>
+                    <span className="font-mono text-xs">
+                                  {conversation.participantPhone?.replace('whatsapp:', '')}
+                    </span>
+                              </div>
+                              {(conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata && (conversation.metadata.contactDetails as any)?.studentName) && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Student:</span>
+                                  <span className="font-medium">
+                                    {(conversation.metadata.contactDetails as any).studentName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                  </div>
+                  
+                          {/* Academic Information */}
+                  {conversation?.metadata && typeof conversation.metadata === 'object' && (
+                    (('class' in conversation.metadata) || ('section' in conversation.metadata) || ('designation' in conversation.metadata)) && (
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
+                                  <GraduationCap className="w-4 h-4" />
+                                  Academic Details
+                                </h4>
+                                <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                        {('class' in conversation.metadata) && (conversation.metadata.class as string) && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Class:</span>
+                                      <span className="font-medium">{conversation.metadata.class as string}</span>
+                                    </div>
+                        )}
+                        {('section' in conversation.metadata) && (conversation.metadata.section as string) && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Section:</span>
+                                      <span className="font-medium">{conversation.metadata.section as string}</span>
+                                    </div>
+                        )}
+                        {('designation' in conversation.metadata) && (conversation.metadata.designation as string) && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Designation:</span>
+                                      <span className="font-medium">{conversation.metadata.designation as string}</span>
+                                    </div>
+                        )}
+                                </div>
+                      </div>
+                    )
+                  )}
+                  
+                          {/* Conversation Statistics */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <MessageSquare className="w-4 h-4" />
+                              Conversation Stats
+                            </h4>
+                            <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total Messages:</span>
+                                <span className="font-medium">{conversation._count?.messages || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Unread:</span>
+                                <span className="font-medium">
+                                  {conversation.unreadCount > 0 ? conversation.unreadCount : 'None'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Last Activity:</span>
+                                <span className="text-xs">
+                                  {conversation.lastMessageAt 
+                                    ? formatDistanceToNow(conversation.lastMessageAt, { addSuffix: true })
+                                    : "No activity"
+                      }
+                    </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Window Status */}
+                          {messageWindow && (
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                Message Window
+                              </h4>
+                              <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Status:</span>
+                                  <Badge variant={messageWindow.canSendFreeform ? "default" : "secondary"} className="text-xs">
+                                    {messageWindow.canSendFreeform ? "Open" : "Closed"}
+                                  </Badge>
+                                </div>
+                                {messageWindow.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Remaining:</span>
+                                    <span className={cn("font-mono text-xs font-medium", formatWindowTimer(timeRemaining).color)}>
+                                      {formatWindowTimer(timeRemaining).display}
+                          </span>
+                        </div>
+                                )}
+                              </div>
+                            </div>
                     )}
                     
-                    {/* 🐛 Debug: Show metadata status */}
+                          {/* Debug Info */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <Settings className="w-4" />
+                              Technical Details
+                            </h4>
+                            <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Metadata:</span>
                     <Badge variant="outline" className="text-xs">
                       {(() => {
                         const meta = conversation?.metadata;
@@ -551,39 +814,23 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                       })()}
                     </Badge>
                   </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">ID:</span>
+                                <span className="font-mono text-xs">{conversation.id.slice(-8)}</span>
                 </div>
               </div>
-              
-              {/* Header Actions */}
-              <div className="flex items-center gap-2">
-                {/* Minimal Timer Display */}
-                {messageWindow?.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
-                  <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono",
-                    (() => {
-                      const { urgency } = formatWindowTimer(timeRemaining);
-                      if (urgency === 'high') return "bg-red-100/80 text-red-700 dark:bg-red-900/30 dark:text-red-300";
-                      if (urgency === 'medium') return "bg-orange-100/80 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300";
-                      return "bg-green-100/80 text-green-700 dark:bg-green-900/30 dark:text-green-300";
-                    })()
-                  )}>
-                    <Clock className="w-3 h-3" />
-                    <span className="font-semibold tracking-wide">{formatWindowTimer(timeRemaining).display}</span>
                   </div>
-                )}
-                
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-accent/50">
-                  <Search className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-accent/50">
-                  <PhoneCall className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-accent/50">
-                  <Video className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-accent/50">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+                        </div>
+                      </div>
+                      
+                      <DrawerFooter>
+                        <DrawerClose asChild>
+                          <Button variant="outline">Close</Button>
+                        </DrawerClose>
+                      </DrawerFooter>
+                    </div>
+                  </DrawerContent>
+                </Drawer>
               </div>
             </div>
           </div>
@@ -702,29 +949,36 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                           </div>
                         )}
 
-                        {/* Message bubble */}
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                        {/* Message bubble - Minimal design */}
+                        <div
                           className={cn(
-                            "relative max-w-[75%] rounded-2xl px-4 py-3 shadow-md",
-                            "group cursor-pointer transition-all duration-300",
+                            "relative max-w-[75%] rounded-xl px-3 py-2",
                             isOwn
-                              ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md shadow-primary/20"
-                              : "bg-card text-card-foreground rounded-bl-md hover:shadow-lg border border-border/50"
+                              ? "bg-primary text-primary-foreground rounded-br-sm"
+                              : "bg-card text-card-foreground rounded-bl-sm border border-border/30"
                           )}
                         >
-                          {/* Message content */}
+                          {/* Message content with inline time */}
                           <div className="break-words">
                             {message.content.startsWith('[Template:') ? (
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 <div className={cn(
-                                  "p-2 rounded-lg",
+                                  "p-1.5 rounded",
                                   isOwn ? "bg-primary-foreground/20" : "bg-primary/10"
                                 )}>
-                                  <Mail className="h-4 w-4" />
+                                  <Mail className="h-3 w-3" />
                                 </div>
-                                <div>
+                                <div className="flex-1">
+                                  {/* Time inline for template messages */}
+                                  <div className="flex items-baseline gap-2 mb-1">
+                                    <span className={cn(
+                                      "text-[10px] font-medium",
+                                      isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
+                                    )}>
+                                      {formatMessageTime(new Date(message.createdAt))}
+                                    </span>
+                                    {getMessageStatusIcon(message)}
+                                  </div>
                                   <p className="text-sm font-medium">Template Message</p>
                                   <p className="text-xs opacity-80">
                                     {message.content.replace('[Template:', '').replace(']', '')}
@@ -732,31 +986,24 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-sm leading-relaxed">
-                                {message.content}
-                              </p>
+                              <div>
+                                {/* Time inline with message */}
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className={cn(
+                                    "text-[10px] font-medium shrink-0",
+                                    isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
+                                  )}>
+                                    {formatMessageTime(new Date(message.createdAt))}
+                                  </span>
+                                  {getMessageStatusIcon(message)}
+                                </div>
+                                <p className="text-sm leading-relaxed">
+                                  {message.content}
+                                </p>
+                              </div>
                             )}
                           </div>
-
-                          {/* Message metadata */}
-                          <div className={cn(
-                            "flex items-center justify-end mt-2 gap-1.5",
-                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
-                          )}>
-                            <span className="text-xs font-medium">
-                              {formatMessageTime(new Date(message.createdAt))}
-                            </span>
-                            {getMessageStatusIcon(message)}
-                          </div>
-
-                          {/* Hover indicator */}
-                          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            <div className={cn(
-                              "absolute inset-0 rounded-2xl",
-                              isOwn ? "bg-primary-foreground/5" : "bg-primary/5"
-                            )}></div>
-                          </div>
-                        </motion.div>
+                        </div>
 
                         {/* Spacer for outgoing messages */}
                         {isOwn && <div className="w-8"></div>}
@@ -787,25 +1034,27 @@ export function WhatsAppChat({ conversationId }: WhatsAppChatProps) {
                 : "border-destructive/20 bg-destructive/5"
             )}>
               {messageWindow.canSendFreeform ? (
-                <Clock className="h-4 w-4 text-primary" />
+                <Clock className="text-primary h-5 w-5 mr-2" />
               ) : (
-                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertTriangle className="text-destructive h-5 w-5 mr-2" />
               )}
               <AlertDescription className={cn(
-                "font-medium",
+                "font-medium leading-relaxed",
                 messageWindow.canSendFreeform ? "text-primary" : "text-destructive"
               )}>
-                {getWindowStatusExplanation(messageWindow)}
-                {!messageWindow.canSendFreeform && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="p-0 h-auto ml-2 text-destructive hover:text-destructive/80 font-medium"
-                    onClick={() => setShowTemplateSelector(true)}
-                  >
-                    Use Template Message →
-                  </Button>
-                )}
+                <div className="flex flex-col gap-1">
+                  <span>{getWindowStatusExplanation(messageWindow)}</span>
+                  {!messageWindow.canSendFreeform && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="p-0 h-auto justify-start text-destructive hover:text-destructive/80 font-medium"
+                      onClick={() => setShowTemplateSelector(true)}
+                    >
+                      Use Template Message →
+                    </Button>
+                  )}
+                </div>
               </AlertDescription>
             </Alert>
           </motion.div>

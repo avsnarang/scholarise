@@ -196,6 +196,26 @@ export function ChatInterface() {
     },
   });
 
+  // Refresh contact metadata mutation
+  const refreshMetadataMutation = api.chat.refreshContactMetadata.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Contact metadata refreshed",
+        description: `Successfully updated ${data.refreshed} conversations`,
+        variant: "default",
+      });
+      // Immediately refresh conversations to show updated metadata
+      refetchConversations();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to refresh metadata",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -299,8 +319,35 @@ export function ChatInterface() {
                   refetchConversations();
                   if (selectedConversationId) refetchMessages();
                 }}
+                title="Refresh conversations and messages"
               >
                 <RefreshCw className="w-4 h-4" />
+              </Button>
+
+              {/* 🔄 Force Refresh Contact Metadata Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!currentBranchId) {
+                    toast({
+                      title: "Error",
+                      description: "No branch selected",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  refreshMetadataMutation.mutate({ branchId: currentBranchId });
+                }}
+                disabled={refreshMetadataMutation.isPending}
+                title="Force refresh contact metadata (Father/Mother/Student/Teacher/Employee categories)"
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                {refreshMetadataMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Users className="w-4 h-4" />
+                )}
               </Button>
               
               {/* 🚀 Diagnostic Button - Always Accessible */}
