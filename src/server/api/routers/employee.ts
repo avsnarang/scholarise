@@ -285,7 +285,7 @@ export const employeeRouter = createTRPCRouter({
             
             console.log("Found role:", roleName);
             
-            // Create employee user in Clerk
+            // Create employee user in Supabase
             console.log("Calling createEmployeeUser with:", {
               firstName: input.firstName,
               lastName: input.lastName,
@@ -345,7 +345,7 @@ export const employeeRouter = createTRPCRouter({
               });
             }
           } catch (error) {
-            console.error("Error creating Clerk user for employee:", error);
+            console.error("Error creating Supabase user for employee:", error);
             const errorDetails = error instanceof Error ? 
               { message: error.message, stack: error.stack } : 
               String(error);
@@ -1188,9 +1188,27 @@ export const employeeRouter = createTRPCRouter({
                     });
                     supabaseUserId = supabaseUser.id;
                     importMessages.push(`[INFO] Row ${rowNum}: Created Supabase user for ${employeeData.firstName} ${employeeData.lastName}`);
+
+                    // Also create the User record in our database
+                    try {
+                      await prisma.user.create({
+                        data: {
+                          id: supabaseUser.id,
+                          authIdentifier: employeeData.email,
+                          email: employeeData.email,
+                          firstName: employeeData.firstName,
+                          lastName: employeeData.lastName,
+                          userType: 'employee',
+                          isActive: true,
+                        },
+                      });
+                    } catch (userError) {
+                      // User might already exist, don't fail the import
+                      importMessages.push(`[WARN] Row ${rowNum}: User record may already exist`);
+                    }
                   } catch (error) {
-                    importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Clerk user: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                    // Continue without Clerk user
+                    importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Supabase user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    // Continue without Supabase user
                   }
                 }
 
