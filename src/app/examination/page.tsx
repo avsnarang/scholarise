@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +34,7 @@ import {
   Sparkles,
   TrendingDown
 } from "lucide-react";
+import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
@@ -53,10 +54,16 @@ export default function ExaminationDashboard() {
 
   // Calculate assessment metrics
   const totalSchemas = schemas?.length || 0;
-  const publishedSchemas = schemas?.filter((schema: any) => schema.status === 'PUBLISHED')?.length || 0;
-  const draftSchemas = schemas?.filter((schema: any) => schema.status === 'DRAFT')?.length || 0;
-  const schemasWithScores = schemas?.filter((schema: any) => schema._count?.studentScores > 0)?.length || 0;
+  const publishedSchemas = schemas?.filter((schema: any) => schema.isPublished)?.length || 0;
+  const draftSchemas = schemas?.filter((schema: any) => !schema.isPublished)?.length || 0;
+  const schemasWithScores = schemas?.filter((schema: any) => schema._count?.studentAssessmentScores > 0)?.length || 0;
   
+  // Calculate additional metrics
+  const activeSchemas = schemas?.filter((schema: any) => schema.isActive && schema.isPublished)?.length || 0;
+  const totalScoresRecorded = schemas?.reduce((total: number, schema: any) => {
+    return total + (schema._count?.studentAssessmentScores || 0);
+  }, 0) || 0;
+
   // Calculate completion rate for assessment schemas
   const assessmentCompletionRate = totalSchemas > 0 ? Math.round((schemasWithScores / totalSchemas) * 100) : 0;
 
@@ -67,28 +74,50 @@ export default function ExaminationDashboard() {
   // Simplified stats for minimal design
   const stats = [
     {
-      title: "Assessment Schemas",
+      title: "Total Schemas",
       value: totalSchemas,
-      description: "Total created",
+      description: `${publishedSchemas} published, ${draftSchemas} draft`,
       icon: BookOpen,
+      trend: 5, // Placeholder trend data
+      footerIcon: BookOpen,
+      footerTitle: "Assessment Schemas",
+      footerDescription: "All created assessment frameworks"
     },
     {
-      title: "Published",
-      value: publishedSchemas,
-      description: "Ready for scoring",
+      title: "Active Assessments",
+      value: activeSchemas,
+      description: "Currently accepting scores",
       icon: ClipboardCheck,
+      trend: 12,
+      footerIcon: ClipboardCheck,
+      footerTitle: "Active Assessments",
+      footerDescription: totalSchemas > 0 
+        ? `${Math.round((activeSchemas / totalSchemas) * 100)}% of total schemas`
+        : "No active assessments"
     },
     {
-      title: "With Scores",
-      value: schemasWithScores,
-      description: "Have student data",
+      title: "Student Scores",
+      value: totalScoresRecorded,
+      description: `Across ${schemasWithScores} assessments`,
       icon: BarChart3,
+      trend: 8,
+      footerIcon: BarChart3,
+      footerTitle: "Score Entries",
+      footerDescription: schemasWithScores > 0 
+        ? `Data recorded for ${schemasWithScores} assessments`
+        : "No scores recorded yet"
     },
     {
       title: "Grade Scales",
       value: totalGradeScales,
       description: defaultGradeScale ? `Default: ${defaultGradeScale.name}` : "Setup required",
       icon: Award,
+      trend: 0,
+      footerIcon: Award,
+      footerTitle: "Grading Systems",
+      footerDescription: defaultGradeScale 
+        ? `Using ${defaultGradeScale.name} as default`
+        : "Configure grading scales"
     },
   ];
 
@@ -121,7 +150,7 @@ export default function ExaminationDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 @container/main">
       {/* Simple Header */}
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Assessment Center</h1>
@@ -131,23 +160,36 @@ export default function ExaminationDashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="*:data-[slot=card]:from-[#00501B]/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {stats.map((stat) => {
-          const Icon = stat.icon;
+          const FooterIcon = stat.footerIcon;
           return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
+            <Card key={stat.title} className="@container/card">
+              <CardHeader>
+                <CardDescription>{stat.title}</CardDescription>
+                <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                  {stat.value.toLocaleString()}
                 </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <CardAction>
+                  <Badge variant="outline" className={stat.trend >= 0 ? "text-[#00501B] dark:text-[#7AAD8B]" : "text-[#A65A20]"}>
+                    {stat.trend >= 0 ? (
+                      <IconTrendingUp className="text-[#00501B] dark:text-[#7AAD8B]" />
+                    ) : (
+                      <IconTrendingDown className="text-[#A65A20]" />
+                    )}
+                    {stat.trend >= 0 ? "+" : ""}{stat.trend}%
+                  </Badge>
+                </CardAction>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
-              </CardContent>
+              <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                <div className="line-clamp-1 flex gap-2 font-medium">
+                  <FooterIcon className="size-4 text-[#00501B] dark:text-[#7AAD8B]" /> 
+                  {stat.footerTitle}
+                </div>
+                <div className="text-muted-foreground">
+                  {stat.footerDescription}
+                </div>
+              </CardFooter>
             </Card>
           );
         })}
@@ -234,14 +276,14 @@ export default function ExaminationDashboard() {
                   {schemas?.slice(0, 4).map((schema: any) => (
                     <div key={schema.id} className="flex items-center space-x-3">
                       <div className={`h-2 w-2 rounded-full ${
-                        schema.status === 'PUBLISHED' ? 'bg-green-500' : 'bg-yellow-500'
+                        schema.isPublished ? 'bg-green-500' : 'bg-yellow-500'
                       }`} />
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none">
                           {schema.name}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                                                      {schema.subject?.name} • {schema.termRelation?.name || schema.term}
+                          {schema.subject?.name} • {schema.termRelation?.name || schema.term}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-xs">
