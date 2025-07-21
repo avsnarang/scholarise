@@ -50,7 +50,7 @@ interface AssessmentSchemaBuilderProps {
   initialData?: CreateAssessmentSchemaInput;
   classes: Array<{ id: string; name: string; sections?: Array<{ id: string; name: string }> }>;
   subjects: Array<{ id: string; name: string }>;
-  terms: Array<{ id: string; name: string; description?: string }>;
+  terms: Array<{ id: string; name: string; description?: string | null }>;
   onSave: (data: CreateAssessmentSchemaInput) => Promise<void>;
   onPreview?: (data: CreateAssessmentSchemaInput) => void;
 }

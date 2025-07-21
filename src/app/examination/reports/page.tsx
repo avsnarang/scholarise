@@ -44,7 +44,7 @@ export default function ExaminationReportsPage() {
   // Calculate metrics
   const totalSchemas = schemas?.length || 0;
   const publishedSchemas = schemas?.filter((schema: any) => schema.isPublished)?.length || 0;
-  const schemasWithScores = schemas?.filter((schema: any) => schema._count?.studentScores > 0)?.length || 0;
+  const schemasWithScores = schemas?.filter((schema: any) => schema._count?.studentAssessmentScores > 0)?.length || 0;
   const totalGradeScales = gradeScales?.length || 0;
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = "text-gray-900" }: {
@@ -211,7 +211,7 @@ export default function ExaminationReportsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{schema.components?.length || 0}</TableCell>
-                      <TableCell>{schema._count?.studentScores || 0}</TableCell>
+                      <TableCell>{schema._count?.studentAssessmentScores || 0}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -263,7 +263,7 @@ export default function ExaminationReportsPage() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-600">Student Scores</p>
-                          <p className="text-2xl font-bold">{schema._count?.studentScores || 0}</p>
+                          <p className="text-2xl font-bold">{schema._count?.studentAssessmentScores || 0}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-600">Status</p>

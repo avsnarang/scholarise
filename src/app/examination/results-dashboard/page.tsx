@@ -8,7 +8,16 @@ export default function ResultsDashboardPage() {
   const { schemas, isLoading } = useAssessmentSchemas();
   
   // For now, use the first schema and mock data
-  const selectedSchema = schemas[0];
+  const rawSchema = schemas[0];
+  
+  // Map the database schema to match the AssessmentSchema type
+  const selectedSchema = rawSchema ? {
+    ...rawSchema,
+    termId: rawSchema.termRelation?.id || rawSchema.term || '',
+    term: rawSchema.termRelation,
+    appliedClasses: (rawSchema.appliedClasses as any) || [],
+  } as any : null;
+  
   const mockStudents = [
     { id: '1', name: 'John Doe', rollNumber: '001' },
     { id: '2', name: 'Jane Smith', rollNumber: '002' },

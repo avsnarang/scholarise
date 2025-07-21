@@ -6,24 +6,24 @@ import { api } from '@/utils/api';
 interface Term {
   id: string;
   name: string;
-  description?: string;
-  startDate: string;
-  endDate: string;
+  description?: string | null;
+  startDate: Date;
+  endDate: Date;
   order: number;
   isActive: boolean;
   isCurrentTerm: boolean;
   branchId: string;
   sessionId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   branch: {
     name: string;
     code: string;
   };
   session: {
     name: string;
-    startDate: string;
-    endDate: string;
+    startDate: Date;
+    endDate: Date;
   };
 }
 

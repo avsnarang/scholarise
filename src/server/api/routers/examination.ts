@@ -401,6 +401,12 @@ export const examinationRouter = createTRPCRouter({
         }
 
         const assessmentSchemaId = assessmentSchemaIds[0];
+        if (!assessmentSchemaId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST", 
+            message: "Assessment schema ID is required",
+          });
+        }
         console.log('Processing scores for assessment schema:', assessmentSchemaId);
 
         // Validate assessment schema exists and is active
@@ -580,6 +586,7 @@ export const examinationRouter = createTRPCRouter({
                     studentAssessmentScoreId: studentAssessmentScore.id,
                     componentId,
                     rawScore: marksObtained,
+                    enteredBy: ctx.userId,
                   },
                 });
               }
@@ -604,6 +611,7 @@ export const examinationRouter = createTRPCRouter({
                         componentScoreId: componentScore.id,
                         subCriteriaId,
                         score: subScore,
+                        enteredBy: ctx.userId,
                       },
                     });
                   }
@@ -1070,7 +1078,12 @@ export const examinationRouter = createTRPCRouter({
       const { classIds, components, ...schemaData } = input;
 
       // Parse and validate class-section selections
-      const appliedClassesData = [];
+      const appliedClassesData: Array<{
+        classId: string;
+        className: string;
+        sectionId?: string;
+        sectionName?: string;
+      }> = [];
       const allClassIds = new Set<string>();
 
       for (const classIdString of classIds) {
@@ -1080,8 +1093,18 @@ export const examinationRouter = createTRPCRouter({
         // Parse class ID from the format "classId" or "classId-sectionId"
         if (classIdString.includes('-')) {
           const parts = classIdString.split('-');
-          actualClassId = parts[0];
-          sectionId = parts[1];
+          const firstPart = parts[0];
+          const secondPart = parts[1];
+          
+          if (!firstPart) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid class ID format: ${classIdString}`,
+            });
+          }
+          
+          actualClassId = firstPart;
+          sectionId = secondPart || null;
         } else {
           actualClassId = classIdString;
         }
@@ -1096,12 +1119,20 @@ export const examinationRouter = createTRPCRouter({
         allClassIds.add(actualClassId);
         appliedClassesData.push({
           classId: actualClassId,
-          sectionId: sectionId,
-          originalValue: classIdString
+          className: actualClassId, // Placeholder, will be fetched
+          sectionId: sectionId || undefined,
+          sectionName: sectionId ? 'Section' : undefined // Placeholder
         });
       }
 
-      const primaryClassId = Array.from(allClassIds)[0];
+      // Use the first class ID as the primary class for the schema
+      const primaryClassId = allClassIds.values().next().value;
+      if (!primaryClassId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "At least one class must be selected",
+        });
+      }
 
       // Check for existing schema with same name, subject, and term
       const existingSchema = await ctx.db.assessmentSchema.findFirst({
@@ -1131,8 +1162,6 @@ export const examinationRouter = createTRPCRouter({
             subjectId: schemaData.subjectId,
             branchId: schemaData.branchId,
             totalMarks: schemaData.totalMarks,
-            passingCriteria: schemaData.passingCriteria,
-            description: schemaData.description,
             isActive: true,
             createdBy: ctx.userId,
             appliedClasses: appliedClassesData,
