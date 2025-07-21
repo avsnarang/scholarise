@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBranchContext } from '@/hooks/useBranchContext';
+import { api } from '@/utils/api';
 
 interface CreateAssessmentSchemaData {
   name: string;
@@ -28,150 +29,123 @@ export function useAssessmentSchemas() {
   const { currentBranchId } = useBranchContext();
   const queryClient = useQueryClient();
 
-  const { data: schemas, isLoading, error } = useQuery({
-    queryKey: ['assessment-schemas', currentBranchId],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (currentBranchId) {
-        params.append('branchId', currentBranchId);
-      }
-      
-      const response = await fetch(`/api/assessment-schemas?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch assessment schemas');
-      }
-      return response.json();
+  const { data: schemas, isLoading, error } = api.examination.getAssessmentSchemas.useQuery(
+    {
+      branchId: currentBranchId || undefined,
     },
-    enabled: !!currentBranchId,
-  });
+    {
+      enabled: !!currentBranchId,
+    }
+  );
 
-  const createSchemaMutation = useMutation({
-    mutationFn: async (data: CreateAssessmentSchemaData) => {
-      console.log('Sending data to API:', data);
-      
-      const response = await fetch('/api/assessment-schemas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          branchId: currentBranchId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to create assessment schema');
-      }
-
-      const result = await response.json();
-      console.log('API Success:', result);
-      return result;
-    },
+  const createSchemaMutation = api.examination.createAssessmentSchema.useMutation({
     onSuccess: () => {
-      // Invalidate and refetch schemas
-      queryClient.invalidateQueries({ queryKey: ['assessment-schemas'] });
-    },
-  });
-
-  const updateSchemaMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: CreateAssessmentSchemaData }) => {
-      console.log('Updating schema with data:', data);
-      
-      const response = await fetch(`/api/assessment-schemas?id=${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          branchId: currentBranchId,
-        }),
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentSchemas'],
+          {
+            branchId: currentBranchId || undefined,
+          }
+        ]
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to update assessment schema');
-      }
-
-      const result = await response.json();
-      console.log('Update Success:', result);
-      return result;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch schemas
-      queryClient.invalidateQueries({ queryKey: ['assessment-schemas'] });
     },
   });
 
-  const updateSchemaStatusMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'set-draft' | 'set-published' | 'freeze-marks' }) => {
-      console.log('Updating schema status:', id, action);
-      
-      const response = await fetch(`/api/assessment-schemas?id=${id}&action=${action}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  const updateSchemaMutation = api.examination.updateAssessmentSchema.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentSchemas'],
+          {
+            branchId: currentBranchId || undefined,
+          }
+        ]
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Status Update API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to update assessment schema status');
-      }
-
-      const result = await response.json();
-      console.log('Status Update Success:', result);
-      return result;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch schemas
-      queryClient.invalidateQueries({ queryKey: ['assessment-schemas'] });
     },
   });
 
-  const deleteSchemaMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('Deleting schema:', id);
-      
-      const response = await fetch(`/api/assessment-schemas?id=${id}`, {
-        method: 'DELETE',
+  const updateSchemaStatusMutation = api.examination.updateAssessmentSchemaStatus.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentSchemas'],
+          {
+            branchId: currentBranchId || undefined,
+          }
+        ]
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Delete API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to delete assessment schema');
-      }
-
-      const result = await response.json();
-      console.log('Delete Success:', result);
-      return result;
-    },
-    onSuccess: () => {
-      // Invalidate and refetch schemas
-      queryClient.invalidateQueries({ queryKey: ['assessment-schemas'] });
     },
   });
+
+  const deleteSchemaMutation = api.examination.deleteAssessmentSchema.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentSchemas'],
+          {
+            branchId: currentBranchId || undefined,
+          }
+        ]
+      });
+    },
+  });
+
+  const createSchema = async (data: CreateAssessmentSchemaData) => {
+    if (!currentBranchId) {
+      throw new Error('Branch ID is required');
+    }
+
+    return createSchemaMutation.mutateAsync({
+      name: data.name,
+      term: data.term,
+      classIds: data.classIds,
+      subjectId: data.subjectId,
+      branchId: currentBranchId,
+      totalMarks: data.totalMarks,
+      passingCriteria: data.passingCriteria,
+      description: data.description,
+      components: data.components,
+    });
+  };
+
+  const updateSchema = async ({ id, data }: { id: string; data: CreateAssessmentSchemaData }) => {
+    return updateSchemaMutation.mutateAsync({
+      id,
+      data: {
+        name: data.name,
+        term: data.term,
+        classIds: data.classIds,
+        subjectId: data.subjectId,
+        totalMarks: data.totalMarks,
+        passingCriteria: data.passingCriteria,
+        description: data.description,
+        components: data.components,
+      },
+    });
+  };
+
+  const updateSchemaStatus = async ({ id, action }: { id: string; action: 'set-draft' | 'set-published' | 'freeze-marks' }) => {
+    return updateSchemaStatusMutation.mutateAsync({ id, action });
+  };
+
+  const deleteSchema = async (id: string) => {
+    return deleteSchemaMutation.mutateAsync({ id });
+  };
 
   return {
     schemas: schemas || [],
     isLoading,
     error,
-    createSchema: createSchemaMutation.mutate,
+    createSchema,
     isCreating: createSchemaMutation.isPending,
     createError: createSchemaMutation.error,
-    updateSchema: updateSchemaMutation.mutate,
+    updateSchema,
     isUpdating: updateSchemaMutation.isPending,
     updateError: updateSchemaMutation.error,
-    updateSchemaStatus: updateSchemaStatusMutation.mutate,
+    updateSchemaStatus,
     isUpdatingStatus: updateSchemaStatusMutation.isPending,
     updateStatusError: updateSchemaStatusMutation.error,
-    deleteSchema: deleteSchemaMutation.mutate,
+    deleteSchema,
     isDeleting: deleteSchemaMutation.isPending,
     deleteError: deleteSchemaMutation.error,
   };
@@ -180,52 +154,66 @@ export function useAssessmentSchemas() {
 export function useAssessmentScores(assessmentSchemaId?: string) {
   const queryClient = useQueryClient();
 
-  const { data: scores, isLoading, error } = useQuery({
-    queryKey: ['assessment-scores', assessmentSchemaId],
-    queryFn: async () => {
-      if (!assessmentSchemaId) return [];
-      
-      const params = new URLSearchParams();
-      params.append('assessmentSchemaId', assessmentSchemaId);
-      
-      const response = await fetch(`/api/assessment-scores?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch assessment scores');
-      }
-      return response.json();
+  const { data: scores, isLoading, error } = api.examination.getAssessmentScores.useQuery(
+    {
+      assessmentSchemaId: assessmentSchemaId || "",
     },
-    enabled: !!assessmentSchemaId,
-  });
+    {
+      enabled: !!assessmentSchemaId,
+    }
+  );
 
-  const saveScoresMutation = useMutation({
-    mutationFn: async (scoresData: any[]) => {
-      const response = await fetch('/api/assessment-scores', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(scoresData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save assessment scores');
-      }
-
-      return response.json();
-    },
+  const saveScoresMutation = api.examination.saveAssessmentScores.useMutation({
     onSuccess: () => {
-      // Invalidate and refetch scores
-      queryClient.invalidateQueries({ queryKey: ['assessment-scores'] });
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentScores'],
+          {
+            assessmentSchemaId: assessmentSchemaId || "",
+          }
+        ]
+      });
     },
   });
+
+  const deleteScoreMutation = api.examination.deleteAssessmentScore.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getAssessmentScores'],
+          {
+            assessmentSchemaId: assessmentSchemaId || "",
+          }
+        ]
+      });
+    },
+  });
+
+  const saveScores = async (scoresData: any[]) => {
+    return saveScoresMutation.mutateAsync(scoresData);
+  };
+
+  const deleteScore = async (studentId: string, componentId?: string) => {
+    if (!assessmentSchemaId) {
+      throw new Error('Assessment schema ID is required');
+    }
+
+    return deleteScoreMutation.mutateAsync({
+      studentId,
+      assessmentSchemaId,
+      componentId,
+    });
+  };
 
   return {
     scores: scores || [],
     isLoading,
     error,
-    saveScores: saveScoresMutation.mutate,
+    saveScores,
     isSaving: saveScoresMutation.isPending,
     saveError: saveScoresMutation.error,
+    deleteScore,
+    isDeleting: deleteScoreMutation.isPending,
+    deleteError: deleteScoreMutation.error,
   };
 } 

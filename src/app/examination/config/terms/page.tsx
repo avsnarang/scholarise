@@ -23,6 +23,154 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { format } from "date-fns";
 
+interface TermFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  term?: Term | null;
+  sessionId: string;
+  onSubmit: (data: CreateTermData | UpdateTermData) => Promise<void>;
+  isSubmitting: boolean;
+}
+
+function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmitting }: TermFormDialogProps) {
+  const { currentBranchId } = useBranchContext();
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    order: 0,
+    isCurrentTerm: false,
+  });
+
+  React.useEffect(() => {
+    if (term) {
+      setFormData({
+        name: term.name,
+        description: term.description || '',
+        startDate: format(new Date(term.startDate), 'yyyy-MM-dd'),
+        endDate: format(new Date(term.endDate), 'yyyy-MM-dd'),
+        order: term.order,
+        isCurrentTerm: term.isCurrentTerm,
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        order: 0,
+        isCurrentTerm: false,
+      });
+    }
+  }, [term, open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentBranchId || !sessionId) return;
+
+    try {
+      await onSubmit({
+        name: formData.name,
+        description: formData.description,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        order: formData.order,
+        isCurrentTerm: formData.isCurrentTerm,
+        sessionId,
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error submitting term:', error);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{term ? 'Edit Term' : 'Create New Term'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Term Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Enter term name"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter term description (optional)"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="order">Display Order</Label>
+            <Input
+              id="order"
+              type="number"
+              value={formData.order}
+              onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+              placeholder="0"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="isCurrentTerm"
+              checked={formData.isCurrentTerm}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isCurrentTerm: checked }))}
+            />
+            <Label htmlFor="isCurrentTerm">Set as Current Term</Label>
+          </div>
+          
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : term ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function TermConfigPage() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -340,149 +488,5 @@ export default function TermConfigPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageWrapper>
-  );
-}
-
-// Term Form Dialog Component
-interface TermFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  term?: Term | null;
-  sessionId: string;
-  onSubmit: (data: CreateTermData | UpdateTermData) => void;
-  isSubmitting: boolean;
-}
-
-function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmitting }: TermFormDialogProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    order: 0,
-    isCurrentTerm: false,
-  });
-
-  React.useEffect(() => {
-    if (term) {
-      setFormData({
-        name: term.name,
-        description: term.description || '',
-        startDate: term.startDate?.split('T')[0] || '',
-        endDate: term.endDate?.split('T')[0] || '',
-        order: term.order,
-        isCurrentTerm: term.isCurrentTerm,
-      });
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        order: 0,
-        isCurrentTerm: false,
-      });
-    }
-  }, [term, open]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      ...formData,
-      sessionId,
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{term ? 'Edit Term' : 'Create Term'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Term Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., First Term"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Add a description for this term"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="order">Display Order</Label>
-            <Input
-              id="order"
-              type="number"
-              min="0"
-              value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isCurrentTerm"
-              checked={formData.isCurrentTerm}
-              onCheckedChange={(checked) => setFormData({ ...formData, isCurrentTerm: checked })}
-            />
-            <Label htmlFor="isCurrentTerm">Mark as current term</Label>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-[#00501B] hover:bg-[#00501B]/90"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : (term ? 'Update Term' : 'Create Term')}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 } 

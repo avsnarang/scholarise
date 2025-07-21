@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBranchContext } from '@/hooks/useBranchContext';
 import { useAcademicSessionContext } from '@/hooks/useAcademicSessionContext';
+import { api } from '@/utils/api';
 
 interface Term {
   id: string;
@@ -54,118 +55,105 @@ export function useTerms(sessionId?: string) {
   // Use the provided sessionId or fall back to the current session from context
   const effectiveSessionId = sessionId || currentSessionId;
 
-  const { data: terms = [], isLoading, error } = useQuery({
-    queryKey: ['terms', currentBranchId, effectiveSessionId],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (currentBranchId) {
-        params.append('branchId', currentBranchId);
-      }
-      if (effectiveSessionId) {
-        params.append('sessionId', effectiveSessionId);
-      }
-      
-      const response = await fetch(`/api/terms?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch terms');
-      }
-      return response.json() as Promise<Term[]>;
+  const { data: terms = [], isLoading, error } = api.examination.getTerms.useQuery(
+    {
+      branchId: currentBranchId || undefined,
+      sessionId: effectiveSessionId || undefined,
     },
-    enabled: !!currentBranchId && !!effectiveSessionId,
-  });
+    {
+      enabled: !!currentBranchId && !!effectiveSessionId,
+    }
+  );
 
-  const createTermMutation = useMutation({
-    mutationFn: async (data: CreateTermData) => {
-      console.log('Creating term with data:', data);
-      
-      const response = await fetch('/api/terms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          branchId: currentBranchId,
-          sessionId: effectiveSessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to create term');
-      }
-
-      const result = await response.json();
-      console.log('API Success:', result);
-      return result;
-    },
+  const createTermMutation = api.examination.createTerm.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['terms'] });
-    },
-  });
-
-  const updateTermMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateTermData }) => {
-      console.log('Updating term with data:', data);
-      
-      const response = await fetch(`/api/terms?id=${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getTerms'],
+          {
+            branchId: currentBranchId || undefined,
+            sessionId: effectiveSessionId || undefined,
+          }
+        ]
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to update term');
-      }
-
-      const result = await response.json();
-      console.log('Update Success:', result);
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
 
-  const deleteTermMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('Deleting term:', id);
-      
-      const response = await fetch(`/api/terms?id=${id}`, {
-        method: 'DELETE',
+  const updateTermMutation = api.examination.updateTerm.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getTerms'],
+          {
+            branchId: currentBranchId || undefined,
+            sessionId: effectiveSessionId || undefined,
+          }
+        ]
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Delete API Error:', error);
-        throw new Error(error.error || error.details || 'Failed to delete term');
-      }
-
-      const result = await response.json();
-      console.log('Delete Success:', result);
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['terms'] });
     },
   });
+
+  const deleteTermMutation = api.examination.deleteTerm.useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [
+          ['examination', 'getTerms'],
+          {
+            branchId: currentBranchId || undefined,
+            sessionId: effectiveSessionId || undefined,
+          }
+        ]
+      });
+    },
+  });
+
+  const createTerm = async (data: CreateTermData) => {
+    if (!currentBranchId || !effectiveSessionId) {
+      throw new Error('Branch ID and Session ID are required');
+    }
+
+    return createTermMutation.mutateAsync({
+      name: data.name,
+      description: data.description,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      order: data.order || 0,
+      isCurrentTerm: data.isCurrentTerm || false,
+      branchId: currentBranchId,
+      sessionId: effectiveSessionId,
+    });
+  };
+
+  const updateTerm = async ({ id, data }: { id: string; data: UpdateTermData }) => {
+    return updateTermMutation.mutateAsync({
+      id,
+      data: {
+        name: data.name,
+        description: data.description,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        order: data.order,
+        isCurrentTerm: data.isCurrentTerm,
+        isActive: data.isActive,
+      },
+    });
+  };
+
+  const deleteTerm = async (id: string) => {
+    return deleteTermMutation.mutateAsync({ id });
+  };
 
   return {
     terms,
     isLoading,
     error,
-    createTerm: createTermMutation.mutate,
+    createTerm,
     isCreating: createTermMutation.isPending,
     createError: createTermMutation.error,
-    updateTerm: updateTermMutation.mutate,
+    updateTerm,
     isUpdating: updateTermMutation.isPending,
     updateError: updateTermMutation.error,
-    deleteTerm: deleteTermMutation.mutate,
+    deleteTerm,
     isDeleting: deleteTermMutation.isPending,
     deleteError: deleteTermMutation.error,
   };

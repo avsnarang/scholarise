@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { RouteGuard } from "@/components/route-guard";
 import { Permission } from "@/types/permissions";
 import { ComponentScoreEntry } from "@/components/assessment/ComponentScoreEntry";
+import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
 
 export default function ScoreEntryPage() {
   return (
@@ -56,6 +57,19 @@ function ScoreEntryContent() {
   const [existingScores, setExistingScores] = useState<any[]>([]);
   const [activeComponentTab, setActiveComponentTab] = useState<string>("");
   const [componentScores, setComponentScores] = useState<Record<string, any[]>>({});
+
+  // TRPC mutations for assessment scores
+  const saveAssessmentScoresMutation = api.examination.saveAssessmentScores.useMutation();
+  
+  // TRPC query for assessment scores (conditionally enabled)
+  const { data: assessmentScoresData } = api.examination.getAssessmentScores.useQuery(
+    {
+      assessmentSchemaId: selectedSchemaId || "",
+    },
+    {
+      enabled: !!selectedSchemaId,
+    }
+  );
 
   // Get teacher's subject assignments if user is a teacher
   const { data: teacherAssignments = [] } = api.subjectTeacher.getByTeacherId.useQuery(
@@ -103,74 +117,53 @@ function ScoreEntryContent() {
   const assessmentConfigurations: any[] = [];
   const configsLoading = false;
 
-  // Fetch assessment schemas using direct API call
-  const [assessmentSchemas, setAssessmentSchemas] = useState<any[]>([]);
-  const [schemasLoading, setSchemasLoading] = useState(false);
+  // Fetch assessment schemas using the TRPC hook
+  const { schemas: allSchemas, isLoading: schemasLoading } = useAssessmentSchemas();
+  
+  // Note: Assessment scores will now use TRPC endpoints through proper hooks
 
-  useEffect(() => {
-    const fetchAssessmentSchemas = async () => {
-      if (!currentBranchId) {
-        setAssessmentSchemas([]);
-        return;
+  // Filter schemas by selected class and section
+  const assessmentSchemas = useMemo(() => {
+    if (!selectedClassId || !allSchemas) return [];
+    
+    const filteredSchemas = allSchemas.filter((schema: any) => {
+      // Check if schema applies to the selected class
+      if (schema.classId === selectedClassId) return true;
+      
+      // Check appliedClasses for multi-class schemas
+      if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
+        return schema.appliedClasses.some((appliedClass: any) => appliedClass.classId === selectedClassId);
       }
+      
+      return false;
+    });
 
-      setSchemasLoading(true);
-      try {
-        const response = await fetch(`/api/assessment-schemas?branchId=${currentBranchId}`);
-        if (response.ok) {
-          const schemas = await response.json();
-          
-          if (Array.isArray(schemas)) {
-            // Filter schemas by selected class
-            const filteredSchemas = schemas.filter((schema: any) => {
-              if (!selectedClassId) return false;
-              
-              // Check if schema applies to the selected class
-              if (schema.classId === selectedClassId) return true;
-              
-              // Check appliedClasses for multi-class schemas
-              if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
-                return schema.appliedClasses.some((appliedClass: any) => 
-                  appliedClass.classId === selectedClassId &&
-                  (selectedSectionId === "all" || !appliedClass.sectionId || appliedClass.sectionId === selectedSectionId)
-                );
-              }
-              
-              return false;
-            });
-            
-            const schemasWithType = filteredSchemas.map((schema: any) => ({
-              ...schema,
-              type: 'schema',
-              maxMarks: schema.totalMarks
-            }));
-            
-            setAssessmentSchemas(schemasWithType);
-          } else {
-            setAssessmentSchemas([]);
-          }
-        } else {
-          setAssessmentSchemas([]);
-        }
-      } catch (error) {
-        console.error('Error fetching assessment schemas:', error);
-        setAssessmentSchemas([]);
-      } finally {
-        setSchemasLoading(false);
-      }
-    };
+    return filteredSchemas;
+  }, [selectedClassId, allSchemas]);
 
-    fetchAssessmentSchemas();
-  }, [currentBranchId, selectedClassId, selectedSectionId]);
+  // Combine both types of assessments with proper memoization to prevent infinite loops
+  const allAssessments = useMemo(() => {
+    const transformedSchemas = assessmentSchemas.map((schema: any) => ({
+      ...schema,
+      type: 'schema',
+      // Ensure components have the correct structure
+      components: schema.components?.map((component: any) => ({
+        ...component,
+        maxScore: component.rawMaxScore || component.maxScore || 0,
+        subCriteria: component.subCriteria?.map((sub: any) => ({
+          ...sub,
+          maxScore: sub.maxScore || 0,
+        })) || []
+      })) || []
+    }));
 
-  // Combine both types of assessments
-  const allAssessments = [
-    ...assessmentSchemas,
-    ...assessmentConfigurations.map((config: any) => ({
+    const transformedConfigs = assessmentConfigurations.map((config: any) => ({
       ...config,
       type: 'configuration'
-    }))
-  ];
+    }));
+
+    return [...transformedSchemas, ...transformedConfigs];
+  }, [assessmentSchemas, assessmentConfigurations]);
 
   const isLoadingAssessments = schemasLoading || configsLoading;
 
@@ -227,7 +220,9 @@ function ScoreEntryContent() {
   );
 
   const studentsInClass = studentsData?.items || [];
-  const selectedSchema = availableSchemas.find((s: any) => s.id === selectedSchemaId);
+  const selectedSchema = useMemo(() => {
+    return availableSchemas.find((s: any) => s.id === selectedSchemaId);
+  }, [availableSchemas, selectedSchemaId]);
 
   // Set default active component tab when schema changes
   useEffect(() => {
@@ -238,7 +233,8 @@ function ScoreEntryContent() {
     } else {
       setActiveComponentTab("");
     }
-  }, [selectedSchema]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSchemaId]); // selectedSchema is derived from selectedSchemaId, so we only need selectedSchemaId
 
   // Transform API response to component-expected format
   const transformScoresForComponent = (apiScores: any[], componentId: string) => {
@@ -270,7 +266,7 @@ function ScoreEntryContent() {
         if (componentId === "main" || !componentId) {
           transformedScores.push({
             studentId: studentScore.studentId,
-            marksObtained: studentScore.marksObtained || 0,
+            marksObtained: studentScore.finalScore || 0,
             comments: studentScore.comments || ""
           });
         }
@@ -289,10 +285,8 @@ function ScoreEntryContent() {
         let scores = [];
         
         if (selectedSchema.type === 'schema') {
-          const response = await fetch(`/api/assessment-scores?assessmentSchemaId=${selectedSchemaId}`);
-          if (response.ok) {
-            scores = await response.json();
-          }
+          // Use TRPC data for schema-based assessments
+          scores = assessmentScoresData || [];
         } else if (selectedSchema.type === 'configuration') {
           const response = await fetch(`/api/trpc/examination.getAssessmentMarks?batch=1&input=${encodeURIComponent(JSON.stringify({
             "0": {
@@ -332,7 +326,7 @@ function ScoreEntryContent() {
     };
 
     fetchExistingScores();
-  }, [selectedSchemaId, currentBranchId, selectedClassId, selectedSectionId, selectedSchema]);
+  }, [selectedSchemaId, currentBranchId, selectedClassId, selectedSectionId, assessmentScoresData]);
 
   // Component-specific save handler
   const handleSaveScoresForComponent = async (componentId: string, scores: any[]) => {
@@ -340,37 +334,56 @@ function ScoreEntryContent() {
     
     if (!selectedSchema) {
       console.log('DEBUG: No selected schema, returning');
-      return;
+      throw new Error('No assessment schema selected');
     }
     
     try {
       if (selectedSchema.type === 'schema') {
+        // Validate required data before proceeding
+        if (!currentBranchId) {
+          throw new Error('Branch ID is required but not available');
+        }
+        
+        if (!selectedSchemaId) {
+          throw new Error('Assessment schema ID is required but not available');
+        }
+
         const payload = scores.map(score => ({
           ...score,
           branchId: currentBranchId,
         }));
         
-        console.log('DEBUG: About to send API request with payload:', payload);
+        console.log('DEBUG: About to save scores via TRPC');
+        console.log('DEBUG: currentBranchId:', currentBranchId);
+        console.log('DEBUG: selectedSchema:', selectedSchema);
+        console.log('DEBUG: scores input:', scores);
+        console.log('DEBUG: final payload:', payload);
         
-        const response = await fetch('/api/assessment-scores', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
+        // Validate payload before sending
+        payload.forEach((item, index) => {
+          console.log(`DEBUG: Payload item ${index}:`, {
+            studentId: item.studentId,
+            assessmentSchemaId: item.assessmentSchemaId,
+            componentId: item.componentId,
+            marksObtained: item.marksObtained,
+            branchId: item.branchId,
+            hasSubCriteriaScores: !!item.subCriteriaScores,
+            attendanceStatus: item.attendanceStatus,
+          });
+          
+          // Check for required fields
+          if (!item.studentId) console.error('Missing studentId for item', index);
+          if (!item.assessmentSchemaId) console.error('Missing assessmentSchemaId for item', index);
+          if (item.marksObtained === undefined || item.marksObtained === null) console.error('Missing marksObtained for item', index);
+          if (!item.branchId) console.error('Missing branchId for item', index);
         });
-
-        console.log('DEBUG: API response status:', response.status);
-        console.log('DEBUG: API response ok:', response.ok);
-
-        if (!response.ok) {
-          const errorResult = await response.json();
-          console.error('Failed to save scores:', errorResult);
-          throw new Error(`Failed to save scores: ${errorResult.error || 'Unknown error'}`);
-        }
         
-        const result = await response.json();
-        console.log('DEBUG: API response data:', result);
+        // Use TRPC mutation to save scores
+        await saveAssessmentScoresMutation.mutateAsync(payload);
+        
+        console.log('DEBUG: Scores saved successfully via TRPC');
+        
+        // Toast notification is handled by ComponentScoreEntry component
       } else if (selectedSchema.type === 'configuration') {
         for (const score of scores) {
           const response = await fetch('/api/trpc/examination.createAssessmentMarks', {
@@ -379,33 +392,40 @@ function ScoreEntryContent() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              assessmentConfigId: selectedSchemaId,
-              studentId: score.studentId,
-              marksObtained: score.marksObtained,
-              comments: score.comments,
-              branchId: currentBranchId,
+              json: {
+                studentId: score.studentId,
+                assessmentConfigId: selectedSchemaId,
+                marksObtained: score.marksObtained,
+                branchId: currentBranchId,
+                comments: score.comments || '',
+              }
             }),
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to save score for student ${score.studentId}`);
+            const errorResult = await response.json();
+            console.error('Failed to save marks:', errorResult);
+            throw new Error(`Failed to save marks: ${errorResult.error || 'Unknown error'}`);
           }
         }
+        
+        // Toast notification is handled by ComponentScoreEntry component
+      }
+    } catch (error: any) {
+      console.error('DEBUG: Error in handleSaveScoresForComponent:', error);
+      
+      let errorMessage = 'Failed to save scores. Please try again.';
+      if (error?.message) {
+        errorMessage = error.message;
       }
       
       toast({
-        title: "Scores saved successfully",
-        description: `Saved scores for ${scores.length} students in ${selectedSchema.components?.find((c: any) => c.id === componentId)?.name || 'assessment'}`,
-      });
-      
-      // Refresh the scores for this component
-      await refreshComponentScores(componentId);
-    } catch (error) {
-      toast({
         title: "Error saving scores",
-        description: "Please try again later",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      throw error; // Re-throw so ComponentScoreEntry can handle it
     }
   };
 
@@ -417,10 +437,8 @@ function ScoreEntryContent() {
       let refreshedScores = [];
       
       if (selectedSchema.type === 'schema') {
-        const response = await fetch(`/api/assessment-scores?assessmentSchemaId=${selectedSchemaId}`);
-        if (response.ok) {
-          refreshedScores = await response.json();
-        }
+        // Use current TRPC data for schema-based assessments
+        refreshedScores = assessmentScoresData || [];
       } else if (selectedSchema.type === 'configuration') {
         const response = await fetch(`/api/trpc/examination.getAssessmentMarks?batch=1&input=${encodeURIComponent(JSON.stringify({
           "0": {
@@ -462,10 +480,8 @@ function ScoreEntryContent() {
       let refreshedScores = [];
       
       if (selectedSchema.type === 'schema') {
-        const response = await fetch(`/api/assessment-scores?assessmentSchemaId=${selectedSchemaId}`);
-        if (response.ok) {
-          refreshedScores = await response.json();
-        }
+        // Use current TRPC data for schema-based assessments
+        refreshedScores = assessmentScoresData || [];
       } else if (selectedSchema.type === 'configuration') {
         const response = await fetch(`/api/trpc/examination.getAssessmentMarks?batch=1&input=${encodeURIComponent(JSON.stringify({
           "0": {

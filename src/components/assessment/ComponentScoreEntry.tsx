@@ -469,15 +469,14 @@ export function ComponentScoreEntry({
     let scoresToSave: any[] = [];
 
     if (hasSubCriteria) {
-      // For sub-criteria assessments, collect data from subCriteriaScores
+      // For sub-criteria assessments, check all students
       (students || []).forEach(student => {
-        const studentSubScores = subCriteriaScores[student.id];
-        if (!studentSubScores) return;
+        const studentSubScores = subCriteriaScores[student.id] || {};
         
         // Check if student has any sub-criteria scores entered
         const hasAnySubScore = sortedSubCriteria.some(subCriteria => {
           const score = studentSubScores[subCriteria.id]?.trim();
-          return score && score !== "" && !isNaN(parseFloat(score));
+          return score && score !== "" && !isNaN(parseFloat(score)) && parseFloat(score) > 0;
         });
         
         if (hasAnySubScore) {
@@ -511,24 +510,25 @@ export function ComponentScoreEntry({
         }
       });
     } else {
-      // For simple assessments, use the existing logic
-      scoresToSave = Object.entries(scores)
-        .filter(([studentId, score]) => {
-          // Filter out internal tracking properties and empty scores
-          return studentId !== '_componentId' && 
-                 typeof score === 'string' && 
-                 score.trim() !== "";
-        })
-        .map(([studentId, score]) => ({
-          studentId,
-          assessmentSchemaId: schema.id,
-          componentId: component.id === "main" ? undefined : component.id,
-          marksObtained: parseFloat(score) || 0,
-          branchId: branchId,
-          attendanceStatus: attendanceData[studentId] as any || 'PRESENT',
-          attendanceReason: attendanceReasons[studentId],
-          attendanceNotes: attendanceNotes[studentId],
-        }));
+      // For simple assessments, check all students
+      (students || []).forEach(student => {
+        const score = scores[student.id];
+        if (score && typeof score === 'string' && score.trim() !== "") {
+          const numericScore = parseFloat(score);
+          if (!isNaN(numericScore)) {
+            scoresToSave.push({
+              studentId: student.id,
+              assessmentSchemaId: schema.id,
+              componentId: component.id === "main" ? undefined : component.id,
+              marksObtained: numericScore,
+              branchId: branchId,
+              attendanceStatus: attendanceData[student.id] as any || 'PRESENT',
+              attendanceReason: attendanceReasons[student.id],
+              attendanceNotes: attendanceNotes[student.id],
+            });
+          }
+        }
+      });
     }
 
     if (scoresToSave.length === 0) {
@@ -561,17 +561,25 @@ export function ComponentScoreEntry({
       console.error('DEBUG: Error in save process:', error);
       console.error('Error saving scores:', error);
       
+      // Better error handling
+      let errorMessage = 'Please check your scores and try again later.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       // Check if error is related to maximum score validation
-      const errorMessage = error?.message || error?.toString() || '';
       const isMaxScoreError = errorMessage.includes('exceeds maximum') || 
                              errorMessage.includes('cannot exceed') ||
                              errorMessage.includes('maximum allowed');
       
       toast({
         title: isMaxScoreError ? "Score validation error" : "Error saving scores",
-        description: isMaxScoreError 
-          ? errorMessage 
-          : "Please check your scores and try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -630,58 +638,66 @@ export function ComponentScoreEntry({
   // Remove student scores
   const handleRemoveStudentScore = async (studentId: string) => {
     try {
-      const response = await fetch(`/api/assessment-scores?studentId=${studentId}&assessmentSchemaId=${schema.id}&componentId=${component.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove score');
-      }
-
-      // Clear local state for this student
-      setScores(prev => {
-        const updated = { ...prev };
-        delete updated[studentId];
-        return updated;
-      });
-
-      if (hasSubCriteria) {
-        setSubCriteriaScores(prev => {
-          const updated = { ...prev };
-          delete updated[studentId];
-          return updated;
-        });
-      }
-
-      // Reset attendance data to defaults
-      setAttendanceData(prev => ({
-        ...prev,
-        [studentId]: 'PRESENT'
-      }));
-      setAttendanceReasons(prev => ({
-        ...prev,
-        [studentId]: ''
-      }));
-      setAttendanceNotes(prev => ({
-        ...prev,
-        [studentId]: ''
-      }));
-
-      // Trigger data refresh if callback is provided
+      // Use onRefresh if available, which should handle TRPC calls properly
       if (onRefresh) {
-        await onRefresh();
-      }
+        // Clear local state for this student (set to empty instead of deleting)
+        setScores(prev => ({
+          ...prev,
+          [studentId]: ""  // Set to empty string instead of deleting
+        }));
 
-      toast({
-        title: "Scores cleared",
-        description: "Student's scores have been cleared successfully. You can now enter new scores.",
-      });
+        if (hasSubCriteria) {
+          setSubCriteriaScores(prev => {
+            const updated = { ...prev };
+            if (updated[studentId]) {
+              // Clear all sub-criteria scores for this student
+              const clearedSubScores = { ...updated[studentId] };
+              Object.keys(clearedSubScores).forEach(subId => {
+                clearedSubScores[subId] = "";
+              });
+              updated[studentId] = clearedSubScores;
+            }
+            return updated;
+          });
+        }
+
+        // Reset attendance data to defaults
+        setAttendanceData(prev => ({
+          ...prev,
+          [studentId]: 'PRESENT'
+        }));
+        setAttendanceReasons(prev => ({
+          ...prev,
+          [studentId]: ''
+        }));
+        setAttendanceNotes(prev => ({
+          ...prev,
+          [studentId]: ''
+        }));
+
+        // Trigger data refresh which should handle the deletion via TRPC
+        await onRefresh();
+
+        toast({
+          title: "Scores cleared",
+          description: "Student's scores have been cleared successfully. You can now enter new scores.",
+        });
+      } else {
+        throw new Error("Unable to delete scores - no refresh callback available");
+      }
 
       setStudentToRemove(""); // Close dialog
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error removing student scores:', error);
+      
+      let errorMessage = 'Failed to clear the student\'s scores. Please try again.';
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error clearing scores",
-        description: "Failed to clear the student's scores. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
