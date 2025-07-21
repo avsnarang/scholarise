@@ -176,7 +176,14 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  const duration = end - start;
+  
+  // Only log slow operations or mutations in development to reduce noise
+  if (t._config.isDev) {
+    if (duration > 1000 || path.includes('create') || path.includes('update') || path.includes('delete')) {
+      console.log(`[TRPC] ${path} took ${duration}ms to execute`);
+    }
+  }
 
   return result;
 });

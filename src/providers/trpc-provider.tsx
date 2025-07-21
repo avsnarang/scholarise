@@ -32,8 +32,19 @@ export function TRPCProvider({
         errorString.includes('[next-auth]') &&
         (errorString.includes('CLIENT_FETCH_ERROR') || errorString.includes('Unexpected token'))
       ) {
-        // Don't show these errors in console - app is using Clerk for auth
+        // Don't show these errors in console - app is using Supabase for auth
         // Silent handling to avoid confusion
+        return;
+      }
+      
+      // Filter out tRPC development logging noise
+      if (
+        process.env.NODE_ENV === 'development' &&
+        (errorString.includes('query #') || 
+         errorString.includes('.getAll {}') ||
+         errorString.includes('[[ <<'))
+      ) {
+        // These are tRPC development logging artifacts that don't indicate real errors
         return;
       }
       

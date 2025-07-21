@@ -368,16 +368,16 @@ export const teacherRouter = createTRPCRouter({
           password: input.password ? "********" : undefined, // Mask password for security
         });
         
-        // Create a Clerk user account if requested
-        let clerkUserId = null;
+        // Create a Supabase user account if requested
+        let supabaseUserId = null;
         if (
           input.createUser &&
           input.officialEmail &&
           input.password
         ) {
-          console.log("Attempting to create Clerk user for teacher using official email");
+          console.log("Attempting to create Supabase user for teacher using official email");
           try {
-            // Get branch code for Clerk user creation
+            // Get branch code for Supabase user creation
             const branch = await ctx.db.branch.findUnique({
               where: { id: input.branchId },
               select: { code: true },
@@ -431,25 +431,44 @@ export const teacherRouter = createTRPCRouter({
                 roleName: roleName, // Pass the role name
               });
 
-              clerkUserId = teacherUser.id;
-              console.log("Created Clerk user for teacher:", clerkUserId);
-            } catch (clerkError) {
-              console.error("Failed to create Clerk user:", clerkError);
+              supabaseUserId = teacherUser.id;
+              console.log("Created Supabase user for teacher:", supabaseUserId);
+
+              // Also create the User record in our database
+              try {
+                await ctx.db.user.create({
+                  data: {
+                    id: teacherUser.id,
+                    authIdentifier: input.officialEmail,
+                    email: input.officialEmail,
+                    firstName: input.firstName,
+                    lastName: input.lastName,
+                    userType: 'teacher',
+                    isActive: true,
+                  },
+                });
+                console.log("Created User record in database");
+              } catch (userError) {
+                console.error("Failed to create User record (user may already exist):", userError);
+                // Don't throw error here as Supabase user was created successfully
+              }
+            } catch (supabaseError) {
+              console.error("Failed to create Supabase user:", supabaseError);
               
               // Format the error message to be more user-friendly
               let errorMessage = "Failed to create user account";
-              if (clerkError instanceof Error) {
-                errorMessage = clerkError.message;
+              if (supabaseError instanceof Error) {
+                errorMessage = supabaseError.message;
               }
               
               throw new TRPCError({
                 code: "BAD_REQUEST",
                 message: errorMessage,
-                cause: clerkError,
+                cause: supabaseError,
               });
             }
           } catch (error) {
-            console.error("Error creating Clerk user for teacher:", error);
+            console.error("Error creating Supabase user for teacher:", error);
             const errorDetails = error instanceof Error ? 
               { message: error.message, stack: error.stack } : 
               String(error);
@@ -468,14 +487,14 @@ export const teacherRouter = createTRPCRouter({
             });
           }
         } else {
-          console.log("Skipping Clerk user creation as conditions not met:", {
+          console.log("Skipping Supabase user creation as conditions not met:", {
             createUser: input.createUser,
             hasOfficialEmail: !!input.officialEmail,
             hasPassword: !!input.password,
           });
         }
 
-        console.log("Creating teacher record in database, clerkId:", clerkUserId);
+        console.log("Creating teacher record in database, supabaseUserId:", supabaseUserId);
         
         // Create teacher record
         try {
@@ -557,10 +576,10 @@ export const teacherRouter = createTRPCRouter({
               
               // User-related fields
               userId: input.userId,
-              // Add clerkId if user was created
-              ...(clerkUserId ? { 
-                clerkId: clerkUserId, 
-                userId: clerkUserId
+              // Add clerkId and userId if user was created
+              ...(supabaseUserId ? { 
+                clerkId: supabaseUserId, 
+                userId: supabaseUserId
               } : {}),
             },
           });
@@ -568,11 +587,11 @@ export const teacherRouter = createTRPCRouter({
           console.log("Teacher record created successfully:", newTeacher);
           
           // Create UserRole record if roleId is provided and user was created
-          if (clerkUserId && input.roleId) {
+          if (supabaseUserId && input.roleId) {
             try {
               await ctx.db.userRole.create({
                 data: {
-                  userId: clerkUserId,
+                  userId: supabaseUserId,
                   roleId: input.roleId,
                   teacherId: newTeacher.id,
                 },
@@ -581,8 +600,8 @@ export const teacherRouter = createTRPCRouter({
               
               // Sync permissions to Supabase metadata
               const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
-              await syncUserPermissions(clerkUserId);
-              console.log("Successfully synced permissions for teacher:", clerkUserId);
+              await syncUserPermissions(supabaseUserId);
+              console.log("Successfully synced permissions for teacher:", supabaseUserId);
             } catch (roleError) {
               console.error("Error creating UserRole record:", roleError);
               // Don't throw here as the teacher has been created successfully
@@ -746,9 +765,9 @@ export const teacherRouter = createTRPCRouter({
             roleName: roleName
           });
           
-          console.log(`Updated Clerk user ${teacher.clerkId} with new information`);
+          console.log(`Updated Supabase user ${teacher.clerkId} with new information`);
         } catch (error) {
-          console.error("Error updating Clerk user:", error);
+          console.error("Error updating Supabase user:", error);
           // Don't throw here, just log the error and continue
         }
       }
@@ -1275,10 +1294,28 @@ export const teacherRouter = createTRPCRouter({
                       branchId: ctx.user?.branchId || '1',
                     });
                     supabaseUserId = supabaseUser.id;
-                    importMessages.push(`[INFO] Row ${rowNum}: Created Clerk user for ${teacherData.firstName} ${teacherData.lastName}`);
+                    importMessages.push(`[INFO] Row ${rowNum}: Created Supabase user for ${teacherData.firstName} ${teacherData.lastName}`);
+
+                    // Also create the User record in our database
+                    try {
+                      await prisma.user.create({
+                        data: {
+                          id: supabaseUser.id,
+                          authIdentifier: teacherData.email,
+                          email: teacherData.email,
+                          firstName: teacherData.firstName,
+                          lastName: teacherData.lastName,
+                          userType: 'teacher',
+                          isActive: true,
+                        },
+                      });
+                    } catch (userError) {
+                      // User might already exist, don't fail the import
+                      importMessages.push(`[WARN] Row ${rowNum}: User record may already exist`);
+                    }
                   } catch (error) {
-                    importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Clerk user: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                    // Continue without Clerk user
+                    importMessages.push(`[ERROR] Row ${rowNum}: Failed to create Supabase user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    // Continue without Supabase user
                   }
                 }
 

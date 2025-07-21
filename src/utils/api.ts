@@ -29,9 +29,10 @@ export const api = createTRPCReact<AppRouter>({
 // Common links configuration with transformer
 const commonLinks = [
   loggerLink({
-    enabled: (opts) =>
-      process.env.NODE_ENV === "development" ||
-      (opts.direction === "down" && opts.result instanceof Error),
+    enabled: (opts) => {
+      // Only log errors in both development and production
+      return opts.direction === "down" && opts.result instanceof Error;
+    },
   }),
   httpBatchLink({
     url: `${getBaseUrl()}/api/trpc`,
