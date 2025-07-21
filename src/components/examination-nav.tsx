@@ -55,6 +55,14 @@ const navigationItems = [
     count: null,
   },
   {
+    title: "Results Analysis",
+    href: "/examination/analysis",
+    icon: TrendingUp,
+    description: "Component analysis",
+    colorVariant: "secondary" as const,
+    count: null,
+  },
+  {
     title: "Grade Configuration",
     href: "/examination/grade-scales",
     icon: Target,

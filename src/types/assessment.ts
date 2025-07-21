@@ -14,6 +14,7 @@ export interface AssessmentSchema {
   classId: string;
   subjectId: string;
   totalMarks: number;
+  description?: string;
   isActive: boolean;
   isPublished: boolean;
   createdBy: string;
@@ -126,10 +127,11 @@ export enum AssessmentPermissionType {
 // Form types for creating/editing schemas
 export interface CreateAssessmentSchemaInput {
   name: string;
-  termId: string;
+  term: string;
   classIds: string[];
   subjectId: string;
   totalMarks: number;
+  description?: string;
   components: CreateAssessmentComponentInput[];
 }
 

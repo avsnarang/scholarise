@@ -83,6 +83,13 @@ export class AssessmentCalculator {
 
     // Default calculation: simple percentage reduction
     const rawScore = componentScore.rawScore || 0;
+    
+    // If reducedScore is 0, it means no reduction - return raw score as-is
+    if (component.reducedScore === 0) {
+      return rawScore;
+    }
+    
+    // Otherwise, apply the reduction calculation
     const percentage = rawScore / component.rawMaxScore;
     return percentage * component.reducedScore;
   }
@@ -140,9 +147,9 @@ export class AssessmentCalculator {
         errors.push(`Component "${component.name}" must have a positive raw max score`);
       }
 
-      // Check reduced score
-      if (component.reducedScore <= 0) {
-        errors.push(`Component "${component.name}" must have a positive reduced score`);
+      // Check reduced score (0 means no reduction, so it's allowed)
+      if (component.reducedScore < 0) {
+        errors.push(`Component "${component.name}" must have a non-negative reduced score`);
       }
 
       // Validate formula if present
@@ -164,6 +171,32 @@ export class AssessmentCalculator {
       for (const subCriteria of component.subCriteria) {
         if (subCriteria.maxScore <= 0) {
           errors.push(`Sub-criteria "${subCriteria.name}" in component "${component.name}" must have a positive max score`);
+        }
+      }
+
+      // Check if sub-criteria total exceeds component raw max score
+      if (component.subCriteria.length > 0) {
+        const subCriteriaTotal = component.subCriteria.reduce((sum, sc) => sum + sc.maxScore, 0);
+        if (subCriteriaTotal > component.rawMaxScore) {
+          errors.push(`Sub-criteria total (${subCriteriaTotal}) in component "${component.name}" exceeds component raw max score (${component.rawMaxScore}). Please adjust sub-criteria scores or increase component raw max score.`);
+        }
+      }
+    }
+
+    // Check if component scores total matches schema total marks
+    if (schema.components.length > 0) {
+      const componentScoresTotal = schema.components.reduce((sum, component) => {
+        // Use reduced score if it's > 0, otherwise use raw max score
+        const componentScore = component.reducedScore > 0 ? component.reducedScore : component.rawMaxScore;
+        return sum + componentScore;
+      }, 0);
+
+      if (componentScoresTotal !== schema.totalMarks) {
+        const difference = componentScoresTotal - schema.totalMarks;
+        if (difference > 0) {
+          errors.push(`Component scores total (${componentScoresTotal}) exceeds schema total marks (${schema.totalMarks}) by ${difference}. Please either increase total marks to ${componentScoresTotal} or decrease component scores by ${difference}.`);
+        } else {
+          errors.push(`Component scores total (${componentScoresTotal}) is less than schema total marks (${schema.totalMarks}) by ${Math.abs(difference)}. Please either decrease total marks to ${componentScoresTotal} or increase component scores by ${Math.abs(difference)}.`);
         }
       }
     }

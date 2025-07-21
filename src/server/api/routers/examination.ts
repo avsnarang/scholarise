@@ -63,7 +63,7 @@ const createAssessmentSchemaSchema = z.object({
   components: z.array(z.object({
     name: z.string().min(1, "Component name is required"),
     rawMaxScore: z.number().positive(),
-    reducedScore: z.number().positive(),
+    reducedScore: z.number().min(0, "Reduced score must be non-negative (0 means no reduction)"),
     weightage: z.number().positive().default(1),
     formula: z.string().optional(),
     description: z.string().optional(),
@@ -72,7 +72,7 @@ const createAssessmentSchemaSchema = z.object({
       maxScore: z.number().positive(),
       description: z.string().optional(),
     })).optional(),
-  })).min(1, "At least one component is required"),
+})).min(1, "At least one component is required"),
 });
 
 const updateAssessmentSchemaSchema = z.object({
@@ -87,7 +87,7 @@ const updateAssessmentSchemaSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Component name is required"),
     rawMaxScore: z.number().positive(),
-    reducedScore: z.number().positive(),
+    reducedScore: z.number().min(0, "Reduced score must be non-negative (0 means no reduction)"),
     weightage: z.number().positive().default(1),
     formula: z.string().optional(),
     description: z.string().optional(),
@@ -640,6 +640,9 @@ export const examinationRouter = createTRPCRouter({
       const { studentId, assessmentSchemaId, componentId } = input;
 
       return ctx.db.$transaction(async (tx) => {
+        // Log deletion attempt
+        console.log(`🗑️ Deleting assessment score - Student: ${studentId}, Schema: ${assessmentSchemaId}, Component: ${componentId || 'ALL'}`);
+
         if (componentId) {
           // Delete specific component score
           const studentScore = await tx.studentAssessmentScore.findUnique({
@@ -649,27 +652,61 @@ export const examinationRouter = createTRPCRouter({
                 assessmentSchemaId,
               },
             },
+            include: {
+              componentScores: {
+                where: { componentId },
+                include: { subCriteriaScores: true }
+              }
+            }
           });
 
-          if (studentScore) {
-            // Delete sub-criteria scores first
-            await tx.subCriteriaScore.deleteMany({
-              where: {
-                componentScore: {
-                  studentAssessmentScoreId: studentScore.id,
-                  componentId,
-                },
-              },
-            });
+          if (!studentScore) {
+            console.log(`❌ No student assessment score found for deletion`);
+            return { success: false, message: "Student assessment score not found" };
+          }
 
-            // Delete component score
-            await tx.componentScore.deleteMany({
-              where: {
+          const targetComponent = studentScore.componentScores[0];
+          if (!targetComponent) {
+            console.log(`❌ No component score found for deletion`);
+            return { success: false, message: "Component score not found" };
+          }
+
+          console.log(`🔍 Found component score with ${targetComponent.subCriteriaScores.length} sub-criteria scores`);
+
+          // Delete sub-criteria scores first
+          const subCriteriaDeleteResult = await tx.subCriteriaScore.deleteMany({
+            where: {
+              componentScore: {
                 studentAssessmentScoreId: studentScore.id,
                 componentId,
               },
+            },
+          });
+          console.log(`🗑️ Deleted ${subCriteriaDeleteResult.count} sub-criteria scores`);
+
+          // Delete component score
+          const componentDeleteResult = await tx.componentScore.deleteMany({
+            where: {
+              studentAssessmentScoreId: studentScore.id,
+              componentId,
+            },
+          });
+          console.log(`🗑️ Deleted ${componentDeleteResult.count} component scores`);
+
+          // Check if this was the last component - if so, delete the main record
+          const remainingComponents = await tx.componentScore.count({
+            where: {
+              studentAssessmentScoreId: studentScore.id,
+            },
+          });
+
+          if (remainingComponents === 0) {
+            await tx.studentAssessmentScore.delete({
+              where: { id: studentScore.id },
             });
+            console.log(`🗑️ Deleted main assessment score record (no components remaining)`);
           }
+
         } else {
           // Delete entire student assessment score and related data
           const studentScore = await tx.studentAssessmentScore.findUnique({
@@ -679,34 +716,177 @@ export const examinationRouter = createTRPCRouter({
                 assessmentSchemaId,
               },
             },
+            include: {
+              componentScores: {
+                include: { subCriteriaScores: true }
+              }
+            }
           });
 
-          if (studentScore) {
-            // Delete sub-criteria scores
-            await tx.subCriteriaScore.deleteMany({
-              where: {
-                componentScore: {
-                  studentAssessmentScoreId: studentScore.id,
-                },
-              },
-            });
+          if (!studentScore) {
+            console.log(`❌ No student assessment score found for deletion`);
+            return { success: false, message: "Student assessment score not found" };
+          }
 
-            // Delete component scores
-            await tx.componentScore.deleteMany({
-              where: {
+          const totalSubCriteria = studentScore.componentScores.reduce((sum, comp) => sum + comp.subCriteriaScores.length, 0);
+          console.log(`🔍 Found assessment score with ${studentScore.componentScores.length} components and ${totalSubCriteria} sub-criteria scores`);
+
+          // Delete sub-criteria scores
+          const subCriteriaDeleteResult = await tx.subCriteriaScore.deleteMany({
+            where: {
+              componentScore: {
                 studentAssessmentScoreId: studentScore.id,
               },
-            });
+            },
+          });
+          console.log(`🗑️ Deleted ${subCriteriaDeleteResult.count} sub-criteria scores`);
 
-            // Delete student assessment score
-            await tx.studentAssessmentScore.delete({
-              where: { id: studentScore.id },
-            });
-          }
+          // Delete component scores
+          const componentDeleteResult = await tx.componentScore.deleteMany({
+            where: {
+              studentAssessmentScoreId: studentScore.id,
+            },
+          });
+          console.log(`🗑️ Deleted ${componentDeleteResult.count} component scores`);
+
+          // Delete student assessment score
+          await tx.studentAssessmentScore.delete({
+            where: { id: studentScore.id },
+          });
+          console.log(`🗑️ Deleted main assessment score record`);
         }
 
-        return { success: true };
+        // Verification step - ensure deletion was complete
+        const remainingScore = await tx.studentAssessmentScore.findUnique({
+          where: {
+            studentId_assessmentSchemaId: {
+              studentId,
+              assessmentSchemaId,
+            },
+          },
+        });
+
+        if (remainingScore && !componentId) {
+          console.error(`❌ DELETION VERIFICATION FAILED - Score still exists after full deletion`);
+          throw new Error("Deletion verification failed - score still exists");
+        }
+
+        console.log(`✅ Deletion verification successful`);
+        return { 
+          success: true, 
+          verified: true,
+          message: `Successfully deleted ${componentId ? 'component' : 'all'} assessment scores`
+        };
       });
+    }),
+
+  // Verification procedure to check for orphaned scores
+  verifyAssessmentDataConsistency: protectedProcedure
+    .input(z.object({
+      assessmentSchemaId: z.string().min(1, "Assessment schema ID is required"),
+      studentId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { assessmentSchemaId, studentId } = input;
+
+      try {
+        console.log('🔍 Verifying assessment data consistency for schema:', assessmentSchemaId);
+
+        // Check for orphaned component scores (component scores without parent student assessment score)
+        const orphanedComponentScores = await ctx.db.componentScore.findMany({
+          where: {
+            studentScore: {
+              assessmentSchemaId,
+              ...(studentId && { studentId }),
+            },
+          },
+          include: {
+            studentScore: true,
+            subCriteriaScores: true,
+          },
+        });
+
+        // Check for orphaned sub-criteria scores (sub-criteria scores without parent component score)
+        const orphanedSubCriteriaScores = await ctx.db.subCriteriaScore.findMany({
+          where: {
+            componentScore: {
+              studentScore: {
+                assessmentSchemaId,
+                ...(studentId && { studentId }),
+              },
+            },
+          },
+          include: {
+            componentScore: {
+              include: {
+                studentScore: true,
+              },
+            },
+          },
+        });
+
+        // Check for student assessment scores without any component scores
+        const incompleteStudentScores = await ctx.db.studentAssessmentScore.findMany({
+          where: {
+            assessmentSchemaId,
+            ...(studentId && { studentId }),
+            componentScores: {
+              none: {},
+            },
+          },
+        });
+
+        const issues: string[] = [];
+        const summary = {
+          orphanedComponentScores: orphanedComponentScores.length,
+          orphanedSubCriteriaScores: orphanedSubCriteriaScores.length,
+          incompleteStudentScores: incompleteStudentScores.length,
+        };
+
+        if (orphanedComponentScores.length > 0) {
+          issues.push(`Found ${orphanedComponentScores.length} orphaned component scores`);
+        }
+
+        if (orphanedSubCriteriaScores.length > 0) {
+          issues.push(`Found ${orphanedSubCriteriaScores.length} orphaned sub-criteria scores`);
+        }
+
+        if (incompleteStudentScores.length > 0) {
+          issues.push(`Found ${incompleteStudentScores.length} student assessment scores without component scores`);
+        }
+
+        const isConsistent = issues.length === 0;
+
+        console.log(isConsistent ? '✅ Data consistency verified' : '❌ Data consistency issues found:', summary);
+
+        return {
+          isConsistent,
+          issues,
+          summary,
+          details: {
+            orphanedComponentScores: orphanedComponentScores.map(score => ({
+              id: score.id,
+              studentId: score.studentScore?.studentId,
+              componentId: score.componentId,
+            })),
+            orphanedSubCriteriaScores: orphanedSubCriteriaScores.map(score => ({
+              id: score.id,
+              componentScoreId: score.componentScoreId,
+              subCriteriaId: score.subCriteriaId,
+            })),
+            incompleteStudentScores: incompleteStudentScores.map(score => ({
+              id: score.id,
+              studentId: score.studentId,
+            })),
+          },
+        };
+      } catch (error) {
+        console.error('❌ Data consistency verification failed:', error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to verify data consistency",
+        });
+      }
     }),
 
   // ============ ASSESSMENT MARKS ============
@@ -1049,7 +1229,8 @@ export const examinationRouter = createTRPCRouter({
         where.branchId = input.branchId;
       }
 
-      return ctx.db.assessmentSchema.findMany({
+      // Get assessment schemas with basic counts
+      const schemas = await ctx.db.assessmentSchema.findMany({
         where,
         include: {
           class: true,
@@ -1070,6 +1251,47 @@ export const examinationRouter = createTRPCRouter({
         },
         orderBy: { createdAt: 'desc' },
       });
+
+      // Get component score counts for each schema to determine actual protection status
+      const schemaIds = schemas.map(schema => schema.id);
+      
+      let componentScoreCounts: Record<string, number> = {};
+      
+      if (schemaIds.length > 0) {
+        // Query to count component scores for each assessment schema
+        const componentScoreQuery = await ctx.db.$queryRaw<Array<{ assessmentSchemaId: string; componentCount: bigint }>>`
+          SELECT 
+            ac."assessmentSchemaId",
+            COUNT(cs.id)::bigint as "componentCount"
+          FROM "AssessmentComponent" ac
+          LEFT JOIN "ComponentScore" cs ON cs."componentId" = ac.id
+          WHERE ac."assessmentSchemaId" = ANY(${schemaIds})
+          GROUP BY ac."assessmentSchemaId"
+        `;
+
+        componentScoreCounts = componentScoreQuery.reduce((acc, row) => {
+          acc[row.assessmentSchemaId] = Number(row.componentCount);
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      // Add component score counts to each schema
+      const schemasWithCounts = schemas.map(schema => ({
+        ...schema,
+        _count: {
+          ...schema._count,
+          componentScores: componentScoreCounts[schema.id] || 0,
+        },
+      }));
+
+      console.log('📊 Assessment schemas with protection counts:', schemasWithCounts.map(s => ({
+        name: s.name,
+        studentScores: s._count.studentAssessmentScores,
+        componentScores: s._count.componentScores,
+        isProtected: s._count.componentScores > 0
+      })));
+
+      return schemasWithCounts;
     }),
 
   createAssessmentSchema: protectedProcedure
@@ -1241,7 +1463,7 @@ export const examinationRouter = createTRPCRouter({
         });
       }
 
-      // Check if there are any student scores - prevent editing if scores exist
+      // Check if there are any actual component scores (real marks) - prevent editing if they exist
       const componentScoreCount = await ctx.db.componentScore.count({
         where: {
           component: {
@@ -1253,7 +1475,7 @@ export const examinationRouter = createTRPCRouter({
       if (componentScoreCount > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Cannot edit assessment schema with existing student scores. Please remove all scores first.",
+          message: `Cannot edit assessment schema. It has ${componentScoreCount} actual mark(s) entered. Please remove all component scores first.`,
         });
       }
 
@@ -1409,7 +1631,7 @@ export const examinationRouter = createTRPCRouter({
         });
       }
 
-      // Check if there are any student scores
+      // Check if there are any actual component scores (real marks) - prevent deletion if they exist
       const componentScoreCount = await ctx.db.componentScore.count({
         where: {
           component: {
@@ -1421,7 +1643,7 @@ export const examinationRouter = createTRPCRouter({
       if (componentScoreCount > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Cannot delete assessment schema with existing student scores.",
+          message: `Cannot delete assessment schema. It has ${componentScoreCount} actual mark(s) entered. Please remove all component scores before deleting the schema.`,
         });
       }
 

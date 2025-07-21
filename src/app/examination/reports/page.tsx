@@ -27,11 +27,19 @@ import {
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
+import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 
 export default function ExaminationReportsPage() {
   const { currentBranchId } = useBranchContext();
   const [selectedSchema, setSelectedSchema] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
+  
+  // Auto-refresh examination data for live reports
+  useExaminationAutoRefresh({
+    interval: 45000, // Refresh every 45 seconds
+    onFocus: true,
+    enabled: true
+  });
   
   // Fetch assessment schemas data
   const { schemas, isLoading: schemasLoading } = useAssessmentSchemas();

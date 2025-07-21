@@ -36,6 +36,47 @@ export const dashboardRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       try {
+        // Check if user has access to multi-branch data
+        // This endpoint requires either super admin access or multi-branch permissions
+        const userId = ctx.userId;
+        
+        // Check if user is an employee with multi-branch access
+        const employee = await ctx.db.employee.findFirst({
+          where: { 
+            OR: [
+              { userId: userId },
+              { clerkId: userId }
+            ]
+          },
+          include: {
+            branchAccessRecords: true,
+          },
+        });
+
+        // Check if user is a super admin via user roles
+        const userRoles = await ctx.db.userRole.findMany({
+          where: { userId: userId },
+          include: {
+            role: true,
+          },
+        });
+        
+        const isSuperAdmin = userRoles.some(
+          userRole => userRole.role.name === "Super Admin" || 
+                     userRole.role.name === "SUPER_ADMIN" ||
+                     userRole.role.name === "super_admin" ||
+                     userRole.role.isSystem
+        );
+        
+        const hasMultiBranchAccess = employee?.branchAccessRecords && employee.branchAccessRecords.length > 0;
+        
+        // Allow access if user is super admin or has multi-branch access
+        if (!isSuperAdmin && !hasMultiBranchAccess) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to view all branch statistics. This feature requires super admin access or multi-branch permissions.",
+          });
+        }
         // Get current/active academic session if not provided
         let academicSessionId = input?.academicSessionId;
         if (!academicSessionId) {

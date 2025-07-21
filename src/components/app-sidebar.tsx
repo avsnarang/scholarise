@@ -752,11 +752,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       permissions: [Permission.VIEW_EXAMINATIONS],
       children: [
         {
-          title: "Dashboard",
-          href: "/examination",
-          permissions: [Permission.VIEW_EXAMINATIONS],
-        },
-        {
           title: "Configuration",
           href: "/examination/config",
           permissions: [Permission.MANAGE_EXAM_CONFIGURATIONS],
@@ -791,6 +786,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Results & Analytics",
           href: "/examination/results-dashboard",
+          permissions: [Permission.VIEW_EXAMINATIONS],
+        },
+        {
+          title: "Results Analysis",
+          href: "/examination/analysis",
           permissions: [Permission.VIEW_EXAMINATIONS],
         },
       ],

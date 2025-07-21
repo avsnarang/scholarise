@@ -613,12 +613,12 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
-      // Get current user role if employee has a clerkId
+      // Get current user role if employee has a userId
       let currentUserRole = null;
-      if (existingEmployee.clerkId) {
+      if (existingEmployee.userId) {
         currentUserRole = await ctx.db.userRole.findFirst({
           where: {
-            userId: existingEmployee.clerkId,
+            userId: existingEmployee.userId,
             employeeId: existingEmployee.id,
           },
           include: {
@@ -646,10 +646,10 @@ export const employeeRouter = createTRPCRouter({
       }
 
       // If employee has a Supabase account, update the user metadata
-      if (existingEmployee.clerkId) {
+      if (existingEmployee.userId) {
         try {
           // Update the Supabase user metadata
-          await updateUserMetadata(existingEmployee.clerkId, {
+          await updateUserMetadata(existingEmployee.userId, {
             firstName: input.firstName,
             lastName: input.lastName,
             isActive: input.isActive,
@@ -657,9 +657,9 @@ export const employeeRouter = createTRPCRouter({
             roleName: roleName
           });
           
-          console.log(`Updated Supabase user ${existingEmployee.clerkId} with new information`);
+          console.log(`Updated Supabase user ${existingEmployee.userId} with new information`);
         } catch (error) {
-          console.error("Error updating Clerk user:", error);
+          console.error("Error updating Supabase user:", error);
           // Don't throw here, just log the error and continue
         }
       }
@@ -793,8 +793,8 @@ export const employeeRouter = createTRPCRouter({
         data: updateData,
       });
 
-      // Handle role assignment through UserRole if there's a clerk user and role has changed
-      if (existingEmployee.clerkId && roleChanged) {
+      // Handle role assignment through UserRole if there's a user and role has changed
+      if (existingEmployee.userId && roleChanged) {
         try {
           // Remove existing role assignment for this employee
           if (currentUserRole) {
@@ -807,7 +807,7 @@ export const employeeRouter = createTRPCRouter({
           if (input.roleId) {
             await ctx.db.userRole.create({
               data: {
-                userId: existingEmployee.clerkId,
+                userId: existingEmployee.userId,
                 roleId: input.roleId,
                 employeeId: existingEmployee.id,
               },
@@ -816,7 +816,7 @@ export const employeeRouter = createTRPCRouter({
             
             // Sync permissions to Supabase metadata
             const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
-            await syncUserPermissions(existingEmployee.clerkId);
+            await syncUserPermissions(existingEmployee.userId);
             console.log(`Successfully synced permissions for employee ${existingEmployee.id}`);
           }
         } catch (error) {
@@ -843,10 +843,10 @@ export const employeeRouter = createTRPCRouter({
       }
 
       // If employee has a Supabase account, delete it
-      if (employee.clerkId) {
+      if (employee.userId) {
         try {
-          console.log(`Deleting Supabase user for employee ${employee.id} (${employee.clerkId})`);
-          await deleteUser(employee.clerkId);
+          console.log(`Deleting Supabase user for employee ${employee.id} (${employee.userId})`);
+          await deleteUser(employee.userId);
         } catch (error) {
           console.error("Error deleting Supabase user:", error);
           // Don't throw here, just log the error and continue
@@ -864,7 +864,7 @@ export const employeeRouter = createTRPCRouter({
   bulkDelete: protectedProcedure
     .input(z.object({ ids: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
-      // Check if employees exist and get their Clerk IDs
+      // Check if employees exist and get their User IDs
       const employees = await ctx.db.employee.findMany({
         where: {
           id: {
@@ -873,7 +873,7 @@ export const employeeRouter = createTRPCRouter({
         },
         select: {
           id: true,
-          clerkId: true,
+          userId: true,
           firstName: true,
           lastName: true,
         },
@@ -886,12 +886,12 @@ export const employeeRouter = createTRPCRouter({
         });
       }
 
-      // Delete Clerk users for employees that have them
+      // Delete Supabase users for employees that have them
       for (const employee of employees) {
-        if (employee.clerkId) {
+        if (employee.userId) {
           try {
-            console.log(`Deleting Supabase user for employee ${employee.firstName} ${employee.lastName} (${employee.clerkId})`);
-            await deleteUser(employee.clerkId);
+            console.log(`Deleting Supabase user for employee ${employee.firstName} ${employee.lastName} (${employee.userId})`);
+            await deleteUser(employee.userId);
           } catch (error) {
             console.error(`Error deleting Supabase user for employee ${employee.id}:`, error);
             // Don't throw here, just log the error and continue
@@ -1284,9 +1284,9 @@ export const employeeRouter = createTRPCRouter({
                     softwareLicenses: employeeData.softwareLicenses,
                     assetReturnStatus: employeeData.assetReturnStatus,
                     
-                    // Branch and Clerk ID
+                    // Branch and User ID
                     branchId: branchId,
-                    clerkId: supabaseUserId,
+                    userId: supabaseUserId,
                   },
                 });
 

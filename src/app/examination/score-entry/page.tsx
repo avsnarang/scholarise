@@ -33,6 +33,7 @@ import { RouteGuard } from "@/components/route-guard";
 import { Permission } from "@/types/permissions";
 import { ComponentScoreEntry } from "@/components/assessment/ComponentScoreEntry";
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
+import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 
 export default function ScoreEntryPage() {
   return (
@@ -50,6 +51,13 @@ function ScoreEntryContent() {
   const { currentSessionId } = useAcademicSessionContext();
   const { isTeacher, teacherId, isAdmin, isSuperAdmin } = useUserRole();
   
+  // Auto-refresh examination data for live score updates
+  useExaminationAutoRefresh({
+    interval: 20000, // Refresh every 20 seconds for score entry
+    onFocus: true,
+    enabled: true
+  });
+  
   // State
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string>("");
@@ -62,12 +70,26 @@ function ScoreEntryContent() {
   const saveAssessmentScoresMutation = api.examination.saveAssessmentScores.useMutation();
   
   // TRPC query for assessment scores (conditionally enabled)
-  const { data: assessmentScoresData } = api.examination.getAssessmentScores.useQuery(
+  const { 
+    data: assessmentScoresData, 
+    isLoading: scoresLoading, 
+    error: scoresError,
+    refetch: refetchScores,
+    isFetching: scoresFetching
+  } = api.examination.getAssessmentScores.useQuery(
     {
       assessmentSchemaId: selectedSchemaId || "",
     },
     {
       enabled: !!selectedSchemaId,
+      staleTime: 0, // Always consider data stale to ensure fresh fetches
+      gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      retry: (failureCount, error: any) => {
+        console.error('🔄 Assessment scores query failed:', error);
+        return failureCount < 3; // Retry up to 3 times
+      }
     }
   );
 
@@ -184,8 +206,8 @@ function ScoreEntryContent() {
     ? allAssessments.filter((schema: any) => {
         // Check if schema applies to the selected class
         if (schema.classId === selectedClassId) {
-          // Check if schema applies to the selected section (if specific section is selected)
-          if (selectedSectionId && selectedSectionId !== "all") {
+          // Check if schema applies to the selected section
+          if (selectedSectionId) {
             if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
               return schema.appliedClasses.some((appliedClass: any) => 
                 appliedClass.classId === selectedClassId &&
@@ -194,14 +216,14 @@ function ScoreEntryContent() {
             }
             return true; // If no appliedClasses, assume it applies to all sections
           }
-          return true; // If "all" sections selected or no section specified
+          return true; // If no section specified
         }
         
         // Check appliedClasses for multi-class schemas
         if (schema.appliedClasses && Array.isArray(schema.appliedClasses)) {
           return schema.appliedClasses.some((appliedClass: any) => 
             appliedClass.classId === selectedClassId &&
-            (selectedSectionId === "all" || !appliedClass.sectionId || appliedClass.sectionId === selectedSectionId)
+            (!appliedClass.sectionId || appliedClass.sectionId === selectedSectionId)
           );
         }
         
@@ -600,14 +622,11 @@ function ScoreEntryContent() {
                   {sectionsLoading ? (
                     <SelectItem value="loading" disabled>Loading...</SelectItem>
                   ) : (
-                    <>
-                      <SelectItem value="all">All Sections</SelectItem>
-                      {sections.map((section) => (
-                        <SelectItem key={section.id} value={section.id}>
-                          {section.name}
-                        </SelectItem>
-                      ))}
-                    </>
+                    sections.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))
                   )}
                 </SelectContent>
               </Select>
@@ -779,8 +798,37 @@ function ScoreEntryContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              {/* Error State Display */}
+              {scoresError && (
+                <div className="p-4 border border-red-200 bg-red-50 rounded-lg m-4">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="font-medium">Error Loading Assessment Scores</span>
+                  </div>
+                  <p className="text-red-700 text-sm mt-1">
+                    {scoresError instanceof Error ? scoresError.message : 'Failed to load assessment scores'}
+                  </p>
+                  <button
+                    onClick={() => refetchScores()}
+                    className="mt-2 text-red-700 hover:text-red-900 text-sm underline"
+                  >
+                    Retry Loading
+                  </button>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {(scoresLoading || scoresFetching) && (
+                <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg m-4">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-800"></div>
+                    <span>Loading assessment scores...</span>
+                  </div>
+                </div>
+              )}
+
               {/* Check if assessment schema has components */}
-              {selectedSchema.type === 'schema' && selectedSchema.components && selectedSchema.components.length > 0 ? (
+              {selectedSchema.type === 'schema' && selectedSchema.components && selectedSchema.components.length > 0 && !scoresLoading && !scoresError ? (
                 // Multi-component assessment with material tabs
                 <div className="w-full">
                   {/* Material Tab Navigation */}

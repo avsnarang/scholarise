@@ -38,10 +38,18 @@ import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
+import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 import { ExaminationNav } from "@/components/examination-nav";
 
 export default function ExaminationDashboard() {
   const { currentBranchId } = useBranchContext();
+  
+  // Auto-refresh examination data for live updates
+  useExaminationAutoRefresh({
+    interval: 30000, // Refresh every 30 seconds
+    onFocus: true,
+    enabled: true
+  });
   
   // Fetch assessment schemas data
   const { schemas, isLoading: schemasLoading } = useAssessmentSchemas();

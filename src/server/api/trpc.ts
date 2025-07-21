@@ -77,9 +77,31 @@ export const createTRPCContext = async (
   // For Pages Router (next adapter)
   if ('req' in opts && 'res' in opts) {
     try {
-      // Instead of using getAuth directly, rely on the req object
-      // This avoids the server-only import issue
-      const userId = opts.req.headers['x-user-id'] as string || null;
+      // Get the authorization header
+      const authHeader = opts.req.headers.authorization;
+      let userId: string | null = null;
+      
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        // Import createClient from @supabase/supabase-js to verify the token
+        const { createClient } = await import('@supabase/supabase-js');
+        const { env } = await import('@/env');
+        
+        const supabase = createClient(
+          env.NEXT_PUBLIC_SUPABASE_URL,
+          env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
+        
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser(token);
+          if (!error && user) {
+            userId = user.id;
+          }
+        } catch (authError) {
+          console.error('Error verifying Supabase token:', authError);
+        }
+      }
+      
       return createInnerTRPCContext({
         userId,
         auth: { userId },
@@ -95,16 +117,38 @@ export const createTRPCContext = async (
   
   // For App Router (fetch adapter)
   try {
-    // For the fetch adapter, create auth object from headers
     const req = 'req' in opts 
       ? (opts.req as unknown as Request) 
       : (opts as FetchCreateContextFnOptions).req;
     
-    // Use a simpler approach for App Router
-    // Let the actual auth happen in the route handler
+    // Get the authorization header from the Request object
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      // Import createClient from @supabase/supabase-js to verify the token
+      const { createClient } = await import('@supabase/supabase-js');
+      const { env } = await import('@/env');
+      
+      const supabase = createClient(
+        env.NEXT_PUBLIC_SUPABASE_URL,
+        env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      );
+      
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+          userId = user.id;
+        }
+      } catch (authError) {
+        console.error('Error verifying Supabase token:', authError);
+      }
+    }
+    
     return createInnerTRPCContext({
-      userId: null,
-      auth: { userId: null },
+      userId,
+      auth: { userId },
     });
   } catch (error) {
     console.error('Error in createTRPCContext:', error);

@@ -25,15 +25,16 @@ import type { CreateAssessmentSchemaInput, AssessmentSchemaTemplate } from '@/ty
 // Validation schema
 const assessmentSchemaSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  termId: z.string().min(1, 'Term is required'),
+  term: z.string().min(1, 'Term is required'),
   classIds: z.array(z.string()).min(1, 'At least one Class & Section is required'),
   subjectId: z.string().min(1, 'Subject is required'),
   totalMarks: z.number().min(1, 'Total marks must be positive'),
+  description: z.string().optional(),
   components: z.array(z.object({
     name: z.string().min(1, 'Component name is required'),
     description: z.string().optional(),
     rawMaxScore: z.number().min(1, 'Raw max score must be positive'),
-    reducedScore: z.number().min(0, 'Reduced score must be non-negative'),
+    reducedScore: z.number().min(0, 'Reduced score must be non-negative (0 means no reduction)'),
     weightage: z.number().min(0, 'Weightage must be non-negative'),
     formula: z.string().optional(),
     order: z.number(),
@@ -65,16 +66,18 @@ export function AssessmentSchemaBuilder({
 }: AssessmentSchemaBuilderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [realtimeValidationErrors, setRealtimeValidationErrors] = useState<string[]>([]);
   const [showFormulaHelp, setShowFormulaHelp] = useState(false);
 
   const form = useForm<CreateAssessmentSchemaInput>({
     resolver: zodResolver(assessmentSchemaSchema),
     defaultValues: initialData || {
       name: '',
-      termId: '',
+      term: '',
       classIds: [],
       subjectId: '',
       totalMarks: 100,
+      description: '',
       components: [{
         name: '',
         description: '',
@@ -93,15 +96,65 @@ export function AssessmentSchemaBuilder({
     name: 'components'
   });
 
+  // Watch specific form values to prevent infinite loops
+  const totalMarks = form.watch('totalMarks');
+  const components = form.watch('components');
+
+  // Real-time validation function
+  const validateFormRealtime = useCallback(() => {
+    const errors: string[] = [];
+
+    if (components && components.length > 0 && totalMarks > 0) {
+      // Check component scores total vs schema total marks
+      const componentScoresTotal = components.reduce((sum: number, component: any) => {
+        if (!component) return sum;
+        // Use reduced score if it's > 0, otherwise use raw max score
+        const componentScore = (component.reducedScore > 0) ? component.reducedScore : component.rawMaxScore;
+        return sum + (componentScore || 0);
+      }, 0);
+
+      if (componentScoresTotal !== totalMarks) {
+        const difference = componentScoresTotal - totalMarks;
+        if (difference > 0) {
+          errors.push(`⚠️ Component scores total (${componentScoresTotal}) exceeds schema total marks (${totalMarks}) by ${difference}. Please increase total marks or decrease component scores.`);
+        } else if (componentScoresTotal > 0) {
+          errors.push(`⚠️ Component scores total (${componentScoresTotal}) is less than schema total marks (${totalMarks}) by ${Math.abs(difference)}. Please decrease total marks or increase component scores.`);
+        }
+      }
+
+      // Check sub-criteria totals within each component
+      components.forEach((component, index) => {
+        if (!component || !component.subCriteria || component.subCriteria.length === 0) return;
+        
+        const subCriteriaTotal = component.subCriteria.reduce((sum: number, subCriteria: any) => {
+          return sum + (subCriteria?.maxScore || 0);
+        }, 0);
+
+        if (subCriteriaTotal > component.rawMaxScore) {
+          errors.push(`⚠️ Sub-criteria total (${subCriteriaTotal}) in "${component.name || `Component ${index + 1}`}" exceeds component raw max score (${component.rawMaxScore}). Please adjust sub-criteria scores or increase component raw max score.`);
+        }
+      });
+    }
+
+    setRealtimeValidationErrors(errors);
+  }, [totalMarks, components]);
+
+  // Run real-time validation when form values change
+  React.useEffect(() => {
+    validateFormRealtime();
+  }, [validateFormRealtime]);
+
   const handleSave = useCallback(async (data: CreateAssessmentSchemaInput) => {
     setIsLoading(true);
     setValidationErrors([]);
 
     try {
       // Validate the schema
+      const { term, ...dataWithoutTerm } = data;
       const mockSchema = {
-        ...data,
+        ...dataWithoutTerm,
         id: 'temp',
+        termId: term, // Map term to termId for the new interface
         classId: data.classIds[0] || 'temp', // Use first selected class for validation
         isActive: true,
         isPublished: false,
@@ -165,7 +218,7 @@ export function AssessmentSchemaBuilder({
     // Find the term ID by name for the template
     const termMatch = terms.find(t => t.name === template.term);
     if (termMatch) {
-      form.setValue('termId', termMatch.id);
+      form.setValue('term', termMatch.id);
     }
     form.setValue('totalMarks', template.totalMarks);
     
@@ -233,6 +286,31 @@ export function AssessmentSchemaBuilder({
           formula: "raw"
         }
       ]
+    },
+    {
+      term: "Term-2",
+      subject: "Mathematics",
+      totalMarks: 100,
+      components: [
+        {
+          name: "Class Test",
+          rawTotal: 20,
+          reducedTo: 10,
+          formula: "(raw / 20) * 10"
+        },
+        {
+          name: "Assignment",
+          rawTotal: 50,
+          reducedTo: 0, // No reduction - raw score will be used
+          formula: "raw"
+        },
+        {
+          name: "Final Exam",
+          rawTotal: 40,
+          reducedTo: 40,
+          formula: "raw"
+        }
+      ]
     }
   ];
 
@@ -286,10 +364,18 @@ export function AssessmentSchemaBuilder({
               Preview
             </Button>
             
-            <Button onClick={form.handleSubmit(handleSave)} disabled={isLoading}>
+            <Button 
+              onClick={form.handleSubmit(handleSave)} 
+              disabled={isLoading || realtimeValidationErrors.length > 0}
+            >
               <Save className="h-4 w-4 mr-2" />
               {isLoading ? 'Saving...' : 'Save Schema'}
             </Button>
+            {realtimeValidationErrors.length > 0 && (
+              <p className="text-xs text-amber-600 ml-2">
+                Please fix validation warnings before saving
+              </p>
+            )}
           </div>
         </div>
 
@@ -302,6 +388,23 @@ export function AssessmentSchemaBuilder({
                   <li key={index}>{error}</li>
                 ))}
               </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Real-time Validation Warnings */}
+        {realtimeValidationErrors.length > 0 && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+            <HelpCircle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-1">
+                <div className="font-medium text-sm">Validation Warnings:</div>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  {realtimeValidationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -327,9 +430,9 @@ export function AssessmentSchemaBuilder({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="termId">Term</Label>
+                  <Label htmlFor="term">Term</Label>
                   <Controller
-                    name="termId"
+                    name="term"
                     control={form.control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value}>
@@ -346,8 +449,8 @@ export function AssessmentSchemaBuilder({
                       </Select>
                     )}
                   />
-                  {form.formState.errors.termId && (
-                    <p className="text-sm text-destructive">{form.formState.errors.termId.message}</p>
+                  {form.formState.errors.term && (
+                    <p className="text-sm text-destructive">{form.formState.errors.term.message}</p>
                   )}
                 </div>
 
@@ -414,12 +517,57 @@ export function AssessmentSchemaBuilder({
 
                 <div className="space-y-2">
                   <Label htmlFor="totalMarks">Total Marks</Label>
-                  <Input
-                    id="totalMarks"
-                    type="number"
-                    min="1"
-                    {...form.register('totalMarks', { valueAsNumber: true })}
-                  />
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="totalMarks"
+                      type="number"
+                      min="1"
+                      className="flex-1"
+                      {...form.register('totalMarks', { valueAsNumber: true })}
+                    />
+                    {(() => {
+                      if (!components || components.length === 0 || !totalMarks) return null;
+                      
+                      const componentScoresTotal = components.reduce((sum: number, component: any) => {
+                        if (!component) return sum;
+                        const componentScore = (component.reducedScore > 0) ? component.reducedScore : component.rawMaxScore;
+                        return sum + (componentScore || 0);
+                      }, 0);
+
+                      if (componentScoresTotal === totalMarks) {
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                                  ✓ {componentScoresTotal}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Component scores total matches schema total marks</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      } else if (componentScoresTotal > 0) {
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="destructive" className="bg-amber-100 text-amber-800 border-amber-200">
+                                  ⚠️ {componentScoresTotal}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Component scores total: {componentScoresTotal} (should be {totalMarks})</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   {form.formState.errors.totalMarks && (
                     <p className="text-sm text-destructive">{form.formState.errors.totalMarks.message}</p>
                   )}
@@ -537,7 +685,17 @@ function ComponentBuilder({ index, form, onRemove, canRemove }: ComponentBuilder
           </div>
 
           <div className="space-y-2">
-            <Label>Reduced Score</Label>
+            <Label className="flex items-center gap-2">
+              Reduced Score
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="h-4 w-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>The final marks after reduction. Set to 0 for no reduction (raw score will be used as-is).</p>
+                </TooltipContent>
+              </Tooltip>
+            </Label>
             <Input
               type="number"
               min="0"

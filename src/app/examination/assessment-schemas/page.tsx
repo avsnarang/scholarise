@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen, Target, Calculator, Hash, AlertCircle, Loader2, Lock, Shield, FileCheck, FilePen, Snowflake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,12 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { ViewSchemaDialog } from '@/components/assessment/ViewSchemaDialog';
 import { EditSchemaDialog } from '@/components/assessment/EditSchemaDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
+import { useExaminationRefresh } from '@/hooks/useExaminationRefresh';
 
 export default function AssessmentSchemasPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -29,10 +30,12 @@ export default function AssessmentSchemasPage() {
   const [selectedSchema, setSelectedSchema] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteSchemaId, setDeleteSchemaId] = useState<string | null>(null);
+  const deleteModalRef = useRef<HTMLDivElement>(null);
   
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
+  const { refreshWithOptimisticUpdate } = useExaminationRefresh();
   
   const { 
     schemas, 
@@ -77,6 +80,13 @@ export default function AssessmentSchemasPage() {
 
   // Fetch terms for the current session
   const { terms } = useTerms(currentSessionId || undefined);
+
+  // Focus modal when it opens for keyboard navigation
+  useEffect(() => {
+    if (deleteSchemaId && deleteModalRef.current) {
+      deleteModalRef.current.focus();
+    }
+  }, [deleteSchemaId]);
 
   // Safe array initialization - ensure schemas is always an array
   const safeSchemas = Array.isArray(schemas) ? schemas : [];
@@ -144,6 +154,10 @@ export default function AssessmentSchemasPage() {
     try {
       await createSchema(data);
       setIsCreateDialogOpen(false);
+      
+      // Trigger global refresh with optimistic update
+      await refreshWithOptimisticUpdate('create', data);
+      
       toast({
         title: "Success",
         description: "Assessment schema created successfully",
@@ -168,11 +182,11 @@ export default function AssessmentSchemasPage() {
       return;
     }
     
-    if (hasStudentScores(schema)) {
-      const scoreCount = schema._count?.studentScores || 0;
+          if (hasStudentScores(schema)) {
+        const componentScoreCount = schema._count?.componentScores || 0;
       toast({
         title: "Cannot Edit Schema",
-        description: `This schema has ${scoreCount} student scores and cannot be edited.`,
+        description: `This schema has ${componentScoreCount} actual marks entered and cannot be edited.`,
         variant: "destructive",
       });
       return;
@@ -198,6 +212,10 @@ export default function AssessmentSchemasPage() {
       await updateSchema({ id: selectedSchema.id, data });
       setIsEditDialogOpen(false);
       setSelectedSchema(null);
+      
+      // Trigger global refresh with optimistic update
+      await refreshWithOptimisticUpdate('update', data);
+      
       toast({
         title: "Success",
         description: "Assessment schema updated successfully",
@@ -222,6 +240,10 @@ export default function AssessmentSchemasPage() {
     try {
       await deleteSchema(schemaId);
       setDeleteSchemaId(null);
+      
+      // Trigger global refresh with optimistic update
+      await refreshWithOptimisticUpdate('delete', { id: schemaId });
+      
       toast({
         title: "Success",
         description: "Assessment schema deleted successfully",
@@ -252,6 +274,9 @@ export default function AssessmentSchemasPage() {
   const handleStatusChange = async (schemaId: string, action: 'set-draft' | 'set-published' | 'freeze-marks') => {
     try {
       await updateSchemaStatus({ id: schemaId, action });
+      
+      // Trigger global refresh with optimistic update
+      await refreshWithOptimisticUpdate('status-change', { id: schemaId, action });
       
       const statusMessages = {
         'set-draft': 'Schema set to draft',
@@ -301,12 +326,16 @@ export default function AssessmentSchemasPage() {
     return true;
   };
 
-  // Check if schema has student scores (is protected)
+  // Check if schema has actual component scores (is protected)
   const hasStudentScores = (schema: any) => {
-    if (!schema || !schema._count || typeof schema._count.studentScores !== 'number') {
+    if (!schema || !schema._count) {
       return false;
     }
-    return schema._count.studentScores > 0;
+    
+    // A schema is only protected if it has actual component scores (real marks entered)
+    // Not just student assessment score records (which could be empty placeholders)
+    const componentScores = schema._count.componentScores;
+    return typeof componentScores === 'number' && componentScores > 0;
   };
 
   // Get protection badge for schemas with scores
@@ -315,7 +344,8 @@ export default function AssessmentSchemasPage() {
       return null;
     }
     
-    const scoreCount = schema._count?.studentScores || 0;
+    const componentScoreCount = schema._count?.componentScores || 0;
+    const studentScoreCount = schema._count?.studentAssessmentScores || 0;
     
     return (
       <TooltipProvider>
@@ -327,7 +357,7 @@ export default function AssessmentSchemasPage() {
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Cannot edit or delete - has {scoreCount} student score(s)</p>
+            <p>Cannot edit or delete - has {componentScoreCount} actual mark(s) from {studentScoreCount} student record(s)</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -356,7 +386,7 @@ export default function AssessmentSchemasPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                  <p>Cannot set to draft - schema has {schema._count.studentScores} student score(s)</p>
+                                                  <p>Cannot set to draft - schema has {schema._count.studentAssessmentScores} student score(s)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -386,7 +416,7 @@ export default function AssessmentSchemasPage() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                  <p>Cannot publish - schema has {schema._count.studentScores} student score(s)</p>
+                                                  <p>Cannot publish - schema has {schema._count.studentAssessmentScores} student score(s)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -730,7 +760,7 @@ export default function AssessmentSchemasPage() {
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="left">
-                                    <p>Cannot edit - schema has {schema._count.studentScores} student score(s)</p>
+                                    <p>Cannot edit - schema has {schema._count.studentAssessmentScores} student score(s)</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -766,7 +796,7 @@ export default function AssessmentSchemasPage() {
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="left">
-                                    <p>Cannot delete - schema has {schema._count.studentScores} student score(s)</p>
+                                    <p>Cannot delete - schema has {schema._count.studentAssessmentScores} student score(s)</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -855,36 +885,82 @@ export default function AssessmentSchemasPage() {
         terms={terms || []}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteSchemaId} onOpenChange={(open) => !open && setDeleteSchemaId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Assessment Schema</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
+      {/* Custom Delete Confirmation Modal */}
+      {deleteSchemaId && (
+        <div 
+          ref={deleteModalRef}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !isDeleting) {
+              setDeleteSchemaId(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
+            onClick={() => !isDeleting && setDeleteSchemaId(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full border z-10">
+            {/* Header */}
+            <div className="px-6 py-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                  <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Delete Assessment Schema</h3>
+                </div>
+              </div>
+            </div>
+            
+            {/* Body */}
+            <div className="px-6 py-4 space-y-4">
+              <p className="text-sm text-muted-foreground">
                 Are you sure you want to delete this assessment schema? This action cannot be undone.
               </p>
-              {deleteSchemaId && (
-                <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                  <strong>Note:</strong> This schema will be permanently deleted along with all its components and configurations.
-                  Student scores will remain in the system but will lose their schema reference.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleDeleteSchema(deleteSchemaId!)}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete Schema
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              
+              <div className="text-sm text-muted-foreground bg-muted p-3 rounded border">
+                <strong className="text-foreground">Note:</strong> This schema will be permanently deleted along with all its components and configurations.
+                Student scores will remain in the system but will lose their schema reference.
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-6 py-4 border-t bg-muted/30 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteSchemaId(null)}
+                disabled={isDeleting}
+                className="min-w-[80px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteSchema(deleteSchemaId)}
+                disabled={isDeleting}
+                className="min-w-[120px]"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Schema
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

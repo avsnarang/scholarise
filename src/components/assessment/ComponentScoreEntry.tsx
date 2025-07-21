@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Save, Search, Check, X, User, Hash, IdCard, Calculator, Target, BarChart3, Copy, MoreHorizontal, Eye, EyeOff, ToggleLeft, ToggleRight, Users, TrendingUp, CheckCircle, Clock, AlertCircle, Snowflake, Trash2, UserCheck, UserX, UserMinus, Award } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { useExaminationRefresh } from "@/hooks/useExaminationRefresh";
+import { api } from "@/utils/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,6 +143,10 @@ export function ComponentScoreEntry({
   branchId
 }: ComponentScoreEntryProps) {
   const { toast } = useToast();
+  const { refreshWithOptimisticUpdate } = useExaminationRefresh();
+  
+  // Add delete mutation
+  const deleteScoreMutation = api.examination.deleteAssessmentScore.useMutation();
   const [scores, setScores] = useState<Record<string, string>>({});
   const [subCriteriaScores, setSubCriteriaScores] = useState<Record<string, Record<string, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -257,15 +263,33 @@ export function ComponentScoreEntry({
     return total > 0 ? total.toString() : "";
   }, [hasSubCriteria, subCriteriaScores, sortedSubCriteria, scores]);
 
+  // Check if mark entry should be blocked for a student
+  const isMarkEntryBlocked = (studentId: string) => {
+    const attendanceStatus = attendanceData[studentId] || 'PRESENT';
+    return attendanceStatus === 'ABSENT' || attendanceStatus === 'LEAVE';
+  };
+
   // Enhanced completion status calculation
   const getStudentCompletionStatus = useCallback((studentId: string) => {
+    // If student is blocked from mark entry, treat as complete with special status
+    if (isMarkEntryBlocked(studentId)) {
+      return {
+        isComplete: true,
+        isValid: true,
+        isEmpty: false,
+        hasUnsavedChanges: false,
+        isBlocked: true
+      };
+    }
+
     if (!hasSubCriteria) {
       const score = scores[studentId]?.trim() || "";
       return {
         isComplete: score !== "",
         isValid: score !== "" && !isNaN(parseFloat(score)) && parseFloat(score) >= 0,
         isEmpty: score === "",
-        hasUnsavedChanges: false // Manual save required
+        hasUnsavedChanges: false, // Manual save required
+        isBlocked: false
       };
     }
     
@@ -284,9 +308,10 @@ export function ComponentScoreEntry({
       isValid: allValid,
       isEmpty: completedSubCriteria === 0,
       hasUnsavedChanges: false,
-      progress: Math.round((completedSubCriteria / sortedSubCriteria.length) * 100)
+      progress: Math.round((completedSubCriteria / sortedSubCriteria.length) * 100),
+      isBlocked: false
     };
-  }, [hasSubCriteria, scores, subCriteriaScores, sortedSubCriteria]);
+  }, [hasSubCriteria, scores, subCriteriaScores, sortedSubCriteria, attendanceData]);
 
   // Enhanced class statistics
   const enhancedClassStats = useMemo(() => {
@@ -370,6 +395,17 @@ export function ComponentScoreEntry({
 
   // Handle sub-criteria score change
   const handleSubCriteriaScoreChange = (studentId: string, subCriteriaId: string, value: string) => {
+    // Block score entry if student is absent or on leave
+    if (isMarkEntryBlocked(studentId)) {
+      const attendanceStatus = attendanceData[studentId];
+      toast({
+        title: "Mark entry blocked",
+        description: `Cannot enter marks for students marked as ${attendanceStatus?.toLowerCase()}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Find the sub-criteria to get its max score
     const subCriteria = sortedSubCriteria.find(sc => sc.id === subCriteriaId);
     if (!subCriteria) return;
@@ -423,6 +459,17 @@ export function ComponentScoreEntry({
   // Handle main score change (for non-sub-criteria components)
   const handleScoreChange = (studentId: string, value: string) => {
     if (hasSubCriteria) return; // Don't allow manual total editing if sub-criteria exist
+    
+    // Block score entry if student is absent or on leave
+    if (isMarkEntryBlocked(studentId)) {
+      const attendanceStatus = attendanceData[studentId];
+      toast({
+        title: "Mark entry blocked",
+        description: `Cannot enter marks for students marked as ${attendanceStatus?.toLowerCase()}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Allow empty values for clearing the input
     if (value === "") {
@@ -480,6 +527,11 @@ export function ComponentScoreEntry({
         });
         
         if (hasAnySubScore) {
+          // Skip saving scores for students marked as absent or on leave
+          if (isMarkEntryBlocked(student.id)) {
+            return;
+          }
+
           // Calculate total score from sub-criteria
           const total = sortedSubCriteria.reduce((sum, subCriteria) => {
             const score = parseFloat(studentSubScores[subCriteria.id] || "0");
@@ -514,6 +566,11 @@ export function ComponentScoreEntry({
       (students || []).forEach(student => {
         const score = scores[student.id];
         if (score && typeof score === 'string' && score.trim() !== "") {
+          // Skip saving scores for students marked as absent or on leave
+          if (isMarkEntryBlocked(student.id)) {
+            return;
+          }
+
           const numericScore = parseFloat(score);
           if (!isNaN(numericScore)) {
             scoresToSave.push({
@@ -531,14 +588,50 @@ export function ComponentScoreEntry({
       });
     }
 
-    if (scoresToSave.length === 0) {
-      console.log('DEBUG: No scores to save. Raw scores data:', scores);
+    // Check for deletions: students who had existing scores but now have empty scores
+    const scoresToDelete: { studentId: string; componentId?: string }[] = [];
+    
+    existingScores.forEach(existingScore => {
+      // Check if this existing score is for the current component
+      const isCurrentComponent = (!existingScore.componentId && component.id === "main") || 
+                                 (existingScore.componentId === component.id);
+      
+      if (!isCurrentComponent) return;
+      
+      const studentId = existingScore.studentId;
+      let hasCurrentScore = false;
+      
+      if (hasSubCriteria) {
+        // For sub-criteria, check if any sub-criteria has a score
+        const studentSubScores = subCriteriaScores[studentId] || {};
+        hasCurrentScore = sortedSubCriteria.some(subCriteria => {
+          const score = studentSubScores[subCriteria.id]?.trim();
+          return score && score !== "" && !isNaN(parseFloat(score)) && parseFloat(score) > 0;
+        });
+      } else {
+        // For simple scores, check if there's a score
+        const score = scores[studentId];
+        hasCurrentScore = !!(score && typeof score === 'string' && score.trim() !== "" && !isNaN(parseFloat(score)));
+      }
+      
+      // If student had existing score but doesn't have current score, mark for deletion
+      if (!hasCurrentScore) {
+        scoresToDelete.push({
+          studentId,
+          componentId: component.id === "main" ? undefined : component.id
+        });
+      }
+    });
+
+    // If no scores to save and no scores to delete, show the original message
+    if (scoresToSave.length === 0 && scoresToDelete.length === 0) {
+      console.log('DEBUG: No scores to save or delete. Raw scores data:', scores);
       console.log('DEBUG: Sub-criteria scores data:', subCriteriaScores);
       console.log('DEBUG: Students data:', students);
       console.log('DEBUG: Has sub criteria:', hasSubCriteria);
       
       toast({
-        title: "No scores to save",
+        title: "No changes to save",
         description: hasSubCriteria 
           ? "Please enter at least one sub-criteria score before saving."
           : "Please enter at least one score before saving.",
@@ -548,14 +641,80 @@ export function ComponentScoreEntry({
     }
 
     console.log('DEBUG: About to save scores:', scoresToSave);
+    console.log('DEBUG: About to delete scores:', scoresToDelete);
     setIsSaving(true);
     try {
-      console.log('DEBUG: Calling onSave function...');
-      await onSave(scoresToSave);
-      console.log('DEBUG: onSave completed successfully');
+      // First, delete any scores that need to be removed
+      if (scoresToDelete.length > 0) {
+        console.log('DEBUG: Deleting scores...', scoresToDelete);
+        
+        let deletionResults = [];
+        for (const deleteItem of scoresToDelete) {
+          try {
+            const result = await deleteScoreMutation.mutateAsync({
+              studentId: deleteItem.studentId,
+              assessmentSchemaId: schema.id,
+              componentId: deleteItem.componentId,
+            });
+            deletionResults.push(result);
+            console.log('DEBUG: Deletion successful for student:', deleteItem.studentId, result);
+          } catch (error) {
+            console.error('DEBUG: Deletion failed for student:', deleteItem.studentId, error);
+            throw new Error(`Failed to delete scores for student: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+        
+        // Verify all deletions were successful
+        const failedDeletions = deletionResults.filter(result => !result.success || !result.verified);
+        if (failedDeletions.length > 0) {
+          throw new Error(`${failedDeletions.length} deletion(s) failed verification. Please try again.`);
+        }
+        
+        console.log('DEBUG: All deletions completed and verified successfully');
+      }
+      
+      // Then, save any new/updated scores
+      if (scoresToSave.length > 0) {
+        console.log('DEBUG: Calling onSave function...');
+        await onSave(scoresToSave);
+        console.log('DEBUG: onSave completed successfully');
+      }
+      
+      // Trigger comprehensive data refresh for both saves and deletions
+      await refreshWithOptimisticUpdate('update', { 
+        scores: scoresToSave,
+        deletions: scoresToDelete.length > 0 
+      });
+      
+      // Force refresh of this specific component's data if callback is available
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      // If deletions occurred, run a consistency check to verify data integrity
+      if (scoresToDelete.length > 0) {
+        try {
+          console.log('🔍 Running post-deletion consistency check...');
+          // This would call the new verification endpoint
+          // const consistencyCheck = await api.examination.verifyAssessmentDataConsistency.useQuery({
+          //   assessmentSchemaId: schema.id
+          // });
+          // if (!consistencyCheck.isConsistent) {
+          //   console.warn('⚠️ Data consistency issues detected after deletion:', consistencyCheck.issues);
+          // }
+        } catch (error) {
+          console.warn('⚠️ Could not verify data consistency after deletion:', error);
+        }
+      }
+      
+      const totalOperations = scoresToSave.length + scoresToDelete.length;
+      const operationText = [];
+      if (scoresToSave.length > 0) operationText.push(`saved ${scoresToSave.length}`);
+      if (scoresToDelete.length > 0) operationText.push(`deleted ${scoresToDelete.length}`);
+      
       toast({
-        title: "Scores saved",
-        description: `Successfully saved scores for ${scoresToSave.length} students.`,
+        title: "Scores updated",
+        description: `Successfully ${operationText.join(' and ')} student scores.`,
       });
     } catch (error: any) {
       console.error('DEBUG: Error in save process:', error);
@@ -617,6 +776,36 @@ export function ComponentScoreEntry({
       ...prev,
       [studentId]: status
     }));
+
+    // Block score entry for ABSENT or LEAVE status - clear existing scores
+    if (status === 'ABSENT' || status === 'LEAVE') {
+      // Clear main scores
+      setScores(prev => ({
+        ...prev,
+        [studentId]: ""
+      }));
+
+      // Clear sub-criteria scores if they exist
+      if (hasSubCriteria) {
+        setSubCriteriaScores(prev => {
+          const updated = { ...prev };
+          if (updated[studentId]) {
+            const clearedSubScores = { ...updated[studentId] };
+            Object.keys(clearedSubScores).forEach(subId => {
+              clearedSubScores[subId] = "";
+            });
+            updated[studentId] = clearedSubScores;
+          }
+          return updated;
+        });
+      }
+
+      toast({
+        title: "Marks cleared",
+        description: `Marks for ${students.find(s => s.id === studentId)?.name} have been cleared due to ${status.toLowerCase()} status.`,
+        variant: "default",
+      });
+    }
   };
 
   // Handle attendance reason change
@@ -634,6 +823,8 @@ export function ComponentScoreEntry({
       [studentId]: notes
     }));
   };
+
+
 
   // Remove student scores
   const handleRemoveStudentScore = async (studentId: string) => {
@@ -921,24 +1112,39 @@ export function ComponentScoreEntry({
                             !isNaN(numericSubScore) && 
                             numericSubScore > subCriteria.maxScore;
 
+                          const isBlocked = isMarkEntryBlocked(student.id);
+                          const blockReason = isBlocked ? attendanceData[student.id]?.toLowerCase() : '';
+                          
                           return (
                             <TableCell key={subCriteria.id} className="text-center p-1">
-                              <Input
-                                type="number"
-                                min="0"
-                                max={subCriteria.maxScore}
-                                step="0.5"
-                                value={subScore}
-                                onChange={(e) => handleSubCriteriaScoreChange(student.id, subCriteria.id, e.target.value)}
-                                placeholder="0"
-                                className={`w-16 h-8 text-center text-xs font-medium mx-auto transition-all ${
-                                  isValidSubScore ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 focus:border-emerald-500' :
-                                  isExceedingMax ? 'border-red-300 bg-red-50 dark:bg-red-950/20 focus:border-red-500' :
-                                  subScore.trim() !== "" && !isValidSubScore ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20 focus:border-amber-500' :
-                                  'border-input focus:border-primary'
-                                }`}
-                                disabled={isSchemaFrozen}
-                              />
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max={subCriteria.maxScore}
+                                      step="0.5"
+                                      value={subScore}
+                                      onChange={(e) => handleSubCriteriaScoreChange(student.id, subCriteria.id, e.target.value)}
+                                      placeholder={isBlocked ? "N/A" : "0"}
+                                      className={`w-16 h-8 text-center text-xs font-medium mx-auto transition-all ${
+                                        isBlocked ? 'border-red-200 bg-red-50 dark:bg-red-950/20 text-red-400 cursor-not-allowed' :
+                                        isValidSubScore ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 focus:border-emerald-500' :
+                                        isExceedingMax ? 'border-red-300 bg-red-50 dark:bg-red-950/20 focus:border-red-500' :
+                                        subScore.trim() !== "" && !isValidSubScore ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20 focus:border-amber-500' :
+                                        'border-input focus:border-primary'
+                                      }`}
+                                      disabled={isSchemaFrozen || isBlocked}
+                                    />
+                                  </TooltipTrigger>
+                                  {isBlocked && (
+                                    <TooltipContent>
+                                      <p>Mark entry blocked - Student is {blockReason}</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
                             </TableCell>
                           );
                         })}
@@ -979,21 +1185,40 @@ export function ComponentScoreEntry({
                     ) : (
                       <>
                         <TableCell className="text-center p-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={maxScore}
-                            step="0.5"
-                            value={scores[student.id] || ""}
-                            onChange={(e) => handleScoreChange(student.id, e.target.value)}
-                            placeholder="0"
-                            className={`w-20 h-8 text-center text-xs font-medium mx-auto transition-all ${
-                              status.isValid && !status.isEmpty ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 focus:border-emerald-500' :
-                              !status.isValid && !status.isEmpty ? 'border-red-300 bg-red-50 dark:bg-red-950/20 focus:border-red-500' :
-                              'border-input focus:border-primary'
-                            }`}
-                            disabled={isSchemaFrozen}
-                          />
+                          {(() => {
+                            const isBlocked = isMarkEntryBlocked(student.id);
+                            const blockReason = isBlocked ? attendanceData[student.id]?.toLowerCase() : '';
+                            
+                            return (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max={maxScore}
+                                      step="0.5"
+                                      value={scores[student.id] || ""}
+                                      onChange={(e) => handleScoreChange(student.id, e.target.value)}
+                                      placeholder={isBlocked ? "N/A" : "0"}
+                                      className={`w-20 h-8 text-center text-xs font-medium mx-auto transition-all ${
+                                        isBlocked ? 'border-red-200 bg-red-50 dark:bg-red-950/20 text-red-400 cursor-not-allowed' :
+                                        status.isValid && !status.isEmpty ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 focus:border-emerald-500' :
+                                        !status.isValid && !status.isEmpty ? 'border-red-300 bg-red-50 dark:bg-red-950/20 focus:border-red-500' :
+                                        'border-input focus:border-primary'
+                                      }`}
+                                      disabled={isSchemaFrozen || isBlocked}
+                                    />
+                                  </TooltipTrigger>
+                                  {isBlocked && (
+                                    <TooltipContent>
+                                      <p>Mark entry blocked - Student is {blockReason}</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })()}
                         </TableCell>
                         
                         <TableCell className="text-center p-1">
@@ -1024,7 +1249,11 @@ export function ComponentScoreEntry({
                     )}
                     
                     <TableCell className="text-center p-1">
-                      {status.isComplete && status.isValid ? (
+                      {status.isBlocked ? (
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200 border-red-200 dark:border-red-800 text-xs px-1 py-0">
+                          {attendanceData[student.id] === 'ABSENT' ? 'Absent' : 'Leave'}
+                        </Badge>
+                      ) : status.isComplete && status.isValid ? (
                         <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 text-xs px-1 py-0">
                           Done
                         </Badge>

@@ -576,10 +576,10 @@ export const teacherRouter = createTRPCRouter({
               
               // User-related fields
               userId: input.userId,
-              // Add clerkId and userId if user was created
+              // Add userId if user was created (clerkId kept for compatibility)
               ...(supabaseUserId ? { 
-                clerkId: supabaseUserId, 
-                userId: supabaseUserId
+                clerkId: supabaseUserId,  // Legacy field for compatibility
+                userId: supabaseUserId    // Primary user reference
               } : {}),
             },
           });
@@ -726,7 +726,7 @@ export const teacherRouter = createTRPCRouter({
       
       // Check if role has been updated by comparing with existing UserRole
       let currentRoleId: string | undefined = undefined;
-      if (teacher.clerkId) {
+      if (teacher.userId) {
         const existingUserRole = await ctx.db.userRole.findFirst({
           where: {
             teacherId: input.id,
@@ -754,10 +754,10 @@ export const teacherRouter = createTRPCRouter({
       }
       
       // If teacher has a Supabase account, update the user metadata
-      if (teacher.clerkId) {
+      if (teacher.userId) {
         try {
           // Update the Supabase user metadata
-          await updateUserMetadata(teacher.clerkId, {
+          await updateUserMetadata(teacher.userId, {
             firstName: input.firstName,
             lastName: input.lastName,
             isActive: input.isActive,
@@ -765,7 +765,7 @@ export const teacherRouter = createTRPCRouter({
             roleName: roleName
           });
           
-          console.log(`Updated Supabase user ${teacher.clerkId} with new information`);
+          console.log(`Updated Supabase user ${teacher.userId} with new information`);
         } catch (error) {
           console.error("Error updating Supabase user:", error);
           // Don't throw here, just log the error and continue
@@ -858,8 +858,8 @@ export const teacherRouter = createTRPCRouter({
         data: updateData,
       });
 
-      // Handle role update through UserRole relationship if roleId is provided
-      if (input.roleId !== undefined && updatedTeacher.clerkId) {
+      // Handle role update through UserRole relationship if role has changed
+      if (roleChanged && updatedTeacher.userId) {
         try {
           // Remove existing user role assignments for this teacher
           await ctx.db.userRole.deleteMany({
@@ -872,18 +872,18 @@ export const teacherRouter = createTRPCRouter({
           if (input.roleId) {
             await ctx.db.userRole.create({
               data: {
-                userId: updatedTeacher.clerkId,
+                userId: updatedTeacher.userId,
                 teacherId: input.id,
                 roleId: input.roleId,
               },
             });
             console.log(`Assigned role ${input.roleId} to teacher ${input.id}`);
+            
+            // Sync permissions to Supabase metadata
+            const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
+            await syncUserPermissions(updatedTeacher.userId);
+            console.log(`Successfully synced permissions for teacher ${input.id}`);
           }
-          
-          // Sync permissions to Supabase metadata
-          const { syncUserPermissions } = await import('@/utils/sync-user-permissions');
-          await syncUserPermissions(updatedTeacher.clerkId);
-          console.log(`Successfully synced permissions for teacher ${input.id}`);
         } catch (error) {
           console.error("Error updating teacher role assignment:", error);
         }
@@ -908,10 +908,10 @@ export const teacherRouter = createTRPCRouter({
       }
       
       // If teacher has a Supabase account, delete it
-      if (teacher.clerkId) {
+      if (teacher.userId) {
         try {
-          console.log(`Deleting Supabase user for teacher ${teacher.id} (${teacher.clerkId})`);
-          await deleteUser(teacher.clerkId);
+          console.log(`Deleting Supabase user for teacher ${teacher.id} (${teacher.userId})`);
+          await deleteUser(teacher.userId);
         } catch (error) {
           console.error("Error deleting Supabase user:", error);
           // Don't throw here, just log the error and continue
@@ -935,7 +935,7 @@ export const teacherRouter = createTRPCRouter({
         },
         select: {
           id: true,
-          clerkId: true,
+          userId: true,
           firstName: true,
           lastName: true,
         },
@@ -950,10 +950,10 @@ export const teacherRouter = createTRPCRouter({
 
       // Delete Clerk users for teachers that have them
       for (const teacher of teachers) {
-        if (teacher.clerkId) {
+        if (teacher.userId) {
           try {
-            console.log(`Deleting Supabase user for teacher ${teacher.firstName} ${teacher.lastName} (${teacher.clerkId})`);
-            await deleteUser(teacher.clerkId);
+            console.log(`Deleting Supabase user for teacher ${teacher.firstName} ${teacher.lastName} (${teacher.userId})`);
+            await deleteUser(teacher.userId);
           } catch (error) {
             console.error(`Error deleting Supabase user for teacher ${teacher.id}:`, error);
             // Don't throw here, just log the error and continue
@@ -1391,9 +1391,10 @@ export const teacherRouter = createTRPCRouter({
                     softwareLicenses: teacherData.softwareLicenses,
                     assetReturnStatus: teacherData.assetReturnStatus,
                     
-                    // Branch and Supabase ID
+                    // Branch and User ID
                     branchId: branchId,
-                    clerkId: supabaseUserId,
+                    userId: supabaseUserId,     // Primary user reference
+                    clerkId: supabaseUserId,    // Legacy field for compatibility
                   },
                 });
 
