@@ -366,13 +366,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Students",
-      href: "/students/dashboard",
+      href: "/students",
       icon: GraduationCap,
       permissions: [Permission.VIEW_STUDENTS],
       children: [
         {
           title: "All Students",
-          href: "/students",
+          href: "/students/list",
           permissions: [Permission.VIEW_STUDENTS],
         },
         {
