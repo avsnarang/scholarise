@@ -1180,7 +1180,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar
-      className="border-r dark:border-sidebar-border shadow-sm max-h-screen overflow-hidden dark:shadow-none"
+      className="border-r dark:border-sidebar-border shadow-sm max-h-screen overflow-hidden dark:shadow-none pr-0"
       collapsible="icon"
       {...props}
     >

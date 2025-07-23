@@ -3461,28 +3461,51 @@ export const financeRouter = createTRPCRouter({
         ? collections.filter(c => c.student.section && input.classIds!.includes(c.student.section.classId))
         : collections;
 
-      // Group collections by date for chart
-      const chartDataMap: Record<string, number> = {};
+      // Group collections by date and fee head for chart
+      const chartDataMap: Record<string, Record<string, number>> = {};
+      const feeHeadsSet = new Set<string>();
+      
       filteredCollections.forEach(collection => {
         const dateKey = collection.paymentDate?.toISOString().split('T')[0];
         if (!dateKey) return;
+        
         if (!chartDataMap[dateKey]) {
-          chartDataMap[dateKey] = 0;
+          chartDataMap[dateKey] = {};
         }
-        chartDataMap[dateKey] += collection.items.reduce((sum, item) => sum + item.amount, 0);
+        
+        collection.items.forEach(item => {
+          if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+            return;
+          }
+          
+          const feeHeadName = item.feeHead.name;
+          feeHeadsSet.add(feeHeadName);
+          
+          if (!chartDataMap[dateKey]![feeHeadName]) {
+            chartDataMap[dateKey]![feeHeadName] = 0;
+          }
+          chartDataMap[dateKey]![feeHeadName] += item.amount;
+        });
       });
 
-      // Convert to chart format
+      // Convert to chart format with fee head breakdown
+      const sortedFeeHeads = Array.from(feeHeadsSet).sort();
       const chartArray = Object.entries(chartDataMap)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, amount]) => ({
-          date,
-          amount,
-          formattedDate: new Date(date).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-          }),
-        }));
+        .map(([date, feeHeadData]) => {
+          const safeData = feeHeadData ?? {};
+          return {
+            date,
+            formattedDate: new Date(date).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+            }),
+            // Add total amount for backward compatibility
+            amount: Object.values(safeData).reduce((sum, amount) => sum + (amount ?? 0), 0),
+            // Add individual fee head amounts
+            ...Object.fromEntries(sortedFeeHeads.map(fh => [fh, safeData[fh] ?? 0])),
+          };
+        });
 
       // Group by fee head for summary
       const feeHeadSummaryMap: Record<string, { feeHeadName: string; totalAmount: number; collectionCount: number }> = {};
@@ -3516,6 +3539,7 @@ export const financeRouter = createTRPCRouter({
         chartData: chartArray,
         feeHeadSummary: Object.values(feeHeadSummaryMap),
         feeTermSummary: [],
+        feeHeads: sortedFeeHeads, // Add fee heads array for chart legend
         collections: filteredCollections.map(c => ({
           id: c.id,
           collectionDate: c.paymentDate,
@@ -3583,26 +3607,43 @@ export const financeRouter = createTRPCRouter({
         ? collections.filter(c => c.student.section && input.classIds!.includes(c.student.section.classId))
         : collections;
 
-      // Group by collection hour for chart
-      const hourlyData: Record<number, number> = {};
+      // Group by collection hour and fee head for chart
+      const hourlyData: Record<number, Record<string, number>> = {};
+      const feeHeadsSet = new Set<string>();
+      
       filteredCollections.forEach(collection => {
         const hour = collection.paymentDate.getHours();
         if (!hourlyData[hour]) {
-          hourlyData[hour] = 0;
+          hourlyData[hour] = {};
         }
-        hourlyData[hour] += collection.items.reduce((sum, item) => {
+        
+        collection.items.forEach(item => {
           if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
-            return sum;
+            return;
           }
-          return sum + item.amount;
-        }, 0);
+          
+          const feeHeadName = item.feeHead.name;
+          feeHeadsSet.add(feeHeadName);
+          
+          if (!hourlyData[hour]![feeHeadName]) {
+            hourlyData[hour]![feeHeadName] = 0;
+          }
+          hourlyData[hour]![feeHeadName] += item.amount;
+        });
       });
 
-      // Convert to chart format (24 hours)
-      const chartData = Array.from({ length: 24 }, (_, hour) => ({
-        hour: hour.toString().padStart(2, '0') + ':00',
-        amount: hourlyData[hour] || 0,
-      }));
+      // Convert to chart format (24 hours) with fee head breakdown
+      const sortedFeeHeads = Array.from(feeHeadsSet).sort();
+      const chartData = Array.from({ length: 24 }, (_, hour) => {
+        const hourData = hourlyData[hour] ?? {};
+        return {
+          hour: hour.toString().padStart(2, '0') + ':00',
+          // Add total amount for backward compatibility
+          amount: Object.values(hourData).reduce((sum, amount) => sum + (amount ?? 0), 0),
+          // Add individual fee head amounts
+          ...Object.fromEntries(sortedFeeHeads.map(fh => [fh, hourData[fh] ?? 0])),
+        };
+      });
 
       const summary = {
         totalCollections: filteredCollections.length,
@@ -3614,12 +3655,17 @@ export const financeRouter = createTRPCRouter({
         }, 0), 0),
         selectedDate: selectedDate,
         uniqueStudents: new Set(filteredCollections.map(c => c.studentId)).size,
-        peakHour: Object.entries(hourlyData).reduce((a, b) => a[1] > b[1] ? a : b, ['0', 0])[0],
+        peakHour: Object.entries(hourlyData).reduce((a, b) => {
+          const aTotal = Object.values(a[1]).reduce((sum, val) => sum + val, 0);
+          const bTotal = Object.values(b[1]).reduce((sum, val) => sum + val, 0);
+          return aTotal > bTotal ? a : b;
+        }, ['0', {}])[0],
       };
 
       return {
         summary,
         chartData,
+        feeHeads: sortedFeeHeads, // Add fee heads array for chart legend
         collectorSummary: [],
         collections: filteredCollections.slice(0, 100).map(c => ({
           id: c.id,
@@ -3690,7 +3736,7 @@ export const financeRouter = createTRPCRouter({
       });
 
       // Get collections for all students in these classes
-      const allStudentIds = classes.flatMap(cls => 
+      const classStudentIds = classes.flatMap(cls => 
         cls.sections.flatMap(section => 
           section.students.map(student => student.id)
         )
@@ -3700,7 +3746,7 @@ export const financeRouter = createTRPCRouter({
         where: {
           branchId: input.branchId,
           sessionId: input.sessionId,
-          studentId: { in: allStudentIds },
+          studentId: { in: classStudentIds },
           ...(input.feeTermIds && input.feeTermIds.length > 0 && {
             feeTermId: { in: input.feeTermIds }
           }),
@@ -3745,8 +3791,36 @@ export const financeRouter = createTRPCRouter({
         },
       });
 
+      // Get student concessions for concession calculations
+      const analysisStudentIds = classes.flatMap(cls => 
+        cls.sections.flatMap(section => 
+          section.students.map(student => student.id)
+        )
+      );
+
+      const studentConcessions = await ctx.db.studentConcession.findMany({
+        where: {
+          studentId: { in: analysisStudentIds },
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          status: 'APPROVED',
+          validFrom: { lte: new Date() },
+          OR: [
+            { validUntil: null },
+            { validUntil: { gte: new Date() } },
+          ],
+          ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { 
+            appliedFeeHeads: { hasSome: input.feeHeadIds }
+          }),
+        },
+        include: {
+          concessionType: true,
+        },
+      });
+
       const classAnalysis = classes.map(classItem => {
         const totalStudents = classItem.sections.reduce((sum, section) => sum + section.students.length, 0);
+        const classStudentIds = classItem.sections.flatMap(section => section.students.map(s => s.id));
         
         // Calculate total collections for this class
         const classCollections = collections.filter(c => 

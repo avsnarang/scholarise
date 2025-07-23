@@ -14,7 +14,109 @@
     scrollbar-width: none;  /* Firefox */
   }
 
-  /* Custom scrollbar styling */
+  /* Enhanced Custom scrollbar styling for sidebar */
+  .sidebar-scrollbar {
+    /* Ensure scrollbar appears at the very edge */
+    padding-right: 0;
+    margin-right: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 80, 27, 0.25) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    /* Remove any background to ensure it sits at the edge */
+    background: transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0;
+    /* Ensure track sits at the very edge */
+    margin: 0;
+    border: none;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      rgba(0, 80, 27, 0.15) 0%, 
+      rgba(0, 80, 27, 0.25) 50%, 
+      rgba(0, 80, 27, 0.15) 100%);
+    border-radius: 4px 0 0 4px;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: grab;
+    /* Ensure thumb sits at the edge */
+    margin: 0;
+    background-clip: padding-box;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      rgba(0, 80, 27, 0.3) 0%, 
+      rgba(0, 80, 27, 0.45) 50%, 
+      rgba(0, 80, 27, 0.3) 100%);
+    box-shadow: -2px 0 8px rgba(0, 80, 27, 0.1);
+    cursor: grab;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, 
+      rgba(0, 80, 27, 0.4) 0%, 
+      rgba(0, 80, 27, 0.6) 50%, 
+      rgba(0, 80, 27, 0.4) 100%);
+    cursor: grabbing;
+    box-shadow: -2px 0 12px rgba(0, 80, 27, 0.15);
+  }
+
+  /* Enhanced click area for better usability */
+  .sidebar-scrollbar::-webkit-scrollbar-track:hover {
+    background: rgba(0, 80, 27, 0.05);
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track:active {
+    background: rgba(0, 80, 27, 0.1);
+  }
+
+  /* Dark mode overrides for sidebar scrollbar */
+  .dark .sidebar-scrollbar {
+    scrollbar-color: rgba(122, 173, 139, 0.35) transparent;
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, 
+      rgba(122, 173, 139, 0.2) 0%, 
+      rgba(122, 173, 139, 0.35) 50%, 
+      rgba(122, 173, 139, 0.2) 100%);
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, 
+      rgba(122, 173, 139, 0.35) 0%, 
+      rgba(122, 173, 139, 0.5) 50%, 
+      rgba(122, 173, 139, 0.35) 100%);
+    box-shadow: -2px 0 8px rgba(122, 173, 139, 0.15);
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, 
+      rgba(122, 173, 139, 0.45) 0%, 
+      rgba(122, 173, 139, 0.65) 50%, 
+      rgba(122, 173, 139, 0.45) 100%);
+    box-shadow: -2px 0 12px rgba(122, 173, 139, 0.2);
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-track:hover {
+    background: rgba(122, 173, 139, 0.05);
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-track:active {
+    background: rgba(122, 173, 139, 0.1);
+  }
+
+  /* General Custom scrollbar styling (keeping the existing one for other uses) */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;

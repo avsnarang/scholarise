@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ import {
   Printer,
   RefreshCw,
   Eye,
+  EyeOff,
   Search
 } from 'lucide-react';
 import { LineChart } from "@/components/LineChart";
@@ -57,6 +58,84 @@ const getFeeHeadColors = (items: string[]): string[] => {
   const colors = ['green', 'amber', 'red', 'blue', 'violet', 'indigo', 'cyan', 'pink'];
   return items.map((_, index) => colors[index % colors.length]!);
 }
+
+// Theme-aware color mapping for legends (matching Tremor's color values)
+const getActualColors = (items: string[], isDark: boolean = false): string[] => {
+  const lightColors: Record<string, string> = {
+    green: '#10b981',   // emerald-500
+    amber: '#f59e0b',   // amber-500
+    red: '#ef4444',     // red-500
+    blue: '#3b82f6',    // blue-500
+    violet: '#8b5cf6',  // violet-500
+    indigo: '#6366f1',  // indigo-500
+    cyan: '#06b6d4',    // cyan-500
+    pink: '#ec4899'     // pink-500
+  };
+  
+  const darkColors: Record<string, string> = {
+    green: '#34d399',   // emerald-400
+    amber: '#fbbf24',   // amber-400
+    red: '#f87171',     // red-400
+    blue: '#60a5fa',    // blue-400
+    violet: '#a78bfa',  // violet-400
+    indigo: '#818cf8',  // indigo-400
+    cyan: '#22d3ee',    // cyan-400
+    pink: '#f472b6'     // pink-400
+  };
+  
+  const colorMap = isDark ? darkColors : lightColors;
+  const colorNames = ['green', 'amber', 'red', 'blue', 'violet', 'indigo', 'cyan', 'pink'];
+  return items.map((_, index) => colorMap[colorNames[index % colorNames.length]!]!);
+}
+
+// Interactive Legend Component
+interface InteractiveLegendProps {
+  items: string[];
+  colors: string[];
+  visibleItems: Record<string, boolean>;
+  onToggle: (item: string) => void;
+  className?: string;
+}
+
+const InteractiveLegend = ({ items, colors, visibleItems, onToggle, className = "" }: InteractiveLegendProps) => (
+  <div className={`flex flex-wrap gap-3 justify-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md border ${className}`}>
+    {items.map((item: string, index: number) => {
+      const isVisible = visibleItems[item];
+      return (
+        <button
+          key={item}
+          onClick={() => onToggle(item)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+            isVisible 
+              ? 'bg-white dark:bg-gray-700 shadow-sm border border-gray-200 dark:border-gray-600' 
+              : 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700'
+          }`}
+          title={`Click to ${isVisible ? 'hide' : 'show'} ${item}`}
+        >
+          <div 
+            className={`w-3 h-3 rounded-full flex-shrink-0 border-2 ${
+              isVisible ? 'border-white dark:border-gray-700' : 'border-gray-400 dark:border-gray-500'
+            }`}
+            style={{ 
+              backgroundColor: isVisible ? colors[index] : 'transparent',
+              borderColor: isVisible ? colors[index] : undefined
+            }}
+          />
+          <span className={`text-sm font-medium ${
+            isVisible ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {item}
+          </span>
+          {isVisible ? (
+            <Eye className="w-3 h-3 text-green-500" />
+          ) : (
+            <EyeOff className="w-3 h-3 text-gray-400" />
+          )}
+        </button>
+      );
+    })}
+  </div>
+);
 
 // Custom Tooltip component matching fee-collection-line-chart design
 const CustomTooltip = ({ payload, active, label, title }: TooltipProps & { title?: string }) => {
@@ -118,9 +197,6 @@ const CustomTooltip = ({ payload, active, label, title }: TooltipProps & { title
 }
 
 // Skeleton components matching fee-collection-line-chart
-const ChartSkeleton = () => (
-  <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-)
 
 const MetricSkeleton = () => (
   <div className="text-center">
@@ -154,6 +230,29 @@ function FeeDefaultersReport() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
+
+  // Detect dark mode for theme-aware colors
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+    
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Filter states
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -302,6 +401,32 @@ function FeeDefaultersReport() {
   
   // Chart colors similar to fee-collection-line-chart
   const colors = feeHeads ? getFeeHeadColors(feeHeads) : [];
+  const actualColorsDefaulters = feeHeads ? getActualColors(feeHeads, isDarkMode) : [];
+
+  // Interactive legend state for Fee Defaulters - simple approach
+  const [hiddenItemsDefaulters, setHiddenItemsDefaulters] = useState<Set<string>>(new Set());
+
+  const handleLegendToggleDefaulters = (item: string) => {
+    setHiddenItemsDefaulters(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(item)) {
+        newSet.delete(item);
+      } else {
+        newSet.add(item);
+      }
+      return newSet;
+    });
+  };
+
+  // Filter chart categories and colors based on visibility
+  const visibleCategoriesDefaulters = (feeHeads || []).filter((feeHead: string) => !hiddenItemsDefaulters.has(feeHead));
+  // Get colors for visible categories only, maintaining the original mapping
+  const visibleChartColorsDefaulters = (feeHeads || [])
+    .filter((feeHead: string) => !hiddenItemsDefaulters.has(feeHead))
+    .map((feeHead: string) => {
+      const originalIndex = (feeHeads || []).indexOf(feeHead);
+      return colors[originalIndex]!;
+    });
 
       return (
       <div className="space-y-6">
@@ -529,17 +654,29 @@ function FeeDefaultersReport() {
               <span>Loading chart data...</span>
             </div>
           ) : chartData && chartData.length > 0 && feeHeads && feeHeads.length > 0 ? (
-            <LineChart
-              className="h-64"
-                        data={chartData}
-              index="date"
-              categories={feeHeads}
-              colors={colors}
-              valueFormatter={valueFormatter}
-              yAxisWidth={80}
-              showLegend={true}
-              customTooltip={CustomTooltip}
-            />
+            <div className="space-y-4">
+              <LineChart
+                className="h-64"
+                data={chartData}
+                index="date"
+                categories={visibleCategoriesDefaulters}
+                colors={visibleChartColorsDefaulters}
+                valueFormatter={valueFormatter}
+                yAxisWidth={80}
+                showLegend={false}
+                customTooltip={CustomTooltip}
+              />
+                             {/* Interactive Legend */}
+               {feeHeads && feeHeads.length > 0 && (
+                 <InteractiveLegend
+                   items={feeHeads}
+                   colors={actualColorsDefaulters}
+                   visibleItems={Object.fromEntries(feeHeads.map((item: string) => [item, !hiddenItemsDefaulters.has(item)]))}
+                   onToggle={handleLegendToggleDefaulters}
+                   className="mt-2"
+                 />
+               )}
+            </div>
           ) : (
             <div className="h-64 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
@@ -656,6 +793,29 @@ function CollectionSummaryReport() {
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
 
+  // Detect dark mode for theme-aware colors
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+    
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+
   // Filter states
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [selectedFeeTermIds, setSelectedFeeTermIds] = useState<string[]>([]);
@@ -728,6 +888,37 @@ function CollectionSummaryReport() {
     ...item,
     amount: item.amount,
   }));
+
+  // Get fee heads for chart legend and colors
+  const feeHeads = (reportData as any)?.feeHeads || [];
+  const chartCategories = feeHeads.length > 0 ? feeHeads : ["amount"];
+  const chartColors = feeHeads.length > 0 ? getFeeHeadColors(feeHeads) : ["green"];
+  const actualColors = feeHeads.length > 0 ? getActualColors(feeHeads, isDarkMode) : [isDarkMode ? "#34d399" : "#10b981"];
+
+  // Simple legend state without infinite loops
+  const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
+
+  const handleLegendToggle = (item: string) => {
+    setHiddenItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(item)) {
+        newSet.delete(item);
+      } else {
+        newSet.add(item);
+      }
+      return newSet;
+    });
+  };
+
+  // Filter visible categories based on hidden items
+  const visibleCategories = chartCategories.filter((category: string) => !hiddenItems.has(category));
+  // Get colors for visible categories only, maintaining the original mapping
+  const visibleChartColors = chartCategories
+    .filter((category: string) => !hiddenItems.has(category))
+    .map((category: string) => {
+      const originalIndex = chartCategories.indexOf(category);
+      return chartColors[originalIndex]!;
+    });
 
   // Prepare data for multi-select
   const classOptions = classesQuery.data?.map(cls => ({
@@ -886,27 +1077,40 @@ function CollectionSummaryReport() {
           <CardDescription>Collection amounts over time in the selected period</CardDescription>
                       </CardHeader>
                       <CardContent>
-                     <div className="h-64">
              {reportQuery.isLoading || !reportQuery.data ? (
-               <ChartSkeleton />
+               <div className="h-64 flex items-center justify-center">
+                 <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                 <span>Loading chart data...</span>
+               </div>
              ) : chartData && chartData.length > 0 ? (
-               <LineChart
-                 className="h-64"
-                 data={chartData}
-                 index="formattedDate"
-                 categories={["amount"]}
-                 colors={["green"]}
-                 valueFormatter={valueFormatter}
-                 yAxisWidth={80}
-                 showLegend={false}
-                 customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Due Date" />}
-               />
+               <div className="space-y-4">
+                 <LineChart
+                   className="h-64"
+                   data={chartData}
+                   index="formattedDate"
+                   categories={visibleCategories}
+                   colors={visibleChartColors}
+                   valueFormatter={valueFormatter}
+                   yAxisWidth={80}
+                   showLegend={false}
+                   customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Collection Date" />}
+                 />
+                 {/* Interactive Legend */}
+                 {feeHeads.length > 0 && (
+                   <InteractiveLegend
+                     items={chartCategories}
+                     colors={actualColors}
+                     visibleItems={Object.fromEntries(chartCategories.map((item: string) => [item, !hiddenItems.has(item)]))}
+                     onToggle={handleLegendToggle}
+                     className="mt-2"
+                   />
+                 )}
+               </div>
              ) : (
                <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
                  No data available for the selected criteria.
                </div>
              )}
-           </div>
         </CardContent>
       </Card>
 
@@ -950,6 +1154,29 @@ function DailyCollectionReport() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
+
+  // Detect dark mode for theme-aware colors
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+    
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Filter states
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]!);
@@ -1009,6 +1236,37 @@ function DailyCollectionReport() {
   };
 
   const valueFormatter = (value: number) => formatIndianCurrency(value);
+
+  // Get fee heads for chart legend and colors
+  const feeHeads = (reportData as any)?.feeHeads || [];
+  const chartCategories = feeHeads.length > 0 ? feeHeads : ["amount"];
+  const chartColors = feeHeads.length > 0 ? getFeeHeadColors(feeHeads) : ["green"];
+  const actualColors = feeHeads.length > 0 ? getActualColors(feeHeads, isDarkMode) : [isDarkMode ? "#34d399" : "#10b981"];
+
+  // Interactive legend state for Daily Collection - simple approach
+  const [hiddenItemsDaily, setHiddenItemsDaily] = useState<Set<string>>(new Set());
+
+  const handleLegendToggleDaily = (item: string) => {
+    setHiddenItemsDaily(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(item)) {
+        newSet.delete(item);
+      } else {
+        newSet.add(item);
+      }
+      return newSet;
+    });
+  };
+
+  // Filter chart categories and colors based on visibility
+  const visibleCategoriesDaily = chartCategories.filter((category: string) => !hiddenItemsDaily.has(category));
+  // Get colors for visible categories only, maintaining the original mapping
+  const visibleChartColorsDaily = chartCategories
+    .filter((category: string) => !hiddenItemsDaily.has(category))
+    .map((category: string) => {
+      const originalIndex = chartCategories.indexOf(category);
+      return chartColors[originalIndex]!;
+    });
 
   // Prepare data for multi-select
   const classOptions = classesQuery.data?.map(cls => ({
@@ -1155,27 +1413,40 @@ function DailyCollectionReport() {
           <CardDescription>Collection amounts by hour for {new Date(selectedDate).toLocaleDateString('en-IN')}</CardDescription>
                       </CardHeader>
                       <CardContent>
-          <div className="h-64">
-            {reportQuery.isLoading || !reportData ? (
-              <ChartSkeleton />
-            ) : reportData.chartData && reportData.chartData.length > 0 ? (
+          {reportQuery.isLoading || !reportData ? (
+            <div className="h-64 flex items-center justify-center">
+              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading chart data...</span>
+            </div>
+          ) : reportData.chartData && reportData.chartData.length > 0 ? (
+            <div className="space-y-4">
               <LineChart
                 className="h-64"
                 data={reportData.chartData}
                 index="hour"
-                categories={["amount"]}
-                colors={["green"]}
+                categories={visibleCategoriesDaily}
+                colors={visibleChartColorsDaily}
                 valueFormatter={valueFormatter}
                 yAxisWidth={80}
                 showLegend={false}
                 customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Hour" />}
               />
-            ) : (
-              <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
-                No hourly collection data available for the selected date.
-              </div>
-            )}
-          </div>
+              {/* Interactive Legend */}
+              {feeHeads.length > 0 && (
+                <InteractiveLegend
+                  items={chartCategories}
+                  colors={actualColors}
+                  visibleItems={Object.fromEntries(chartCategories.map((item: string) => [item, !hiddenItemsDaily.has(item)]))}
+                  onToggle={handleLegendToggleDaily}
+                  className="mt-2"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
+              No hourly collection data available for the selected date.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1270,6 +1541,29 @@ function ClasswiseAnalysisReport() {
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
 
+  // Detect dark mode for theme-aware colors
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+    
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+
   // Filter states
   const [selectedFeeTermIds, setSelectedFeeTermIds] = useState<string[]>([]);
   const [selectedFeeHeadIds, setSelectedFeeHeadIds] = useState<string[]>([]);
@@ -1324,14 +1618,47 @@ function ClasswiseAnalysisReport() {
 
   const valueFormatter = (value: number) => formatIndianCurrency(value);
 
-  // Prepare chart data
+  // Prepare chart data with 3 lines
   const chartData = reportData.classAnalysis.map(ca => ({
     className: ca.className,
     collected: ca.totalCollected,
     expected: ca.totalExpected,
+    concession: (ca as any).totalConcession || 0,
     outstanding: ca.totalOutstanding,
     percentage: ca.collectionPercentage,
   }));
+
+  // Chart categories and colors for 3 lines
+  const chartCategories = ["collected", "expected", "concession"];
+  const chartColors = ["green", "blue", "orange"];
+  const actualColors = isDarkMode 
+    ? ["#34d399", "#60a5fa", "#fbbf24"] // Dark mode: emerald-400, blue-400, amber-400
+    : ["#10b981", "#3b82f6", "#f59e0b"]; // Light mode: emerald-500, blue-500, amber-500
+
+  // Interactive legend state for Class-wise Analysis - simple approach
+  const [hiddenItemsClass, setHiddenItemsClass] = useState<Set<string>>(new Set());
+
+  const handleLegendToggleClass = (item: string) => {
+    setHiddenItemsClass(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(item)) {
+        newSet.delete(item);
+      } else {
+        newSet.add(item);
+      }
+      return newSet;
+    });
+  };
+
+  // Filter chart categories and colors based on visibility
+  const visibleCategoriesClass = chartCategories.filter((category: string) => !hiddenItemsClass.has(category));
+  // Get colors for visible categories only, maintaining the original mapping
+  const visibleChartColorsClass = chartCategories
+    .filter((category: string) => !hiddenItemsClass.has(category))
+    .map((category: string) => {
+      const originalIndex = chartCategories.indexOf(category);
+      return chartColors[originalIndex]!;
+    });
 
   // Prepare data for multi-select
   const feeTermOptions = feeTermsQuery.data?.map(term => ({
@@ -1488,27 +1815,53 @@ function ClasswiseAnalysisReport() {
           <CardDescription>Comparison of collected vs expected amounts by class</CardDescription>
                       </CardHeader>
                       <CardContent>
-                     <div className="h-64">
              {reportQuery.isLoading || !reportData ? (
-               <ChartSkeleton />
+               <div className="h-64 flex items-center justify-center">
+                 <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                 <span>Loading chart data...</span>
+               </div>
              ) : chartData && chartData.length > 0 ? (
-               <LineChart
-                 className="h-64"
-                 data={chartData}
-                 index="className"
-                 categories={["collected"]}
-                 colors={["green"]}
-                 valueFormatter={valueFormatter}
-                 yAxisWidth={80}
-                 showLegend={false}
-                 customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Class" />}
-               />
+               <div className="space-y-4">
+                 <LineChart
+                   className="h-64"
+                   data={chartData}
+                   index="className"
+                   categories={visibleCategoriesClass}
+                   colors={visibleChartColorsClass}
+                   valueFormatter={valueFormatter}
+                   yAxisWidth={80}
+                   showLegend={false}
+                   customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Class" />}
+                 />
+                 {/* Interactive Legend with custom labels */}
+                 <InteractiveLegend
+                   items={chartCategories.map(category => 
+                     category === "collected" ? "Collected" : 
+                     category === "expected" ? "Expected" : 
+                     "Concession Applied"
+                   )}
+                   colors={actualColors}
+                   visibleItems={Object.fromEntries(
+                     chartCategories.map((category, index) => [
+                       category === "collected" ? "Collected" : 
+                       category === "expected" ? "Expected" : 
+                       "Concession Applied",
+                       !hiddenItemsClass.has(category)
+                     ])
+                   )}
+                   onToggle={(displayName: string) => {
+                     const actualKey = displayName === "Collected" ? "collected" :
+                                     displayName === "Expected" ? "expected" : "concession";
+                     handleLegendToggleClass(actualKey);
+                   }}
+                   className="mt-2"
+                 />
+               </div>
              ) : (
                <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
                  No class-wise data available for the selected criteria.
                </div>
              )}
-           </div>
         </CardContent>
       </Card>
 
@@ -1524,8 +1877,9 @@ function ClasswiseAnalysisReport() {
                               <TableRow>
                 <TableHead>Class</TableHead>
                 <TableHead className="text-right">Students</TableHead>
-                                <TableHead className="text-right">Collected</TableHead>
+                <TableHead className="text-right">Collected</TableHead>
                 <TableHead className="text-right">Expected</TableHead>
+                <TableHead className="text-right">Concession Applied</TableHead>
                 <TableHead className="text-right">Outstanding</TableHead>
                 <TableHead className="text-right">Collection %</TableHead>
                 <TableHead className="text-right">Avg per Student</TableHead>
@@ -1538,15 +1892,16 @@ function ClasswiseAnalysisReport() {
                   <TableCell className="text-right">{item.totalStudents}</TableCell>
                   <TableCell className="text-right font-mono">{valueFormatter(item.totalCollected)}</TableCell>
                   <TableCell className="text-right font-mono">{valueFormatter(item.totalExpected)}</TableCell>
+                  <TableCell className="text-right font-mono text-orange-600">{valueFormatter((item as any).totalConcession || 0)}</TableCell>
                   <TableCell className="text-right font-mono text-red-600">{valueFormatter(item.totalOutstanding)}</TableCell>
-                                  <TableCell className="text-right">
+                  <TableCell className="text-right">
                     <Badge variant={item.collectionPercentage >= 80 ? "default" : item.collectionPercentage >= 60 ? "secondary" : "destructive"}>
                       {item.collectionPercentage.toFixed(1)}%
-                                    </Badge>
-                                  </TableCell>
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right font-mono">{valueFormatter(Math.round(item.averagePerStudent))}</TableCell>
-                                </TableRow>
-                              ))}
+                </TableRow>
+              ))}
                             </TableBody>
                           </Table>
                       </CardContent>
@@ -1780,27 +2135,28 @@ function ConcessionReport() {
           <CardDescription>Daily concession amounts over time</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
-            {reportQuery.isLoading || !reportQuery.data ? (
-              <ChartSkeleton />
-            ) : chartData && chartData.length > 0 ? (
-              <LineChart
-                className="h-64"
-                data={chartData}
-                index="formattedDate"
-                categories={["amount"]}
-                colors={["amber"]}
-                valueFormatter={valueFormatter}
-                yAxisWidth={80}
-                showLegend={false}
-                customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Date" />}
-              />
-            ) : (
-              <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
-                No concession data available for the selected criteria.
-              </div>
-            )}
-          </div>
+          {reportQuery.isLoading || !reportQuery.data ? (
+            <div className="h-64 flex items-center justify-center">
+              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading chart data...</span>
+            </div>
+          ) : chartData && chartData.length > 0 ? (
+            <LineChart
+              className="h-64"
+              data={chartData}
+              index="formattedDate"
+              categories={["amount"]}
+              colors={["amber"]}
+              valueFormatter={valueFormatter}
+              yAxisWidth={80}
+              showLegend={false}
+              customTooltip={(props: TooltipProps) => <CustomTooltip {...props} title="Date" />}
+            />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg">
+              No concession data available for the selected criteria.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1868,6 +2224,29 @@ function ConcessionReport() {
 
 export default function FinanceReportsPage() {
   const [activeTab, setActiveTab] = useState('fee-defaulters');
+
+  // Detect dark mode for theme-aware colors
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+    
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+    
+    return () => observer.disconnect();
+  }, []);
 
   const reportTabs = [
     { 
