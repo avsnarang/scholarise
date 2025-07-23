@@ -22,6 +22,7 @@ export function useUserRole() {
   const isEmployee = user?.roles?.includes('Employee') || user?.roles?.includes(Role.STAFF) || user?.role === 'Employee' || user?.role === Role.STAFF;
   const isAdmin = user?.roles?.includes('Admin') || user?.roles?.includes(Role.ADMIN) || user?.role === 'Admin' || user?.role === Role.ADMIN;
   const isSuperAdmin = user?.roles?.includes('SuperAdmin') || user?.roles?.includes(Role.SUPER_ADMIN) || user?.role === 'SuperAdmin' || user?.role === Role.SUPER_ADMIN;
+  const isERPManager = user?.roles?.includes('CBSE In-Charge') || user?.roles?.includes('ERP In-Charge') || user?.roles?.includes('cbse_in_charge') || user?.roles?.includes('erp_in_charge') || user?.role === 'CBSE In-Charge' || user?.role === 'ERP In-Charge' || user?.role === 'cbse_in_charge' || user?.role === 'erp_in_charge';
   const isParent = user?.roles?.includes('Parent') || user?.roles?.includes('parent') || user?.role === 'Parent' || user?.role === 'parent';
   const isStudent = user?.roles?.includes('Student') || user?.roles?.includes('student') || user?.role === 'Student' || user?.role === 'student';
   
@@ -33,6 +34,7 @@ export function useUserRole() {
     isEmployee,
     isAdmin,
     isSuperAdmin,
+    isERPManager,
     isParent,
     isStudent,
     teacher: teacherData,

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,7 +32,8 @@ import {
   FileDown,
   UserCheck,
   BadgeCheck,
-  Settings
+  Settings,
+  ArrowUpDown
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -51,6 +51,13 @@ import {
   type FilterMapping
 } from "@/components/ui/advanced-filter";
 import type { Filter as UIFilter } from "@/components/ui/filters";
+
+import { DataTable } from "@/components/ui/data-table";
+import {
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 // Custom filter types for subject teachers
 export enum SubjectTeacherFilterType {
@@ -217,7 +224,7 @@ interface SubjectTeacherAssignment {
   teacherId: string;
   subjectId: string;
   classId: string;
-  sectionId?: string | null;
+  sectionId: string | null;
   isActive: boolean;
   teacher: {
     id: string;
@@ -240,6 +247,8 @@ interface SubjectTeacherAssignment {
   } | null;
 }
 
+
+
 export function TeacherSubjectAssignments() {
   const { toast } = useToast();
   const { currentBranchId, currentBranch } = useBranchContext();
@@ -256,6 +265,8 @@ export function TeacherSubjectAssignments() {
     conditions: [],
     logicOperator: "and"
   });
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState({});
 
   // Process filters for API query
   const processedFilters = filters.conditions.reduce((acc, condition) => {
@@ -281,6 +292,7 @@ export function TeacherSubjectAssignments() {
   } = api.subjectTeacher.getAll.useQuery(
     { 
       branchId: currentBranchId || undefined,
+      onlyWithSections: true, // Only get assignments with specific sections
       ...processedFilters,
     },
     { enabled: !!currentBranchId }
@@ -321,6 +333,163 @@ export function TeacherSubjectAssignments() {
     setIsAssignmentDialogOpen(true);
   };
 
+  // Define table columns
+  const columns: ColumnDef<SubjectTeacherAssignment>[] = [
+    {
+      accessorKey: "teacher",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-semibold"
+        >
+          Teacher
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      accessorFn: (row) => `${row.teacher.firstName} ${row.teacher.lastName}`,
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center">
+            <Users className="h-4 w-4 text-[#00501B] dark:text-[#7aad8c]" />
+          </div>
+          <div>
+            <div className="font-medium dark:text-gray-100">
+              {row.original.teacher.firstName} {row.original.teacher.lastName}
+            </div>
+            {row.original.teacher.employeeCode && (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {row.original.teacher.employeeCode}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "subject",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-semibold"
+        >
+          Subject
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      accessorFn: (row) => row.subject.name,
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <BookOpen className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+          <span className="dark:text-gray-100">{row.original.subject.name}</span>
+          {row.original.subject.code && (
+            <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
+              {row.original.subject.code}
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "class",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-semibold"
+        >
+          Class
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      accessorFn: (row) => row.class.name,
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+          <span className="dark:text-gray-100">{row.original.class.name}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "section",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-semibold"
+        >
+          Section
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      accessorFn: (row) => row.section?.name ?? "",
+      cell: ({ row }) => (
+        row.original.section ? (
+          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+            {row.original.section.name}
+          </Badge>
+        ) : (
+          <span className="text-gray-500 dark:text-gray-400 text-sm">No section</span>
+        )
+      ),
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => {
+        const isActive = row.getValue("isActive");
+        return (
+          <Badge variant={isActive ? "outline" : "secondary"} className={isActive
+            ? "border-green-200 text-green-700 bg-green-50 dark:border-green-700 dark:text-green-300 dark:bg-green-900/30"
+            : "border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:bg-gray-800"}>
+            {isActive ? "Active" : "Inactive"}
+          </Badge>
+        );
+      },
+      filterFn: (row, id, value) => {
+        return value === "all" ? true : row.getValue(id) === (value === "true");
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const assignment = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => handleEditAssignment(assignment)}
+                className="cursor-pointer"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setAssignmentToDelete(assignment.id);
+                  setIsDeleteDialogOpen(true);
+                }}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   const handleFilterChange = (newFilters: AdvancedFilters) => {
     setFilters(newFilters);
   };
@@ -343,7 +512,7 @@ export function TeacherSubjectAssignments() {
       assignment.teacher.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assignment.subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assignment.class.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (assignment.section && assignment.section.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (assignment.section?.name && assignment.section.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesStatus = statusFilter === "all" || 
                          (statusFilter === "active" && assignment.isActive) ||
@@ -599,110 +768,26 @@ export function TeacherSubjectAssignments() {
             </div>
           </div>
         ) : (
-          <div className="rounded-md overflow-hidden shadow-sm">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assignments ({filteredAssignments.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Teacher</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Section</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAssignments.map((assignment) => (
-                        <TableRow key={assignment.id}>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <div className="h-8 w-8 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center">
-                                <Users className="h-4 w-4 text-[#00501B] dark:text-[#7aad8c]" />
-                              </div>
-                              <div>
-                                <div className="font-medium dark:text-gray-100">
-                                  {assignment.teacher.firstName} {assignment.teacher.lastName}
-                                </div>
-                                {assignment.teacher.employeeCode && (
-                                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    {assignment.teacher.employeeCode}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <BookOpen className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                              <span className="dark:text-gray-100">{assignment.subject.name}</span>
-                              {assignment.subject.code && (
-                                <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
-                                  {assignment.subject.code}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                              <span className="dark:text-gray-100">{assignment.class.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {assignment.section ? (
-                              <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                                {assignment.section.name}
-                              </Badge>
-                            ) : (
-                              <span className="text-gray-500 dark:text-gray-400 text-sm">All sections</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={assignment.isActive ? "default" : "secondary"}>
-                              {assignment.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem 
-                                  onClick={() => handleEditAssignment(assignment)}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setAssignmentToDelete(assignment.id);
-                                    setIsDeleteDialogOpen(true);
-                                  }}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Assignments ({filteredAssignments.length})</CardTitle>
+              <CardDescription>
+                Manage teacher assignments to subjects across different classes and sections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                columns={columns}
+                data={filteredAssignments}
+                searchKey="teacher"
+                searchPlaceholder="Search assignments..."
+                sorting={sorting}
+                onSortingChange={setSorting}
+                rowSelection={rowSelection}
+                onRowSelectionChange={setRowSelection}
+              />
+            </CardContent>
+          </Card>
         )}
       </div>
 
@@ -790,10 +875,9 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
   const { currentSessionId } = useAcademicSessionContext();
   
   // Form state
-  const [teacherId, setTeacherId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [classId, setClassId] = useState("");
-  const [sectionId, setSectionId] = useState("all");
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedClassSections, setSelectedClassSections] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
 
   // Fetch data for dropdowns
@@ -817,27 +901,15 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
     { enabled: !!currentBranchId && !!currentSessionId }
   );
 
-  const { data: sections = [] } = api.section.getAll.useQuery(
-    { classId: classId || undefined, isActive: true },
-    { enabled: !!classId }
+  // Fetch all sections with class information for the combined dropdown
+  const { data: allSections = [] } = api.section.getAll.useQuery(
+    { isActive: true }
   );
 
   // Mutations
   const createMutation = api.subjectTeacher.create.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Assignment created",
-        description: "Subject teacher assignment has been created successfully",
-      });
-      onSuccess();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error creating assignment",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    // Individual success/error handling is done in the form submission
+    // This is just for individual operations outside the bulk creation
   });
 
   const updateMutation = api.subjectTeacher.update.useMutation({
@@ -858,10 +930,9 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
   });
 
   const resetForm = () => {
-    setTeacherId("");
-    setSubjectId("");
-    setClassId("");
-    setSectionId("all");
+    setSelectedTeachers([]);
+    setSelectedSubjects([]);
+    setSelectedClassSections([]);
     setIsActive(true);
   };
 
@@ -873,13 +944,15 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
         teacherId: assignment.teacherId,
         subjectId: assignment.subjectId,
         classId: assignment.classId,
-        sectionId: assignment.sectionId || "all",
+        sectionId: assignment.sectionId,
         isActive: assignment.isActive
       });
-      setTeacherId(assignment.teacherId);
-      setSubjectId(assignment.subjectId);
-      setClassId(assignment.classId);
-      setSectionId(assignment.sectionId || "all");
+      // For editing, we populate with single values (converted to arrays for the multi-select)
+      setSelectedTeachers([assignment.teacherId]);
+      setSelectedSubjects([assignment.subjectId]);
+      // All assignments now require specific sections
+      const classSectionValue = `${assignment.classId}-${assignment.sectionId}`;
+      setSelectedClassSections([classSectionValue]);
       setIsActive(assignment.isActive);
     } else if (open && !assignment) {
       console.log("Resetting form for new assignment");
@@ -899,19 +972,149 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
       return;
     }
 
-    const data = {
-      teacherId,
-      subjectId,
-      classId,
-      sectionId: sectionId === "all" ? null : sectionId,
-      isActive,
-      branchId: currentBranchId,
-    };
+    // Validation
+    if (selectedTeachers.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one teacher",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedSubjects.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one subject",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedClassSections.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one class-section combination",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (assignment) {
+      // For editing, we only update the single assignment
+      const classSectionValue = selectedClassSections[0];
+      if (!classSectionValue) {
+        toast({
+          title: "Error",
+          description: "Please select a class-section combination",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const [classId, sectionId] = classSectionValue.split('-');
+      if (!classId || !sectionId) {
+        toast({
+          title: "Error",
+          description: "Invalid class-section combination selected",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const data = {
+        teacherId: selectedTeachers[0], // Take first selected teacher
+        subjectId: selectedSubjects[0], // Take first selected subject
+        classId,
+        sectionId,
+        isActive,
+      };
       updateMutation.mutate({ id: assignment.id, ...data });
     } else {
-      createMutation.mutate(data);
+      // For creating, use bulk assignment
+      const assignments: Array<{
+        teacherId: string;
+        subjectId: string;
+        classId: string;
+        sectionId: string;
+      }> = [];
+              for (const teacherId of selectedTeachers) {
+          for (const subjectId of selectedSubjects) {
+            for (const classSectionValue of selectedClassSections) {
+              const [classId, sectionId] = classSectionValue.split('-');
+              if (classId && sectionId) {
+                assignments.push({
+                  teacherId,
+                  subjectId,
+                  classId,
+                  sectionId,
+                });
+              }
+            }
+        }
+      }
+
+      // Create assignments sequentially using tRPC mutations
+      if (assignments.length > 0) {
+        let successCount = 0;
+        let errorCount = 0;
+        
+        const createAssignments = async () => {
+          for (const assignment of assignments) {
+            try {
+              await new Promise<void>((resolve, reject) => {
+                createMutation.mutate(
+                  {
+                    ...assignment,
+                    isActive,
+                    branchId: currentBranchId!,
+                  },
+                  {
+                    onSuccess: () => {
+                      successCount++;
+                      resolve();
+                    },
+                    onError: (error) => {
+                      errorCount++;
+                      console.error('Error creating assignment:', error);
+                      reject(error);
+                    }
+                  }
+                );
+              });
+            } catch (error) {
+              // Continue with next assignment even if one fails
+              continue;
+            }
+          }
+          
+          // Show single consolidated toast based on results
+          if (successCount === assignments.length) {
+            // All succeeded
+            toast({
+              title: "Success",
+              description: `Successfully created ${successCount} assignment${successCount > 1 ? 's' : ''}`,
+            });
+            onSuccess();
+          } else if (successCount > 0) {
+            // Partial success
+            toast({
+              title: "Partially completed",
+              description: `Created ${successCount} of ${assignments.length} assignments. ${errorCount} failed.`,
+              variant: "destructive",
+            });
+          } else {
+            // All failed
+            toast({
+              title: "Error",
+              description: "Failed to create assignments. Please try again.",
+              variant: "destructive",
+            });
+          }
+        };
+        
+        void createAssignments();
+      }
     }
   };
 
@@ -947,7 +1150,12 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
 
   if (!open) return null;
 
-  console.log("Current form values:", { teacherId, subjectId, classId, sectionId, isActive });
+        console.log("Current form values:", { 
+        selectedTeachers, 
+        selectedSubjects, 
+        selectedClassSections, 
+        isActive 
+      });
 
   return (
     <div 
@@ -983,144 +1191,57 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="teacher" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Teacher <span className="text-red-500">*</span>
+                Teachers <span className="text-red-500">*</span>
               </Label>
-              <Select value={teacherId} onValueChange={setTeacherId} required key={`teacher-${teacherId}`}>
-                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
-                  <SelectValue placeholder="Select teacher" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
-                  {teachers.map((teacher) => (
-                    <SelectItem 
-                      key={teacher.id} 
-                      value={teacher.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="h-6 w-6 rounded-full bg-[#00501B]/10 dark:bg-[#7aad8c]/20 flex items-center justify-center">
-                          <Users className="h-3 w-3 text-[#00501B] dark:text-[#7aad8c]" />
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {teacher.firstName} {teacher.lastName}
-                          </div>
-                          {teacher.employeeCode && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {teacher.employeeCode}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={teachers.map((teacher) => ({
+                  value: teacher.id,
+                  label: `${teacher.firstName} ${teacher.lastName}${teacher.employeeCode ? ` (${teacher.employeeCode})` : ''}`
+                }))}
+                selected={selectedTeachers}
+                onValueChange={setSelectedTeachers}
+                placeholder="Select teachers"
+                maxCount={3}
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="subject" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Subject <span className="text-red-500">*</span>
+                Subjects <span className="text-red-500">*</span>
               </Label>
-              <Select value={subjectId} onValueChange={setSubjectId} required key={`subject-${subjectId}`}>
-                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
-                  {subjects?.items?.map((subject) => (
-                    <SelectItem 
-                      key={subject.id} 
-                      value={subject.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <div>
-                          <div className="font-medium">{subject.name}</div>
-                          {subject.code && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {subject.code}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={(subjects?.items || []).map((subject) => ({
+                  value: subject.id,
+                  label: `${subject.name}${subject.code ? ` (${subject.code})` : ''}`
+                }))}
+                selected={selectedSubjects}
+                onValueChange={setSelectedSubjects}
+                placeholder="Select subjects"
+                maxCount={3}
+                className="w-full"
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="class" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Class <span className="text-red-500">*</span>
-              </Label>
-              <Select value={classId} onValueChange={(value) => {
-                setClassId(value);
-                setSectionId("all"); // Reset section when class changes
-              }} required key={`class-${classId}`}>
-                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
-                  {classes.map((cls) => (
-                    <SelectItem 
-                      key={cls.id} 
-                      value={cls.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <span>{cls.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="section" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Section
-              </Label>
-              <Select value={sectionId} onValueChange={setSectionId} key={`section-${sectionId}`}>
-                <SelectTrigger className="h-10 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-auto">
-                  <SelectItem 
-                    value="all" 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                        <Users className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="font-medium">All sections</span>
-                    </div>
-                  </SelectItem>
-                  {sections.map((section) => (
-                    <SelectItem 
-                      key={section.id} 
-                      value={section.id} 
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-100 focus:bg-gray-50 dark:focus:bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="h-4 w-4 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                          <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                            {section.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span>{section.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Leave as "All sections" to assign to all sections of the class
-              </p>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="class-section" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Sections <span className="text-red-500">*</span>
+            </Label>
+            <MultiSelect
+              options={allSections.map((section) => ({
+                value: `${section.class?.id}-${section.id}`,
+                label: `${section.class?.name || 'Unknown Class'} - ${section.name}`
+              }))}
+              selected={selectedClassSections}
+              onValueChange={setSelectedClassSections}
+              placeholder="Select class-section combinations"
+              maxCount={3}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Select specific class-section combinations for the assignment
+            </p>
           </div>
 
           <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">

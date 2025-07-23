@@ -10,8 +10,10 @@ export const subjectRouter = createTRPCRouter({
         branchId: z.string().optional(),
         search: z.string().optional(),
         isActive: z.boolean().optional(),
+        isOptional: z.boolean().optional(),
         limit: z.number().min(1).max(100).nullish(),
         cursor: z.string().nullish(),
+        includeClasses: z.boolean().optional(),
       }).optional(),
     )
     .query(async ({ ctx, input = {} }) => {
@@ -29,11 +31,22 @@ export const subjectRouter = createTRPCRouter({
             ],
           } : {}),
           ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+          ...(input.isOptional !== undefined ? { isOptional: input.isOptional } : {}),
         },
         cursor: cursor ? { id: cursor } : undefined,
-        orderBy: {
-          name: "asc",
-        },
+        orderBy: [
+          { displayOrder: "asc" },
+          { name: "asc" },
+        ],
+        ...(input.includeClasses ? {
+          include: {
+            classes: {
+              include: {
+                class: true,
+              },
+            },
+          },
+        } : {}),
       });
 
       let nextCursor: typeof cursor | undefined = undefined;
@@ -81,6 +94,7 @@ export const subjectRouter = createTRPCRouter({
         code: z.string().optional(),
         description: z.string().optional(),
         isActive: z.boolean().default(true),
+        isOptional: z.boolean().default(false),
         classIds: z.array(z.string()).optional(),
       }),
     )
@@ -134,6 +148,7 @@ export const subjectRouter = createTRPCRouter({
         code: z.string().optional(),
         description: z.string().optional(),
         isActive: z.boolean().optional(),
+        isOptional: z.boolean().optional(),
         classIds: z.array(z.string()).optional(),
       }),
     )
@@ -366,6 +381,32 @@ export const subjectRouter = createTRPCRouter({
           ),
         );
       }
+
+      return { success: true };
+    }),
+
+  // Reorder subjects
+  reorder: protectedProcedure
+    .input(
+      z.object({
+        subjectOrders: z.array(
+          z.object({
+            id: z.string(),
+            displayOrder: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Update all subjects with their new display orders
+      await Promise.all(
+        input.subjectOrders.map(({ id, displayOrder }) =>
+          ctx.db.subject.update({
+            where: { id },
+            data: { displayOrder },
+          })
+        )
+      );
 
       return { success: true };
     }),

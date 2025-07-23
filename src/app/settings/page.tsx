@@ -51,13 +51,7 @@ const settingsGroups = [
         href: "/settings/classes",
         disabled: false,
       },
-      {
-        title: "Subjects",
-        description: "Manage school subjects and curriculum",
-        icon: <BookOpen className="h-6 w-6" />,
-        href: "/settings/subjects",
-        disabled: false,
-      },
+
       {
         title: "Education Boards",
         description: "Manage education boards for question papers",

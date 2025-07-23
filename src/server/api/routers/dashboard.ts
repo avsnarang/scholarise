@@ -365,4 +365,277 @@ export const dashboardRouter = createTRPCRouter({
         return [];
       }
     }),
+
+  // Get ERP Manager dashboard data
+  getERPManagerDashboard: protectedProcedure
+    .input(z.object({
+      sessionId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        // Check if user has access to ERP Manager dashboard
+        const userId = ctx.userId;
+        
+        // Check if user is an employee with appropriate access or super admin
+        const employee = await ctx.db.employee.findFirst({
+          where: { 
+            OR: [
+              { userId: userId },
+              { clerkId: userId }
+            ]
+          },
+          include: {
+            branchAccessRecords: true,
+          },
+        });
+
+        // Check if user is a super admin via user roles
+        const userRoles = await ctx.db.userRole.findMany({
+          where: { userId: userId },
+          include: {
+            role: true,
+          },
+        });
+        
+        const isSuperAdmin = userRoles.some(
+          userRole => userRole.role.name === "Super Admin" || 
+                     userRole.role.name === "SUPER_ADMIN" ||
+                     userRole.role.name === "super_admin" ||
+                     userRole.role.isSystem
+        );
+        
+        const isERPManager = userRoles.some(
+          userRole => userRole.role.name === "CBSE In-Charge" ||
+                     userRole.role.name === "ERP In-Charge" ||
+                     userRole.role.name === "cbse_in_charge" ||
+                     userRole.role.name === "erp_in_charge" ||
+                     userRole.role.name === "Admin"
+        );
+        
+        const hasMultiBranchAccess = employee?.branchAccessRecords && employee.branchAccessRecords.length > 0;
+        
+        // Allow access if user is super admin, CBSE/ERP In-Charge, or has multi-branch access
+        if (!isSuperAdmin && !isERPManager && !hasMultiBranchAccess) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You don't have permission to view ERP Manager dashboard. This feature requires CBSE In-Charge, ERP In-Charge, Admin, or Super Admin access.",
+          });
+        }
+
+        // Get current/active academic session if not provided
+        let academicSessionId = input?.sessionId;
+        if (!academicSessionId) {
+          const activeSession = await ctx.db.academicSession.findFirst({
+            where: {
+              isActive: true
+            },
+            orderBy: {
+              startDate: 'desc'
+            }
+          });
+          
+          if (activeSession) {
+            academicSessionId = activeSession.id;
+          }
+        }
+
+        // Get comprehensive system stats
+        const [
+          totalStudents,
+          activeStudents,
+          totalTeachers,
+          activeTeachers,
+          totalEmployees,
+          activeEmployees,
+          totalBranches,
+          totalClasses,
+          totalSections
+        ] = await ctx.db.$transaction([
+          ctx.db.student.count(),
+          ctx.db.student.count({ where: { isActive: true } }),
+          ctx.db.teacher.count(),
+          ctx.db.teacher.count({ where: { isActive: true } }),
+          ctx.db.employee.count(),
+          ctx.db.employee.count({ where: { isActive: true } }),
+          ctx.db.branch.count({ where: { id: { not: "headquarters" } } }),
+          ctx.db.class.count({ where: { isActive: true } }),
+          ctx.db.section.count({ where: { isActive: true } })
+        ]);
+
+        // Get recent enrollments (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const recentEnrollments = await ctx.db.student.count({
+          where: {
+            createdAt: {
+              gte: thirtyDaysAgo
+            }
+          }
+        });
+
+        // Get staff additions (last 30 days)
+        const recentStaffAdditions = await ctx.db.$transaction([
+          ctx.db.teacher.count({
+            where: {
+              createdAt: {
+                gte: thirtyDaysAgo
+              }
+            }
+          }),
+          ctx.db.employee.count({
+            where: {
+              createdAt: {
+                gte: thirtyDaysAgo
+              }
+            }
+          })
+        ]);
+
+        const totalRecentStaff = recentStaffAdditions[0] + recentStaffAdditions[1];
+
+        // Get branch-wise distribution
+        const branchDistribution = await ctx.db.branch.findMany({
+          where: { 
+            id: { not: "headquarters" } 
+          },
+          include: {
+            _count: {
+              select: {
+                students: { where: { isActive: true } },
+                teachers: { where: { isActive: true } },
+                employees: { where: { isActive: true } }
+              }
+            }
+          },
+          orderBy: {
+            order: 'asc'
+          }
+        });
+
+        // Get system activity metrics
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayActivity = await ctx.db.$transaction([
+          // Today's attendance records
+          ctx.db.staffAttendance.count({
+            where: {
+              timestamp: {
+                gte: today
+              }
+            }
+          }),
+          // Today's student enrollments
+          ctx.db.student.count({
+            where: {
+              createdAt: {
+                gte: today
+              }
+            }
+          }),
+          // Active academic sessions
+          ctx.db.academicSession.count({
+            where: {
+              isActive: true
+            }
+          })
+        ]);
+
+        // Get financial overview (if finance data exists)
+        let financialOverview = null;
+        try {
+          const totalFeeCollected = await ctx.db.moneyCollectionItem.aggregate({
+            _sum: {
+              amount: true,
+            },
+            where: {
+              createdAt: {
+                gte: new Date(new Date().getFullYear(), 0, 1), // This year
+              },
+            },
+          });
+
+          const pendingFees = await ctx.db.student.count({
+            where: {
+              isActive: true
+              // Note: You might want to add logic for pending fees based on your fee structure
+            }
+          });
+
+          financialOverview = {
+            totalCollected: totalFeeCollected._sum.amount || 0,
+            pendingFees: pendingFees
+          };
+        } catch (error) {
+          console.error("Error fetching financial overview:", error);
+        }
+
+        // Get system health indicators
+        const systemHealth = {
+          totalUsers: await ctx.db.user.count(),
+          activeUsers: await ctx.db.user.count({ where: { isActive: true } }),
+          totalBranches,
+          activeSessions: todayActivity[2]
+        };
+
+        // Department-wise employee distribution
+        const departmentDistribution = await ctx.db.employee.groupBy({
+          by: ['department'],
+          where: {
+            isActive: true,
+            department: {
+              not: null
+            }
+          },
+          _count: {
+            id: true
+          }
+        });
+
+        return {
+          systemOverview: {
+            totalStudents,
+            activeStudents,
+            totalTeachers,
+            activeTeachers,
+            totalEmployees,
+            activeEmployees,
+            totalStaff: totalTeachers + totalEmployees,
+            totalBranches,
+            totalClasses,
+            totalSections,
+            recentEnrollments,
+            totalRecentStaff
+          },
+          branchDistribution: branchDistribution.map(branch => ({
+            id: branch.id,
+            name: branch.name,
+            code: branch.code,
+            studentCount: branch._count.students,
+            teacherCount: branch._count.teachers,
+            employeeCount: branch._count.employees,
+            totalStaff: branch._count.teachers + branch._count.employees
+          })),
+          todayActivity: {
+            staffAttendance: todayActivity[0],
+            newEnrollments: todayActivity[1],
+            activeSessions: todayActivity[2]
+          },
+          financialOverview,
+          systemHealth,
+          departmentDistribution: departmentDistribution.map(dept => ({
+            department: dept.department || 'Unassigned',
+            count: dept._count.id
+          })),
+          lastUpdated: new Date()
+        };
+      } catch (error) {
+        console.error("Error fetching ERP Manager dashboard data:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch ERP Manager dashboard data"
+        });
+      }
+    }),
 }); 

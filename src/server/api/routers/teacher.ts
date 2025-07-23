@@ -1162,6 +1162,8 @@ export const teacherRouter = createTRPCRouter({
         yearOfCompletion: z.string().optional(),
         institution: z.string().optional(),
         experience: z.string().optional(),
+        certifications: z.array(z.string()).optional(),
+        subjects: z.array(z.string()).optional(),
         bio: z.string().optional(),
         
         // Employment Details
@@ -1176,6 +1178,9 @@ export const teacherRouter = createTRPCRouter({
         confirmationDate: z.string().optional(),
         isActive: z.boolean().optional(),
         
+        // Branch Information
+        branchId: z.string().min(1),
+        
         // Salary & Banking Details
         salaryStructure: z.string().optional(),
         pfNumber: z.string().optional(),
@@ -1186,7 +1191,7 @@ export const teacherRouter = createTRPCRouter({
         ifscCode: z.string().optional(),
         
         // IT & Asset Allocation
-        officialEmail: z.string().optional(),
+        officialEmail: z.string().email().min(1),
         deviceIssued: z.string().optional(),
         accessCardId: z.string().optional(),
         softwareLicenses: z.string().optional(),
@@ -1194,9 +1199,9 @@ export const teacherRouter = createTRPCRouter({
         
         // User Account
         createUser: z.boolean().optional(),
-        email: z.string().optional(),
-        password: z.string().optional(),
-        roleId: z.string().optional(),
+        email: z.string().email().min(1),
+        password: z.string().min(8),
+        roleId: z.string().min(1),
       })),
       branchId: z.string(),
       batchSize: z.number().default(10),
@@ -1360,10 +1365,12 @@ export const teacherRouter = createTRPCRouter({
                     specialCertifications: teacherData.specialCertifications,
                     yearOfCompletion: teacherData.yearOfCompletion,
                     institution: teacherData.institution,
-                    experience: teacherData.experience,
-                    bio: teacherData.bio,
-                    
-                    // Employment Details
+                                      experience: teacherData.experience,
+                  certifications: teacherData.certifications || [],
+                  subjects: teacherData.subjects || [],
+                  bio: teacherData.bio,
+                  
+                  // Employment Details
                     employeeCode: teacherData.employeeCode,
                     designation: teacherData.designation,
                     department: teacherData.department,
@@ -1392,7 +1399,7 @@ export const teacherRouter = createTRPCRouter({
                     assetReturnStatus: teacherData.assetReturnStatus,
                     
                     // Branch and User ID
-                    branchId: branchId,
+                    branchId: teacherData.branchId || branchId,
                     userId: supabaseUserId,     // Primary user reference
                     clerkId: supabaseUserId,    // Legacy field for compatibility
                   },

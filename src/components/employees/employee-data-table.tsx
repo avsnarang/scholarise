@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Edit, Eye, MoreHorizontal, Trash, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Edit, Eye, MoreHorizontal, Trash, UserCheck, UserX, Loader2, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { MoveReasonModal } from "@/components/staff/move-reason-modal";
 
 export interface Employee {
   id: string;
@@ -108,6 +109,10 @@ export function EmployeeDataTable({
   const deleteConfirm = useDeleteConfirm();
   const statusChangeConfirm = useStatusChangeConfirm();
   
+  // Move modal state
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [employeeToMove, setEmployeeToMove] = useState<Employee | null>(null)
+  
   // API mutations
   const utils = api.useContext();
   
@@ -148,6 +153,29 @@ export function EmployeeDataTable({
       });
     }
   });
+
+  const moveToTeacherMutation = api.staffMove.moveEmployeeToTeacher.useMutation({
+    onSuccess: () => {
+      void utils.employee.getAll.invalidate()
+      void utils.employee.getStats.invalidate()
+      void utils.teacher.getAll.invalidate()
+      void utils.teacher.getStats.invalidate()
+      toast({
+        title: "Employee moved to teacher",
+        description: "Employee has been successfully moved to teacher.",
+        variant: "success"
+      })
+      setMoveModalOpen(false)
+      setEmployeeToMove(null)
+    },
+    onError: (error) => {
+      toast({
+        title: "Error moving employee",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
 
   // Handle employee actions
   const handleEmployeeAction = (action: string, employee: Employee) => {
@@ -192,8 +220,21 @@ export function EmployeeDataTable({
           }
         );
         break;
+      case 'move-to-teacher':
+        setEmployeeToMove(employee)
+        setMoveModalOpen(true)
+        break;
     }
   };
+
+  const handleMoveConfirm = (reason: string) => {
+    if (employeeToMove) {
+      moveToTeacherMutation.mutate({
+        employeeId: employeeToMove.id,
+        reason: reason
+      })
+    }
+  }
 
   // Get selected employee IDs
   const getSelectedEmployeeIds = () => {
@@ -272,7 +313,13 @@ export function EmployeeDataTable({
               <UserCheck className="mr-2 h-4 w-4" />
               Activate
             </>
-          )}
+                        )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleEmployeeAction('move-to-teacher', employee)}
+              >
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Move to Teacher
               </DropdownMenuItem>
               <DropdownMenuItem
           onClick={() => handleEmployeeAction('delete', employee)}
@@ -569,6 +616,20 @@ export function EmployeeDataTable({
             No employees found matching your criteria.
           </div>
         )}
+
+        {/* Move Reason Modal */}
+        <MoveReasonModal
+          isOpen={moveModalOpen}
+          onClose={() => {
+            setMoveModalOpen(false)
+            setEmployeeToMove(null)
+          }}
+          onConfirm={handleMoveConfirm}
+          isLoading={moveToTeacherMutation.isPending}
+          personName={employeeToMove ? `${employeeToMove.firstName} ${employeeToMove.lastName}` : ""}
+          fromType="employee"
+          toType="teacher"
+        />
       </div>
     </div>
   );

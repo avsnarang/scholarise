@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash, UserCheck, UserX, Loader2 } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash, UserCheck, UserX, Loader2, ArrowLeftRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -20,6 +20,7 @@ import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
 import { api } from "@/utils/api"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { MoveReasonModal } from "@/components/staff/move-reason-modal"
 
 // Define the Teacher type
 export type Teacher = {
@@ -113,6 +114,10 @@ export function TeacherDataTable({
   const deleteConfirm = useDeleteConfirm()
   const statusChangeConfirm = useStatusChangeConfirm()
   
+  // Move modal state
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [teacherToMove, setTeacherToMove] = useState<Teacher | null>(null)
+  
   // API mutations
   const utils = api.useContext()
   
@@ -148,6 +153,29 @@ export function TeacherDataTable({
     onError: (error) => {
       toast({
         title: "Error updating status",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+
+  const moveToEmployeeMutation = api.staffMove.moveTeacherToEmployee.useMutation({
+    onSuccess: () => {
+      void utils.teacher.getAll.invalidate()
+      void utils.teacher.getStats.invalidate()
+      void utils.employee.getAll.invalidate()
+      void utils.employee.getStats.invalidate()
+      toast({
+        title: "Teacher moved to employee",
+        description: "Teacher has been successfully moved to employee.",
+        variant: "success"
+      })
+      setMoveModalOpen(false)
+      setTeacherToMove(null)
+    },
+    onError: (error) => {
+      toast({
+        title: "Error moving teacher",
         description: error.message,
         variant: "destructive"
       })
@@ -197,6 +225,19 @@ export function TeacherDataTable({
           }
         )
         break
+      case 'move-to-employee':
+        setTeacherToMove(teacher)
+        setMoveModalOpen(true)
+        break
+    }
+  }
+
+  const handleMoveConfirm = (reason: string) => {
+    if (teacherToMove) {
+      moveToEmployeeMutation.mutate({
+        teacherId: teacherToMove.id,
+        reason: reason
+      })
     }
   }
 
@@ -278,6 +319,12 @@ export function TeacherDataTable({
                     Activate
                   </>
                 )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleTeacherAction('move-to-employee', teacher)}
+              >
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Move to Employee
               </DropdownMenuItem>
               <DropdownMenuItem
           onClick={() => handleTeacherAction('delete', teacher)}
@@ -492,93 +539,71 @@ export function TeacherDataTable({
         </div>
 
         {/* Teacher Rows */}
-        {isLoading && data.length === 0 ? (
-          <div className="border rounded-lg overflow-hidden">
-            {Array.from({ length: 10 }).map((_, index) => (
-              <TeacherSkeleton key={index} />
-            ))}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span className="text-muted-foreground">
+              {isPaginating ? `Loading ${paginatingDirection || 'page'}...` : 'Loading teachers...'}
+            </span>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No teachers found
           </div>
         ) : (
-          <div className="space-y-0 border rounded-lg overflow-hidden">
+          <div className="space-y-1">
             {data.map((teacher, index) => (
               <TeacherRow key={teacher.id} teacher={teacher} index={index} />
             ))}
-            
-            {/* Loading More Skeletons */}
-            {isLoading && !isPaginating && (
-              <div className="space-y-0">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <TeacherSkeleton key={`loading-${index}`} />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
-        {/* Pagination Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
-          <div className="text-sm text-muted-foreground">
-            {isLoading && data.length === 0 ? (
-              'Loading teachers...'
-            ) : (
-              <>
-                Showing <span className="font-medium">{data.length}</span> of{" "}
-                <span className="font-medium">{totalCount}</span> teachers
-                {totalPages > 1 && (
-                  <span className="ml-2 text-blue-600 dark:text-blue-400">
-                    • {totalCount - data.length} more available
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-          
-          {/* Pagination Buttons */}
-          {totalPages > 1 && (
+        {/* Pagination */}
+        {!isLoading && totalCount > 0 && (
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing page {currentPage} of {totalPages} ({totalCount} total teachers)
+            </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={onPreviousPage}
-                disabled={currentPage === 1 || isLoading || isPaginating}
-                className="min-w-28"
+                disabled={currentPage <= 1 || isPaginating}
               >
-                {isPaginating && paginatingDirection === 'previous' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Previous
-                  </>
-                ) : (
-                  'Previous'
+                {isPaginating && paginatingDirection === 'previous' && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
                 )}
+                Previous
               </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={onNextPage}
-                disabled={currentPage === totalPages || isLoading || isPaginating}
-                className="min-w-28"
+                disabled={currentPage >= totalPages || isPaginating}
               >
-                {isPaginating && paginatingDirection === 'next' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Next
-                  </>
-                ) : (
-                  'Next'
+                {isPaginating && paginatingDirection === 'next' && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
                 )}
+                Next
               </Button>
             </div>
-          )}
-        </div>
-
-        {/* No Teachers Found */}
-        {!isLoading && data.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            No teachers found matching your criteria.
           </div>
         )}
+
+        {/* Move Reason Modal */}
+        <MoveReasonModal
+          isOpen={moveModalOpen}
+          onClose={() => {
+            setMoveModalOpen(false)
+            setTeacherToMove(null)
+          }}
+          onConfirm={handleMoveConfirm}
+          isLoading={moveToEmployeeMutation.isPending}
+          personName={teacherToMove ? `${teacherToMove.firstName} ${teacherToMove.lastName}` : ""}
+          fromType="teacher"
+          toType="employee"
+        />
       </div>
     </div>
   )

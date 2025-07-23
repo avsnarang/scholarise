@@ -19,6 +19,8 @@ import { attendanceDeviceRouter } from "@/server/api/routers/attendanceDevice";
 import { attendanceWindowRouter } from "@/server/api/routers/attendanceWindow";
 import { subjectRouter } from "@/server/api/routers/subject";
 import { subjectTeacherRouter } from "@/server/api/routers/subjectTeacher";
+import { studentSubjectRouter } from "@/server/api/routers/studentSubject";
+import { classSubjectRouter } from "@/server/api/routers/classSubject";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { leaveRouter } from "./routers/leave";
 import { dashboardRouter } from "@/server/api/routers/dashboard";
@@ -36,6 +38,8 @@ import { examinationRouter } from "./routers/examination";
 import { courtesyCallsRouter } from "./routers/courtesy-calls";
 import { communicationRouter } from "./routers/communication";
 import { chatRouter } from "./routers/chat";
+import { transportationRouter } from "./routers/transportation";
+import { staffMoveRouter } from "@/server/api/routers/staffMove";
 
 /**
  * This is the primary router for your server.
@@ -64,6 +68,8 @@ export const appRouter = createTRPCRouter({
   attendanceWindow: attendanceWindowRouter,
   subject: subjectRouter,
   subjectTeacher: subjectTeacherRouter,
+  studentSubject: studentSubjectRouter,
+  classSubject: classSubjectRouter,
   leave: leaveRouter,
   dashboard: dashboardRouter,
   salary: salaryRouter,
@@ -80,6 +86,8 @@ export const appRouter = createTRPCRouter({
   courtesyCalls: courtesyCallsRouter,
   communication: communicationRouter,
   chat: chatRouter,
+  transportation: transportationRouter,
+  staffMove: staffMoveRouter,
 });
 
 // export type definition of API

@@ -3,10 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { isTeacher, isEmployee, isAdmin, isSuperAdmin: isUserRoleSuperAdmin, isERPManager } = useUserRole();
+  const { isSuperAdmin } = usePermissions();
 
   useEffect(() => {
     // Don't do anything while loading
@@ -20,10 +24,34 @@ export default function Home() {
       return;
     }
 
-    // If authenticated, go directly to dashboard
+    // If authenticated, redirect to role-specific dashboard
     if (isAuthenticated && user?.id) {
-      console.log('Home page: Redirecting authenticated user to dashboard');
-      router.push("/dashboard");
+      console.log('Home page: Redirecting authenticated user to appropriate dashboard');
+      
+      // Check user roles and redirect accordingly
+      if (isTeacher) {
+        router.push("/staff/teachers/dashboard");
+        return;
+      }
+      
+      if (isEmployee) {
+        router.push("/staff/employees/dashboard");
+        return;
+      }
+      
+      if (isERPManager) {
+        router.push("/erp-manager/dashboard");
+        return;
+      }
+      
+      // Superadmins go to main dashboard
+      if (isSuperAdmin || isUserRoleSuperAdmin) {
+        router.push("/dashboard");
+        return;
+      }
+      
+      // Everyone else goes to generic dashboard
+      router.push("/generic-dashboard");
       return;
     }
 

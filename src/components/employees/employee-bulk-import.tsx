@@ -106,7 +106,7 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       setExtractedHeaders(headers);
 
       // Validate required headers
-      const requiredHeaders = ["firstName", "lastName", "designation"];
+      const requiredHeaders = ["firstName", "lastName", "designation", "branchAccess", "email", "password", "roleId"];
       const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
 
       if (missingHeaders.length > 0) {
@@ -222,10 +222,22 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
 
             const rowData: Record<string, any> = {};
             headers.forEach((header, index) => {
-              let value: string | null = values[index] || '';
+              let value: string | null | string[] = values[index] || '';
+              
+              // Handle nullable email fields
               if (optionalNullableEmailFields.includes(header) && value === '') {
                 value = null;
               }
+              
+              // Handle array fields - split by semicolon
+              if (header === 'certifications' || header === 'subjects' || header === 'branchAccess') {
+                if (value && typeof value === 'string' && value.trim() !== '') {
+                  value = value.split(';').map(item => item.trim()).filter(item => item !== '');
+                } else {
+                  value = [];
+                }
+              }
+              
               rowData[header] = value;
             });
 
@@ -260,6 +272,18 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       }
       if (!employee.designation) {
         errors.push(`Row ${rowNum}: Designation is required`);
+      }
+      if (!employee.branchAccess || !Array.isArray(employee.branchAccess) || employee.branchAccess.length === 0) {
+        errors.push(`Row ${rowNum}: At least one branch access is required`);
+      }
+      if (!employee.email) {
+        errors.push(`Row ${rowNum}: Email is required`);
+      }
+      if (!employee.password) {
+        errors.push(`Row ${rowNum}: Password is required`);
+      }
+      if (!employee.roleId) {
+        errors.push(`Row ${rowNum}: Role ID is required`);
       }
       if (employee.gender && !["Male", "Female", "Other"].includes(employee.gender)) {
         errors.push(`Row ${rowNum}: Gender must be Male, Female, or Other`);
@@ -322,12 +346,23 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
 
     setIsUploading(true);
     try {
+      // Transform data to match server expectations
+      const transformedData = previewData.map((employee: any) => ({
+        ...employee,
+        // Ensure array fields are properly formatted
+        certifications: Array.isArray(employee.certifications) ? employee.certifications : [],
+        subjects: Array.isArray(employee.subjects) ? employee.subjects : [],
+        branchAccess: Array.isArray(employee.branchAccess) ? employee.branchAccess : [],
+        // Always create user accounts for employees
+        createUser: true,
+      }));
+
       await bulkImportMutation.mutateAsync({
         type: 'employee',
         operation: 'bulk_import',
-        title: `Bulk Employee Import - ${previewData.length} employees`,
-        description: `Importing ${previewData.length} employees from ${file.name}`,
-        items: previewData,
+        title: `Bulk Employee Import - ${transformedData.length} employees`,
+        description: `Importing ${transformedData.length} employees from ${file.name}`,
+        items: transformedData,
         branchId: currentBranchId
       });
     } catch (error) {
@@ -411,6 +446,7 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
 
   const downloadTemplate = () => {
     const headers = [
+      // Personal Information
       'firstName*',
       'lastName*',
       'middleName',
@@ -422,6 +458,8 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       'religion',
       'panNumber',
       'aadharNumber',
+      
+      // Contact Information
       'address',
       'city',
       'state',
@@ -438,6 +476,8 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       'emergencyContactName',
       'emergencyContactPhone',
       'emergencyContactRelation',
+      
+      // Educational Qualifications
       'qualification',
       'specialization',
       'professionalQualifications',
@@ -445,7 +485,11 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       'yearOfCompletion',
       'institution',
       'experience',
+      'certifications',
+      'subjects',
       'bio',
+      
+      // Employment Details
       'employeeCode',
       'designation*',
       'department',
@@ -456,6 +500,11 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       'previousEmployer',
       'confirmationDate',
       'isActive',
+      
+      // Branch Access
+      'branchAccess*',
+      
+      // Salary & Banking Details
       'salaryStructure',
       'pfNumber',
       'esiNumber',
@@ -463,21 +512,26 @@ export function EmployeeBulkImport({ onSuccess }: EmployeeBulkImportProps) {
       'bankName',
       'accountNumber',
       'ifscCode',
+      
+      // IT & Asset Allocation
       'officialEmail',
       'deviceIssued',
       'accessCardId',
       'softwareLicenses',
       'assetReturnStatus',
-      'createUser',
-      'email',
-      'password',
-      'roleId'
+      
+      // User Account
+      'email*',
+      'password*',
+      'roleId*'
     ];
 
     const csvContent = [
       headers.join(','),
       '// Sample data row - delete this line before importing',
-      'Jane,Smith,A,15/05/1988,Female,A+,Single,Indian,Christian,BCDEF5678G,987654321098,456 Oak St,City,State,Country,54321,456 Oak St,City,State,Country,54321,9876543210,9876543211,jane.smith@email.com,John Smith,9876543212,Brother,B.Com,Accounting,MBA,Finance Professional,2012,XYZ University,4 years,Experienced employee,E001,Accountant,Finance,01/01/2021,Manager Name,Full-Time,2 years,Previous Company,01/07/2021,true,Standard,PF002,ESI002,UAN002,XYZ Bank,0987654321,EFGH0123456,jane.smith@company.com,Desktop,AC002,Tally ERP,Allocated,true,jane.smith@company.com,password123,role-id'
+      '// Note: For array fields (certifications, subjects, branchAccess), use semicolon (;) to separate multiple values',
+      '// Example: "Finance;HR" for branchAccess or "B.Com;MBA" for certifications',
+      'Jane,Smith,A,15/05/1988,Female,A+,Single,Indian,Christian,BCDEF5678G,987654321098,456 Oak St,City,State,Country,54321,456 Oak St,City,State,Country,54321,9876543210,9876543211,jane.smith@email.com,John Smith,9876543212,Brother,B.Com,Accounting,MBA,Finance Professional,2012,XYZ University,4 years,B.Com;MBA,Accounting;Finance,Experienced employee,E001,Accountant,Finance,01/01/2021,Manager Name,Full-Time,2 years,Previous Company,01/07/2021,true,branch-id-1;branch-id-2,Standard,PF002,ESI002,UAN002,XYZ Bank,0987654321,EFGH0123456,jane.smith@company.com,Desktop,AC002,Tally ERP,Allocated,jane.smith@company.com,password123,role-id-here'
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });

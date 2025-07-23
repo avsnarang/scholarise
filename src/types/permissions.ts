@@ -136,6 +136,40 @@ export enum Permission {
   
   // Settings permissions
   VIEW_SETTINGS = "view_settings",
+  MANAGE_LOCATION_CONFIG = "manage_location_config",
+  MANAGE_EMAIL_CONFIG = "manage_email_config",
+  MANAGE_AI_CONFIG = "manage_ai_config",
+  MANAGE_BACKGROUND_SERVICES = "manage_background_services",
+  
+  // Chat permissions
+  VIEW_CHAT = "view_chat",
+  MANAGE_CHAT_SETTINGS = "manage_chat_settings",
+  
+  // RBAC Management permissions
+  MANAGE_PERMISSIONS = "manage_permissions",
+  ASSIGN_USER_ROLES = "assign_user_roles",
+  VIEW_RBAC_SETTINGS = "view_rbac_settings",
+  
+  // Location-based attendance permissions
+  MANAGE_ATTENDANCE_LOCATIONS = "manage_attendance_locations",
+  VIEW_ATTENDANCE_LOCATIONS = "view_attendance_locations",
+  
+  // Finance Module Extensions
+  MANAGE_CONCESSION_TYPES = "manage_concession_types",
+  MANAGE_STUDENT_CONCESSIONS = "manage_student_concessions",
+  MANAGE_FEE_REMINDERS = "manage_fee_reminders",
+  VIEW_COLLECTION_REPORTS = "view_collection_reports",
+  
+  // Enhanced Examination permissions
+  VIEW_REPORT_CARDS = "view_report_cards",
+  GENERATE_REPORT_CARDS = "generate_report_cards",
+  MANAGE_EXAM_TERMS = "manage_exam_terms",
+  EXPORT_EXAM_DATA = "export_exam_data",
+  
+  // Additional Admin permissions
+  MANAGE_SYSTEM_SETTINGS = "manage_system_settings",
+  VIEW_SYSTEM_LOGS = "view_system_logs",
+  MANAGE_DATA_EXPORT = "manage_data_export",
 }
 
 // Define user roles

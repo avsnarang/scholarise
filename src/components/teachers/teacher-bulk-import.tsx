@@ -106,7 +106,7 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       setExtractedHeaders(headers);
 
       // Validate required headers
-      const requiredHeaders = ["firstName", "lastName"];
+      const requiredHeaders = ["firstName", "lastName", "branchId", "officialEmail", "password", "roleId"];
       const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
 
       if (missingHeaders.length > 0) {
@@ -222,10 +222,22 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
 
             const rowData: Record<string, any> = {};
             headers.forEach((header, index) => {
-              let value: string | null = values[index] || '';
+              let value: string | null | string[] = values[index] || '';
+              
+              // Handle nullable email fields
               if (optionalNullableEmailFields.includes(header) && value === '') {
                 value = null;
               }
+              
+              // Handle array fields - split by semicolon
+              if (header === 'certifications' || header === 'subjects') {
+                if (value && typeof value === 'string' && value.trim() !== '') {
+                  value = value.split(';').map(item => item.trim()).filter(item => item !== '');
+                } else {
+                  value = [];
+                }
+              }
+              
               rowData[header] = value;
             });
 
@@ -257,6 +269,18 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       }
       if (!teacher.lastName) {
         errors.push(`Row ${rowNum}: Last name is required`);
+      }
+      if (!teacher.branchId) {
+        errors.push(`Row ${rowNum}: Branch ID is required`);
+      }
+      if (!teacher.officialEmail) {
+        errors.push(`Row ${rowNum}: Official email is required`);
+      }
+      if (!teacher.password) {
+        errors.push(`Row ${rowNum}: Password is required`);
+      }
+      if (!teacher.roleId) {
+        errors.push(`Row ${rowNum}: Role ID is required`);
       }
       if (teacher.gender && !["Male", "Female", "Other"].includes(teacher.gender)) {
         errors.push(`Row ${rowNum}: Gender must be Male, Female, or Other`);
@@ -319,12 +343,24 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
 
     setIsUploading(true);
     try {
+      // Transform data to match server expectations
+      const transformedData = previewData.map((teacher: any) => ({
+        ...teacher,
+        // Use officialEmail as the account email
+        email: teacher.officialEmail,
+        // Ensure array fields are properly formatted
+        certifications: Array.isArray(teacher.certifications) ? teacher.certifications : [],
+        subjects: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+        // Always create user accounts for teachers
+        createUser: true,
+      }));
+
       await bulkImportMutation.mutateAsync({
         type: 'teacher',
         operation: 'bulk_import',
-        title: `Bulk Teacher Import - ${previewData.length} teachers`,
-        description: `Importing ${previewData.length} teachers from ${file.name}`,
-        items: previewData,
+        title: `Bulk Teacher Import - ${transformedData.length} teachers`,
+        description: `Importing ${transformedData.length} teachers from ${file.name}`,
+        items: transformedData,
         branchId: currentBranchId
       });
     } catch (error) {
@@ -408,8 +444,9 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
 
   const downloadTemplate = () => {
     const headers = [
+      // Personal Information
       'firstName*',
-      'lastName*',
+      'lastName*', 
       'middleName',
       'dateOfBirth',
       'gender',
@@ -419,6 +456,8 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       'religion',
       'panNumber',
       'aadharNumber',
+      
+      // Contact Information
       'address',
       'city',
       'state',
@@ -435,6 +474,8 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       'emergencyContactName',
       'emergencyContactPhone',
       'emergencyContactRelation',
+      
+      // Educational Qualifications
       'qualification',
       'specialization',
       'professionalQualifications',
@@ -442,7 +483,11 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       'yearOfCompletion',
       'institution',
       'experience',
+      'certifications',
+      'subjects',
       'bio',
+      
+      // Employment Details
       'employeeCode',
       'designation',
       'department',
@@ -453,6 +498,11 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       'previousEmployer',
       'confirmationDate',
       'isActive',
+      
+      // Branch Information
+      'branchId*',
+      
+      // Salary & Banking Details
       'salaryStructure',
       'pfNumber',
       'esiNumber',
@@ -460,21 +510,25 @@ export function TeacherBulkImport({ onSuccess }: TeacherBulkImportProps) {
       'bankName',
       'accountNumber',
       'ifscCode',
-      'officialEmail',
+      
+      // IT & Asset Allocation
+      'officialEmail*',
       'deviceIssued',
       'accessCardId',
       'softwareLicenses',
       'assetReturnStatus',
-      'createUser',
-      'email',
-      'password',
-      'roleId'
+      
+      // User Account
+      'password*',
+      'roleId*'
     ];
 
     const csvContent = [
       headers.join(','),
       '// Sample data row - delete this line before importing',
-      'John,Doe,M,15/05/1985,Male,O+,Married,Indian,Hindu,ABCDE1234F,123456789012,123 Main St,City,State,Country,12345,123 Main St,City,State,Country,12345,9876543210,9876543211,john.doe@email.com,Jane Doe,9876543212,Wife,M.Ed,Mathematics,B.Ed,Advanced Mathematics,2010,ABC University,5 years,Experienced teacher,T001,Teacher,Mathematics,01/01/2020,Manager Name,Full-Time,3 years,Previous School,01/07/2020,true,Standard,PF001,ESI001,UAN001,ABC Bank,1234567890,ABCD0123456,john.doe@school.com,Laptop,AC001,Microsoft Office,Returned,true,john.doe@school.com,password123,role-id'
+      '// Note: For array fields (certifications, subjects), use semicolon (;) to separate multiple values',
+      '// Example: "Math;Science;English" for subjects or "B.Ed;M.Ed" for certifications',
+      'John,Doe,M,15/05/1985,Male,O+,Married,Indian,Hindu,ABCDE1234F,123456789012,123 Main St,City,State,Country,12345,123 Main St,City,State,Country,12345,9876543210,9876543211,john.doe@email.com,Jane Doe,9876543212,Wife,M.Ed,Mathematics,B.Ed,Advanced Mathematics,2010,ABC University,5 years,B.Ed;M.Ed,Math;Science;English,Experienced teacher,T001,Teacher,Mathematics,01/01/2020,Manager Name,Full-Time,3 years,Previous School,01/07/2020,true,branch-id-here,Standard,PF001,ESI001,UAN001,ABC Bank,1234567890,ABCD0123456,john.doe@school.com,Laptop,AC001,Microsoft Office,Returned,password123,role-id-here'
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });

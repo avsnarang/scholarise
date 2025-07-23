@@ -1,14 +1,8 @@
-import { PageWrapper } from "@/components/layout/page-wrapper";
-import { RouteGuard } from "@/components/route-guard";
-import { Permission } from "@/types/permissions";
-import { TeacherSubjectAssignments } from "./assignments-client";
-
-export default function TeacherSubjectAssignmentsPage() {
+export default function AssignmentsPage() {
   return (
-    <RouteGuard requiredPermissions={[Permission.VIEW_TEACHERS]}>
-      <PageWrapper>
-        <TeacherSubjectAssignments />
-      </PageWrapper>
-    </RouteGuard>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Assignments</h1>
+      <p>Assignments management will be implemented here.</p>
+    </div>
   );
 } 

@@ -23,7 +23,7 @@ import {
   Badge,
   CategoryBar,
 } from "@tremor/react";
-import { TrendingUp, TrendingDown, Users, GraduationCap, Building2, DollarSign, Bus, BookOpen, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, GraduationCap, Building2, DollarSign, Bus, BookOpen, AlertCircle, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VerticalBarChart from "@/components/ui/vertical-bar-chart";
 import TabbedVerticalBarChart from "@/components/ui/tabbed-vertical-bar-chart";
@@ -32,6 +32,7 @@ import { formatIndianCurrency } from "@/lib/utils";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -55,9 +56,23 @@ function DashboardContent() {
   const { data: branchesStats, isLoading } = api.dashboard.getAllBranchesStats.useQuery();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
-  const { isTeacher, teacher, teacherId } = useUserRole();
+  const { isTeacher, teacher, teacherId, isEmployee, employee, employeeId, isERPManager } = useUserRole();
+  const { isSuperAdmin } = usePermissions();
   const searchParams = useSearchParams();
   const teacherSetupNeeded = searchParams.get('teacherSetupNeeded');
+
+  // Restrict access to superadmin only
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-gray-900">Access Denied</h3>
+          <p className="text-gray-600">This dashboard is only available for super administrators. Please contact your administrator if you believe this is an error.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch finance data for the charts
   const { data: financeAnalytics } = api.finance.getFeeCollectionAnalytics.useQuery(
@@ -257,6 +272,50 @@ function DashboardContent() {
             <Link href="/staff/teachers/dashboard">
               <Button variant="secondary" size="sm" className="bg-white text-[#00501B] hover:bg-white/90">
                 Go to Teacher Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Dashboard Link Banner */}
+      {isEmployee && employee && employeeId && (
+        <div className="bg-gradient-to-r from-[#A65A20] to-[#A65A20]/80 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Welcome, {employee.firstName} {employee.lastName}!</h3>
+                <p className="text-white/80 text-sm">Access your personalized employee dashboard for department management and insights.</p>
+              </div>
+            </div>
+            <Link href="/staff/employees/dashboard">
+              <Button variant="secondary" size="sm" className="bg-white text-[#A65A20] hover:bg-white/90">
+                Go to Employee Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ERP Manager Dashboard Link Banner */}
+      {isERPManager && (
+        <div className="bg-gradient-to-r from-[#1E40AF] to-[#1E40AF]/80 rounded-lg p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Management Dashboard Access</h3>
+                <p className="text-white/80 text-sm">Access your comprehensive management dashboard for system-wide analytics and oversight.</p>
+              </div>
+            </div>
+            <Link href="/erp-manager/dashboard">
+              <Button variant="secondary" size="sm" className="bg-white text-[#1E40AF] hover:bg-white/90">
+                Go to ERP Manager Dashboard
               </Button>
             </Link>
           </div>

@@ -49,6 +49,7 @@ const formSchema = z.object({
   code: z.string().optional(),
   description: z.string().optional(),
   isActive: z.boolean(),
+  isOptional: z.boolean(),
   classIds: z.array(z.string()).optional(),
 });
 
@@ -56,9 +57,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface SubjectFormProps {
   subjectId?: string;
+  redirectPath?: string;
 }
 
-export function SubjectForm({ subjectId }: SubjectFormProps) {
+export function SubjectForm({ subjectId, redirectPath = "/settings/subjects" }: SubjectFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +103,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
       code: "",
       description: "",
       isActive: true,
+      isOptional: false,
       classIds: [],
     },
   });
@@ -112,7 +115,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
         title: "Subject Created",
         description: "The subject has been created successfully.",
       });
-      router.push("/settings/subjects");
+      router.push(redirectPath);
     },
     onError: (error) => {
       toast({
@@ -130,7 +133,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
         title: "Subject Updated",
         description: "The subject has been updated successfully.",
       });
-      router.push("/settings/subjects");
+      router.push(redirectPath);
     },
     onError: (error) => {
       toast({
@@ -153,6 +156,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
         code: subjectData.code || "",
         description: subjectData.description || "",
         isActive: subjectData.isActive,
+        isOptional: subjectData.isOptional,
         classIds: selectedClassIds,
       });
     }
@@ -318,6 +322,34 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
             </div>
           )}
 
+          {/* Subject Type */}
+          <FormField
+            control={form.control}
+            name="isOptional"
+            render={({ field }) => (
+              <FormItem className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="mt-1"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="cursor-pointer">
+                      Optional Subject
+                    </FormLabel>
+                    <FormDescription>
+                      Optional subjects can be individually assigned to students. 
+                      Compulsory subjects are automatically assigned to all students in the mapped classes.
+                    </FormDescription>
+                  </div>
+                </div>
+              </FormItem>
+            )}
+          />
+
           {/* Active Status */}
           <FormField
             control={form.control}
@@ -351,7 +383,7 @@ export function SubjectForm({ subjectId }: SubjectFormProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/settings/subjects")}
+              onClick={() => router.push(redirectPath)}
             >
               Cancel
             </Button>

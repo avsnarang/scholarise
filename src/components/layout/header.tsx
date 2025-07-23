@@ -23,7 +23,7 @@ export function Header({
   onSidebarCollapseToggle
 }: HeaderProps) {
   const { isSuperAdmin } = usePermissions();
-  const { isTeacher } = useUserRole();
+  const { isTeacher, isEmployee, isERPManager } = useUserRole();
   
   return (
     <header className={cn(
@@ -43,7 +43,12 @@ export function Header({
         )}
 
         {/* Mobile logo - only visible on mobile */}
-        <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"} className="md:hidden items-center gap-2 flex">
+        <Link href={
+          isTeacher ? "/staff/teachers/dashboard" : 
+          isEmployee ? "/staff/employees/dashboard" : 
+          isERPManager ? "/erp-manager/dashboard" : 
+          "/dashboard"
+        } className="md:hidden items-center gap-2 flex">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-r from-[#00501B] to-[#A65A20]">
             <span className="text-xs font-bold text-white">SR</span>
           </div>

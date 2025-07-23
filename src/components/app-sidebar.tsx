@@ -151,7 +151,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getUserBranches.useQuery();
   const { currentBranchId, setCurrentBranchId } = useBranchContext();
   const { canAccess, isSuperAdmin, can } = usePermissions();
-  const { isTeacher } = useUserRole();
+  const { isTeacher, isEmployee, isERPManager } = useUserRole();
 
   // Define Branch type based on the API response
   type Branch = {
@@ -200,7 +200,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // ERP section paths
     const erpPaths = [
       '/admissions', '/students', '/staff', '/classes', '/attendance', '/leaves', 
-      '/finance', '/money-collection', '/salary', '/transport', '/settings'
+      '/finance', '/money-collection', '/salary', '/transportation', '/settings',
+      '/communication', '/subjects'
     ];
     
     // LMS section paths
@@ -256,7 +257,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (currentPath.startsWith('/salary/')) {
       expandedItems['Salary Management'] = true;
     }
-    if (currentPath.startsWith('/transport/')) {
+    if (currentPath.startsWith('/communication/')) {
+      expandedItems['Communication'] = true;
+    }
+    if (currentPath.startsWith('/subjects/')) {
+      expandedItems['Subjects'] = true;
+    }
+    if (currentPath.startsWith('/transportation/')) {
       expandedItems['Transport'] = true;
     }
     if (currentPath.startsWith('/settings/')) {
@@ -412,6 +419,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Employees",
           href: "/staff/employees",
           permissions: [Permission.VIEW_EMPLOYEES],
+          children: [
+            {
+              title: "Dashboard",
+              href: "/staff/employees/dashboard",
+              permissions: [Permission.VIEW_EMPLOYEES],
+            },
+            {
+              title: "All Employees",
+              href: "/staff/employees",
+              permissions: [Permission.VIEW_EMPLOYEES],
+            },
+          ],
         },
         {
           title: "Add Employee",
@@ -446,10 +465,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/classes/students",
           permissions: [Permission.MANAGE_CLASS_STUDENTS],
         },
+
+      ],
+    },
+    {
+      title: "Subjects",
+      href: "/subjects",
+      icon: BookOpen,
+      permissions: [Permission.MANAGE_SUBJECTS],
+      children: [
         {
-          title: "Subject Assignments",
-          href: "/classes/assignments",
+          title: "Manage Subjects",
+          href: "/subjects/manage",
+          permissions: [Permission.MANAGE_SUBJECTS],
+        },
+        {
+          title: "Teacher Assignments",
+          href: "/subjects/teacher-assignments",
           permissions: [Permission.VIEW_TEACHERS],
+        },
+        {
+          title: "Class Mapping",
+          href: "/subjects/class-mapping",
+          permissions: [Permission.MANAGE_SUBJECTS],
+        },
+        {
+          title: "Student Mapping",
+          href: "/subjects/student-mapping",
+          permissions: [Permission.MANAGE_SUBJECTS],
+        },
+        {
+          title: "Class Overview",
+          href: "/subjects/class-overview",
+          permissions: [Permission.MANAGE_SUBJECTS],
         },
       ],
     },
@@ -528,12 +576,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Concession Types",
           href: "/finance/concession-types",
-          permissions: [Permission.VIEW_FINANCE_MODULE],
+          permissions: [Permission.MANAGE_CONCESSION_TYPES],
         },
         {
           title: "Student Concessions",
           href: "/finance/student-concessions",
-          permissions: [Permission.VIEW_FINANCE_MODULE],
+          permissions: [Permission.MANAGE_STUDENT_CONCESSIONS],
+        },
+        {
+          title: "Fee Reminders",
+          href: "/finance/reminders",
+          permissions: [Permission.MANAGE_FEE_REMINDERS],
         },
       ],
     },
@@ -625,33 +678,78 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             href: "/communication/history",
             permissions: [Permission.VIEW_COMMUNICATION_LOGS],
           },
-          {
-            title: "Settings",
-            href: "/communication/settings",
-            permissions: [Permission.MANAGE_COMMUNICATION_SETTINGS],
-          },
-        ],
-      },
+                  {
+          title: "Settings",
+          href: "/communication/settings",
+          permissions: [Permission.MANAGE_COMMUNICATION_SETTINGS],
+        },
+        {
+          title: "Chat Settings",
+          href: "/communication/chat",
+          permissions: [Permission.MANAGE_CHAT_SETTINGS],
+        },
+      ],
+    },
       {
         title: "Transport",
-        href: "/transport",
+        href: "/transportation",
         icon: Bus,
         permissions: [Permission.VIEW_TRANSPORT],
         children: [
           {
-            title: "Routes",
-            href: "/transport/routes",
+            title: "Bus Management",
+            href: "/transportation/buses",
             permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
           },
           {
-            title: "Stops",
-            href: "/transport/stops",
-            permissions: [Permission.MANAGE_TRANSPORT_STOPS],
+            title: "Staff Management",
+            href: "/transportation/staff",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
           },
           {
-            title: "Assignments",
-            href: "/transport/assignments",
+            title: "Routes & Stops",
+            href: "/transportation/routes",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Student Assignments",
+            href: "/transportation/assignments",
             permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
+          },
+          {
+            title: "Trip Manager",
+            href: "/transportation/trips",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Fee Management",
+            href: "/transportation/fees",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Fuel Tracking",
+            href: "/transportation/fuel-logs",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Maintenance Logs",
+            href: "/transportation/maintenance",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Bus Inspections",
+            href: "/transportation/inspections",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Configuration",
+            href: "/transportation/configuration",
+            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+          },
+          {
+            title: "Reports",
+            href: "/transportation/reports",
+            permissions: [Permission.VIEW_TRANSPORT],
           },
         ],
       },
@@ -671,11 +769,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/settings/academic-sessions",
           permissions: [Permission.MANAGE_ACADEMIC_SESSIONS],
         },
-        {
-          title: "Subjects",
-          href: "/settings/subjects",
-          permissions: [Permission.MANAGE_SUBJECTS],
-        },
+
         {
           title: "Users",
           href: "/settings/users",
@@ -704,7 +798,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "AI Configuration",
           href: "/settings/ai-configuration",
-          permissions: [Permission.VIEW_SETTINGS],
+          permissions: [Permission.MANAGE_AI_CONFIG],
+        },
+        {
+          title: "Location Configuration",
+          href: "/settings/location-config",
+          permissions: [Permission.MANAGE_LOCATION_CONFIG],
+        },
+        {
+          title: "RBAC Settings",
+          href: "/settings/rbac",
+          permissions: [Permission.VIEW_RBAC_SETTINGS],
         },
       ],
     },
@@ -1157,8 +1261,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"} className="flex-1">
-                  <SidebarMenuButton isActive={isActive(isTeacher ? "/staff/teachers/dashboard" : "/dashboard")}>
+                <Link href={
+                  isTeacher ? "/staff/teachers/dashboard" : 
+                  isEmployee ? "/staff/employees/dashboard" : 
+                  isERPManager ? "/erp-manager/dashboard" : 
+                  "/dashboard"
+                } className="flex-1">
+                  <SidebarMenuButton isActive={isActive(
+                    isTeacher ? "/staff/teachers/dashboard" : 
+                    isEmployee ? "/staff/employees/dashboard" : 
+                    isERPManager ? "/erp-manager/dashboard" : 
+                    "/dashboard"
+                  )}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>Dashboard</span>
                   </SidebarMenuButton>

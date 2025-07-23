@@ -156,7 +156,7 @@ export function WhatsAppSidebar({
 }: WhatsAppSidebarProps) {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
-  const { isTeacher } = useUserRole();
+  const { isTeacher, isEmployee, isERPManager } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
   const [participantFilter, setParticipantFilter] = useState<string>("all");
 
@@ -288,7 +288,12 @@ export function WhatsAppSidebar({
           {/* Top Row - Logo and Navigation */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link href={isTeacher ? "/staff/teachers/dashboard" : "/dashboard"} className="flex items-center gap-2">
+              <Link href={
+                isTeacher ? "/staff/teachers/dashboard" : 
+                isEmployee ? "/staff/employees/dashboard" : 
+                isERPManager ? "/erp-manager/dashboard" : 
+                "/dashboard"
+              } className="flex items-center gap-2">
                 <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-r from-primary to-primary/80">
                   <span className="text-[9px] font-bold text-primary-foreground">SR</span>
                 </div>

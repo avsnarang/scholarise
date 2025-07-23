@@ -62,7 +62,7 @@ export function DataTable<TData, TValue>({
   data,
   searchKey,
   searchPlaceholder = "Search...",
-  pageSize = 10,
+  pageSize = 50,
   onPageSizeChange,
   pageCount = -1, // Default to -1 if not provided, react-table can handle this
   sorting, // Added

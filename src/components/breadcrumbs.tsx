@@ -20,6 +20,27 @@ export function Breadcrumbs() {
     return null;
   }
 
+  // Check if current page is a dashboard page
+  const isDashboardPage = 
+    pathname === "/dashboard" ||
+    pathname === "/staff/teachers/dashboard" ||
+    pathname === "/staff/employees/dashboard" ||
+    pathname === "/erp-manager/dashboard" ||
+    pathname === "/generic-dashboard";
+
+  // For dashboard pages, only show "Home"
+  if (isDashboardPage) {
+    return (
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage>Home</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    );
+  }
+
   // Split pathname and remove empty strings
   const pathSegments = pathname.split("/").filter(Boolean);
 

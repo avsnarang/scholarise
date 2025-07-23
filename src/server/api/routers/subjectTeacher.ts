@@ -8,28 +8,30 @@ const subjectTeacherSchema = z.object({
   teacherId: z.string().min(1, "Teacher is required"),
   subjectId: z.string().min(1, "Subject is required"),
   classId: z.string().min(1, "Class is required"),
-  sectionId: z.string().optional().nullable(),
+  sectionId: z.string().min(1, "Section is required"),
   isActive: z.boolean().default(true),
 });
+
+// Schema for getting all assignments (allows null sectionId for backward compatibility)
+const getAllSchema = z.object({
+  branchId: z.string().optional(),
+  teacherId: z.string().optional(),
+  subjectId: z.string().optional(),
+  classId: z.string().optional(),
+  sectionId: z.string().optional(),
+  isActive: z.boolean().optional(),
+  search: z.string().optional(),
+  includeTeacher: z.boolean().optional().default(true),
+  includeSubject: z.boolean().optional().default(true),
+  includeClass: z.boolean().optional().default(true),
+  includeSection: z.boolean().optional().default(true),
+  onlyWithSections: z.boolean().optional().default(false), // New flag to filter only assignments with sections
+}).optional();
 
 export const subjectTeacherRouter = createTRPCRouter({
   // Get all subject teacher assignments
   getAll: publicProcedure
-    .input(
-      z.object({
-        branchId: z.string().optional(),
-        teacherId: z.string().optional(),
-        subjectId: z.string().optional(),
-        classId: z.string().optional(),
-        sectionId: z.string().optional(),
-        isActive: z.boolean().optional(),
-        search: z.string().optional(),
-        includeTeacher: z.boolean().optional().default(true),
-        includeSubject: z.boolean().optional().default(true),
-        includeClass: z.boolean().optional().default(true),
-        includeSection: z.boolean().optional().default(true),
-      }).optional()
-    )
+    .input(getAllSchema)
     .query(async ({ ctx, input }) => {
       const where: Prisma.SubjectTeacherWhereInput = {
         branchId: input?.branchId,
@@ -39,6 +41,11 @@ export const subjectTeacherRouter = createTRPCRouter({
         sectionId: input?.sectionId,
         isActive: input?.isActive,
       };
+
+      // Filter to only include assignments with sections if requested
+      if (input?.onlyWithSections) {
+        where.sectionId = { not: null };
+      }
 
       // Add search filter if provided
       if (input?.search) {
@@ -103,14 +110,14 @@ export const subjectTeacherRouter = createTRPCRouter({
     .input(z.object({
       classId: z.string(),
       subjectId: z.string(),
-      sectionId: z.string().optional(),
+      sectionId: z.string(),
     }))
     .query(async ({ ctx, input }) => {
       const assignments = await ctx.db.subjectTeacher.findMany({
         where: {
           classId: input.classId,
           subjectId: input.subjectId,
-          sectionId: input.sectionId || null,
+          sectionId: input.sectionId,
           isActive: true,
         },
         include: {
@@ -178,37 +185,33 @@ export const subjectTeacherRouter = createTRPCRouter({
         });
       }
 
-      // Validate section if provided
-      if (input.sectionId) {
-        const section = await ctx.db.section.findUnique({
-          where: { id: input.sectionId },
-          include: { class: true },
+      // Validate section (now required)
+      const section = await ctx.db.section.findUnique({
+        where: { id: input.sectionId },
+        include: { class: true },
+      });
+
+      if (!section) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Section not found",
         });
+      }
 
-        if (!section) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Section not found",
-          });
-        }
-
-        if (section.classId !== input.classId) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Section must belong to the specified class",
-          });
-        }
+      if (section.classId !== input.classId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Section must belong to the specified class",
+        });
       }
 
       // Check for existing assignment (uniqueness)
-      const existingAssignment = await ctx.db.subjectTeacher.findUnique({
+      const existingAssignment = await ctx.db.subjectTeacher.findFirst({
         where: {
-          teacherId_subjectId_classId_sectionId: {
-            teacherId: input.teacherId,
-            subjectId: input.subjectId,
-            classId: input.classId,
-            sectionId: input.sectionId || "",
-          },
+          teacherId: input.teacherId,
+          subjectId: input.subjectId,
+          classId: input.classId,
+          sectionId: input.sectionId,
         },
       });
 
@@ -239,7 +242,7 @@ export const subjectTeacherRouter = createTRPCRouter({
         teacherId: z.string().optional(),
         subjectId: z.string().optional(),
         classId: z.string().optional(),
-        sectionId: z.string().optional().nullable(),
+        sectionId: z.string().optional(),
         isActive: z.boolean().optional(),
       })
     )
@@ -317,7 +320,7 @@ export const subjectTeacherRouter = createTRPCRouter({
           z.object({
             subjectId: z.string(),
             classId: z.string(),
-            sectionId: z.string().optional().nullable(),
+            sectionId: z.string().min(1, "Section is required"),
           })
         ),
         branchId: z.string(),
@@ -340,14 +343,12 @@ export const subjectTeacherRouter = createTRPCRouter({
       const createdAssignments = await Promise.all(
         input.assignments.map(async (assignment) => {
           // Check for existing assignment
-          const existing = await ctx.db.subjectTeacher.findUnique({
+          const existing = await ctx.db.subjectTeacher.findFirst({
             where: {
-              teacherId_subjectId_classId_sectionId: {
-                teacherId: input.teacherId,
-                subjectId: assignment.subjectId,
-                classId: assignment.classId,
-                sectionId: assignment.sectionId || "",
-              },
+              teacherId: input.teacherId,
+              subjectId: assignment.subjectId,
+              classId: assignment.classId,
+              sectionId: assignment.sectionId,
             },
           });
 

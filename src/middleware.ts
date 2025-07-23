@@ -99,6 +99,11 @@ const routePermissions: Record<string, string[]> = {
   '/leaves/application': ['view_leaves'],
   '/leaves/policies': ['manage_leave_policies'],
   
+  // Leave Management
+  '/leave-management': ['view_leaves'],
+  '/leave-management/application': ['manage_leave_applications'],
+  '/leave-management/policies': ['manage_leave_policies'],
+  
   // Examination
   '/examination': ['view_examinations'],
   '/examination/assessment-schemas': ['view_examinations'],
@@ -107,9 +112,17 @@ const routePermissions: Record<string, string[]> = {
   '/examination/reports': ['view_exam_reports'],
   '/examination/results-dashboard': ['view_exam_reports'],
   '/examination/score-entry': ['enter_marks'],
+  '/examination/report-cards': ['view_report_cards', 'generate_report_cards'],
+  '/examination/terms': ['manage_exam_terms'],
   
   // Salary
   '/salary': ['view_salary'],
+  '/salary/structures': ['manage_salary_structures'],
+  '/salary/teachers/assign': ['manage_teacher_salaries'],
+  '/salary/employees/assign': ['manage_employee_salaries'],
+  '/salary/increments': ['manage_salary_increments'],
+  '/salary/increments/history': ['manage_salary_increments'],
+  '/salary/payments': ['process_salary_payments'],
   
   // Finance
   '/finance': ['view_finance_module'],
@@ -118,6 +131,9 @@ const routePermissions: Record<string, string[]> = {
   '/finance/fee-head': ['manage_fee_heads'],
   '/finance/fee-term': ['manage_fee_terms'],
   '/finance/reports': ['view_finance_reports'],
+  '/finance/concession-types': ['manage_concession_types'],
+  '/finance/student-concessions': ['manage_student_concessions'],
+  '/finance/reminders': ['manage_fee_reminders'],
   
   // Question Papers
   '/question-papers': ['view_question_papers'],
@@ -137,6 +153,10 @@ const routePermissions: Record<string, string[]> = {
   '/communication/templates': ['manage_whatsapp_templates'],
   '/communication/history': ['view_communication_logs'],
   '/communication/settings': ['manage_communication_settings'],
+  '/communication/chat': ['view_chat'],
+  
+  // Chat
+  '/chat': ['view_chat'],
   
   '/question-papers/view': ['view_question_papers'],
   
@@ -147,6 +167,13 @@ const routePermissions: Record<string, string[]> = {
   '/settings/academic-sessions': ['manage_academic_sessions'],
   '/settings/subjects': ['manage_subjects'],
   '/settings/attendance-config': ['manage_attendance_config'],
+  '/settings/location-config': ['manage_location_config'],
+  '/settings/email-config': ['manage_email_config'],
+  '/settings/ai-configuration': ['manage_ai_config'],
+  '/settings/background-services': ['manage_background_services'],
+  '/settings/rbac': ['view_rbac_settings'],
+  '/settings/roles': ['manage_roles'],
+  '/settings/permissions': ['manage_permissions'],
   
   // Admin routes
   '/admin': ['manage_roles'],

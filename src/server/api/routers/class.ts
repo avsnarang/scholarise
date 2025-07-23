@@ -497,4 +497,53 @@ export const classRouter = createTRPCRouter({
 
       return classWithSections;
     }),
+
+  // Get classes with their subject mappings
+  getWithSubjects: publicProcedure
+    .input(
+      z.object({
+        branchId: z.string().optional(),
+        sessionId: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const where: Prisma.ClassWhereInput = {
+        ...(input?.branchId ? { branchId: input.branchId } : {}),
+        ...(input?.sessionId ? { sessionId: input.sessionId } : {}),
+        ...(input?.isActive !== undefined ? { isActive: input.isActive } : {}),
+      };
+
+      const classes = await ctx.db.class.findMany({
+        where,
+        include: {
+          subjects: {
+            include: {
+              subject: {
+                select: {
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+            orderBy: {
+              subject: {
+                name: "asc",
+              },
+            },
+          },
+          _count: {
+            select: {
+              subjects: true,
+            },
+          },
+        },
+        orderBy: [
+          { displayOrder: "asc" },
+          { name: "asc" },
+        ],
+      });
+
+      return classes;
+    }),
 });

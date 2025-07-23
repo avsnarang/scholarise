@@ -1055,6 +1055,8 @@ export const employeeRouter = createTRPCRouter({
         yearOfCompletion: z.string().optional(),
         institution: z.string().optional(),
         experience: z.string().optional(),
+        certifications: z.array(z.string()).optional(),
+        subjects: z.array(z.string()).optional(),
         bio: z.string().optional(),
         
         // Employment Details
@@ -1068,6 +1070,9 @@ export const employeeRouter = createTRPCRouter({
         previousEmployer: z.string().optional(),
         confirmationDate: z.string().optional(),
         isActive: z.boolean().optional(),
+        
+        // Branch Access
+        branchAccess: z.array(z.string()).min(1),
         
         // Salary & Banking Details
         salaryStructure: z.string().optional(),
@@ -1087,9 +1092,9 @@ export const employeeRouter = createTRPCRouter({
         
         // User Account
         createUser: z.boolean().optional(),
-        email: z.string().optional(),
-        password: z.string().optional(),
-        roleId: z.string().optional(),
+        email: z.string().email().min(1),
+        password: z.string().min(8),
+        roleId: z.string().min(1),
       })),
       branchId: z.string(),
       batchSize: z.number().default(10),
@@ -1254,6 +1259,8 @@ export const employeeRouter = createTRPCRouter({
                     yearOfCompletion: employeeData.yearOfCompletion,
                     institution: employeeData.institution,
                     experience: employeeData.experience,
+                    certifications: employeeData.certifications || [],
+                    subjects: employeeData.subjects || [],
                     bio: employeeData.bio,
                     
                     // Employment Details
@@ -1290,6 +1297,18 @@ export const employeeRouter = createTRPCRouter({
                   },
                 });
 
+                // Create employee branch access records
+                if (employeeData.branchAccess && employeeData.branchAccess.length > 0) {
+                  for (const branchAccessId of employeeData.branchAccess) {
+                    await prisma.employeeBranchAccess.create({
+                      data: {
+                        employeeId: employee.id,
+                        branchId: branchAccessId,
+                      }
+                    });
+                  }
+                }
+
                 processedEmployees.push(employee);
                 successCount++;
                 importMessages.push(`[SUCCESS] Row ${rowNum}: Successfully imported ${employeeData.firstName} ${employeeData.lastName}`);
@@ -1316,5 +1335,139 @@ export const employeeRouter = createTRPCRouter({
         count: successCount,
         importMessages,
       };
+    }),
+
+  // Get employee dashboard data
+  getDashboardData: publicProcedure
+    .input(z.object({
+      employeeId: z.string(),
+      sessionId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        // Get employee details with department info
+        const employee = await ctx.db.employee.findUnique({
+          where: { id: input.employeeId },
+          include: {
+            departmentRef: true,
+            leaveApplications: {
+              where: {
+                createdAt: {
+                  gte: new Date(new Date().getFullYear(), 0, 1) // Current year
+                }
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            },
+            leaveBalances: {
+              where: {
+                year: new Date().getFullYear()
+              }
+            }
+          }
+        });
+
+        if (!employee) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Employee not found",
+          });
+        }
+
+        // Get today's attendance status
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const todayAttendance = await ctx.db.staffAttendance.findFirst({
+          where: {
+            employeeId: input.employeeId,
+            timestamp: {
+              gte: today,
+              lte: todayEnd
+            }
+          },
+          orderBy: { timestamp: 'desc' }
+        });
+
+        // Get this week's attendance count
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+
+        const weekAttendanceCount = await ctx.db.staffAttendance.count({
+          where: {
+            employeeId: input.employeeId,
+            timestamp: {
+              gte: weekStart,
+              lte: todayEnd
+            }
+          }
+        });
+
+        // Calculate leave balance and used leave
+        const leaveBalance = employee.leaveBalances?.reduce((total: number, balance: any) => total + balance.balance, 0) || 0;
+        const usedLeave = employee.leaveApplications
+          ?.filter((app: any) => app.status === 'APPROVED')
+          .reduce((total: number, app: any) => {
+            const days = Math.ceil((app.endDate.getTime() - app.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+            return total + days;
+          }, 0) || 0;
+
+        // Count pending applications
+        const pendingApplications = employee.leaveApplications?.filter((app: any) => app.status === 'PENDING').length || 0;
+
+        // Get department colleagues count
+        const departmentColleagues = employee.department ? await ctx.db.employee.count({
+          where: {
+            department: employee.department,
+            isActive: true,
+            id: { not: employee.id }
+          }
+        }) : 0;
+
+        // Get department task stats if any task system exists
+        const departmentTasks = 0; // Placeholder for future task management system
+
+        return {
+          employee: {
+            id: employee.id,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            designation: employee.designation,
+            department: employee.department,
+            employeeCode: employee.employeeCode
+          },
+          stats: {
+            departmentColleagues,
+            departmentTasks,
+            weekAttendanceCount,
+            todayAttendanceMarked: !!todayAttendance,
+            totalLeaveBalance: leaveBalance,
+            usedLeave,
+            pendingApplications
+          },
+          recentLeaveApplications: employee.leaveApplications?.map((app: any) => ({
+            id: app.id,
+            startDate: app.startDate,
+            endDate: app.endDate,
+            reason: app.reason,
+            status: app.status,
+            createdAt: app.createdAt
+          })) || [],
+          todayAttendance: todayAttendance ? {
+            timestamp: todayAttendance.timestamp,
+            type: todayAttendance.type,
+            location: todayAttendance.locationId
+          } : null
+        };
+      } catch (error) {
+        console.error("Error fetching employee dashboard data:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch employee dashboard data",
+        });
+      }
     }),
 });

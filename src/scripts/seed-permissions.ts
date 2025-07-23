@@ -121,6 +121,42 @@ const defaultPermissions = [
   { name: 'view_all_courtesy_call_feedback', description: 'View all courtesy call feedback', category: 'courtesy_calls' },
   { name: 'delete_courtesy_call_feedback', description: 'Delete courtesy call feedback', category: 'courtesy_calls' },
   
+  // Chat
+  { name: 'view_chat', description: 'View WhatsApp chat interface', category: 'communication' },
+  { name: 'manage_chat_settings', description: 'Manage chat configuration and settings', category: 'communication' },
+  
+  // Location-based Attendance
+  { name: 'manage_attendance_locations', description: 'Manage attendance marking locations', category: 'attendance' },
+  { name: 'view_attendance_locations', description: 'View attendance location configurations', category: 'attendance' },
+  
+  // Settings Extensions
+  { name: 'manage_location_config', description: 'Manage location configuration settings', category: 'settings' },
+  { name: 'manage_email_config', description: 'Manage email configuration settings', category: 'settings' },
+  { name: 'manage_ai_config', description: 'Manage AI configuration settings', category: 'settings' },
+  { name: 'manage_background_services', description: 'Manage background services configuration', category: 'settings' },
+  
+  // RBAC Management
+  { name: 'manage_permissions', description: 'Manage system permissions', category: 'rbac' },
+  { name: 'assign_user_roles', description: 'Assign roles to users', category: 'rbac' },
+  { name: 'view_rbac_settings', description: 'View RBAC configuration', category: 'rbac' },
+  
+  // Finance Extensions
+  { name: 'manage_concession_types', description: 'Manage fee concession types', category: 'finance' },
+  { name: 'manage_student_concessions', description: 'Manage student fee concessions', category: 'finance' },
+  { name: 'manage_fee_reminders', description: 'Manage fee payment reminders', category: 'finance' },
+  { name: 'view_collection_reports', description: 'View fee collection reports', category: 'finance' },
+  
+  // Enhanced Examination
+  { name: 'view_report_cards', description: 'View student report cards', category: 'examination' },
+  { name: 'generate_report_cards', description: 'Generate and print report cards', category: 'examination' },
+  { name: 'manage_exam_terms', description: 'Manage examination terms', category: 'examination' },
+  { name: 'export_exam_data', description: 'Export examination data', category: 'examination' },
+  
+  // Additional Admin
+  { name: 'manage_system_settings', description: 'Manage system-wide settings', category: 'admin' },
+  { name: 'view_system_logs', description: 'View system logs and diagnostics', category: 'admin' },
+  { name: 'manage_data_export', description: 'Manage data export and backup', category: 'admin' },
+  
   // Super Admin
   { name: 'super_admin', description: 'Super administrator with all permissions', category: 'admin' },
 ];
@@ -148,10 +184,18 @@ const defaultRoles = [
       'view_money_collection', 'create_money_collection', 'edit_money_collection',
       'manage_admissions',
       'view_attendance', 'mark_attendance', 'view_attendance_reports',
+      'view_leaves', 'manage_leave_applications', 'manage_leave_policies',
+      'view_salary', 'manage_salary_structures', 'manage_teacher_salaries', 'manage_employee_salaries',
       'view_reports',
       'view_finance_module', 'manage_fee_heads', 'manage_fee_terms', 'manage_classwise_fees', 'collect_fees',
-      'view_examinations', 'manage_exam_types', 'manage_exam_configurations',
-      'view_settings', 'manage_academic_sessions', 'manage_subjects'
+      'manage_concession_types', 'manage_student_concessions', 'manage_fee_reminders', 'view_collection_reports',
+      'view_examinations', 'manage_exam_types', 'manage_exam_configurations', 'view_report_cards', 'generate_report_cards',
+      'view_communication', 'create_communication_message', 'manage_whatsapp_templates', 'view_communication_logs',
+      'view_courtesy_calls', 'view_all_courtesy_call_feedback',
+      'view_settings', 'manage_academic_sessions', 'manage_subjects', 'manage_attendance_config',
+      'manage_location_config', 'manage_email_config', 'manage_background_services',
+      'view_rbac_settings', 'manage_roles', 'assign_user_roles',
+      'manage_attendance_locations', 'view_attendance_locations'
     ]
   },
   {
@@ -167,9 +211,14 @@ const defaultRoles = [
       'view_classes',
       'view_money_collection',
       'view_attendance', 'view_attendance_reports',
+      'view_leaves', 'manage_leave_applications',
+      'view_salary',
       'view_reports',
-      'view_finance_module', 'view_finance_reports',
-      'view_examinations', 'view_exam_reports'
+      'view_finance_module', 'view_finance_reports', 'view_collection_reports',
+      'view_examinations', 'view_exam_reports', 'view_report_cards', 'generate_report_cards',
+      'view_communication', 'view_communication_logs',
+      'view_courtesy_calls', 'view_all_courtesy_call_feedback',
+      'view_settings'
     ]
   },
   {
@@ -181,8 +230,12 @@ const defaultRoles = [
       'view_students',
       'view_classes',
       'view_attendance', 'mark_attendance',
+      'view_leaves', 'manage_leave_applications',
       'view_question_papers', 'create_question_paper',
-      'enter_marks'
+      'enter_marks', 'view_report_cards',
+      'view_communication', 'create_communication_message',
+      'view_courtesy_calls', 'view_own_courtesy_call_feedback', 'create_courtesy_call_feedback',
+      'mark_self_attendance'
     ]
   },
   {
@@ -193,8 +246,10 @@ const defaultRoles = [
       'view_dashboard',
       'view_students',
       'view_finance_module', 'manage_fee_heads', 'manage_fee_terms', 'manage_classwise_fees', 'collect_fees', 'view_finance_reports',
+      'manage_concession_types', 'manage_student_concessions', 'manage_fee_reminders', 'view_collection_reports',
       'view_money_collection', 'create_money_collection', 'edit_money_collection',
-      'view_reports'
+      'view_reports',
+      'view_salary'
     ]
   },
   {

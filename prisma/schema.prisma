@@ -58,6 +58,14 @@ model Branch {
   teachers                   Teacher[]
   terms                      Term[]
   transportRoutes            TransportRoute[]
+  transportBuses             TransportBus[]
+  transportFeeStructures     TransportFeeStructure[]
+  transportConfigurations    TransportConfiguration[]
+  transportStaff             TransportStaff[]
+  transportNotifications     TransportNotification[]
+  transportNotificationConfigs TransportNotificationConfig[]
+  transportInspections       TransportBusInspection[]
+  transportInspectionTemplates TransportInspectionTemplate[]
   userRoles                  UserRole[]
   attendanceDevices          AttendanceDevice[]
   attendanceLocations        AttendanceLocation[]
@@ -67,6 +75,7 @@ model Branch {
   communicationMessages      CommunicationMessage[]
   communicationSettings      CommunicationSettings?
   conversations              Conversation[]
+  staffMoves                 StaffMove[]
 }
 
 model User {
@@ -91,6 +100,7 @@ model User {
   employee              Employee?
   admissionStaff        AdmissionStaff?
   userRoles             UserRole[]
+  staffMoves            StaffMove[]
 
   @@index([authIdentifier])
   @@index([email])
@@ -402,6 +412,27 @@ model Employee {
   @@index([userId])
 }
 
+model StaffMove {
+  id              String   @id @default(cuid())
+  originalId      String   // ID of the original record (teacher or employee)
+  newId           String   // ID of the new record after move
+  fromType        String   // "TEACHER" or "EMPLOYEE"
+  toType          String   // "TEACHER" or "EMPLOYEE"
+  reason          String   // Reason for the move
+  movedBy         String   // User ID who performed the move
+  movedAt         DateTime @default(now())
+  originalData    Json     // Backup of original data
+  branchId        String
+  
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  mover           User     @relation(fields: [movedBy], references: [id])
+  
+  @@index([originalId, fromType])
+  @@index([newId, toType])
+  @@index([movedBy])
+  @@index([branchId])
+}
+
 model Class {
   id                      String                    @id @default(cuid())
   name                    String
@@ -453,23 +484,25 @@ model Section {
 }
 
 model AcademicSession {
-  id                 String              @id @default(cuid())
-  name               String
-  startDate          DateTime
-  endDate            DateTime
-  isActive           Boolean             @default(true)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  academicRecords    AcademicRecord[]
-  classes            Class[]
-  classwiseFees      ClasswiseFee[]      @relation("ClasswiseFeeSession")
-  concessionTypes    ConcessionType[]    @relation("ConcessionTypeSession")
-  feeCollections     FeeCollection[]     @relation("FeeCollectionSession")
-  feeHeads           FeeHead[]           @relation("FeeHeadSession")
-  feeTerms           FeeTerm[]           @relation("FeeTermSession")
-  moneyCollections   MoneyCollection[]   @relation("MoneyCollectionSession")
-  studentConcessions StudentConcession[] @relation("StudentConcessionSession")
-  terms              Term[]
+  id                      String                      @id @default(cuid())
+  name                    String
+  startDate               DateTime
+  endDate                 DateTime
+  isActive                Boolean                     @default(true)
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
+  academicRecords         AcademicRecord[]
+  classes                 Class[]
+  classwiseFees           ClasswiseFee[]              @relation("ClasswiseFeeSession")
+  concessionTypes         ConcessionType[]            @relation("ConcessionTypeSession")
+  feeCollections          FeeCollection[]             @relation("FeeCollectionSession")
+  feeHeads                FeeHead[]                   @relation("FeeHeadSession")
+  feeTerms                FeeTerm[]                   @relation("FeeTermSession")
+  moneyCollections        MoneyCollection[]           @relation("MoneyCollectionSession")
+  studentConcessions      StudentConcession[]         @relation("StudentConcessionSession")
+  terms                   Term[]
+  transportFeeStructures  TransportFeeStructure[]     @relation("TransportFeeSession")
+  transportConfigurations TransportConfiguration[]    @relation("TransportConfigSession")
 }
 
 model Term {
@@ -531,43 +564,520 @@ model StudentSibling {
 }
 
 model TransportRoute {
-  id          String          @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  branchId    String
-  branch      Branch          @relation(fields: [branchId], references: [id])
-  stops       TransportStop[]
+  id            String                    @id @default(cuid())
+  name          String
+  description   String?
+  startLocation String?
+  endLocation   String?
+  totalDistance Float?                    // in kilometers
+  estimatedTime Int?                      // in minutes
+  isActive      Boolean                   @default(true)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  branchId      String
+  
+  // Relations
+  branch        Branch                    @relation(fields: [branchId], references: [id])
+  stops         TransportStop[]
+  assignments   TransportAssignment[]
+  buses         TransportBusRoute[]
+  feeStructures TransportFeeStructure[]
+  trips         TransportTrip[]
 }
 
 model TransportStop {
-  id          String                @id @default(cuid())
-  name        String
-  address     String?
-  distance    Float?
-  fee         Float
-  sequence    Int
-  isActive    Boolean               @default(true)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  routeId     String
-  assignments TransportAssignment[]
-  route       TransportRoute        @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  id            String                    @id @default(cuid())
+  name          String
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  distance      Float?                    // distance from school in km
+  sequence      Int                       // order in the route
+  pickupTime    String?                   // HH:MM format
+  dropTime      String?                   // HH:MM format
+  isActive      Boolean                   @default(true)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  routeId       String
+  
+  // Relations
+  route         TransportRoute            @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  assignments   TransportAssignment[]
+  feeStructures TransportFeeStructure[]
+  
+  @@unique([routeId, sequence])
+}
+
+model TransportBus {
+  id                String                    @id @default(cuid())
+  busNumber         String                    @unique
+  registrationNo    String?
+  capacity          Int
+  purchaseDate      DateTime?
+  model             String?
+  fuelType          String                    @default("Diesel") // Diesel, Petrol, CNG, Electric
+  isActive          Boolean                   @default(true)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  branchId          String
+
+  // Insurance Details
+  insuranceNumber   String?
+  insuranceExpiry   DateTime?
+  pollutionCert     String?
+  pollutionExpiry   DateTime?
+  fitnessExpiry     DateTime?
+
+  // Financial Details
+  loanAmount        Float?
+  loanEmi           Float?
+  loanStartDate     DateTime?
+  loanFulfillmentDate DateTime?
+  loanProvider      String?
+
+  // Tax Details
+  lastTaxSubmissionDate DateTime?
+  nextTaxDueDate    DateTime?
+  taxType           String?
+  taxAmount         Float?
+  taxSubmissionFrequency String? // Monthly, Quarterly, Yearly
+
+  // Permit Details
+  permitType        String?
+  permitNumber      String?
+  permitIssueDate   DateTime?
+  permitExpiryDate  DateTime?
+  permitIssuedBy    String?
+
+  // Relations
+  branch            Branch                    @relation(fields: [branchId], references: [id])
+  routes            TransportBusRoute[]
+  fuelLogs          TransportFuelLog[]
+  maintenanceLogs   TransportMaintenanceLog[]
+  trips             TransportTrip[]
+  staffAssignments  TransportStaffAssignment[]
+  notifications     TransportNotification[]
+  inspections       TransportBusInspection[]
+
+  @@index([busNumber])
+  @@index([branchId])
+}
+
+model TransportBusRoute {
+  id        String         @id @default(cuid())
+  busId     String
+  routeId   String
+  startDate DateTime       @default(now())
+  endDate   DateTime?
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  
+  // Relations
+  bus       TransportBus   @relation(fields: [busId], references: [id])
+  route     TransportRoute @relation(fields: [routeId], references: [id])
+  
+  @@unique([busId, routeId, startDate])
+}
+
+model TransportFuelLog {
+  id               String         @id @default(cuid())
+  busId            String
+  fuelDate         DateTime       @default(now())
+  fuelQuantity     Float          // in liters
+  pricePerLiter    Float
+  totalAmount      Float
+  odometerReading  Int?           // km reading
+  fuelStation      String?
+  receiptNumber    String?
+  notes            String?
+  createdBy        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  
+  // Relations
+  bus              TransportBus   @relation(fields: [busId], references: [id])
+  
+  @@index([busId, fuelDate])
+}
+
+model TransportMaintenanceLog {
+  id              String         @id @default(cuid())
+  busId           String
+  maintenanceDate DateTime       @default(now())
+  maintenanceType String         // Regular, Repair, Emergency
+  description     String
+  cost            Float?
+  serviceProvider String?
+  odometerReading Int?
+  nextServiceDue  DateTime?
+  invoiceNumber   String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  bus             TransportBus   @relation(fields: [busId], references: [id])
+  
+  @@index([busId, maintenanceDate])
+}
+
+model TransportFeeStructure {
+  id              String                    @id @default(cuid())
+  name            String
+  description     String?
+  feeType         TransportFeeType          @default(ROUTE_WISE)
+  amount          Float
+  sessionId       String
+  branchId        String
+  routeId         String?                   // for route-wise fees
+  stopId          String?                   // for stop-wise fees
+  applicableFrom  DateTime                  @default(now())
+  applicableUntil DateTime?
+  isActive        Boolean                   @default(true)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  // Relations
+  session         AcademicSession           @relation("TransportFeeSession", fields: [sessionId], references: [id])
+  branch          Branch                    @relation(fields: [branchId], references: [id])
+  route           TransportRoute?           @relation(fields: [routeId], references: [id])
+  stop            TransportStop?            @relation(fields: [stopId], references: [id])
+  assignments     TransportAssignment[]
+  
+  @@index([branchId, sessionId])
+  @@index([feeType])
 }
 
 model TransportAssignment {
-  id        String        @id @default(cuid())
-  startDate DateTime      @default(now())
-  endDate   DateTime?
-  isActive  Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  studentId String
-  stopId    String
-  stop      TransportStop @relation(fields: [stopId], references: [id])
-  student   Student       @relation(fields: [studentId], references: [id])
+  id                    String                    @id @default(cuid())
+  studentId             String
+  routeId               String?
+  stopId                String?
+  feeStructureId        String?
+  assignmentType        TransportAssignmentType   @default(ROUTE_STOP)
+  startDate             DateTime                  @default(now())
+  endDate               DateTime?
+  isActive              Boolean                   @default(true)
+  assignedBy            String?
+  notes                 String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  
+  // Relations
+  student               Student                   @relation(fields: [studentId], references: [id])
+  route                 TransportRoute?           @relation(fields: [routeId], references: [id])
+  stop                  TransportStop?            @relation(fields: [stopId], references: [id])
+  feeStructure          TransportFeeStructure?    @relation(fields: [feeStructureId], references: [id])
+  
+  @@index([studentId])
+  @@index([routeId])
+  @@index([stopId])
+}
+
+model TransportConfiguration {
+  id                          String   @id @default(cuid())
+  branchId                    String   @unique
+  sessionId                   String
+  feeCalculationMethod        TransportFeeType @default(ROUTE_WISE)
+  allowStopWiseFees           Boolean  @default(true)
+  allowRouteWiseFees          Boolean  @default(true)
+  defaultFuelType             String   @default("Diesel")
+  autoCalculateDistances      Boolean  @default(true)
+  requireDriverDetails        Boolean  @default(true)
+  requireConductorDetails     Boolean  @default(false)
+  enableFuelTracking          Boolean  @default(true)
+  enableMaintenanceTracking   Boolean  @default(true)
+  maxCapacityPerBus           Int      @default(50)
+  fuelAlertThreshold          Float    @default(10.0) // liters
+  maintenanceAlertDays        Int      @default(30)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  
+  // Relations
+  branch                      Branch   @relation(fields: [branchId], references: [id])
+  session                     AcademicSession @relation("TransportConfigSession", fields: [sessionId], references: [id])
+  
+  @@index([branchId])
+}
+
+model TransportStaff {
+  id                  String                    @id @default(cuid())
+  employeeCode        String?                   @unique
+  firstName           String
+  lastName            String
+  phone               String?
+  email               String?
+  address             String?
+  staffType           TransportStaffType
+  status              TransportStaffStatus      @default(ACTIVE)
+  dateOfJoining       DateTime?
+  dateOfLeaving       DateTime?
+  
+  // License Details
+  licenseNumber       String?
+  licenseType         String?
+  licenseIssueDate    DateTime?
+  licenseExpiryDate   DateTime?
+  licenseIssuedBy     String?
+  
+  // Medical Details
+  medicalCertNumber   String?
+  medicalIssueDate    DateTime?
+  medicalExpiryDate   DateTime?
+  medicalIssuedBy     String?
+  bloodGroup          String?
+  medicalConditions   String?
+  emergencyContact    String?
+  emergencyPhone      String?
+  
+  // Employment Details
+  salary              Float?
+  allowances          Float?
+  bankAccountNumber   String?
+  bankName            String?
+  ifscCode            String?
+  
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  branchId            String
+
+  // Relations
+  branch              Branch                    @relation(fields: [branchId], references: [id])
+  busAssignments      TransportStaffAssignment[]
+  notifications       TransportNotification[]
+
+  @@index([employeeCode])
+  @@index([branchId])
+  @@index([staffType])
+}
+
+model TransportStaffAssignment {
+  id              String                    @id @default(cuid())
+  busId           String
+  staffId         String
+  staffType       TransportStaffType
+  isPrimary       Boolean                   @default(true)
+  startDate       DateTime                  @default(now())
+  endDate         DateTime?
+  isActive        Boolean                   @default(true)
+  notes           String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  // Relations
+  bus             TransportBus              @relation(fields: [busId], references: [id])
+  staff           TransportStaff            @relation(fields: [staffId], references: [id])
+
+  @@unique([busId, staffId, staffType, isActive])
+  @@index([busId])
+  @@index([staffId])
+}
+
+model TransportTrip {
+  id                    String                    @id @default(cuid())
+  busId                 String
+  routeId               String?
+  driverId              String?
+  conductorId           String?
+  tripDate              DateTime
+  startTime             DateTime
+  endTime               DateTime?
+  
+  // Kilometer Readings
+  startKilometerReading Int
+  endKilometerReading   Int?
+  totalDistance         Float?
+  
+  // Trip Details
+  numberOfStudents      Int?
+  fuelConsumed          Float?
+  tripType              String                    @default("Regular") // Regular, Emergency, Maintenance
+  notes                 String?
+  
+  // Status
+  isCompleted           Boolean                   @default(false)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  // Relations
+  bus                   TransportBus              @relation(fields: [busId], references: [id])
+  route                 TransportRoute?           @relation(fields: [routeId], references: [id])
+
+  @@index([busId])
+  @@index([routeId])
+  @@index([tripDate])
+}
+
+model TransportNotification {
+  id                String                    @id @default(cuid())
+  type              NotificationType
+  title             String
+  message           String
+  targetDate        DateTime
+  reminderDays      Int                       @default(7)
+  method            NotificationMethod        @default(EMAIL)
+  status            NotificationStatus        @default(PENDING)
+  
+  // Target Details
+  busId             String?
+  staffId           String?
+  recipientEmail    String?
+  recipientPhone    String?
+  
+  // Scheduling
+  scheduledDate     DateTime
+  sentDate          DateTime?
+  readDate          DateTime?
+  
+  // Metadata
+  retryCount        Int                       @default(0)
+  errorMessage      String?
+  isRecurring       Boolean                   @default(false)
+  
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  branchId          String
+
+  // Relations
+  branch            Branch                    @relation(fields: [branchId], references: [id])
+  bus               TransportBus?             @relation(fields: [busId], references: [id])
+  staff             TransportStaff?           @relation(fields: [staffId], references: [id])
+
+  @@index([branchId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model TransportBusInspection {
+  id                    String                    @id @default(cuid())
+  busId                 String
+  inspectionDate        DateTime                  @default(now())
+  inspectionType        String                    @default("Regular") // Regular, Pre-Trip, Post-Trip, Quarterly, Annual
+  inspectorName         String
+  inspectorEmployeeId   String?
+  odometerReading       Int?
+  fuelLevel             Float?
+  status                InspectionStatus          @default(PENDING)
+  overallRating         String?                   // Excellent, Good, Fair, Poor, Failed
+  totalIssues           Int                       @default(0)
+  criticalIssues        Int                       @default(0)
+  notes                 String?
+  recommendations       String?
+  nextInspectionDue     DateTime?
+  isCompleted           Boolean                   @default(false)
+  completedAt           DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  branchId              String
+
+  // Relations
+  bus                   TransportBus              @relation(fields: [busId], references: [id])
+  branch                Branch                    @relation(fields: [branchId], references: [id])
+  items                 TransportInspectionItem[]
+  photos                TransportInspectionPhoto[]
+
+  @@index([busId])
+  @@index([inspectionDate])
+  @@index([status])
+  @@index([branchId])
+}
+
+model TransportInspectionTemplate {
+  id              String                    @id @default(cuid())
+  name            String
+  description     String?
+  category        InspectionItemType
+  isRequired      Boolean                   @default(true)
+  checklistItems  Json                      // Array of inspection items
+  isActive        Boolean                   @default(true)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  branchId        String
+
+  // Relations
+  branch          Branch                    @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([category])
+}
+
+model TransportInspectionItem {
+  id                    String                    @id @default(cuid())
+  inspectionId          String
+  templateItemId        String?
+  itemName              String
+  category              InspectionItemType
+  description           String?
+  isChecked             Boolean                   @default(false)
+  hasProblem            Boolean                   @default(false)
+  severity              InspectionSeverity?
+  problemDescription    String?
+  recommendations       String?
+  photoUrls             String[]                  @default([])
+  isRequired            Boolean                   @default(true)
+  sequence              Int                       @default(0)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  // Relations
+  inspection            TransportBusInspection    @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  photos                TransportInspectionPhoto[]
+
+  @@index([inspectionId])
+  @@index([category])
+}
+
+model TransportInspectionPhoto {
+  id                    String                    @id @default(cuid())
+  inspectionId          String
+  inspectionItemId      String?
+  photoUrl              String
+  caption               String?
+  category              String?                   // Before, After, Problem, General
+  uploadedBy            String?
+  createdAt             DateTime                  @default(now())
+
+  // Relations
+  inspection            TransportBusInspection    @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  inspectionItem        TransportInspectionItem?  @relation(fields: [inspectionItemId], references: [id], onDelete: Cascade)
+
+  @@index([inspectionId])
+  @@index([inspectionItemId])
+}
+
+model TransportNotificationConfig {
+  id                        String                    @id @default(cuid())
+  type                      NotificationType
+  isEnabled                 Boolean                   @default(true)
+  reminderDays              Int                       @default(7)
+  method                    NotificationMethod        @default(EMAIL)
+  
+  // Email Settings
+  emailTemplate             String?
+  emailSubject              String?
+  
+  // WhatsApp Settings
+  whatsappTemplate          String?
+  
+  // Advanced Settings
+  maxRetries                Int                       @default(3)
+  retryIntervalHours        Int                       @default(24)
+  isRecurring               Boolean                   @default(false)
+  recurringFrequencyDays    Int?
+  
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  branchId                  String
+
+  // Relations
+  branch                    Branch                    @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, type])
+  @@index([branchId])
+  @@index([type])
 }
 
 model AttendanceLocation {
@@ -699,6 +1209,8 @@ model Subject {
   code                    String?
   description             String?
   isActive                Boolean                   @default(true)
+  isOptional              Boolean                   @default(false)
+  displayOrder            Int                       @default(0)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   AssessmentConfiguration AssessmentConfiguration[]
@@ -2500,4 +3012,78 @@ enum ChatMessageStatus {
   DELIVERED
   READ
   FAILED
+}
+
+enum TransportFeeType {
+  ROUTE_WISE
+  STOP_WISE
+  DISTANCE_BASED
+  FLAT_RATE
+}
+
+enum TransportAssignmentType {
+  ROUTE_ONLY
+  STOP_ONLY
+  ROUTE_STOP
+}
+
+enum TransportStaffType {
+  DRIVER
+  CONDUCTOR
+}
+
+enum TransportStaffStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  SUSPENDED
+}
+
+enum NotificationType {
+  INSURANCE_EXPIRY
+  POLLUTION_EXPIRY
+  FITNESS_EXPIRY
+  LICENSE_EXPIRY
+  MEDICAL_EXPIRY
+  TAX_DUE
+  PERMIT_EXPIRY
+  MAINTENANCE_DUE
+  FUEL_ALERT
+  LOAN_DUE
+}
+
+enum NotificationMethod {
+  EMAIL
+  WHATSAPP
+  BOTH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum InspectionSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum InspectionItemType {
+  SAFETY
+  MECHANICAL
+  ELECTRICAL
+  INTERIOR
+  EXTERIOR
+  DOCUMENTATION
 }
