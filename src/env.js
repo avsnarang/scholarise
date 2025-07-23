@@ -14,11 +14,13 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     WATI_API_TOKEN: z.string().optional(),
     WATI_BASE_URL: z.string().url().optional(),
-    
-    // Twilio API Configuration - Required in production for WhatsApp messaging
-    TWILIO_ACCOUNT_SID: z.string().min(1, "TWILIO_ACCOUNT_SID is required for WhatsApp messaging").optional(),
-    TWILIO_AUTH_TOKEN: z.string().min(1, "TWILIO_AUTH_TOKEN is required for WhatsApp messaging").optional(),
-    TWILIO_WHATSAPP_FROM: z.string().min(1, "TWILIO_WHATSAPP_FROM is required for WhatsApp messaging").optional(),
+
+    // Meta WhatsApp Business API Configuration - Required for WhatsApp messaging
+    META_WHATSAPP_ACCESS_TOKEN: z.string().min(1, "META_WHATSAPP_ACCESS_TOKEN is required for WhatsApp messaging"),
+    META_WHATSAPP_PHONE_NUMBER_ID: z.string().min(1, "META_WHATSAPP_PHONE_NUMBER_ID is required for WhatsApp messaging"),
+    META_WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().min(1, "META_WHATSAPP_BUSINESS_ACCOUNT_ID is required for Meta template management"),
+    META_WHATSAPP_API_VERSION: z.string().optional(),
+    META_WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().min(1, "META_WHATSAPP_WEBHOOK_VERIFY_TOKEN is required for webhook verification"),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -54,10 +56,12 @@ export const env = createEnv({
     WATI_API_TOKEN: process.env.WATI_API_TOKEN,
     WATI_BASE_URL: process.env.WATI_BASE_URL,
     
-    // Twilio API Configuration
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-    TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
+    // Meta WhatsApp API Configuration
+    META_WHATSAPP_ACCESS_TOKEN: process.env.META_WHATSAPP_ACCESS_TOKEN,
+    META_WHATSAPP_PHONE_NUMBER_ID: process.env.META_WHATSAPP_PHONE_NUMBER_ID,
+    META_WHATSAPP_BUSINESS_ACCOUNT_ID: process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID,
+    META_WHATSAPP_API_VERSION: process.env.META_WHATSAPP_API_VERSION,
+    META_WHATSAPP_WEBHOOK_VERIFY_TOKEN: process.env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN,
 
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,

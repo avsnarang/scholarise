@@ -4,19 +4,15 @@ import { TRPCError } from "@trpc/server";
 import { Permission } from "@/types/permissions";
 
 // Lazy import Twilio utilities to prevent client-side bundling
-const getTwilioUtils = async () => {
+const getWhatsAppUtils = async () => {
   const { 
-    getDefaultTwilioClient, 
-    formatTemplateVariables, 
-    createBroadcastName,
-    resetDefaultTwilioClient
-  } = await import("@/utils/twilio-api");
+    getDefaultWhatsAppClient,
+    formatTemplateVariables
+  } = await import("@/utils/whatsapp-api");
   
   return {
-    getDefaultTwilioClient,
-    formatTemplateVariables,
-    createBroadcastName,
-    resetDefaultTwilioClient
+    getDefaultWhatsAppClient,
+    formatTemplateVariables
   };
 };
 
@@ -24,7 +20,11 @@ const getTwilioUtils = async () => {
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
   description: z.string().optional(),
-  twilioContentSid: z.string().min(1, "Twilio content SID is required"),
+  // Meta WhatsApp template fields
+  metaTemplateName: z.string().min(1, "Meta template name is required"),
+  metaTemplateLanguage: z.string().default("en"),
+  metaTemplateStatus: z.string().optional(),
+  metaTemplateId: z.string().optional(),
   templateBody: z.string().min(1, "Template body is required"),
   templateVariables: z.array(z.string()).default([]),
   category: z.string().default("utility"),
@@ -59,39 +59,6 @@ const sendMessageSchema = z.object({
 });
 
 export const communicationRouter = createTRPCRouter({
-  // Create or update WhatsApp template
-  createTemplate: protectedProcedure
-    .input(createTemplateSchema)
-    .mutation(async ({ ctx, input }) => {
-      try {
-        const template = await ctx.db.whatsAppTemplate.create({
-          data: {
-            name: input.name,
-            description: input.description,
-            twilioContentSid: input.twilioContentSid,
-            templateBody: input.templateBody,
-            templateVariables: input.templateVariables,
-            category: input.category.toUpperCase() as any,
-            language: input.language,
-            status: "APPROVED", // Twilio templates are pre-approved
-            branchId: input.branchId,
-            createdBy: ctx.userId!,
-          }
-        });
-
-        return {
-          success: true,
-          template,
-          message: "Template created successfully"
-        };
-      } catch (error) {
-        console.error('Template creation error:', error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to create template: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        });
-      }
-    }),
 
   // Get all templates
   getTemplates: protectedProcedure
@@ -119,20 +86,20 @@ export const communicationRouter = createTRPCRouter({
       return templates;
     }),
 
-  // Debug endpoint to test Twilio API response
-  debugTwilioResponse: protectedProcedure
+  // Debug endpoint to test Meta WhatsApp API response
+  debugWhatsAppResponse: protectedProcedure
     .mutation(async ({ ctx }) => {
       try {
-        console.log('Testing Twilio API connection and response format...');
-        const { getDefaultTwilioClient } = await getTwilioUtils();
-        const twilioClient = getDefaultTwilioClient();
+        console.log('Testing Meta WhatsApp API connection and response format...');
+        const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
+        const whatsappClient = getDefaultWhatsAppClient();
         
         // Make the raw API call to see exactly what we get
-        const rawResponse = await twilioClient.testConnection();
+        const rawResponse = await whatsappClient.testConnection();
         console.log('Test connection result:', rawResponse);
         
         // Now try to get templates and see the raw response
-        const templatesResponse = await twilioClient.getTemplates();
+        const templatesResponse = await whatsappClient.getTemplates();
         
         console.log('Templates response details:', {
           type: typeof templatesResponse,
@@ -154,7 +121,7 @@ export const communicationRouter = createTRPCRouter({
           }
         };
       } catch (error) {
-        console.error('Debug Twilio API error:', error);
+        console.error('Debug Meta WhatsApp API error:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -163,64 +130,248 @@ export const communicationRouter = createTRPCRouter({
       }
     }),
 
-  // Sync templates from Twilio API (now global - not branch-specific)
-  syncTemplatesFromTwilio: protectedProcedure
+  // Create a new template
+  createTemplate: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1, "Template name is required"),
+      description: z.string().optional(),
+      category: z.enum(["AUTHENTICATION", "MARKETING", "UTILITY"]),
+      language: z.string().default("en"),
+      templateBody: z.string().min(1, "Template content is required"),
+      templateVariables: z.array(z.string()),
+      branchId: z.string().optional(),
+      metaTemplateName: z.string(),
+      metaTemplateLanguage: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Check if template name already exists
+        const existingTemplate = await ctx.db.whatsAppTemplate.findFirst({
+          where: {
+            name: input.name,
+          },
+        });
+
+        if (existingTemplate) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'A template with this name already exists',
+          });
+        }
+
+        // Create the template
+        const template = await ctx.db.whatsAppTemplate.create({
+          data: {
+            name: input.name,
+            description: input.description,
+            category: input.category,
+            language: input.language,
+            templateBody: input.templateBody,
+            templateVariables: input.templateVariables,
+            metaTemplateName: input.metaTemplateName,
+            metaTemplateLanguage: input.metaTemplateLanguage,
+            metaTemplateStatus: null,
+            status: 'PENDING',
+            isActive: true,
+            branchId: input.branchId,
+            createdBy: ctx.user?.id || 'system',
+          },
+        });
+
+        // Log the creation
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "template_created",
+            description: `Template "${input.name}" created with ${input.templateVariables.length} variables`,
+            metadata: JSON.parse(JSON.stringify({
+              templateId: template.id,
+              templateName: input.name,
+              templateCategory: input.category,
+              variableCount: input.templateVariables.length,
+              templateVariables: input.templateVariables
+            })),
+            userId: ctx.user?.id || 'system',
+          }
+        });
+
+        return {
+          id: template.id,
+          name: template.name,
+          message: 'Template created successfully'
+        };
+
+      } catch (error) {
+        console.error('Error creating template:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create template',
+        });
+      }
+    }),
+
+  // Submit template to Meta for approval
+  submitTemplateToMeta: protectedProcedure
+    .input(z.object({
+      templateId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Get the template
+        const template = await ctx.db.whatsAppTemplate.findUnique({
+          where: { id: input.templateId },
+        });
+
+        if (!template) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Template not found',
+          });
+        }
+
+        if (template.metaTemplateStatus === 'APPROVED') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Template is already approved',
+          });
+        }
+
+        // Convert our template format to Meta API format
+        const components = [];
+        
+        // Add body component
+        components.push({
+          type: "BODY",
+          text: template.templateBody,
+          ...(template.templateVariables.length > 0 && {
+            example: {
+              body_text: [template.templateVariables.map((_, index) => `Example ${index + 1}`)]
+            }
+          })
+        });
+
+        // Submit to Meta API
+        const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
+        const client = getDefaultWhatsAppClient();
+        const response = await client.submitTemplateForApproval({
+          name: template.metaTemplateName,
+          category: (template.category as 'AUTHENTICATION' | 'MARKETING' | 'UTILITY') || 'UTILITY',
+          language: template.metaTemplateLanguage,
+          components: components,
+          allowCategoryChange: true
+        });
+
+        if (!response.result || !response.data) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: response.error || 'Failed to submit template to Meta',
+          });
+        }
+
+        // Update template with Meta response
+        const updatedTemplate = await ctx.db.whatsAppTemplate.update({
+          where: { id: input.templateId },
+          data: {
+            metaTemplateId: response.data.id,
+            metaTemplateStatus: response.data.status,
+            updatedAt: new Date()
+          }
+        });
+
+        // Log the submission
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "template_submitted",
+            description: `Template "${template.metaTemplateName}" submitted to Meta for approval`,
+            metadata: {
+              templateId: template.id,
+              metaTemplateId: response.data.id,
+              status: response.data.status,
+              category: response.data.category
+            },
+            userId: ctx.user?.id || 'system',
+          }
+        });
+
+        return {
+          success: true,
+          templateId: response.data.id,
+          status: response.data.status,
+          category: response.data.category,
+          message: 'Template submitted for approval successfully'
+        };
+
+      } catch (error) {
+        console.error('Error submitting template to Meta:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to submit template to Meta',
+        });
+      }
+    }),
+
+  // Sync templates from Meta WhatsApp API (now global - not branch-specific)
+  syncTemplatesFromWhatsApp: protectedProcedure
     .input(z.object({
       originBranchId: z.string().optional(), // Optional - tracks which branch initiated the sync
     }))
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('Starting Twilio template sync...');
-        const { getDefaultTwilioClient } = await getTwilioUtils();
-        const twilioClient = getDefaultTwilioClient();
-        const twilioTemplates = await twilioClient.getTemplates();
+        console.log('Starting Meta WhatsApp template sync...');
+        const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
+        const whatsappClient = getDefaultWhatsAppClient();
+        const whatsappTemplates = await whatsappClient.getTemplates();
         
-        console.log('Twilio API response:', { 
-          type: typeof twilioTemplates, 
-          isArray: Array.isArray(twilioTemplates),
-          length: Array.isArray(twilioTemplates) ? twilioTemplates.length : 'N/A',
-          sample: Array.isArray(twilioTemplates) && twilioTemplates.length > 0 ? twilioTemplates[0] : twilioTemplates
+        console.log('Meta WhatsApp API response:', { 
+          type: typeof whatsappTemplates, 
+          isArray: Array.isArray(whatsappTemplates),
+          length: Array.isArray(whatsappTemplates) ? whatsappTemplates.length : 'N/A',
+          sample: Array.isArray(whatsappTemplates) && whatsappTemplates.length > 0 ? whatsappTemplates[0] : whatsappTemplates
         });
         
         // Ensure we have an array
-        if (!Array.isArray(twilioTemplates)) {
-          throw new Error(`Expected array of templates from Twilio API, got ${typeof twilioTemplates}. Response: ${JSON.stringify(twilioTemplates)}`);
+        if (!Array.isArray(whatsappTemplates)) {
+          throw new Error(`Expected array of templates from Meta WhatsApp API, got ${typeof whatsappTemplates}. Response: ${JSON.stringify(whatsappTemplates)}`);
         }
         
-        if (twilioTemplates.length === 0) {
+        if (whatsappTemplates.length === 0) {
           return {
             success: true,
             syncedCount: 0,
             templates: [],
-            message: 'No templates found in Twilio API'
+            message: 'No templates found in WhatsApp API'
           };
         }
         
-        // For Twilio, templates that exist in the account are generally usable
-        // Unlike WATI, Twilio doesn't use the same approval status system
-        const usableTemplates = twilioTemplates.filter((t: any) => 
+        // For Meta WhatsApp API, filter for approved/active templates
+        const usableTemplates = whatsappTemplates.filter((t: any) => 
           t.status === 'approved' || 
           t.status === 'APPROVED' || 
           t.status === undefined || 
           t.status === null ||
           t.status === 'active'
         );
-        console.log(`Found ${twilioTemplates.length} total templates, ${usableTemplates.length} usable`);
+        console.log(`Found ${whatsappTemplates.length} total templates, ${usableTemplates.length} usable`);
         
         const syncedTemplates = [];
         
-        for (const twilioTemplate of usableTemplates) {
+        for (const whatsappTemplate of usableTemplates) {
           try {
-            // Twilio uses friendly_name and variables
-            const templateBody = twilioTemplate.friendly_name || '';
+            // Meta WhatsApp API uses friendly_name and variables
+            const templateBody = whatsappTemplate.friendly_name || '';
             
-            // Extract variables from Twilio template structure
-            const variables = Object.keys(twilioTemplate.variables || {});
+            // Extract variables from template structure
+            const variables = Object.keys(whatsappTemplate.variables || {});
               
-            console.log(`Template ${twilioTemplate.friendly_name} variables:`, variables);
+                          console.log(`Template ${whatsappTemplate.friendly_name} variables:`, variables);
             
             const existingTemplate = await ctx.db.whatsAppTemplate.findUnique({
-              where: { twilioContentSid: twilioTemplate.sid }
+              where: { twilioContentSid: whatsappTemplate.sid }
             });
             
             if (existingTemplate) {
@@ -228,12 +379,12 @@ export const communicationRouter = createTRPCRouter({
               const updated = await ctx.db.whatsAppTemplate.update({
                 where: { id: existingTemplate.id },
                 data: {
-                  name: twilioTemplate.friendly_name,
+                  name: whatsappTemplate.friendly_name,
                   templateBody,
                   templateVariables: variables,
-                  category: 'UTILITY', // Twilio doesn't have categories like WATI
-                  language: twilioTemplate.language || 'en',
-                  status: (twilioTemplate.status === 'approved' || twilioTemplate.status === 'APPROVED' || !twilioTemplate.status) ? 'APPROVED' : 'PENDING',
+                  category: 'UTILITY',
+                  language: whatsappTemplate.language || 'en',
+                  status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
                   updatedAt: new Date(),
                 }
               });
@@ -242,13 +393,16 @@ export const communicationRouter = createTRPCRouter({
               // Create new template - assign to origin branch if provided
               const created = await ctx.db.whatsAppTemplate.create({
                 data: {
-                  name: twilioTemplate.friendly_name,
-                  twilioContentSid: twilioTemplate.sid,
+                  name: whatsappTemplate.friendly_name,
+                  twilioContentSid: whatsappTemplate.sid,
+                  metaTemplateName: whatsappTemplate.friendly_name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+                  metaTemplateLanguage: whatsappTemplate.language || 'en',
+                  metaTemplateStatus: 'PENDING', // Will need to be created in Meta Business Manager
                   templateBody,
                   templateVariables: variables,
                   category: 'UTILITY',
-                  language: twilioTemplate.language || 'en',
-                  status: (twilioTemplate.status === 'approved' || twilioTemplate.status === 'APPROVED' || !twilioTemplate.status) ? 'APPROVED' : 'PENDING',
+                  language: whatsappTemplate.language || 'en',
+                  status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
                   branchId: input.originBranchId || 'default-branch-id', // Use a default or require branch
                   createdBy: ctx.userId!,
                 }
@@ -256,7 +410,7 @@ export const communicationRouter = createTRPCRouter({
               syncedTemplates.push(created);
             }
           } catch (templateError) {
-            console.error(`Error syncing template ${twilioTemplate.sid}:`, templateError);
+            console.error(`Error syncing template ${whatsappTemplate.sid}:`, templateError);
             // Continue with other templates
           }
         }
@@ -265,9 +419,9 @@ export const communicationRouter = createTRPCRouter({
         await ctx.db.communicationLog.create({
           data: {
             action: "template_sync",
-            description: `Synced ${syncedTemplates.length} templates from Twilio`,
+            description: `Synced ${syncedTemplates.length} templates from Meta WhatsApp API`,
             metadata: JSON.parse(JSON.stringify({
-                          totalTwilioTemplates: twilioTemplates.length,
+                          totalWhatsappTemplates: whatsappTemplates.length,
             usableTemplates: usableTemplates.length,
               syncedCount: syncedTemplates.length,
               originBranchId: input.originBranchId
@@ -280,7 +434,7 @@ export const communicationRouter = createTRPCRouter({
           success: true,
           syncedCount: syncedTemplates.length,
           templates: syncedTemplates,
-          message: `Successfully synced ${syncedTemplates.length} templates from Twilio`
+          message: `Successfully synced ${syncedTemplates.length} templates from WhatsApp`
         };
         
       } catch (error) {
@@ -493,9 +647,9 @@ export const communicationRouter = createTRPCRouter({
         }
 
         // Send immediately
-        const { getDefaultTwilioClient } = await getTwilioUtils();
-        const twilioClient = getDefaultTwilioClient();
-        let twilioResponse;
+        const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
+        const whatsappClient = getDefaultWhatsAppClient();
+        let whatsappResponse;
 
         if (input.templateId) {
           // Send using template
@@ -510,10 +664,11 @@ export const communicationRouter = createTRPCRouter({
             });
           }
 
-          if (!template.twilioContentSid) {
+          // Check if template has Meta template name
+          if (!template.metaTemplateName) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Template does not have a valid Twilio Content SID",
+              message: "Template does not have a valid Meta template name",
             });
           }
 
@@ -521,14 +676,15 @@ export const communicationRouter = createTRPCRouter({
           const parameters = input.templateParameters || {};
 
           // Send to multiple recipients using bulk method
-          twilioResponse = await twilioClient.sendBulkTemplateMessage(
+          whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
             recipientsWithValidPhones.map(recipient => ({
               phone: recipient.phone,
               name: recipient.name,
               variables: { ...parameters, name: recipient.name }
             })),
-            template.twilioContentSid,
-            parameters
+            template.metaTemplateName,
+            parameters,
+            template.metaTemplateLanguage || 'en'
           );
         } else if (input.customMessage) {
           // For custom messages, send individual text messages
@@ -538,13 +694,13 @@ export const communicationRouter = createTRPCRouter({
 
           for (const recipient of recipientsWithValidPhones) {
             try {
-              const response = await twilioClient.sendTextMessage(
+              const response = await whatsappClient.sendTextMessage(
                 recipient.phone,
                 input.customMessage
               );
 
               if (response.result) {
-                results.push({ phone: recipient.phone, success: true, messageId: response.data?.sid });
+                results.push({ phone: recipient.phone, success: true, messageId: response.data?.messages?.[0]?.id || 'unknown' });
                 successful++;
               } else {
                 results.push({ phone: recipient.phone, success: false, error: response.error });
@@ -559,14 +715,15 @@ export const communicationRouter = createTRPCRouter({
               failed++;
             }
 
-            // Add small delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Add delay to avoid rate limiting (Meta API)
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
 
-          twilioResponse = {
+          whatsappResponse = {
             result: successful > 0,
             data: { successful, failed, results },
-            info: `Sent to ${successful} recipients, ${failed} failed`
+            info: `Sent to ${successful} recipients, ${failed} failed`,
+            provider: 'META'
           };
         } else {
           throw new TRPCError({
@@ -579,11 +736,11 @@ export const communicationRouter = createTRPCRouter({
         await ctx.db.communicationMessage.update({
           where: { id: message.id },
           data: {
-            status: twilioResponse.result ? "SENT" : "FAILED",
-            sentAt: twilioResponse.result ? new Date() : undefined,
-            successfulSent: twilioResponse.data?.successful || 0,
-            failed: twilioResponse.data?.failed || 0,
-            twilioMessageId: twilioResponse.data?.results?.[0]?.messageId || undefined,
+            status: whatsappResponse.result ? "SENT" : "FAILED",
+            sentAt: whatsappResponse.result ? new Date() : undefined,
+            successfulSent: whatsappResponse.data?.successful || 0,
+            failed: whatsappResponse.data?.failed || 0,
+            metaMessageId: whatsappResponse.data?.results?.[0]?.messageId || undefined,
           }
         });
 
@@ -603,10 +760,10 @@ export const communicationRouter = createTRPCRouter({
           } else if (!isPhoneValid) {
             errorMessage = "Invalid phone number format";
           } else {
-            // Find this recipient in the twilioResponse results
+            // Find this recipient in the whatsappResponse results
             const validIndex = recipientsWithValidPhones.findIndex(r => r.id === recipient.id);
-            if (validIndex !== -1 && twilioResponse.data?.results?.[validIndex]) {
-              const result = twilioResponse.data.results[validIndex];
+            if (validIndex !== -1 && whatsappResponse.data?.results?.[validIndex]) {
+              const result = whatsappResponse.data.results[validIndex];
               status = result.success ? "SENT" as any : "FAILED" as any;
               twilioMessageId = result.messageId;
               errorMessage = result.success ? null : result.error;
@@ -622,7 +779,7 @@ export const communicationRouter = createTRPCRouter({
             recipientPhone: recipient.phone || "",
             status,
             sentAt,
-            twilioMessageId,
+            metaMessageId: twilioMessageId, // Using Meta API only now
             errorMessage,
           };
         });
@@ -636,9 +793,9 @@ export const communicationRouter = createTRPCRouter({
           data: {
             messageId: message.id,
             action: "message_sent",
-            description: `Message "${input.title}" sent to ${recipientsWithValidPhones.length} recipients`,
+            description: `Message "${input.title}" sent to ${recipientsWithValidPhones.length} recipients via Meta WhatsApp`,
             metadata: JSON.parse(JSON.stringify({
-              twilioResponse,
+              whatsappResponse,
               recipientCount: recipientsWithValidPhones.length,
               templateUsed: input.templateId ? true : false
             })),
@@ -647,12 +804,12 @@ export const communicationRouter = createTRPCRouter({
         });
 
         return {
-          success: twilioResponse.result,
+          success: whatsappResponse.result,
           messageId: message.id,
           totalRecipients: recipientsWithValidPhones.length,
-          successfulSent: twilioResponse.data?.successful || 0,
-          failed: twilioResponse.data?.failed || 0,
-          info: twilioResponse.info
+          successfulSent: whatsappResponse.data?.successful || 0,
+          failed: whatsappResponse.data?.failed || 0,
+          info: whatsappResponse.info
         };
 
       } catch (error) {
@@ -752,36 +909,34 @@ export const communicationRouter = createTRPCRouter({
       return message;
     }),
 
-  // Debug environment variables
+  // Debug environment variables for Meta WhatsApp API
   debugEnvironment: protectedProcedure
     .mutation(async ({ ctx }) => {
       const { env } = await import("@/env.js");
       
       return {
-        hasAccountSid: !!env.TWILIO_ACCOUNT_SID,
-        hasAuthToken: !!env.TWILIO_AUTH_TOKEN,
-        hasWhatsAppFrom: !!env.TWILIO_WHATSAPP_FROM,
-        accountSidPreview: env.TWILIO_ACCOUNT_SID ? `${env.TWILIO_ACCOUNT_SID.substring(0, 8)}...` : 'missing',
-        whatsAppFrom: env.TWILIO_WHATSAPP_FROM || 'missing'
+        hasAccessToken: !!env.META_WHATSAPP_ACCESS_TOKEN,
+        hasPhoneNumberId: !!env.META_WHATSAPP_PHONE_NUMBER_ID,
+        hasBusinessAccountId: !!env.META_WHATSAPP_BUSINESS_ACCOUNT_ID,
+        hasWebhookVerifyToken: !!env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+        accessTokenPreview: env.META_WHATSAPP_ACCESS_TOKEN ? `${env.META_WHATSAPP_ACCESS_TOKEN.substring(0, 8)}...` : 'missing',
+        phoneNumberId: env.META_WHATSAPP_PHONE_NUMBER_ID || 'missing',
+        apiVersion: env.META_WHATSAPP_API_VERSION || 'v21.0 (default)'
       };
     }),
 
-  // Refresh Twilio client (useful after environment variable changes)
-  refreshTwilioClient: protectedProcedure
+  // Refresh WhatsApp client (useful after environment variable changes)
+  refreshWhatsAppClient: protectedProcedure
     .mutation(async ({ ctx }) => {
       try {
-        console.log('🔄 Refreshing Twilio client...');
+        console.log('🔄 Refreshing WhatsApp client...');
         
-        // Import the reset function
-        const { resetDefaultTwilioClient, getDefaultTwilioClient } = await getTwilioUtils();
-        
-        // Reset the existing client
-        resetDefaultTwilioClient();
-        console.log('✅ Default client reset');
+        // Import the WhatsApp client function
+        const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
         
         // Try to create a new client
-        const newClient = getDefaultTwilioClient();
-        console.log('✅ New Twilio client created successfully');
+        const newClient = getDefaultWhatsAppClient();
+        console.log('✅ New WhatsApp client created successfully');
         
         // Test the new connection
         const testResult = await newClient.testConnection();
@@ -790,8 +945,8 @@ export const communicationRouter = createTRPCRouter({
         // Log the refresh
         await ctx.db.communicationLog.create({
           data: {
-            action: "twilio_client_refresh",
-            description: testResult.result ? "Twilio client refreshed and tested successfully" : `Twilio client refresh failed: ${testResult.error}`,
+            action: "whatsapp_client_refresh",
+            description: testResult.result ? "WhatsApp client refreshed and tested successfully" : `WhatsApp client refresh failed: ${testResult.error}`,
             metadata: JSON.parse(JSON.stringify({ testResult })),
             userId: ctx.userId!,
           }
@@ -799,13 +954,13 @@ export const communicationRouter = createTRPCRouter({
         
         return {
           success: testResult.result,
-          message: testResult.result ? "Twilio client refreshed successfully" : "Twilio client refresh failed",
+          message: testResult.result ? "WhatsApp client refreshed successfully" : "WhatsApp client refresh failed",
           error: testResult.error,
           data: testResult.data
         };
         
       } catch (error) {
-        console.error('❌ Failed to refresh Twilio client:', error);
+        console.error('❌ Failed to refresh WhatsApp client:', error);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
@@ -813,14 +968,14 @@ export const communicationRouter = createTRPCRouter({
         try {
           await ctx.db.communicationLog.create({
             data: {
-              action: "twilio_client_refresh",
-              description: `Twilio client refresh failed: ${errorMessage}`,
+              action: "whatsapp_client_refresh",
+              description: `WhatsApp client refresh failed: ${errorMessage}`,
               metadata: { error: errorMessage },
               userId: ctx.userId!,
             }
           });
         } catch (logError) {
-          console.error('Failed to log Twilio client refresh error:', logError);
+          console.error('Failed to log WhatsApp client refresh error:', logError);
         }
         
         return {
@@ -830,32 +985,31 @@ export const communicationRouter = createTRPCRouter({
       }
     }),
 
-  // Test Twilio API connection
-  testTwilioConnection: protectedProcedure
+  // Test Meta WhatsApp API connection
+  testWhatsAppConnection: protectedProcedure
     .mutation(async ({ ctx }) => {
       try {
-        console.log('🔍 Starting comprehensive Twilio connection test...');
+        console.log('🔍 Starting Meta WhatsApp API connection test...');
         
         // First check environment variables
         const { env } = await import("@/env.js");
         const envCheck = {
-          hasAccountSid: !!env.TWILIO_ACCOUNT_SID,
-          hasAuthToken: !!env.TWILIO_AUTH_TOKEN,
-          hasWhatsAppFrom: !!env.TWILIO_WHATSAPP_FROM,
-          accountSidFormat: env.TWILIO_ACCOUNT_SID ? env.TWILIO_ACCOUNT_SID.startsWith('AC') : false,
-          accountSidLength: env.TWILIO_ACCOUNT_SID?.length || 0,
-          authTokenLength: env.TWILIO_AUTH_TOKEN?.length || 0,
+          hasAccessToken: !!env.META_WHATSAPP_ACCESS_TOKEN,
+          hasPhoneNumberId: !!env.META_WHATSAPP_PHONE_NUMBER_ID,
+          hasBusinessAccountId: !!env.META_WHATSAPP_BUSINESS_ACCOUNT_ID,
+          hasWebhookVerifyToken: !!env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+          accessTokenLength: env.META_WHATSAPP_ACCESS_TOKEN?.length || 0,
+          apiVersion: env.META_WHATSAPP_API_VERSION || 'v21.0'
         };
         
         console.log('📋 Environment variables check:', envCheck);
         
         // Check for common issues
         const issues = [];
-        if (!envCheck.hasAccountSid) issues.push('TWILIO_ACCOUNT_SID is missing');
-        if (!envCheck.hasAuthToken) issues.push('TWILIO_AUTH_TOKEN is missing');
-        if (!envCheck.hasWhatsAppFrom) issues.push('TWILIO_WHATSAPP_FROM is missing');
-        if (envCheck.hasAccountSid && !envCheck.accountSidFormat) issues.push('TWILIO_ACCOUNT_SID should start with "AC"');
-        if (envCheck.hasAuthToken && envCheck.authTokenLength !== 32) issues.push(`TWILIO_AUTH_TOKEN should be 32 characters (current: ${envCheck.authTokenLength})`);
+        if (!envCheck.hasAccessToken) issues.push('META_WHATSAPP_ACCESS_TOKEN is missing');
+        if (!envCheck.hasPhoneNumberId) issues.push('META_WHATSAPP_PHONE_NUMBER_ID is missing');
+        if (!envCheck.hasBusinessAccountId) issues.push('META_WHATSAPP_BUSINESS_ACCOUNT_ID is missing');
+        if (!envCheck.hasWebhookVerifyToken) issues.push('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN is missing');
         
         if (issues.length > 0) {
           console.error('❌ Configuration issues found:', issues);
@@ -867,22 +1021,22 @@ export const communicationRouter = createTRPCRouter({
           };
         }
         
-        // Try to create Twilio client
-        const { getDefaultTwilioClient } = await getTwilioUtils();
-        console.log('🔧 Creating Twilio client...');
-        const twilioClient = getDefaultTwilioClient();
-        console.log('✅ Twilio client created successfully');
+        // Try to create WhatsApp client
+        const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
+        console.log('🔧 Creating WhatsApp client...');
+        const whatsappClient = getDefaultWhatsAppClient();
+        console.log('✅ WhatsApp client created successfully');
         
         // Test the connection
         console.log('🌐 Testing connection...');
-        const result = await twilioClient.testConnection();
+        const result = await whatsappClient.testConnection();
         console.log('📊 Connection test result:', result);
         
         // Log the test
         await ctx.db.communicationLog.create({
           data: {
-            action: "twilio_connection_test",
-            description: result.result ? "Twilio API connection test successful" : `Twilio API connection test failed: ${result.error}`,
+            action: "whatsapp_connection_test",
+            description: result.result ? "Meta WhatsApp API connection test successful" : `Meta WhatsApp API connection test failed: ${result.error}`,
             metadata: { 
               result: result.result,
               envCheck,
@@ -892,7 +1046,6 @@ export const communicationRouter = createTRPCRouter({
           }
         });
 
-        // Convert TwilioApiResponse to consistent format
         return {
           success: result.result,
           error: result.error,
@@ -902,7 +1055,7 @@ export const communicationRouter = createTRPCRouter({
           issues: issues.length > 0 ? issues : null
         };
       } catch (error) {
-        console.error('❌ Twilio connection test failed:', error);
+        console.error('❌ Meta WhatsApp connection test failed:', error);
         
         let errorMessage = 'Unknown error';
         let isConfigurationIssue = false;
@@ -913,14 +1066,13 @@ export const communicationRouter = createTRPCRouter({
           // Categorize the error
           if (error.message.includes('Missing:') || 
               error.message.includes('required') || 
-              error.message.includes('WhatsApp messaging unavailable') ||
-              error.message.includes('Invalid Twilio Account SID format')) {
+              error.message.includes('WhatsApp messaging unavailable')) {
             isConfigurationIssue = true;
             errorMessage = `Configuration Error: ${error.message}`;
           } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            errorMessage = "Authentication failed: Invalid Twilio credentials. Please verify your Account SID and Auth Token.";
+            errorMessage = "Authentication failed: Invalid Meta WhatsApp credentials. Please verify your access token.";
           } else if (error.message.includes('404')) {
-            errorMessage = "Twilio API endpoint not found. Please verify your configuration.";
+            errorMessage = "Meta WhatsApp API endpoint not found. Please verify your configuration.";
           } else if (error.message.includes('429')) {
             errorMessage = "Rate limit exceeded. Please try again later.";
           }
@@ -930,8 +1082,8 @@ export const communicationRouter = createTRPCRouter({
         try {
           await ctx.db.communicationLog.create({
             data: {
-              action: "twilio_connection_test",
-              description: `Twilio API connection test failed: ${errorMessage}`,
+              action: "whatsapp_connection_test",
+              description: `Meta WhatsApp API connection test failed: ${errorMessage}`,
               metadata: { 
                 error: errorMessage, 
                 isConfigurationIssue,
@@ -941,7 +1093,7 @@ export const communicationRouter = createTRPCRouter({
             }
           });
         } catch (logError) {
-          console.error('Failed to log Twilio connection test error:', logError);
+          console.error('Failed to log Meta WhatsApp connection test error:', logError);
         }
         
         return {
@@ -1179,5 +1331,283 @@ export const communicationRouter = createTRPCRouter({
         messageTitle: messageDetails.title,
         totalRecipients: messageDetails.recipients.length
       };
-    })
+    }),
+
+  // Update template
+  updateTemplate: protectedProcedure
+    .input(z.object({
+      templateId: z.string(),
+      name: z.string().min(1, "Template name is required"),
+      description: z.string().optional(),
+      category: z.enum(["AUTHENTICATION", "MARKETING", "UTILITY"]),
+      language: z.string().default("en"),
+      templateBody: z.string().min(1, "Template content is required"),
+      templateVariables: z.array(z.string()),
+      metaTemplateName: z.string(),
+      metaTemplateLanguage: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Check if template exists
+        const existingTemplate = await ctx.db.whatsAppTemplate.findUnique({
+          where: { id: input.templateId },
+        });
+
+        if (!existingTemplate) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Template not found',
+          });
+        }
+
+        // Check if template name is taken by another template
+        if (input.name !== existingTemplate.name) {
+          const nameConflict = await ctx.db.whatsAppTemplate.findFirst({
+            where: {
+              name: input.name,
+              id: { not: input.templateId }
+            },
+          });
+
+          if (nameConflict) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'A template with this name already exists',
+            });
+          }
+        }
+
+        // Check if template can be edited (not approved)
+        if (existingTemplate.metaTemplateStatus === 'APPROVED') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot edit approved templates. Create a new template instead.',
+          });
+        }
+
+        // Update the template
+        const updatedTemplate = await ctx.db.whatsAppTemplate.update({
+          where: { id: input.templateId },
+          data: {
+            name: input.name,
+            description: input.description,
+            category: input.category,
+            language: input.language,
+            templateBody: input.templateBody,
+            templateVariables: input.templateVariables,
+            metaTemplateName: input.metaTemplateName,
+            metaTemplateLanguage: input.metaTemplateLanguage,
+            // Reset meta status since content changed
+            metaTemplateStatus: null,
+            metaTemplateId: null,
+            updatedAt: new Date()
+          },
+        });
+
+        // Log the update
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "template_updated",
+            description: `Template "${input.name}" updated with ${input.templateVariables.length} variables`,
+            metadata: JSON.parse(JSON.stringify({
+              templateId: updatedTemplate.id,
+              templateName: input.name,
+              templateCategory: input.category,
+              variableCount: input.templateVariables.length,
+              templateVariables: input.templateVariables
+            })),
+            userId: ctx.user?.id || 'system',
+          }
+        });
+
+        return {
+          id: updatedTemplate.id,
+          name: updatedTemplate.name,
+          message: 'Template updated successfully'
+        };
+
+      } catch (error) {
+        console.error('Error updating template:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to update template',
+        });
+      }
+    }),
+
+
+
+  // Delete template
+  deleteTemplate: protectedProcedure
+    .input(z.object({
+      templateId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Check if template exists
+        const existingTemplate = await ctx.db.whatsAppTemplate.findUnique({
+          where: { id: input.templateId },
+        });
+
+        if (!existingTemplate) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Template not found',
+          });
+        }
+
+        // Check if template is being used in any messages
+        const messagesUsingTemplate = await ctx.db.communicationMessage.count({
+          where: { templateId: input.templateId },
+        });
+
+        if (messagesUsingTemplate > 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot delete template. It is being used in ${messagesUsingTemplate} message(s). Please delete those messages first.`,
+          });
+        }
+
+        // Delete the template
+        await ctx.db.whatsAppTemplate.delete({
+          where: { id: input.templateId },
+        });
+
+        // Log the deletion
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "template_deleted",
+            description: `Template "${existingTemplate.name}" deleted`,
+            metadata: JSON.parse(JSON.stringify({
+              templateId: input.templateId,
+              templateName: existingTemplate.name,
+              templateCategory: existingTemplate.category
+            })),
+            userId: ctx.user?.id || 'system',
+          }
+        });
+
+        return {
+          message: 'Template deleted successfully'
+        };
+
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete template',
+        });
+      }
+    }),
+
+  // Get template by ID for editing
+  getTemplateById: protectedProcedure
+    .input(z.object({
+      templateId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      try {
+        const template = await ctx.db.whatsAppTemplate.findUnique({
+          where: { id: input.templateId },
+        });
+
+        if (!template) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Template not found',
+          });
+        }
+
+        return template;
+      } catch (error) {
+        console.error('Error fetching template:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch template',
+        });
+      }
+    }),
+
+  // Delete message and its related data
+  deleteMessage: protectedProcedure
+    .input(z.object({
+      messageId: z.string().min(1, "Message ID is required"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Check if message exists
+        const existingMessage = await ctx.db.communicationMessage.findUnique({
+          where: { id: input.messageId },
+          include: {
+            recipients: { select: { id: true } },
+            logs: { select: { id: true } },
+          },
+        });
+
+        if (!existingMessage) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Message not found',
+          });
+        }
+
+        // Delete in transaction to ensure data consistency
+        await ctx.db.$transaction(async (tx) => {
+          // Delete message recipients
+          await tx.messageRecipient.deleteMany({
+            where: { messageId: input.messageId },
+          });
+
+          // Delete communication logs
+          await tx.communicationLog.deleteMany({
+            where: { messageId: input.messageId },
+          });
+
+          // Delete the message
+          await tx.communicationMessage.delete({
+            where: { id: input.messageId },
+          });
+        });
+
+        // Log the deletion
+        await ctx.db.communicationLog.create({
+          data: {
+            action: "message_deleted",
+            description: `Message "${existingMessage.title}" deleted with ${existingMessage.recipients.length} recipients and ${existingMessage.logs.length} log entries`,
+            metadata: JSON.parse(JSON.stringify({
+              messageId: input.messageId,
+              messageTitle: existingMessage.title,
+              recipientCount: existingMessage.recipients.length,
+              logCount: existingMessage.logs.length
+            })),
+            userId: ctx.user?.id || ctx.userId,
+          }
+        });
+
+        return {
+          message: 'Message deleted successfully',
+          deletedRecipients: existingMessage.recipients.length,
+          deletedLogs: existingMessage.logs.length
+        };
+
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete message',
+        });
+      }
+    }),
 }); 

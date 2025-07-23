@@ -25,13 +25,24 @@ import {
   Calendar,
   Filter,
   Download,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CommunicationMessage {
   id: string;
@@ -74,6 +85,8 @@ export default function MessageHistoryPage() {
   const [selectedMessage, setSelectedMessage] = useState<CommunicationMessage | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<CommunicationMessage | null>(null);
 
   // Fetch messages
   const { data: messagesData, isLoading, refetch } = api.communication.getMessages.useQuery({
@@ -89,6 +102,42 @@ export default function MessageHistoryPage() {
   }, {
     enabled: !!selectedMessage?.id,
   });
+
+  // Delete message mutation
+  const deleteMessageMutation = api.communication.deleteMessage.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Message Deleted",
+        description: `Message deleted successfully. Removed ${data.deletedRecipients} recipients and ${data.deletedLogs} log entries.`,
+      });
+      refetch();
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+      // Clear selected message if it was deleted
+      if (selectedMessage?.id === messageToDelete?.id) {
+        setSelectedMessage(null);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Delete Message",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions
+  const handleDeleteMessage = (message: CommunicationMessage) => {
+    setMessageToDelete(message);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteMessage = () => {
+    if (messageToDelete) {
+      deleteMessageMutation.mutate({ messageId: messageToDelete.id });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
@@ -208,13 +257,26 @@ export default function MessageHistoryPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSelectedMessage(row.original)}
-        >
-          <Eye className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedMessage(row.original)}
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDeleteMessage(row.original)}
+            title="Delete Message"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -388,8 +450,34 @@ export default function MessageHistoryPage() {
                           </div>
                         </div>
 
-                        <div className="ml-4">
-                          <Eye className="h-4 w-4 text-gray-400" />
+                        <div className="ml-4 flex items-center gap-2">
+                          {/* View Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Already handled by card click
+                            }}
+                            title="View Details"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          </Button>
+
+                          {/* Delete Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(message as any);
+                            }}
+                            title="Delete Message"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -582,6 +670,30 @@ export default function MessageHistoryPage() {
             </Card>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Message</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the message "{messageToDelete?.title}"? 
+                This action cannot be undone and will permanently remove the message, 
+                all recipient records, and delivery logs.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDeleteMessage}
+                disabled={deleteMessageMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteMessageMutation.isPending ? "Deleting..." : "Delete Message"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 } 

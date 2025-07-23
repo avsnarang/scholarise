@@ -2740,7 +2740,14 @@ model WhatsAppTemplate {
   name                  String
   description           String?
   watiTemplateId        String?                @unique // Template ID from Wati API (optional)
-  twilioContentSid      String?                @unique // Twilio Content SID (optional)
+  twilioContentSid      String?                @unique // Twilio Content SID (legacy, optional)
+  metaTemplateName      String                 // Meta WhatsApp template name (required)
+  metaTemplateLanguage  String                 @default("en") // Meta template language code
+  metaTemplateStatus    String?                // Meta template status (APPROVED, PENDING, REJECTED, FLAGGED, PAUSED)
+  metaTemplateId        String?                // Meta template ID after approval
+  metaRejectionReason   String?                // Meta rejection reason if rejected
+  metaSubmittedAt       DateTime?              // When template was submitted to Meta
+  metaApprovedAt        DateTime?              // When template was approved by Meta
   templateBody          String                 // Template content
   templateVariables     String[]               @default([]) // Variables that can be customized
   category              String                 // Category like "utility", "marketing", etc.
@@ -2756,9 +2763,11 @@ model WhatsAppTemplate {
   branch                Branch?                @relation(fields: [branchId], references: [id])
   messages              CommunicationMessage[]
   
+  @@unique([metaTemplateName, metaTemplateLanguage])
   @@index([branchId])
   @@index([status])
   @@index([isActive])
+  @@index([metaTemplateName])
 }
 
 model CommunicationMessage {
@@ -2776,6 +2785,7 @@ model CommunicationMessage {
   failed                Int                 @default(0)
   watiMessageId         String?             // ID from Wati API (optional)
   twilioMessageId       String?             // ID from Twilio API (optional)
+  metaMessageId         String?             // ID from Meta WhatsApp API (optional)
   branchId              String
   createdBy             String
   createdAt             DateTime            @default(now())
@@ -2792,6 +2802,7 @@ model CommunicationMessage {
   @@index([messageType])
   @@index([createdBy])
   @@index([createdAt])
+  @@index([metaMessageId])
 }
 
 model MessageRecipient {
@@ -2807,6 +2818,7 @@ model MessageRecipient {
   readAt                DateTime?
   watiMessageId         String?             // Individual message ID from Wati (optional)
   twilioMessageId       String?             // Individual message ID from Twilio (optional)
+  metaMessageId         String?             // Individual message ID from Meta WhatsApp (optional)
   errorMessage          String?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
@@ -2817,6 +2829,7 @@ model MessageRecipient {
   @@index([messageId])
   @@index([recipientType])
   @@index([status])
+  @@index([metaMessageId])
 }
 
 model CommunicationLog {
@@ -2902,6 +2915,14 @@ model CommunicationSettings {
   twilioWhatsAppFrom              String?
   twilioIsActive                  Boolean  @default(false)
   
+  // Meta WhatsApp API Configuration (optional)
+  metaAccessToken                 String?
+  metaPhoneNumberId               String?
+  metaBusinessAccountId           String?
+  metaApiVersion                  String?  @default("v21.0")
+  metaWebhookVerifyToken          String?
+  metaIsActive                    Boolean  @default(false)
+  
   // Template Settings
   templateAutoSyncEnabled         Boolean  @default(true)
   templateSyncInterval            Int      @default(24) // hours
@@ -2934,6 +2955,7 @@ model CommunicationSettings {
   
   @@index([branchId])
   @@index([isActive])
+  @@index([metaPhoneNumberId])
 }
 
 // Chat System Models for Bidirectional Communication
@@ -2972,6 +2994,7 @@ model ChatMessage {
   content               String              // Message content
   messageType           ChatMessageType     @default(TEXT)
   twilioMessageId       String?             // Twilio message SID
+  metaMessageId         String?             // Meta WhatsApp message ID
   status                ChatMessageStatus   @default(SENT)
   readAt                DateTime?           // When message was read
   sentBy                String?             // User ID who sent the message (for outgoing)
@@ -2988,6 +3011,7 @@ model ChatMessage {
   @@index([direction])
   @@index([createdAt])
   @@index([twilioMessageId])
+  @@index([metaMessageId])
   @@index([status])
 }
 

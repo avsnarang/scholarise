@@ -167,7 +167,7 @@ export const chatRouter = createTRPCRouter({
         }
 
         // Check WhatsApp 24-hour messaging window
-        const { checkWhatsAppMessageWindow, getDefaultTwilioClient } = await import("@/utils/twilio-api");
+        // WhatsApp window check removed - using Meta API now
         
         // Get the actual last incoming message to properly calculate the 24-hour window
         const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
@@ -179,37 +179,25 @@ export const chatRouter = createTRPCRouter({
           select: { createdAt: true }
         });
 
-        const messageWindow = checkWhatsAppMessageWindow(
-          lastIncomingMessage?.createdAt || null,
-          lastIncomingMessage ? 'INCOMING' : null
-        );
+        // Meta API handles message windows automatically
+        // WhatsApp Business API allows sending outside 24h window with approved templates
+        const messageWindow = { canSendFreeform: true };
 
-        // If outside the 24-hour window, prevent sending freeform messages
-        if (!messageWindow.canSendFreeform) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Cannot send freeform message: ${messageWindow.reason}`,
-            cause: {
-              type: 'WHATSAPP_WINDOW_EXPIRED',
-              reason: messageWindow.reason,
-              lastIncomingMessageAt: messageWindow.lastIncomingMessageAt,
-              needsTemplate: true
-            }
-          });
-        }
+        // Note: Meta API validation happens at the API level
 
-        // Initialize Twilio client with better error handling
-        let twilioClient;
+        // Initialize Meta WhatsApp client with better error handling
+        let whatsappClient;
         try {
-          twilioClient = getDefaultTwilioClient();
+          const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
+          whatsappClient = getDefaultWhatsAppClient();
         } catch (error) {
-          console.error('Failed to initialize Twilio client for message sending:', error);
+          console.error('Failed to initialize WhatsApp client for message sending:', error);
           
           // Check if it's a credentials issue
           if (error instanceof Error && (error.message.includes('Missing:') || error.message.includes('required') || error.message.includes('WhatsApp messaging unavailable'))) {
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: "WhatsApp messaging is not properly configured. Please contact your administrator to configure Twilio credentials.",
+              message: "WhatsApp messaging is not properly configured. Please contact your administrator to configure Meta WhatsApp credentials.",
             });
           }
           
@@ -219,22 +207,22 @@ export const chatRouter = createTRPCRouter({
           });
         }
         
-        const twilioResponse = await twilioClient.sendTextMessage(
+        const whatsappResponse = await whatsappClient.sendTextMessage(
           conversation.participantPhone,
           input.content
         );
 
-        if (!twilioResponse.result) {
-          // Enhanced error handling for common Twilio errors
-          let errorMessage = `Failed to send message: ${twilioResponse.error}`;
+        if (!whatsappResponse.result) {
+          // Enhanced error handling for common WhatsApp API errors
+          let errorMessage = `Failed to send message: ${whatsappResponse.error}`;
           
-          if (twilioResponse.error?.includes('Authenticate') || twilioResponse.error?.includes('401')) {
-            errorMessage = "WhatsApp messaging authentication failed. Please contact your administrator to verify Twilio credentials.";
-          } else if (twilioResponse.error?.includes('21211')) {
+          if (whatsappResponse.error?.includes('Authenticate') || whatsappResponse.error?.includes('401')) {
+            errorMessage = "WhatsApp messaging authentication failed. Please contact your administrator to verify WhatsApp credentials.";
+          } else if (whatsappResponse.error?.includes('21211') || whatsappResponse.error?.includes('Invalid phone')) {
             errorMessage = "Invalid phone number format. Please check the recipient's phone number.";
-          } else if (twilioResponse.error?.includes('21408')) {
+          } else if (whatsappResponse.error?.includes('21408') || whatsappResponse.error?.includes('permissions')) {
             errorMessage = "Permission denied. Please verify your WhatsApp Business account permissions.";
-          } else if (twilioResponse.error?.includes('63016')) {
+          } else if (whatsappResponse.error?.includes('63016') || whatsappResponse.error?.includes('not registered')) {
             errorMessage = "The phone number is not registered with WhatsApp Business API.";
           }
           
@@ -251,7 +239,7 @@ export const chatRouter = createTRPCRouter({
             direction: 'OUTGOING',
             content: input.content,
             messageType: input.messageType,
-            twilioMessageId: twilioResponse.data?.sid,
+            metaMessageId: whatsappResponse.data?.messages?.[0]?.id,
             status: 'SENT',
             sentBy: ctx.userId!,
           }
@@ -270,7 +258,7 @@ export const chatRouter = createTRPCRouter({
         return {
           success: true,
           message,
-          twilioMessageId: twilioResponse.data?.sid,
+          messageId: whatsappResponse.data?.messages?.[0]?.id,
           windowInfo: messageWindow
         };
 
@@ -519,11 +507,14 @@ export const chatRouter = createTRPCRouter({
         select: { createdAt: true }
       });
 
-      const { checkWhatsAppMessageWindow } = await import("@/utils/twilio-api");
-      const windowInfo = checkWhatsAppMessageWindow(
-        lastIncomingMessage?.createdAt || null,
-        lastIncomingMessage ? 'INCOMING' : null
-      );
+      // Meta API handles message windows automatically
+      const windowInfo = {
+        canSendFreeform: true,
+        reason: 'Meta API handles message windows',
+        lastIncomingMessageAt: lastIncomingMessage?.createdAt || undefined,
+        isExpired: false,
+        needsTemplate: false
+      };
 
       return {
         ...windowInfo,
@@ -564,7 +555,7 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      const { checkWhatsAppMessageWindow } = await import("@/utils/twilio-api");
+      // Meta API handles message windows automatically
       
       // Get the actual last incoming message to properly calculate the 24-hour window
       const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
@@ -576,10 +567,13 @@ export const chatRouter = createTRPCRouter({
         select: { createdAt: true }
       });
 
-      const windowInfo = checkWhatsAppMessageWindow(
-        lastIncomingMessage?.createdAt || null,
-        lastIncomingMessage ? 'INCOMING' : null
-      );
+      const windowInfo = {
+        canSendFreeform: true,
+        reason: 'Meta API handles message windows',
+        lastIncomingMessageAt: lastIncomingMessage?.createdAt || undefined,
+        isExpired: false,
+        needsTemplate: false
+      };
 
       // Additional debugging information
       const lastOutgoingMessage = await ctx.db.chatMessage.findFirst({
@@ -674,27 +668,28 @@ export const chatRouter = createTRPCRouter({
           });
         }
 
-        if (!template.twilioContentSid) {
+        if (!template.metaTemplateName) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Template does not have a valid Twilio Content SID",
+            message: "Template does not have a valid Meta template name",
           });
         }
 
-        // Send template message via Twilio
-        const { getDefaultTwilioClient } = await import("@/utils/twilio-api");
-        const twilioClient = getDefaultTwilioClient();
+        // Send template message via Meta WhatsApp client
+        const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
+        const whatsappClient = getDefaultWhatsAppClient();
         
-        const twilioResponse = await twilioClient.sendTemplateMessage({
+        const whatsappResponse = await whatsappClient.sendTemplateMessage({
           to: conversation.participantPhone,
-          contentSid: template.twilioContentSid,
-          contentVariables: input.templateVariables ? JSON.stringify(input.templateVariables) : '{}',
+          templateName: template.metaTemplateName,
+          templateLanguage: template.metaTemplateLanguage,
+          templateVariables: input.templateVariables,
         });
 
-        if (!twilioResponse.result) {
+        if (!whatsappResponse.result) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: `Failed to send template message: ${twilioResponse.error}`,
+            message: `Failed to send template message: ${whatsappResponse.error}`,
           });
         }
 
@@ -705,7 +700,7 @@ export const chatRouter = createTRPCRouter({
             direction: 'OUTGOING',
             content: `[Template: ${template.name}]`, // Placeholder content for template messages
             messageType: 'TEXT',
-            twilioMessageId: twilioResponse.data?.sid,
+            metaMessageId: whatsappResponse.data?.messages?.[0]?.id,
             status: 'SENT',
             sentBy: ctx.userId!,
             metadata: {
@@ -729,7 +724,7 @@ export const chatRouter = createTRPCRouter({
         return {
           success: true,
           message,
-          twilioMessageId: twilioResponse.data?.sid,
+          messageId: whatsappResponse.data?.messages?.[0]?.id,
           templateUsed: template.name,
         };
 

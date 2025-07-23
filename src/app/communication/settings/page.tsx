@@ -175,7 +175,7 @@ export default function CommunicationSettingsPage() {
   });
 
   // Test Twilio connection
-  const testConnectionMutation = api.communication.testTwilioConnection.useMutation({
+  const testConnectionMutation = api.communication.testWhatsAppConnection.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
         toast({
@@ -226,7 +226,7 @@ export default function CommunicationSettingsPage() {
       console.log('Environment Debug Results:', data);
       toast({
         title: "Environment Variables Debug",
-        description: `Account SID: ${data.hasAccountSid ? 'Found' : 'Missing'} | Auth Token: ${data.hasAuthToken ? 'Found' : 'Missing'} | WhatsApp From: ${data.hasWhatsAppFrom ? 'Found' : 'Missing'}`,
+        description: `Access Token: ${data.hasAccessToken ? 'Found' : 'Missing'} | Phone Number ID: ${data.hasPhoneNumberId ? 'Found' : 'Missing'} | Business Account ID: ${data.hasBusinessAccountId ? 'Found' : 'Missing'}`,
       });
     },
     onError: (error) => {
@@ -239,7 +239,7 @@ export default function CommunicationSettingsPage() {
   });
 
   // Refresh Twilio client
-  const refreshClientMutation = api.communication.refreshTwilioClient.useMutation({
+  const refreshClientMutation = api.communication.refreshWhatsAppClient.useMutation({
     onSuccess: (data) => {
       if (data.success) {
         toast({

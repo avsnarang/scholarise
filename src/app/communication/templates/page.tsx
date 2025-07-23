@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { AppLayout } from "@/components/layout/app-layout";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,13 +24,26 @@ import {
   Plus,
   Zap,
   Building,
-  Info
+  Info,
+  Edit,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WhatsAppTemplate {
   id: string;
@@ -38,6 +51,13 @@ interface WhatsAppTemplate {
   description?: string | null;
   watiTemplateId: string | null;
   twilioContentSid: string | null;
+  metaTemplateName: string;
+  metaTemplateLanguage: string;
+  metaTemplateStatus: string | null;
+  metaTemplateId: string | null;
+  metaRejectionReason: string | null;
+  metaSubmittedAt: Date | null;
+  metaApprovedAt: Date | null;
   templateBody: string;
   templateVariables: string[];
   category: string;
@@ -62,21 +82,126 @@ export default function TemplatesPage() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<WhatsAppTemplate | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<WhatsAppTemplate | null>(null);
 
   // Fetch templates (now global - no branch dependency)
   const { data: templates, isLoading, refetch } = api.communication.getTemplates.useQuery({
     category: searchTerm || undefined,
   });
 
+  // Real-time polling for template updates
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [previousTemplates, setPreviousTemplates] = useState<any[]>([]);
+
+  // Optimized polling: only when page is visible and has pending templates
+  React.useEffect(() => {
+    if (!templates) return;
+
+    const hasPendingTemplates = templates.some(t => 
+      t.metaTemplateStatus === 'PENDING' || !t.metaTemplateStatus
+    );
+
+    if (!hasPendingTemplates) return;
+
+    const pollInterval = setInterval(() => {
+      // Only poll if document is visible (tab is active)
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Polling for template updates...');
+        refetch();
+      }
+    }, 10000); // Poll every 10 seconds for pending templates
+
+    return () => clearInterval(pollInterval);
+  }, [templates, refetch]);
+
+  // Detect status changes and show notifications
+  React.useEffect(() => {
+    if (!templates || !previousTemplates.length) {
+      setPreviousTemplates(templates || []);
+      return;
+    }
+
+    const statusMessages = {
+      APPROVED: { 
+        title: "Template Approved! ✅", 
+        description: (name: string) => `"${name}" has been approved by Meta`,
+        variant: "default" as const
+      },
+      REJECTED: { 
+        title: "Template Rejected ❌", 
+        description: (name: string, reason?: string) => `"${name}" was rejected${reason ? `: ${reason}` : ''}`,
+        variant: "destructive" as const
+      },
+      FLAGGED: { 
+        title: "Template Flagged ⚠️", 
+        description: (name: string) => `"${name}" has been flagged by Meta`,
+        variant: "destructive" as const
+      },
+      PAUSED: { 
+        title: "Template Paused ⏸️", 
+        description: (name: string) => `"${name}" has been paused`,
+        variant: "destructive" as const
+      },
+      PENDING: { 
+        title: "Template Under Review ⏳", 
+        description: (name: string) => `"${name}" is being reviewed by Meta`,
+        variant: "default" as const
+      }
+    };
+
+    // Check for status changes
+    templates.forEach(currentTemplate => {
+      const previousTemplate = previousTemplates.find(p => p.id === currentTemplate.id);
+      
+      if (previousTemplate && 
+          previousTemplate.metaTemplateStatus !== currentTemplate.metaTemplateStatus &&
+          currentTemplate.metaTemplateStatus) {
+        
+        console.log(`🔄 Detected status change: ${currentTemplate.name} -> ${currentTemplate.metaTemplateStatus}`);
+        
+        const message = statusMessages[currentTemplate.metaTemplateStatus as keyof typeof statusMessages];
+        if (message) {
+                   toast({
+           title: message.title,
+           description: message.description(currentTemplate.name, (currentTemplate as any).metaRejectionReason || undefined),
+           variant: message.variant
+         });
+        }
+      }
+    });
+
+    setPreviousTemplates(templates);
+  }, [templates, toast]);
+
+  // Submit template to Meta mutation
+  const submitTemplateToMetaMutation = api.communication.submitTemplateToMeta.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Template Submitted",
+        description: `Template submitted to Meta for approval. Status: ${data.status}`,
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Submit Template",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Sync templates mutation (now global)
-  const syncTemplatesMutation = api.communication.syncTemplatesFromTwilio.useMutation({
+  const syncTemplatesMutation = api.communication.syncTemplatesFromWhatsApp.useMutation({
     onSuccess: (data) => {
       toast({
         title: "Templates Synced Successfully",
-        description: `Synced ${data.syncedCount} global templates from Twilio. All branches can now use these templates.`,
+        description: `Synced ${data.syncedCount} global templates from Meta WhatsApp API. All branches can now use these templates.`,
       });
       refetch();
     },
@@ -90,7 +215,7 @@ export default function TemplatesPage() {
   });
 
   // Test connection mutation
-  const testConnectionMutation = api.communication.testTwilioConnection.useMutation({
+  const testConnectionMutation = api.communication.testWhatsAppConnection.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
         toast({
@@ -115,7 +240,7 @@ export default function TemplatesPage() {
   });
 
   // Debug Twilio response mutation
-  const debugTwilioMutation = api.communication.debugTwilioResponse.useMutation({
+  const debugTwilioMutation = api.communication.debugWhatsAppResponse.useMutation({
     onSuccess: (data) => {
       console.log('Debug Twilio Response:', data);
       if (data.success) {
@@ -146,6 +271,7 @@ export default function TemplatesPage() {
       PENDING: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300", icon: <Clock className="w-3 h-3" /> },
       REJECTED: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300", icon: <XCircle className="w-3 h-3" /> },
       PAUSED: { color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300", icon: <AlertCircle className="w-3 h-3" /> },
+      FLAGGED: { color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300", icon: <AlertCircle className="w-3 h-3" /> },
     };
 
     const config = statusConfig[status] || statusConfig.PENDING;
@@ -166,6 +292,46 @@ export default function TemplatesPage() {
     } catch (error) {
       // Error handled in mutation onError
     }
+  };
+
+  // Delete template mutation
+  const deleteTemplateMutation = api.communication.deleteTemplate.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Template Deleted",
+        description: "Template has been deleted successfully.",
+      });
+      refetch();
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Delete Template",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions
+  const handleEditTemplate = (templateId: string) => {
+    router.push(`/communication/templates/edit/${templateId}`);
+  };
+
+  const handleDeleteTemplate = (template: WhatsAppTemplate) => {
+    setTemplateToDelete(template);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTemplate = () => {
+    if (templateToDelete) {
+      deleteTemplateMutation.mutate({ templateId: templateToDelete.id });
+    }
+  };
+
+  const handleSubmitToMeta = (templateId: string) => {
+    submitTemplateToMetaMutation.mutate({ templateId });
   };
 
   const handleTestConnection = async () => {
@@ -214,6 +380,30 @@ export default function TemplatesPage() {
       cell: ({ row }) => getStatusBadge(row.original.status),
     },
     {
+      accessorKey: "metaTemplateStatus",
+      header: "Meta Approval",
+      cell: ({ row }) => {
+        const metaStatus = row.original.metaTemplateStatus;
+        if (!metaStatus) {
+          return (
+            <Badge variant="outline" className="text-gray-500">
+              Not Submitted
+            </Badge>
+          );
+        }
+        return (
+          <div className="flex flex-col gap-1">
+            {getStatusBadge(metaStatus)}
+            {metaStatus === 'REJECTED' && row.original.metaRejectionReason && (
+              <span className="text-xs text-red-600 dark:text-red-400">
+                {row.original.metaRejectionReason}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "language",
       header: "Language",
       cell: ({ row }) => (
@@ -250,17 +440,61 @@ export default function TemplatesPage() {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedTemplate(row.original)}
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const template = row.original;
+        const canSubmit = !template.metaTemplateStatus || 
+          ['REJECTED', 'FLAGGED', 'PAUSED'].includes(template.metaTemplateStatus);
+        const canEdit = template.metaTemplateStatus !== 'APPROVED'; // Can't edit approved templates
+        
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedTemplate(template)}
+              title="View Template"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditTemplate(template.id)}
+                title="Edit Template"
+                className="text-blue-600 hover:text-blue-700"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            )}
+            
+            {canSubmit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSubmitToMeta(template.id)}
+                disabled={submitTemplateToMetaMutation.isPending}
+                className="text-green-600 hover:text-green-700"
+                title="Submit to Meta for Approval"
+              >
+                <Zap className="w-4 h-4 mr-1" />
+                Submit
+              </Button>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteTemplate(template)}
+              className="text-red-600 hover:text-red-700"
+              title="Delete Template"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -273,19 +507,17 @@ export default function TemplatesPage() {
 
   if (!hasPermission("manage_whatsapp_templates")) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Access Denied
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              You don't have permission to manage WhatsApp templates.
-            </p>
-          </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Access Denied
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            You don't have permission to manage WhatsApp templates.
+          </p>
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
@@ -333,6 +565,13 @@ export default function TemplatesPage() {
             {syncTemplatesMutation.isPending
               ? "Syncing..."
               : "Sync Global Templates"}
+          </Button>
+
+          <Button asChild>
+            <Link href="/communication/templates/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Template
+            </Link>
           </Button>
         </div>
       </div>
@@ -507,8 +746,68 @@ export default function TemplatesPage() {
                         </div>
                       </div>
 
-                      <div className="ml-4">
-                        <Eye className="h-4 w-4 text-gray-400" />
+                      <div className="ml-4 flex items-center gap-2">
+                        {/* View Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Already handled by card click
+                          }}
+                          title="View Template"
+                          className="h-8 w-8 p-0"
+                        >
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        </Button>
+
+                        {/* Edit Button - Only show for non-approved templates */}
+                        {template.metaTemplateStatus !== 'APPROVED' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTemplate(template.id);
+                            }}
+                            title="Edit Template"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        {/* Submit to Meta Button - Only show for templates that can be submitted */}
+                        {(!template.metaTemplateStatus || 
+                          ['REJECTED', 'FLAGGED', 'PAUSED'].includes(template.metaTemplateStatus)) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubmitToMeta(template.id);
+                            }}
+                            disabled={submitTemplateToMetaMutation.isPending}
+                            title="Submit to Meta for Approval"
+                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Zap className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        {/* Delete Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTemplate(template as WhatsAppTemplate);
+                          }}
+                          title="Delete Template"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -602,6 +901,29 @@ export default function TemplatesPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the template "{templateToDelete?.name}"? 
+              This action cannot be undone and will permanently remove the template from your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteTemplate}
+              disabled={deleteTemplateMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteTemplateMutation.isPending ? "Deleting..." : "Delete Template"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 } 
