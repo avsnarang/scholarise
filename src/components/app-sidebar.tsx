@@ -549,11 +549,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       permissions: [Permission.VIEW_FINANCE_MODULE],
       children: [
         {
-          title: "Dashboard",
-          href: "/finance",
-          permissions: [Permission.VIEW_FINANCE_MODULE],
-        },
-        {
           title: "Fee Heads",
           href: "/finance/fee-head",
           permissions: [Permission.MANAGE_FEE_HEADS],
@@ -587,6 +582,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Fee Reminders",
           href: "/finance/reminders",
           permissions: [Permission.MANAGE_FEE_REMINDERS],
+        },
+        {
+          title: "Reports",
+          href: "/finance/reports",
+          permissions: [Permission.VIEW_FINANCE_REPORTS],
         },
       ],
     },

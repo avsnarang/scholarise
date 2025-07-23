@@ -164,7 +164,18 @@ export default function FinancePage() {
     if (!analyticsData) {
       return [
         { title: "Total Fees Collected", value: "₹0", icon: <DollarSign className="h-6 w-6 text-green-600" />, trend: "0%", changeType: "neutral" },
-        { title: "Total Outstanding Fees", value: "₹0", icon: <DollarSign className="h-6 w-6 text-red-600" />, trend: "0%", changeType: "neutral" },
+        { 
+          title: "Outstanding / Total Fees", 
+          value: (
+            <div className="flex flex-col space-y-1">
+              <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">₹0</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">of ₹0</div>
+            </div>
+          ), 
+          icon: <DollarSign className="h-6 w-6 text-red-600" />, 
+          trend: "0%", 
+          changeType: "neutral" 
+        },
         { title: "Collection Rate", value: "0%", icon: <DollarSign className="h-6 w-6 text-blue-600" />, trend: "0%", changeType: "neutral" },
         { title: "Active Fee Terms", value: "0", icon: <Calendar className="h-6 w-6 text-amber-600" />, footerText: "View Details" },
       ];
@@ -198,8 +209,17 @@ export default function FinancePage() {
         changeType: weeklyTrendType as "increase" | "decrease" | "neutral"
       },
       { 
-        title: "Total Outstanding Fees", 
-        value: formatIndianCurrency(outstanding), 
+        title: "Outstanding / Total Fees", 
+        value: (
+          <div className="flex flex-col space-y-1">
+            <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">
+              {formatIndianCurrency(outstanding)}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              of {formatIndianCurrency(totalDue)}
+            </div>
+          </div>
+        ), 
         icon: <DollarSign className="h-6 w-6 text-red-600" />, 
         trend: `${(outstanding / Math.max(totalDue, 1) * 100).toFixed(1)}%`, 
         changeType: "neutral" as "increase" | "decrease" | "neutral"
@@ -553,9 +573,15 @@ export default function FinancePage() {
                 <CardDescription className="uppercase tracking-wider text-xs whitespace-nowrap">{metric.title}</CardDescription>
                 {metric.icon}
               </div>
-              <CardTitle className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-                {analyticsLoading ? <Skeleton className="h-8 w-24" /> : metric.value}
-              </CardTitle>
+              <div>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <CardTitle className={typeof metric.value === 'string' ? "text-2xl md:text-3xl font-bold text-gray-800 dark:text-white" : ""}>
+                    {metric.value}
+                  </CardTitle>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-0 pb-4">
               {metric.trend && (

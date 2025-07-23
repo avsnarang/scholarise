@@ -1096,7 +1096,7 @@ export const financeRouter = createTRPCRouter({
       }
 
       // Validate all fee terms
-      const feeTermIds = [...new Set(collections.map(c => c.feeTermId))];
+      const feeTermIds = Array.from(new Set(collections.map(c => c.feeTermId)));
       const validFeeTerms = await ctx.db.feeTerm.findMany({
         where: {
           id: { in: feeTermIds },
@@ -1114,7 +1114,7 @@ export const financeRouter = createTRPCRouter({
       }
 
       // Validate all fee heads
-      const allFeeHeadIds = [...new Set(collections.flatMap(c => c.items.map(i => i.feeHeadId)))];
+      const allFeeHeadIds = Array.from(new Set(collections.flatMap(c => c.items.map(i => i.feeHeadId))));
       const validFeeHeads = await ctx.db.feeHead.findMany({
         where: {
           id: { in: allFeeHeadIds },
@@ -1619,11 +1619,13 @@ export const financeRouter = createTRPCRouter({
           feeTerm: true,
           section: {
             include: {
+              class: true,
               students: {
                 where: {
+                  branchId: input.branchId,
                   isActive: true,
-                },
-              },
+                }
+              }
             },
           },
         },
@@ -1656,12 +1658,74 @@ export const financeRouter = createTRPCRouter({
         });
       });
 
-      // Calculate total due amounts from classwise fees (only for the filtered period)
-      classwiseFees.forEach(classwiseFee => {
-        const studentCount = classwiseFee.section?.students.length || 0;
-        const totalDue = classwiseFee.amount * studentCount;
-        if (feeHeadTotals[classwiseFee.feeHeadId]) {
-          feeHeadTotals[classwiseFee.feeHeadId]!.due += totalDue;
+      // Calculate total due amounts from classwise fees, avoiding double counting
+      // Group fees by fee combination (term + head) to identify conflicts between class and section level
+      const feeComboMap = new Map<string, { 
+        classLevel?: { amount: number; classId: string; totalStudents: number }, 
+        sectionLevel: Array<{ amount: number; sectionId: string; students: number }> 
+      }>();
+      
+      // Get total student count by class for class-level fee calculations
+      const classStudentCounts = new Map<string, number>();
+      classwiseFees.forEach(cf => {
+        if (!classStudentCounts.has(cf.classId)) {
+          const allSectionsForClass = classwiseFees
+            .filter(otherFee => otherFee.classId === cf.classId && otherFee.section)
+            .map(otherFee => otherFee.section)
+            .filter((section, index, self) => section && self.findIndex(s => s?.id === section.id) === index);
+          
+          const totalStudents = allSectionsForClass.reduce((sum, section) => sum + (section?.students.length || 0), 0);
+          classStudentCounts.set(cf.classId, totalStudents);
+        }
+      });
+      
+      // First pass: organize all fees by fee combination
+      classwiseFees.forEach(cf => {
+        const feeKey = `${cf.feeTermId}-${cf.feeHeadId}`;
+        
+        if (!feeComboMap.has(feeKey)) {
+          feeComboMap.set(feeKey, { sectionLevel: [] });
+        }
+        
+        const combo = feeComboMap.get(feeKey)!;
+        
+        if (cf.sectionId) {
+          // Section-specific fee
+          const studentCount = cf.section?.students.length || 0;
+          combo.sectionLevel.push({
+            amount: cf.amount,
+            sectionId: cf.sectionId,
+            students: studentCount
+          });
+        } else {
+          // Class-level fee
+          const totalStudents = classStudentCounts.get(cf.classId) || 0;
+          combo.classLevel = {
+            amount: cf.amount,
+            classId: cf.classId,
+            totalStudents
+          };
+        }
+      });
+      
+      // Second pass: calculate totals, prioritizing section-level fees over class-level
+      feeComboMap.forEach((combo, feeKey) => {
+        const feeHeadId = feeKey.split('-')[1]; // Extract feeHeadId from feeKey
+        
+        if (combo.sectionLevel.length > 0) {
+          // Use section-level fees (ignore any class-level fee for this combination)
+          combo.sectionLevel.forEach(sectionFee => {
+            const totalDue = sectionFee.amount * sectionFee.students;
+            if (feeHeadId && feeHeadTotals[feeHeadId]) {
+              feeHeadTotals[feeHeadId]!.due += totalDue;
+            }
+          });
+        } else if (combo.classLevel) {
+          // Use class-level fee only if no section-level fees exist
+          const totalDue = combo.classLevel.amount * combo.classLevel.totalStudents;
+          if (feeHeadId && feeHeadTotals[feeHeadId]) {
+            feeHeadTotals[feeHeadId]!.due += totalDue;
+          }
         }
       });
 
@@ -3037,5 +3101,1554 @@ export const financeRouter = createTRPCRouter({
           return a.name.localeCompare(b.name);
         })
         .slice(0, input.limit);
+    }),
+
+  // Fee Defaulters/Due Report
+  getFeeDefaultersReport: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      classIds: z.array(z.string()).optional(),
+      sectionIds: z.array(z.string()).optional(),
+      feeTermIds: z.array(z.string()).optional(),
+      feeHeadIds: z.array(z.string()).optional(),
+      includePartiallyPaid: z.boolean().default(true),
+      minimumDueAmount: z.number().min(0).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Build where conditions for students
+      const studentWhere: any = {
+        branchId: input.branchId,
+        isActive: true,
+        section: {
+          class: {
+            sessionId: input.sessionId,
+            ...(input.classIds && input.classIds.length > 0 && { id: { in: input.classIds } }),
+          },
+          ...(input.sectionIds && input.sectionIds.length > 0 && { id: { in: input.sectionIds } }),
+        },
+      };
+
+      // Get all students matching the criteria
+      const students = await ctx.db.student.findMany({
+        where: studentWhere,
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+          parent: true,
+        },
+        orderBy: [
+          { section: { class: { displayOrder: "asc" } } },
+          { section: { class: { grade: "asc" } } },
+          { section: { class: { name: "asc" } } },
+          { section: { name: "asc" } },
+          { firstName: "asc" },
+          { lastName: "asc" },
+        ],
+      });
+
+      if (students.length === 0) {
+        return {
+          chartData: [],
+          tableData: [],
+          summary: {
+            totalStudents: 0,
+            totalDueAmount: 0,
+            totalToBeCollected: 0,
+            totalConcessionApplied: 0,
+          },
+        };
+      }
+
+      const studentIds = students.map(s => s.id);
+      const sectionIds = Array.from(new Set(students.map(s => s.sectionId)));
+
+      // Build where conditions for classwise fees
+      const classwiseFeeWhere: any = {
+        sectionId: { in: sectionIds },
+        branchId: input.branchId,
+        sessionId: input.sessionId,
+        ...(input.feeTermIds && input.feeTermIds.length > 0 && { feeTermId: { in: input.feeTermIds } }),
+        ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { feeHeadId: { in: input.feeHeadIds } }),
+      };
+
+      // Get classwise fees
+      const classwiseFees = await ctx.db.classwiseFee.findMany({
+        where: classwiseFeeWhere,
+        include: {
+          feeHead: true,
+          feeTerm: true,
+          section: {
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+
+      // Get all paid amounts for these students
+      const paidAmounts = await ctx.db.feeCollectionItem.findMany({
+        where: {
+          feeCollection: {
+            studentId: { in: studentIds },
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            ...(input.feeTermIds && input.feeTermIds.length > 0 && { feeTermId: { in: input.feeTermIds } }),
+          },
+          ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { feeHeadId: { in: input.feeHeadIds } }),
+        },
+        include: {
+          feeHead: true,
+          feeCollection: {
+            include: {
+              feeTerm: true,
+            },
+          },
+        },
+      });
+
+      // Get student concessions
+      const studentConcessions = await ctx.db.studentConcession.findMany({
+        where: {
+          studentId: { in: studentIds },
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          status: 'APPROVED',
+          validFrom: { lte: new Date() },
+          OR: [
+            { validUntil: null },
+            { validUntil: { gte: new Date() } },
+          ],
+          ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { 
+            appliedFeeHeads: { hasSome: input.feeHeadIds }
+          }),
+        },
+        include: {
+          concessionType: true,
+        },
+      });
+
+      // Process data for each student
+      const studentReportData: Array<{
+        studentId: string;
+        studentName: string;
+        admissionNumber: string;
+        className: string;
+        sectionName: string;
+        feeDetails: Array<{
+          feeHeadId: string;
+          feeHeadName: string;
+          feeTermId: string;
+          feeTermName: string;
+          originalAmount: number;
+          concessionAmount: number;
+          toBeCollected: number;
+          paidAmount: number;
+          dueAmount: number;
+          dueDate: string;
+          status: 'Paid' | 'Pending' | 'Partially Paid' | 'Overdue';
+        }>;
+        totalOriginalAmount: number;
+        totalConcessionAmount: number;
+        totalToBeCollected: number;
+        totalPaidAmount: number;
+        totalDueAmount: number;
+      }> = [];
+
+      const chartDataMap: Record<string, Record<string, number>> = {}; // date -> feeHead -> amount
+      const feeHeadsSet = new Set<string>();
+
+      for (const student of students) {
+        const studentClasswiseFees = classwiseFees.filter(cf => cf.sectionId === student.sectionId);
+        const studentPaidAmounts = paidAmounts.filter(pa => pa.feeCollection.studentId === student.id);
+        const studentConcessionsList = studentConcessions.filter(sc => sc.studentId === student.id);
+        
+        const feeDetails = [];
+        let studentTotalOriginal = 0;
+        let studentTotalConcession = 0;
+        let studentTotalToBeCollected = 0;
+        let studentTotalPaid = 0;
+        let studentTotalDue = 0;
+
+        for (const classwiseFee of studentClasswiseFees) {
+          // Calculate concession for this fee
+          let concessionAmount = 0;
+          for (const concession of studentConcessionsList) {
+            // Check if concession applies to this fee head (empty array means all fee heads)
+            const isApplicable = concession.appliedFeeHeads.length === 0 || 
+              concession.appliedFeeHeads.includes(classwiseFee.feeHeadId);
+            
+            // Also check if concession applies to this fee term (empty array means all fee terms)
+            const isTermApplicable = concession.appliedFeeTerms.length === 0 || 
+              concession.appliedFeeTerms.includes(classwiseFee.feeTermId);
+            
+            if (isApplicable && isTermApplicable) {
+              if (concession.concessionType.type === 'PERCENTAGE') {
+                concessionAmount += (classwiseFee.amount * (concession.customValue || concession.concessionType.value)) / 100;
+              } else {
+                concessionAmount += concession.customValue || concession.concessionType.value;
+              }
+            }
+          }
+
+          concessionAmount = Math.min(concessionAmount, classwiseFee.amount);
+          const toBeCollected = classwiseFee.amount - concessionAmount;
+
+          // Calculate paid amount for this specific fee head and term
+          const paidAmount = studentPaidAmounts
+            .filter(pa => 
+              pa.feeHeadId === classwiseFee.feeHeadId && 
+              pa.feeCollection.feeTermId === classwiseFee.feeTermId
+            )
+            .reduce((sum, pa) => sum + pa.amount, 0);
+
+          const dueAmount = Math.max(0, toBeCollected - paidAmount);
+
+          // Skip if no due amount and we're filtering for minimum due
+          if (input.minimumDueAmount && dueAmount < input.minimumDueAmount) {
+            continue;
+          }
+
+          // Skip if fully paid and not including partially paid
+          if (!input.includePartiallyPaid && dueAmount === 0) {
+            continue;
+          }
+
+          // Determine status
+          const today = new Date();
+          const dueDate = new Date(classwiseFee.feeTerm.dueDate);
+          let status: 'Paid' | 'Pending' | 'Partially Paid' | 'Overdue';
+          
+          if (dueAmount === 0) {
+            status = 'Paid';
+          } else if (paidAmount > 0) {
+            status = 'Partially Paid';
+          } else if (dueDate < today) {
+            status = 'Overdue';
+          } else {
+            status = 'Pending';
+          }
+
+          feeDetails.push({
+            feeHeadId: classwiseFee.feeHeadId,
+            feeHeadName: classwiseFee.feeHead.name,
+            feeTermId: classwiseFee.feeTermId,
+            feeTermName: classwiseFee.feeTerm.name,
+            originalAmount: classwiseFee.amount,
+            concessionAmount,
+            toBeCollected,
+            paidAmount,
+            dueAmount,
+            dueDate: classwiseFee.feeTerm.dueDate.toISOString().split('T')[0]!,
+            status,
+          });
+
+          // Add to chart data (group by due date and fee head)
+          const chartDate = classwiseFee.feeTerm.dueDate.toISOString().split('T')[0]!;
+          if (!chartDataMap[chartDate]) {
+            chartDataMap[chartDate] = {};
+          }
+          if (!chartDataMap[chartDate][classwiseFee.feeHead.name]) {
+            chartDataMap[chartDate][classwiseFee.feeHead.name] = 0;
+          }
+          chartDataMap[chartDate][classwiseFee.feeHead.name]! += dueAmount;
+          feeHeadsSet.add(classwiseFee.feeHead.name);
+
+          // Update student totals
+          studentTotalOriginal += classwiseFee.amount;
+          studentTotalConcession += concessionAmount;
+          studentTotalToBeCollected += toBeCollected;
+          studentTotalPaid += paidAmount;
+          studentTotalDue += dueAmount;
+        }
+
+        // Only include students with due amounts
+        if (feeDetails.length > 0 && studentTotalDue > 0) {
+          studentReportData.push({
+            studentId: student.id,
+            studentName: `${student.firstName} ${student.lastName}`.trim(),
+            admissionNumber: student.admissionNumber || '',
+            className: student.section?.class?.name || '',
+            sectionName: student.section?.name || '',
+            feeDetails,
+            totalOriginalAmount: studentTotalOriginal,
+            totalConcessionAmount: studentTotalConcession,
+            totalToBeCollected: studentTotalToBeCollected,
+            totalPaidAmount: studentTotalPaid,
+            totalDueAmount: studentTotalDue,
+          });
+        }
+      }
+
+      // Convert chart data to array format
+      const sortedFeeHeads = Array.from(feeHeadsSet).sort();
+      const chartData = Object.entries(chartDataMap)
+        .map(([date, feeHeadData]) => ({
+          date,
+          ...Object.fromEntries(sortedFeeHeads.map(fh => [fh, feeHeadData[fh] || 0])),
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Calculate summary
+      const summary = {
+        totalStudents: studentReportData.length,
+        totalDueAmount: studentReportData.reduce((sum, s) => sum + s.totalDueAmount, 0),
+        totalToBeCollected: studentReportData.reduce((sum, s) => sum + s.totalToBeCollected, 0),
+        totalConcessionApplied: studentReportData.reduce((sum, s) => sum + s.totalConcessionAmount, 0),
+        totalCollectedTillDate: studentReportData.reduce((sum, s) => sum + s.totalPaidAmount, 0),
+      };
+
+      return {
+        chartData,
+        tableData: studentReportData,
+        summary,
+        feeHeads: sortedFeeHeads,
+      };
+    }),
+
+  // Simplified Collection Summary Report (Working)
+  getCollectionSummaryReport: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      feeTermIds: z.array(z.string()).optional(),
+      feeHeadIds: z.array(z.string()).optional(),
+      classIds: z.array(z.string()).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const startDate = input.startDate ? new Date(input.startDate) : new Date(new Date().getFullYear(), 3, 1);
+      const endDate = input.endDate ? new Date(input.endDate) : new Date();
+
+      // Get collections within date range
+      const collections = await ctx.db.feeCollection.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          paymentDate: {
+            gte: startDate,
+            lte: endDate,
+          },
+          ...(input.feeTermIds && input.feeTermIds.length > 0 && {
+            feeTermId: { in: input.feeTermIds }
+          }),
+        },
+        include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                }
+              }
+            }
+          },
+          feeTerm: true,
+          items: {
+            include: {
+              feeHead: true,
+            },
+          },
+        },
+      });
+
+      // Filter by class if specified
+      const filteredCollections = input.classIds && input.classIds.length > 0 
+        ? collections.filter(c => c.student.section && input.classIds!.includes(c.student.section.classId))
+        : collections;
+
+      // Group collections by date for chart
+      const chartDataMap: Record<string, number> = {};
+      filteredCollections.forEach(collection => {
+        const dateKey = collection.paymentDate?.toISOString().split('T')[0];
+        if (!dateKey) return;
+        if (!chartDataMap[dateKey]) {
+          chartDataMap[dateKey] = 0;
+        }
+        chartDataMap[dateKey] += collection.items.reduce((sum, item) => sum + item.amount, 0);
+      });
+
+      // Convert to chart format
+      const chartArray = Object.entries(chartDataMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, amount]) => ({
+          date,
+          amount,
+          formattedDate: new Date(date).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+          }),
+        }));
+
+      // Group by fee head for summary
+      const feeHeadSummaryMap: Record<string, { feeHeadName: string; totalAmount: number; collectionCount: number }> = {};
+      filteredCollections.forEach(collection => {
+        collection.items.forEach(item => {
+          if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+            return;
+          }
+          
+          if (!feeHeadSummaryMap[item.feeHeadId]) {
+            feeHeadSummaryMap[item.feeHeadId] = {
+              feeHeadName: item.feeHead.name,
+              totalAmount: 0,
+              collectionCount: 0,
+            };
+          }
+          feeHeadSummaryMap[item.feeHeadId]!.totalAmount += item.amount;
+          feeHeadSummaryMap[item.feeHeadId]!.collectionCount += 1;
+        });
+      });
+
+      const summary = {
+        totalCollections: filteredCollections.length,
+        totalAmount: filteredCollections.reduce((sum, c) => sum + c.items.reduce((itemSum, item) => itemSum + item.amount, 0), 0),
+        dateRange: { startDate, endDate },
+        uniqueStudents: new Set(filteredCollections.map(c => c.studentId)).size,
+      };
+
+      return {
+        summary,
+        chartData: chartArray,
+        feeHeadSummary: Object.values(feeHeadSummaryMap),
+        feeTermSummary: [],
+        collections: filteredCollections.map(c => ({
+          id: c.id,
+          collectionDate: c.paymentDate,
+          studentName: `${c.student.firstName} ${c.student.lastName}`.trim(),
+          admissionNumber: c.student.admissionNumber || '',
+          className: c.student.section?.class?.name || '',
+          sectionName: c.student.section?.name || '',
+          feeTermName: c.feeTerm?.name || 'Unknown',
+          totalAmount: c.items.reduce((sum, item) => sum + item.amount, 0),
+          receiptNumber: c.receiptNumber || '',
+        })),
+      };
+    }),
+
+  // Simplified Daily Collection Report (Working)
+  getDailyCollectionReport: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      selectedDate: z.string(),
+      classIds: z.array(z.string()).optional(),
+      feeHeadIds: z.array(z.string()).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const selectedDate = new Date(input.selectedDate);
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Get collections for the specific date
+      const collections = await ctx.db.feeCollection.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          paymentDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+        include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                }
+              }
+            }
+          },
+          feeTerm: true,
+          items: {
+            include: {
+              feeHead: true,
+            },
+          },
+        },
+        orderBy: {
+          paymentDate: 'desc',
+        },
+      });
+
+      // Filter by class if specified
+      const filteredCollections = input.classIds && input.classIds.length > 0 
+        ? collections.filter(c => c.student.section && input.classIds!.includes(c.student.section.classId))
+        : collections;
+
+      // Group by collection hour for chart
+      const hourlyData: Record<number, number> = {};
+      filteredCollections.forEach(collection => {
+        const hour = collection.paymentDate.getHours();
+        if (!hourlyData[hour]) {
+          hourlyData[hour] = 0;
+        }
+        hourlyData[hour] += collection.items.reduce((sum, item) => {
+          if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+            return sum;
+          }
+          return sum + item.amount;
+        }, 0);
+      });
+
+      // Convert to chart format (24 hours)
+      const chartData = Array.from({ length: 24 }, (_, hour) => ({
+        hour: hour.toString().padStart(2, '0') + ':00',
+        amount: hourlyData[hour] || 0,
+      }));
+
+      const summary = {
+        totalCollections: filteredCollections.length,
+        totalAmount: filteredCollections.reduce((sum, c) => sum + c.items.reduce((itemSum, item) => {
+          if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+            return itemSum;
+          }
+          return itemSum + item.amount;
+        }, 0), 0),
+        selectedDate: selectedDate,
+        uniqueStudents: new Set(filteredCollections.map(c => c.studentId)).size,
+        peakHour: Object.entries(hourlyData).reduce((a, b) => a[1] > b[1] ? a : b, ['0', 0])[0],
+      };
+
+      return {
+        summary,
+        chartData,
+        collectorSummary: [],
+        collections: filteredCollections.slice(0, 100).map(c => ({
+          id: c.id,
+          receiptNumber: c.receiptNumber || '',
+          collectionTime: c.paymentDate,
+          studentName: `${c.student.firstName} ${c.student.lastName}`.trim(),
+          admissionNumber: c.student.admissionNumber || '',
+          className: c.student.section?.class?.name || '',
+          sectionName: c.student.section?.name || '',
+          feeTermName: c.feeTerm?.name || 'Unknown',
+          totalAmount: c.items.reduce((sum, item) => {
+            if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+              return sum;
+            }
+            return sum + item.amount;
+          }, 0),
+          collectorName: 'System',
+          items: c.items.map(item => ({
+            feeHeadName: item.feeHead.name,
+            amountPaid: item.amount,
+          })),
+        })),
+      };
+    }),
+
+  // Simplified Class-wise Analysis Report (Working)
+  getClasswiseAnalysisReport: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      feeTermIds: z.array(z.string()).optional(),
+      feeHeadIds: z.array(z.string()).optional(),
+      includeOutstanding: z.boolean().default(true),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Get all classes for the session with students
+      const classes = await ctx.db.class.findMany({
+        where: {
+          sessionId: input.sessionId,
+          sections: {
+            some: {
+              students: {
+                some: {
+                  branchId: input.branchId,
+                  isActive: true,
+                }
+              }
+            }
+          }
+        },
+        include: {
+          sections: {
+            include: {
+              students: {
+                where: {
+                  branchId: input.branchId,
+                  isActive: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: [
+          { displayOrder: 'asc' },
+          { grade: 'asc' },
+          { name: 'asc' },
+        ],
+      });
+
+      // Get collections for all students in these classes
+      const allStudentIds = classes.flatMap(cls => 
+        cls.sections.flatMap(section => 
+          section.students.map(student => student.id)
+        )
+      );
+
+      const collections = await ctx.db.feeCollection.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          studentId: { in: allStudentIds },
+          ...(input.feeTermIds && input.feeTermIds.length > 0 && {
+            feeTermId: { in: input.feeTermIds }
+          }),
+        },
+        include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                }
+              }
+            }
+          },
+          items: {
+            include: {
+              feeHead: true,
+            },
+            ...(input.feeHeadIds && input.feeHeadIds.length > 0 && {
+              where: {
+                feeHeadId: { in: input.feeHeadIds }
+              }
+            })
+          },
+        },
+      });
+
+      // Get class-wise fee structure for expected calculation
+      const classwiseFees = await ctx.db.classwiseFee.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          Class: {
+            id: { in: classes.map(c => c.id) }
+          },
+          ...(input.feeTermIds && input.feeTermIds.length > 0 && {
+            feeTermId: { in: input.feeTermIds }
+          }),
+          ...(input.feeHeadIds && input.feeHeadIds.length > 0 && {
+            feeHeadId: { in: input.feeHeadIds }
+          }),
+        },
+      });
+
+      const classAnalysis = classes.map(classItem => {
+        const totalStudents = classItem.sections.reduce((sum, section) => sum + section.students.length, 0);
+        
+        // Calculate total collections for this class
+        const classCollections = collections.filter(c => 
+          c.student.section?.classId === classItem.id
+        );
+        
+        const totalCollected = classCollections.reduce((sum, collection) => 
+          sum + collection.items.reduce((itemSum, item) => {
+            // Only count items that match the fee head filter (if any)
+            if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+              return itemSum;
+            }
+            return itemSum + item.amount;
+          }, 0), 0
+        );
+
+        // Calculate expected amount from class-wise fees, avoiding double counting
+        const classExpectedFees = classwiseFees.filter(cf => cf.classId === classItem.id);
+        
+        let totalExpected = 0;
+        
+        // Group fees by fee combination (term + head) to identify conflicts
+        const feeComboMap = new Map<string, { 
+          classLevel?: { amount: number; classId: string }, 
+          sectionLevel: Array<{ amount: number; sectionId: string; students: number }> 
+        }>();
+        
+        // First pass: organize all fees by fee combination
+        classExpectedFees.forEach(cf => {
+          const feeKey = `${cf.feeTermId}-${cf.feeHeadId}`;
+          
+          if (!feeComboMap.has(feeKey)) {
+            feeComboMap.set(feeKey, { sectionLevel: [] });
+          }
+          
+          const combo = feeComboMap.get(feeKey)!;
+          
+          if (cf.sectionId) {
+            // Section-specific fee
+            const section = classItem.sections.find(s => s.id === cf.sectionId);
+            const studentCount = section?.students.length || 0;
+            combo.sectionLevel.push({
+              amount: cf.amount,
+              sectionId: cf.sectionId,
+              students: studentCount
+            });
+          } else {
+            // Class-level fee
+            combo.classLevel = {
+              amount: cf.amount,
+              classId: cf.classId
+            };
+          }
+        });
+        
+        // Second pass: calculate totals, prioritizing section-level fees over class-level
+        feeComboMap.forEach((combo, feeKey) => {
+          if (combo.sectionLevel.length > 0) {
+            // Use section-level fees (ignore any class-level fee for this combination)
+            combo.sectionLevel.forEach(sectionFee => {
+              totalExpected += sectionFee.amount * sectionFee.students;
+            });
+          } else if (combo.classLevel) {
+            // Use class-level fee only if no section-level fees exist
+            totalExpected += combo.classLevel.amount * totalStudents;
+          }
+        });
+        
+        const totalOutstanding = input.includeOutstanding ? Math.max(0, totalExpected - totalCollected) : 0;
+        const collectionPercentage = totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0;
+
+        return {
+          classId: classItem.id,
+          className: classItem.name,
+          totalStudents,
+          totalCollected,
+          totalExpected,
+          totalOutstanding,
+          collectionPercentage,
+          averagePerStudent: totalStudents > 0 ? totalCollected / totalStudents : 0,
+          collectionsCount: classCollections.length,
+        };
+      });
+
+      // Chart data for class-wise comparison
+      const chartData = classAnalysis.map(ca => ({
+        className: ca.className,
+        collected: ca.totalCollected,
+        expected: ca.totalExpected,
+        outstanding: ca.totalOutstanding,
+        percentage: ca.collectionPercentage,
+      }));
+
+      const summary = {
+        totalClasses: classes.length,
+        totalStudents: classAnalysis.reduce((sum, ca) => sum + ca.totalStudents, 0),
+        totalCollected: classAnalysis.reduce((sum, ca) => sum + ca.totalCollected, 0),
+        totalExpected: classAnalysis.reduce((sum, ca) => sum + ca.totalExpected, 0),
+        totalOutstanding: classAnalysis.reduce((sum, ca) => sum + ca.totalOutstanding, 0),
+        averageCollectionPercentage: classAnalysis.length > 0 
+          ? classAnalysis.reduce((sum, ca) => sum + ca.collectionPercentage, 0) / classAnalysis.length 
+          : 0,
+      };
+
+      return {
+        summary,
+        chartData,
+        classAnalysis,
+      };
+    }),
+
+  // Concession Report
+  getConcessionReport: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      classIds: z.array(z.string()).optional(),
+      feeHeadIds: z.array(z.string()).optional(),
+      concessionTypeIds: z.array(z.string()).optional(),
+      status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Build date filter
+      let dateFilter: any = {};
+      if (input.startDate && input.endDate) {
+        dateFilter = {
+          createdAt: {
+            gte: new Date(input.startDate),
+            lte: new Date(input.endDate + 'T23:59:59.999Z'),
+          },
+        };
+      }
+
+      // Get all student concessions with filters
+      const concessions = await ctx.db.studentConcession.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          ...dateFilter,
+          ...(input.status && { status: input.status }),
+          ...(input.concessionTypeIds && input.concessionTypeIds.length > 0 && {
+            concessionTypeId: { in: input.concessionTypeIds }
+          }),
+          ...(input.classIds && input.classIds.length > 0 && {
+            student: {
+              section: {
+                classId: { in: input.classIds }
+              }
+            }
+          }),
+        },
+        include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                }
+              }
+            }
+          },
+          concessionType: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Get concession types for dropdown
+      const concessionTypes = await ctx.db.concessionType.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          isActive: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      // Calculate concession amounts based on type and value
+      const concessionsWithAmounts = concessions.map(concession => {
+        let concessionAmount = 0;
+        
+        if (concession.concessionType.type === 'PERCENTAGE') {
+          // For percentage concessions, we'd need to calculate based on fee structure
+          // For now, using custom value or estimated amount
+          concessionAmount = concession.customValue || 0;
+        } else if (concession.concessionType.type === 'FIXED') {
+          concessionAmount = concession.customValue || concession.concessionType.value;
+        }
+
+        return {
+          ...concession,
+          concessionAmount,
+        };
+      });
+
+      // Group by date for chart data
+      const chartDataMap: Record<string, number> = {};
+      concessionsWithAmounts.forEach(concession => {
+        const dateKey = concession.createdAt.toISOString().split('T')[0]!;
+        if (!chartDataMap[dateKey]) {
+          chartDataMap[dateKey] = 0;
+        }
+        chartDataMap[dateKey] += concession.concessionAmount;
+      });
+
+      const chartData = Object.entries(chartDataMap)
+        .map(([date, amount]) => ({
+          date,
+          formattedDate: new Date(date).toLocaleDateString('en-IN'),
+          amount,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // Status-wise summary
+      const statusSummary = {
+        pending: concessionsWithAmounts.filter(c => c.status === 'PENDING').length,
+        approved: concessionsWithAmounts.filter(c => c.status === 'APPROVED').length,
+        rejected: concessionsWithAmounts.filter(c => c.status === 'REJECTED').length,
+      };
+
+      // Concession type summary
+      const typeSummary = concessionTypes.map(type => {
+        const typesConcessions = concessionsWithAmounts.filter(c => c.concessionTypeId === type.id);
+        return {
+          typeName: type.name,
+          totalConcessions: typesConcessions.length,
+          totalAmount: typesConcessions.reduce((sum, c) => sum + c.concessionAmount, 0),
+          pendingCount: typesConcessions.filter(c => c.status === 'PENDING').length,
+          approvedCount: typesConcessions.filter(c => c.status === 'APPROVED').length,
+          rejectedCount: typesConcessions.filter(c => c.status === 'REJECTED').length,
+        };
+      });
+
+      // Class-wise summary
+      const classSummary = concessionsWithAmounts.reduce((acc, concession) => {
+        const className = concession.student.section?.class?.name || 'Unknown';
+        if (!acc[className]) {
+          acc[className] = {
+            className,
+            totalConcessions: 0,
+            totalAmount: 0,
+            pendingCount: 0,
+            approvedCount: 0,
+            rejectedCount: 0,
+          };
+        }
+        
+        acc[className].totalConcessions += 1;
+        acc[className].totalAmount += concession.concessionAmount;
+        if (concession.status === 'PENDING') acc[className].pendingCount += 1;
+        if (concession.status === 'APPROVED') acc[className].approvedCount += 1;
+        if (concession.status === 'REJECTED') acc[className].rejectedCount += 1;
+        
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Table data for detailed view
+      const tableData = concessionsWithAmounts.map(concession => ({
+        id: concession.id,
+        studentName: `${concession.student.firstName} ${concession.student.lastName}`,
+        rollNumber: concession.student.rollNumber,
+        className: concession.student.section?.class?.name || 'N/A',
+        sectionName: concession.student.section?.name || 'N/A',
+        concessionType: concession.concessionType.name,
+        concessionAmount: concession.concessionAmount,
+        status: concession.status,
+        reason: concession.reason,
+        appliedDate: concession.createdAt,
+        approvedBy: concession.approvedBy,
+        approvedAt: concession.approvedAt,
+      }));
+
+      return {
+        chartData,
+        tableData,
+        concessionTypes,
+        summary: {
+          totalConcessions: concessionsWithAmounts.length,
+          totalAmount: concessionsWithAmounts.reduce((sum, c) => sum + c.concessionAmount, 0),
+          statusSummary,
+          typeSummary,
+          classSummary: Object.values(classSummary),
+        },
+      };
+    }),
+
+  // New Admission Student Identification and Fee Assignment
+  identifyNewAdmissionStudents: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      newAdmissionCriteria: z.object({
+        method: z.enum(["CURRENT_SESSION", "DATE_RANGE", "DAYS_FROM_ADMISSION"]),
+        daysFromAdmission: z.number().min(1).max(365).optional(), // e.g., first 30 days
+        dateRangeStart: z.date().optional(),
+        dateRangeEnd: z.date().optional(),
+      }),
+      includeInactiveStudents: z.boolean().default(false),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Build the base student query
+      let studentWhere: any = {
+        branchId: input.branchId,
+        section: {
+          class: {
+            sessionId: input.sessionId,
+          },
+        },
+      };
+
+      if (!input.includeInactiveStudents) {
+        studentWhere.isActive = true;
+      }
+
+      // Add new admission criteria based on the method
+      switch (input.newAdmissionCriteria.method) {
+        case "CURRENT_SESSION":
+          // Students who joined in the current academic session
+          const currentSession = await ctx.db.academicSession.findUnique({
+            where: { id: input.sessionId },
+          });
+          
+          if (currentSession) {
+            studentWhere.OR = [
+              {
+                joinDate: {
+                  gte: currentSession.startDate,
+                  lte: currentSession.endDate,
+                },
+              },
+              {
+                dateOfAdmission: {
+                  gte: currentSession.startDate,
+                  lte: currentSession.endDate,
+                },
+              },
+            ];
+          }
+          break;
+
+        case "DATE_RANGE":
+          // Students admitted within a specific date range
+          if (input.newAdmissionCriteria.dateRangeStart && input.newAdmissionCriteria.dateRangeEnd) {
+            studentWhere.OR = [
+              {
+                joinDate: {
+                  gte: input.newAdmissionCriteria.dateRangeStart,
+                  lte: input.newAdmissionCriteria.dateRangeEnd,
+                },
+              },
+              {
+                dateOfAdmission: {
+                  gte: input.newAdmissionCriteria.dateRangeStart,
+                  lte: input.newAdmissionCriteria.dateRangeEnd,
+                },
+              },
+            ];
+          }
+          break;
+
+        case "DAYS_FROM_ADMISSION":
+          // Students admitted within the last X days
+          if (input.newAdmissionCriteria.daysFromAdmission) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - input.newAdmissionCriteria.daysFromAdmission);
+            
+            studentWhere.OR = [
+              {
+                joinDate: {
+                  gte: cutoffDate,
+                },
+              },
+              {
+                dateOfAdmission: {
+                  gte: cutoffDate,
+                },
+              },
+            ];
+          }
+          break;
+      }
+
+      // Get new admission students
+      const newAdmissionStudents = await ctx.db.student.findMany({
+        where: studentWhere,
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+          feeCollections: {
+            include: {
+              items: {
+                include: {
+                  feeHead: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { dateOfAdmission: 'desc' },
+          { joinDate: 'desc' },
+          { createdAt: 'desc' },
+        ],
+      });
+
+      // Get fee heads applicable to new admissions
+      const newAdmissionFeeHeads = await ctx.db.feeHead.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          studentType: {
+            in: ["NEW_ADMISSION", "BOTH"],
+          },
+          isActive: true,
+        },
+        include: {
+          classwiseFees: {
+            where: {
+              section: {
+                students: {
+                  some: {
+                    id: { in: newAdmissionStudents.map(s => s.id) },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Get fee heads that are specifically for new admissions only
+      const newAdmissionOnlyFeeHeads = newAdmissionFeeHeads.filter(fh => fh.studentType === "NEW_ADMISSION");
+
+      // Calculate statistics
+      const totalNewAdmissions = newAdmissionStudents.length;
+      const studentsWithNewAdmissionFees = newAdmissionStudents.filter(student => {
+        const studentFeeHeads = student.feeCollections.flatMap(fc => fc.items.map(item => item.feeHead.id));
+        return newAdmissionOnlyFeeHeads.some(fh => studentFeeHeads.includes(fh.id));
+      }).length;
+
+      // Group students by class for better organization
+      const studentsByClass = newAdmissionStudents.reduce((acc, student) => {
+        const className = student.section?.class?.name || 'Unknown';
+        if (!acc[className]) {
+          acc[className] = [];
+        }
+        acc[className].push({
+          id: student.id,
+          admissionNumber: student.admissionNumber,
+          name: `${student.firstName} ${student.lastName}`,
+          dateOfAdmission: student.dateOfAdmission,
+          joinDate: student.joinDate,
+          sectionName: student.section?.name || 'N/A',
+          hasNewAdmissionFees: student.feeCollections.flatMap(fc => fc.items.map(item => item.feeHead.id))
+            .some(feeHeadId => newAdmissionOnlyFeeHeads.map(fh => fh.id).includes(feeHeadId)),
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return {
+        criteria: input.newAdmissionCriteria,
+        summary: {
+          totalNewAdmissions,
+          studentsWithNewAdmissionFees,
+          studentsWithoutNewAdmissionFees: totalNewAdmissions - studentsWithNewAdmissionFees,
+          newAdmissionFeeHeadsCount: newAdmissionOnlyFeeHeads.length,
+        },
+        newAdmissionFeeHeads: newAdmissionOnlyFeeHeads.map(fh => ({
+          id: fh.id,
+          name: fh.name,
+          description: fh.description,
+          studentType: fh.studentType,
+          applicableStudentsCount: fh.classwiseFees.length,
+        })),
+        studentsByClass,
+        allNewAdmissionStudents: newAdmissionStudents.map(student => ({
+          id: student.id,
+          admissionNumber: student.admissionNumber,
+          name: `${student.firstName} ${student.lastName}`,
+          className: student.section?.class?.name || 'Unknown',
+          sectionName: student.section?.name || 'N/A',
+          dateOfAdmission: student.dateOfAdmission,
+          joinDate: student.joinDate,
+          createdAt: student.createdAt,
+          isActive: student.isActive,
+        })),
+      };
+    }),
+
+  // Auto-assign new admission fee heads to eligible students
+  autoAssignNewAdmissionFees: protectedProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      studentIds: z.array(z.string()),
+      feeHeadIds: z.array(z.string()).optional(), // If not provided, assign all NEW_ADMISSION fee heads
+      feeTermId: z.string(), // Which term to assign the fees to
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Validate students exist and belong to the branch/session
+      const students = await ctx.db.student.findMany({
+        where: {
+          id: { in: input.studentIds },
+          branchId: input.branchId,
+          section: {
+            class: {
+              sessionId: input.sessionId,
+            },
+          },
+        },
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+
+      if (students.length !== input.studentIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Some students are invalid or don't belong to the specified branch/session",
+        });
+      }
+
+      // Get fee heads to assign
+      let feeHeadsToAssign;
+      if (input.feeHeadIds && input.feeHeadIds.length > 0) {
+        feeHeadsToAssign = await ctx.db.feeHead.findMany({
+          where: {
+            id: { in: input.feeHeadIds },
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            studentType: { in: ["NEW_ADMISSION", "BOTH"] },
+            isActive: true,
+          },
+        });
+      } else {
+        // Auto-assign all NEW_ADMISSION fee heads
+        feeHeadsToAssign = await ctx.db.feeHead.findMany({
+          where: {
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            studentType: "NEW_ADMISSION",
+            isActive: true,
+          },
+        });
+      }
+
+      if (feeHeadsToAssign.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No valid fee heads found for assignment",
+        });
+      }
+
+      // Validate fee term
+      const feeTerm = await ctx.db.feeTerm.findUnique({
+        where: { id: input.feeTermId },
+      });
+
+      if (!feeTerm || feeTerm.branchId !== input.branchId || feeTerm.sessionId !== input.sessionId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid fee term",
+        });
+      }
+
+      // Create classwise fees for each student's section and fee head combination
+      const classwiseFeesToCreate = [];
+      const results = {
+        success: 0,
+        skipped: 0,
+        errors: [] as string[],
+      };
+
+      for (const student of students) {
+        if (!student.section) {
+          results.errors.push(`Student ${student.admissionNumber} has no section assigned`);
+          continue;
+        }
+
+        for (const feeHead of feeHeadsToAssign) {
+          // Check if classwise fee already exists
+          const existingClasswiseFee = await ctx.db.classwiseFee.findFirst({
+            where: {
+              sectionId: student.section.id,
+              feeTermId: input.feeTermId,
+              feeHeadId: feeHead.id,
+              branchId: input.branchId,
+              sessionId: input.sessionId,
+            },
+          });
+
+          if (existingClasswiseFee) {
+            results.skipped++;
+          } else {
+            classwiseFeesToCreate.push({
+              classId: student.section.classId,
+              sectionId: student.section.id,
+              feeTermId: input.feeTermId,
+              feeHeadId: feeHead.id,
+              amount: 0, // Default amount - should be set manually later
+              branchId: input.branchId,
+              sessionId: input.sessionId,
+            });
+            results.success++;
+          }
+        }
+      }
+
+      // Bulk create classwise fees
+      if (classwiseFeesToCreate.length > 0) {
+        await ctx.db.classwiseFee.createMany({
+          data: classwiseFeesToCreate,
+        });
+      }
+
+      return {
+        message: `Successfully processed ${input.studentIds.length} students`,
+        results,
+        assignedFeeHeads: feeHeadsToAssign.map(fh => ({ id: fh.id, name: fh.name })),
+      };
+    }),
+
+  // Debug Total Fee Calculation - Detailed Breakdown
+  debugTotalFeeCalculation: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Step 1: Get all classes with sections and students
+      const classes = await ctx.db.class.findMany({
+        where: {
+          sessionId: input.sessionId,
+          sections: {
+            some: {
+              students: {
+                some: {
+                  branchId: input.branchId,
+                  isActive: true,
+                }
+              }
+            }
+          }
+        },
+        include: {
+          sections: {
+            include: {
+              students: {
+                where: {
+                  branchId: input.branchId,
+                  isActive: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: [
+          { displayOrder: 'asc' },
+          { grade: 'asc' },
+          { name: 'asc' },
+        ],
+      });
+
+      // Step 2: Get all classwise fees
+      const allClasswiseFees = await ctx.db.classwiseFee.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        },
+        include: {
+          feeHead: true,
+          feeTerm: true,
+          Class: true,
+          section: true,
+        },
+        orderBy: [
+          { Class: { name: 'asc' } },
+          { feeTerm: { name: 'asc' } },
+          { feeHead: { name: 'asc' } },
+        ],
+      });
+
+      // Step 3: Analyze the data structure
+      const studentCounts = {
+        totalStudents: classes.reduce((sum, cls) => sum + cls.sections.reduce((secSum, sec) => secSum + sec.students.length, 0), 0),
+        byClass: classes.map(cls => ({
+          className: cls.name,
+          sections: cls.sections.map(sec => ({
+            sectionName: sec.name,
+            studentCount: sec.students.length,
+          })),
+          totalStudents: cls.sections.reduce((sum, sec) => sum + sec.students.length, 0),
+        })),
+      };
+
+      // Step 4: Analyze classwise fees structure
+      const feeStructureAnalysis = {
+        totalClasswiseFees: allClasswiseFees.length,
+        classLevelFees: allClasswiseFees.filter(cf => !cf.sectionId).length,
+        sectionLevelFees: allClasswiseFees.filter(cf => cf.sectionId).length,
+        
+        byClass: {} as Record<string, any>,
+        bySection: {} as Record<string, any>,
+        
+        uniqueFeeHeads: [...new Set(allClasswiseFees.map(cf => cf.feeHead.name))],
+        uniqueFeeTerms: [...new Set(allClasswiseFees.map(cf => cf.feeTerm.name))],
+      };
+
+      // Analyze by class
+      classes.forEach(cls => {
+        const classFees = allClasswiseFees.filter(cf => cf.classId === cls.id);
+        const classLevelFees = classFees.filter(cf => !cf.sectionId);
+        const sectionLevelFees = classFees.filter(cf => cf.sectionId);
+
+        feeStructureAnalysis.byClass[cls.name] = {
+          totalStudents: cls.sections.reduce((sum, sec) => sum + sec.students.length, 0),
+          classLevelFees: classLevelFees.length,
+          sectionLevelFees: sectionLevelFees.length,
+          totalFees: classFees.length,
+          
+          feeDetails: classFees.map(cf => ({
+            feeHead: cf.feeHead.name,
+            feeTerm: cf.feeTerm.name,
+            amount: cf.amount,
+            level: cf.sectionId ? 'Section' : 'Class',
+            sectionName: cf.section?.name || 'N/A',
+          })),
+        };
+      });
+
+      // Step 5: Calculate total using different methods
+      const calculationMethods = {
+        // Method 1: Simple multiplication (original method)
+        simpleMultiplication: {
+          calculation: 0,
+          breakdown: [] as any[],
+        },
+        
+        // Method 2: Our new grouped method
+        groupedMethod: {
+          calculation: 0,
+          breakdown: [] as any[],
+        },
+        
+        // Method 3: Manual verification method
+        manualVerification: {
+          calculation: 0,
+          breakdown: [] as any[],
+        }
+      };
+
+      // Method 1: Simple multiplication
+      allClasswiseFees.forEach(cf => {
+        let studentCount = 0;
+        if (cf.sectionId) {
+          // Section-specific fee
+          const section = classes.flatMap(c => c.sections).find(s => s.id === cf.sectionId);
+          studentCount = section?.students.length || 0;
+        } else {
+          // Class-level fee
+          const classData = classes.find(c => c.id === cf.classId);
+          studentCount = classData?.sections.reduce((sum, sec) => sum + sec.students.length, 0) || 0;
+        }
+        
+        const amount = cf.amount * studentCount;
+        calculationMethods.simpleMultiplication.calculation += amount;
+        calculationMethods.simpleMultiplication.breakdown.push({
+          feeHead: cf.feeHead.name,
+          feeTerm: cf.feeTerm.name,
+          className: cf.Class.name,
+          sectionName: cf.section?.name || 'Class Level',
+          amount: cf.amount,
+          studentCount,
+          totalAmount: amount,
+        });
+      });
+
+      // Method 2: Grouped method (current implementation)
+      const sectionFeeMap = new Map<string, Map<string, { amount: number, students: number }>>();
+      
+      allClasswiseFees.forEach(cf => {
+        const sectionKey = cf.sectionId || `class-${cf.classId}`;
+        const feeKey = `${cf.feeTermId}-${cf.feeHeadId}`;
+        
+        if (!sectionFeeMap.has(sectionKey)) {
+          sectionFeeMap.set(sectionKey, new Map());
+        }
+        
+        const sectionMap = sectionFeeMap.get(sectionKey)!;
+        
+        if (!sectionMap.has(feeKey)) {
+          let studentCount: number;
+          
+          if (cf.sectionId) {
+            const section = classes.flatMap(c => c.sections).find(s => s.id === cf.sectionId);
+            studentCount = section?.students.length || 0;
+          } else {
+            const classData = classes.find(c => c.id === cf.classId);
+            studentCount = classData?.sections.reduce((sum, sec) => sum + sec.students.length, 0) || 0;
+          }
+          
+          sectionMap.set(feeKey, {
+            amount: cf.amount,
+            students: studentCount
+          });
+        }
+      });
+      
+      sectionFeeMap.forEach((sectionMap, sectionKey) => {
+        sectionMap.forEach(({ amount, students }, feeKey) => {
+          const totalAmount = amount * students;
+          calculationMethods.groupedMethod.calculation += totalAmount;
+          calculationMethods.groupedMethod.breakdown.push({
+            sectionKey,
+            feeKey,
+            amount,
+            students,
+            totalAmount,
+          });
+        });
+      });
+
+      // Method 3: Manual verification - calculate by unique fee combinations
+      const uniqueCombinations = new Map<string, { feeHead: string, feeTerm: string, amount: number, applicableStudents: number }>();
+      
+      allClasswiseFees.forEach(cf => {
+        const key = `${cf.feeHeadId}-${cf.feeTermId}`;
+        
+        if (!uniqueCombinations.has(key)) {
+          // Calculate total applicable students for this fee head + term combination
+          let totalApplicableStudents = 0;
+          
+          // Get all classwise fees for this combination
+          const relatedFees = allClasswiseFees.filter(otherCf => 
+            otherCf.feeHeadId === cf.feeHeadId && otherCf.feeTermId === cf.feeTermId
+          );
+          
+          relatedFees.forEach(relatedFee => {
+            if (relatedFee.sectionId) {
+              // Section-specific
+              const section = classes.flatMap(c => c.sections).find(s => s.id === relatedFee.sectionId);
+              totalApplicableStudents += section?.students.length || 0;
+            } else {
+              // Class-level - add all students in that class
+              const classData = classes.find(c => c.id === relatedFee.classId);
+              totalApplicableStudents += classData?.sections.reduce((sum, sec) => sum + sec.students.length, 0) || 0;
+            }
+          });
+          
+          uniqueCombinations.set(key, {
+            feeHead: cf.feeHead.name,
+            feeTerm: cf.feeTerm.name,
+            amount: cf.amount,
+            applicableStudents: totalApplicableStudents,
+          });
+        }
+      });
+      
+      uniqueCombinations.forEach((combo, key) => {
+        const totalAmount = combo.amount * combo.applicableStudents;
+        calculationMethods.manualVerification.calculation += totalAmount;
+        calculationMethods.manualVerification.breakdown.push({
+          key,
+          feeHead: combo.feeHead,
+          feeTerm: combo.feeTerm,
+          amount: combo.amount,
+          applicableStudents: combo.applicableStudents,
+          totalAmount,
+        });
+      });
+
+      return {
+        studentCounts,
+        feeStructureAnalysis,
+        calculationMethods,
+        summary: {
+          totalStudents: studentCounts.totalStudents,
+          totalClasswiseFees: allClasswiseFees.length,
+          uniqueFeeHeadTermCombinations: uniqueCombinations.size,
+          
+          calculationResults: {
+            simpleMultiplication: calculationMethods.simpleMultiplication.calculation,
+            groupedMethod: calculationMethods.groupedMethod.calculation,
+            manualVerification: calculationMethods.manualVerification.calculation,
+          },
+          
+          yourExpectedAmount: 101539600, // ₹10,15,39,600
+          currentSystemAmount: calculationMethods.groupedMethod.calculation,
+          difference: calculationMethods.groupedMethod.calculation - 101539600,
+        }
+      };
     }),
 }); 
