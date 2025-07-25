@@ -774,8 +774,39 @@ export const communicationRouter = createTRPCRouter({
           }
 
           // Use template parameters from input, or empty object
-          const parameters = input.templateParameters || {};
-          console.log('📋 Template parameters:', parameters);
+          const inputParameters = input.templateParameters || {};
+          console.log('📋 Input template parameters:', inputParameters);
+          console.log('📋 Template variables structure:', template.templateVariables);
+
+          // Validate and prepare template parameters
+          const { prepareTemplateParameters } = await import("@/utils/template-validator");
+          const { parameters, validation } = prepareTemplateParameters(
+            {
+              id: template.id,
+              name: template.name,
+              metaTemplateName: template.metaTemplateName,
+              metaTemplateLanguage: template.metaTemplateLanguage,
+              templateVariables: template.templateVariables,
+              templateBody: template.templateBody
+            },
+            inputParameters
+          );
+
+          console.log('📋 Prepared parameters:', parameters);
+          console.log('📋 Validation result:', validation);
+
+          // Log warnings but continue
+          if (validation.warnings.length > 0) {
+            console.warn('⚠️ Template validation warnings:', validation.warnings);
+          }
+
+          // Fail if there are critical errors
+          if (!validation.isValid) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Template parameter validation failed: ${validation.errors.join(', ')}. Suggested parameters: ${JSON.stringify(validation.suggestedParameters)}`,
+            });
+          }
 
           // Send to multiple recipients using bulk method
           try {
@@ -783,7 +814,12 @@ export const communicationRouter = createTRPCRouter({
               recipientsWithValidPhones.map(recipient => ({
                 phone: recipient.phone,
                 name: recipient.name,
-                variables: { ...parameters, name: recipient.name }
+                variables: { 
+                  ...parameters, 
+                  name: recipient.name,
+                  // Add recipient-specific variables
+                  recipient_name: recipient.name
+                }
               })),
               template.metaTemplateName,
               parameters,

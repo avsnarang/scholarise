@@ -269,15 +269,27 @@ export class WhatsAppApiClient {
         };
       }
 
+      // Build components with proper parameter mapping
       const components = [];
       if (request.templateVariables && Object.keys(request.templateVariables).length > 0) {
-        components.push({
-          type: 'body',
-          parameters: Object.values(request.templateVariables).map(value => ({
-            type: 'text',
-            text: value
-          }))
-        });
+        // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
+        const sortedEntries = Object.entries(request.templateVariables)
+          .sort(([a], [b]) => {
+            // Extract numbers from variable names for proper sorting
+            const numA = parseInt(a.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.replace(/\D/g, '')) || 0;
+            return numA - numB;
+          });
+
+        if (sortedEntries.length > 0) {
+          components.push({
+            type: 'body',
+            parameters: sortedEntries.map(([_, value]) => ({
+              type: 'text',
+              text: String(value || '') // Ensure it's a string and handle empty values
+            }))
+          });
+        }
       }
 
       const payload: MetaSendTemplateMessageRequest = {
@@ -306,10 +318,26 @@ export class WhatsAppApiClient {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Failed to send template message:', data);
+        console.error('Failed to send template message:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          errorCode: data.error?.code,
+          templateName: request.templateName,
+          templateLanguage: request.templateLanguage,
+          variables: request.templateVariables,
+          components: payload.template.components
+        });
+        
+        // Provide specific guidance for common errors
+        let errorMessage = data.error?.message || 'Unknown error occurred';
+        if (data.error?.code === 100) {
+          errorMessage = `Invalid parameter error: ${data.error?.message}. Check that template variables match the template structure in Meta Business Manager.`;
+        }
+        
         return {
           result: false,
-          error: data.error?.message || 'Unknown error occurred',
+          error: errorMessage,
           info: 'Failed to send template message'
         };
       }
