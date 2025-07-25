@@ -21,6 +21,7 @@ export const env = createEnv({
     META_WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().min(1, "META_WHATSAPP_BUSINESS_ACCOUNT_ID is required for Meta template management"),
     META_WHATSAPP_API_VERSION: z.string().optional(),
     META_WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().min(1, "META_WHATSAPP_WEBHOOK_VERIFY_TOKEN is required for webhook verification"),
+    META_WHATSAPP_APP_SECRET: z.string().min(1, "META_WHATSAPP_APP_SECRET is required for webhook signature validation"),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -62,6 +63,7 @@ export const env = createEnv({
     META_WHATSAPP_BUSINESS_ACCOUNT_ID: process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID,
     META_WHATSAPP_API_VERSION: process.env.META_WHATSAPP_API_VERSION,
     META_WHATSAPP_WEBHOOK_VERIFY_TOKEN: process.env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+    META_WHATSAPP_APP_SECRET: process.env.META_WHATSAPP_APP_SECRET,
 
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,

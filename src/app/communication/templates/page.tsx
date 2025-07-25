@@ -83,6 +83,7 @@ export default function TemplatesPage() {
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const router = useRouter();
+  const utils = api.useUtils();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<WhatsAppTemplate | null>(null);
@@ -98,7 +99,7 @@ export default function TemplatesPage() {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [previousTemplates, setPreviousTemplates] = useState<any[]>([]);
 
-  // Optimized polling: only when page is visible and has pending templates
+  // Smart polling: only when page is visible and has pending templates
   React.useEffect(() => {
     if (!templates) return;
 
@@ -112,12 +113,26 @@ export default function TemplatesPage() {
       // Only poll if document is visible (tab is active)
       if (document.visibilityState === 'visible') {
         console.log('🔄 Polling for template updates...');
-        refetch();
+        // Use silent refetch to avoid loading states
+        utils.communication.getTemplates.invalidate();
       }
-    }, 10000); // Poll every 10 seconds for pending templates
+    }, 8000); // Poll every 8 seconds for pending templates (slightly faster)
 
     return () => clearInterval(pollInterval);
-  }, [templates, refetch]);
+  }, [templates, utils.communication.getTemplates]);
+
+  // Auto-refresh when page becomes visible
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && templates?.some(t => t.metaTemplateStatus === 'PENDING')) {
+        console.log('👀 Page became visible, refreshing template status...');
+        utils.communication.getTemplates.invalidate();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [templates, utils.communication.getTemplates]);
 
   // Detect status changes and show notifications
   React.useEffect(() => {
@@ -178,16 +193,40 @@ export default function TemplatesPage() {
     setPreviousTemplates(templates);
   }, [templates, toast]);
 
-  // Submit template to Meta mutation
+  // Submit template to Meta mutation with optimistic updates
   const submitTemplateToMetaMutation = api.communication.submitTemplateToMeta.useMutation({
+    onMutate: async ({ templateId }) => {
+      // Cancel outgoing refetches
+      await utils.communication.getTemplates.cancel();
+      
+      // Snapshot the previous value
+      const previousTemplates = utils.communication.getTemplates.getData({ category: searchTerm || undefined });
+      
+      // Optimistically update template status
+      utils.communication.getTemplates.setData({ category: searchTerm || undefined }, (old) => {
+        if (!old) return old;
+        return old.map((template) =>
+          template.id === templateId
+            ? { ...template, metaTemplateStatus: 'PENDING' }
+            : template
+        );
+      });
+      
+      return { previousTemplates };
+    },
     onSuccess: (data) => {
       toast({
         title: "Template Submitted",
         description: `Template submitted to Meta for approval. Status: ${data.status}`,
       });
+      // Silent refresh to get server state
       refetch();
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousTemplates) {
+        utils.communication.getTemplates.setData({ category: searchTerm || undefined }, context.previousTemplates);
+      }
       toast({
         title: "Failed to Submit Template",
         description: error.message,
@@ -196,14 +235,22 @@ export default function TemplatesPage() {
     },
   });
 
-  // Sync templates mutation (now global)
+  // Sync templates mutation with optimistic feedback
   const syncTemplatesMutation = api.communication.syncTemplatesFromWhatsApp.useMutation({
+    onMutate: async () => {
+      // Show immediate feedback
+      toast({
+        title: "Syncing Templates...",
+        description: "Fetching latest templates from Meta WhatsApp API",
+      });
+    },
     onSuccess: (data) => {
       toast({
         title: "Templates Synced Successfully",
         description: `Synced ${data.syncedCount} global templates from Meta WhatsApp API. All branches can now use these templates.`,
       });
-      refetch();
+      // Invalidate and refetch to show new data immediately
+      utils.communication.getTemplates.invalidate();
     },
     onError: (error) => {
       toast({
@@ -294,18 +341,38 @@ export default function TemplatesPage() {
     }
   };
 
-  // Delete template mutation
+  // Delete template mutation with optimistic updates
   const deleteTemplateMutation = api.communication.deleteTemplate.useMutation({
+    onMutate: async ({ templateId }) => {
+      // Cancel outgoing refetches
+      await utils.communication.getTemplates.cancel();
+      
+      // Snapshot the previous value
+      const previousTemplates = utils.communication.getTemplates.getData({ category: searchTerm || undefined });
+      
+      // Optimistically remove template
+      utils.communication.getTemplates.setData({ category: searchTerm || undefined }, (old) => {
+        if (!old) return old;
+        return old.filter((template) => template.id !== templateId);
+      });
+      
+      return { previousTemplates };
+    },
     onSuccess: () => {
       toast({
         title: "Template Deleted",
         description: "Template has been deleted successfully.",
       });
+      // Silent refresh to get server state
       refetch();
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Rollback on error
+      if (context?.previousTemplates) {
+        utils.communication.getTemplates.setData({ category: searchTerm || undefined }, context.previousTemplates);
+      }
       toast({
         title: "Failed to Delete Template",
         description: error.message,

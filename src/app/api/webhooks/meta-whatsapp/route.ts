@@ -103,25 +103,36 @@ interface MetaWhatsAppWebhookPayload {
 
 // Webhook signature verification for Meta
 function validateMetaWebhookSignature(body: string, signature: string): boolean {
-  if (!env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN) {
-    console.warn('Meta webhook verify token not configured, skipping signature validation');
+  if (!env.META_WHATSAPP_APP_SECRET) {
+    console.warn('🔓 Meta app secret not configured, skipping signature validation');
     return true; // Allow in development
   }
   
   try {
+    console.log('🔐 Validating Meta webhook signature...');
+    
     const expectedSignature = crypto
-      .createHmac('sha256', env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN)
+      .createHmac('sha256', env.META_WHATSAPP_APP_SECRET)
       .update(body, 'utf8')
       .digest('hex');
       
     const providedSignature = signature.replace('sha256=', '');
     
-    return crypto.timingSafeEqual(
+    console.log('📋 Signature validation details:', {
+      providedSignatureLength: providedSignature.length,
+      expectedSignatureLength: expectedSignature.length,
+      signaturePrefix: signature.substring(0, 10) + '...',
+    });
+    
+    const isValid = crypto.timingSafeEqual(
       Buffer.from(expectedSignature, 'hex'),
       Buffer.from(providedSignature, 'hex')
     );
+    
+    console.log(isValid ? '✅ Signature valid' : '❌ Signature invalid');
+    return isValid;
   } catch (error) {
-    console.error('Meta webhook signature validation error:', error);
+    console.error('❌ Meta webhook signature validation error:', error);
     return false;
   }
 }
@@ -341,13 +352,41 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       return;
     }
 
-    // Find the template in our database
-    const template = await db.whatsAppTemplate.findFirst({
+    // Find the template in our database using multiple strategies
+    let template = await db.whatsAppTemplate.findFirst({
       where: {
         metaTemplateName: message_template_name,
         metaTemplateLanguage: message_template_language || 'en'
       }
     });
+
+    // Fallback: try to find by Meta template ID if available
+    if (!template && message_template_id) {
+      template = await db.whatsAppTemplate.findFirst({
+        where: {
+          metaTemplateId: message_template_id,
+        }
+      });
+    }
+
+    // Fallback: try to find by name (in case of sanitized vs original name mismatch)
+    if (!template) {
+      template = await db.whatsAppTemplate.findFirst({
+        where: {
+          OR: [
+            { name: message_template_name },
+            { 
+              name: {
+                // Try to match original name by converting sanitized name back
+                contains: message_template_name.replace(/_/g, ' '),
+                mode: 'insensitive'
+              }
+            }
+          ],
+          metaTemplateLanguage: message_template_language || 'en'
+        }
+      });
+    }
 
     if (!template) {
       console.error(`❌ Template not found: ${message_template_name} (${message_template_language})`);

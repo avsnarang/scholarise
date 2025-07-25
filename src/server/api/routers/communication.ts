@@ -325,12 +325,13 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
-        // Update template with Meta response
+        // Update template with Meta response and the actual validated name that was sent
         const updatedTemplate = await ctx.db.whatsAppTemplate.update({
           where: { id: input.templateId },
           data: {
             metaTemplateId: response.data.id,
             metaTemplateStatus: response.data.status,
+            metaTemplateName: validatedName, // Store the actual name sent to Meta
             updatedAt: new Date()
           }
         });
