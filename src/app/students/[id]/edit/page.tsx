@@ -16,10 +16,27 @@ export default function EditStudentPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Validate student ID - should be a valid UUID or similar ID format
+  if (!studentId || typeof studentId !== 'string' || studentId.length < 10 || 
+      ['tc', 'transfer', 'create', 'list', 'assign-roll-number'].includes(studentId.toLowerCase())) {
+    return (
+      <div className="px-4 lg:px-6">
+        <div className="py-8 text-center">
+          <p className="text-muted-foreground mb-4">
+            Error: Invalid student ID format
+          </p>
+          <Button asChild>
+            <Link href="/students">Back to Students</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Fetch student data
   const { data: student, isLoading, error } = api.student.getById.useQuery(
-    { id: studentId },
-    { enabled: !!studentId, retry: 1 }
+    { id: studentId }, // Don't filter by branch to allow viewing students from any branch
+    { enabled: !!studentId && studentId.length > 0, retry: 1 }
   );
 
   // Update document title when student data is loaded

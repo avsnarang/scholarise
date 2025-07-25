@@ -154,7 +154,7 @@ export const studentRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input = {} }) => {
-      const limit = input.fetchAllIds ? undefined : (input.limit ?? 10);
+      const limit = input.fetchAllIds ? undefined : input.limit;
       const { cursor, filters, sortBy, sortOrder, fetchAllIds } = input;
 
       const baseWhere: Prisma.StudentWhereInput = {
@@ -324,36 +324,58 @@ export const studentRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      if (!input.id) {
+      if (!input.id || input.id.trim().length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Student ID is required",
+          message: "Valid Student ID is required",
         });
       }
 
-      const student = await ctx.db.student.findFirst({
-        where: {
-          id: input.id,
-          ...(input.branchId ? { branchId: input.branchId } : {}),
-        },
-        include: {
-          section: {
-            include: {
-              class: true,
+      try {
+        const student = await ctx.db.student.findFirst({
+          where: {
+            id: input.id.trim(),
+            ...(input.branchId ? { branchId: input.branchId } : {}),
+          },
+          include: {
+            section: {
+              include: {
+                class: true,
+              },
+            },
+            parent: true,
+            branch: true,
+            academicRecords: {
+              include: {
+                session: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 1,
             },
           },
-          parent: true,
-        },
-      });
+        });
 
-      if (!student) {
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Student with ID "${input.id}" not found. The student may have been deleted or the ID may be incorrect.`,
+          });
+        }
+
+        return student;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        
+        console.error('Error fetching student by ID:', error);
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Student not found",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch student data. Please try again.",
         });
       }
-
-      return student;
     }),
 
   create: publicProcedure

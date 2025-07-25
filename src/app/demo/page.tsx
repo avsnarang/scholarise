@@ -106,7 +106,7 @@ const data = {
         },
         {
           title: "Transfer Certificates",
-          url: "/students/transfer",
+                          url: "/students/tc",
         },
       ],
     },

@@ -138,7 +138,7 @@ export default function StudentsPage() {
   const { data: studentsData, isLoading, refetch } = api.student.getAll.useQuery({
     branchId: getBranchFilterParam(),
     sessionId: currentSessionId || undefined,
-    limit: pageSize,
+    limit: pageSize || 20, // Ensure we have a default limit for pagination
     cursor: cursors[currentPage - 1],
     sortBy,
     sortOrder,
@@ -171,11 +171,8 @@ export default function StudentsPage() {
     sessionId: currentSessionId || undefined,
     sortBy,
     sortOrder,
-    search: debouncedSearchTerm || undefined,
-    filters: {
-      isActive: "true"
-    },
-    limit: 50000 // High limit to ensure we get all students for export
+    // Remove search and filters for export to get all students
+    // No limit for export to ensure we get all students
   }, {
     enabled: isExportModalOpen || needsExportData, // Fetch when export modal is open or quick export is triggered
   });
@@ -454,7 +451,7 @@ export default function StudentsPage() {
       if (studentsToExport.length === 0 && !isLoadingExportData) {
         toast({
           title: "No Students Found",
-          description: "No students match your current filters for export.",
+          description: "No students found in the database for export.",
           variant: "destructive"
         });
         return;
@@ -463,7 +460,7 @@ export default function StudentsPage() {
       exportStudentsToCSV(studentsToExport, DEFAULT_EXPORT_FIELDS);
       toast({
         title: "Export Complete",
-        description: `Successfully exported ${studentsToExport.length} student(s) to CSV.`,
+        description: `Successfully exported ${studentsToExport.length} student(s) to CSV (all students, ignoring current filters).`,
         variant: "success"
       });
       
@@ -511,7 +508,7 @@ export default function StudentsPage() {
       if (studentsToExport.length === 0 && !isLoadingExportData) {
         toast({
           title: "No Students Found",
-          description: "No students match your current filters for export.",
+          description: "No students found in the database for export.",
           variant: "destructive"
         });
         return;
@@ -520,7 +517,7 @@ export default function StudentsPage() {
       exportStudentsToExcel(studentsToExport, DEFAULT_EXPORT_FIELDS);
       toast({
         title: "Export Complete", 
-        description: `Successfully exported ${studentsToExport.length} student(s) to Excel.`,
+        description: `Successfully exported ${studentsToExport.length} student(s) to Excel (all students, ignoring current filters).`,
         variant: "success"
       });
       

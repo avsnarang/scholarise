@@ -382,7 +382,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
         {
           title: "Transfer Certificates",
-          href: "/students/transfer",
+          href: "/students/tc",
           permissions: [Permission.MANAGE_TRANSFER_CERTIFICATES],
         },
       ],

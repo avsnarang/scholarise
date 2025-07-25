@@ -566,6 +566,7 @@ export const communicationRouter = createTRPCRouter({
           const students = await ctx.db.student.findMany({
             where: {
               branchId: input.branchId,
+              isActive: true, // Only include active students
               ...(input.classIds && input.classIds.length > 0 && { 
                 section: { classId: { in: input.classIds } }
               }),
@@ -638,6 +639,7 @@ export const communicationRouter = createTRPCRouter({
           const teachers = await ctx.db.teacher.findMany({
             where: {
               branchId: input.branchId,
+              isActive: true, // Only include active teachers
               ...searchWhere
             }
           });
@@ -654,6 +656,7 @@ export const communicationRouter = createTRPCRouter({
           const employees = await ctx.db.employee.findMany({
             where: {
               branchId: input.branchId,
+              isActive: true, // Only include active employees
               ...searchWhere
             }
           });

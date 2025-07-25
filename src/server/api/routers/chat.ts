@@ -841,7 +841,10 @@ export const chatRouter = createTRPCRouter({
         const identifyParticipant = async (phoneNumber: string, branchId: string) => {
           // Try to find in students first (via parent phone numbers)
           const students = await ctx.db.student.findMany({
-            where: { branchId },
+            where: { 
+              branchId,
+              isActive: true // Only include active students
+            },
             include: {
               parent: true,
               section: { include: { class: true } }
@@ -936,7 +939,10 @@ export const chatRouter = createTRPCRouter({
 
           // Try to find in teachers
           const teachers = await ctx.db.teacher.findMany({
-            where: { branchId }
+            where: { 
+              branchId,
+              isActive: true // Only include active teachers
+            }
           });
 
           for (const teacher of teachers) {
@@ -961,7 +967,10 @@ export const chatRouter = createTRPCRouter({
 
           // Try to find in employees
           const employees = await ctx.db.employee.findMany({
-            where: { branchId },
+            where: { 
+              branchId,
+              isActive: true // Only include active employees
+            },
             include: {
               designationRef: true,
               departmentRef: true
