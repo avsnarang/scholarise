@@ -493,13 +493,8 @@ export class WhatsAppApiClient {
       try {
         console.log(`📤 [${progress}] Sending to ${recipient.phone} (${recipient.name})`);
         
+        // Only use the exact variables expected by the template - no extra name variables
         const variables = { ...defaultVariables, ...recipient.variables };
-        
-        // Only add name variables if we have any variables at all
-        const hasAnyVariables = Object.keys(variables).length > 0;
-        if (hasAnyVariables) {
-          variables.name = recipient.name;
-        }
 
         // Use rate limiter for each message
         const response = await withRateLimit(
@@ -508,7 +503,7 @@ export class WhatsAppApiClient {
             to: recipient.phone,
             templateName,
             templateLanguage,
-            templateVariables: hasAnyVariables ? variables : undefined
+            templateVariables: Object.keys(variables).length > 0 ? variables : undefined
           }),
           3 // max retries
         );

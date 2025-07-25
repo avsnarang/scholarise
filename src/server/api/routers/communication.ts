@@ -849,14 +849,12 @@ export const communicationRouter = createTRPCRouter({
                 // Use individual recipient parameters if available, otherwise use default parameters
                 const individualParams = recipientParameters[recipient.id] || parameters;
                 
-                // Only include variables if template has variables defined
+                // Only include the exact variables the template expects - no extra name parameters
                 let variables = {};
                 if (templateHasVariables) {
                   variables = { 
-                    ...individualParams,
-                    // Include name as a fallback for templates with variables
-                    name: recipient.name,
-                    recipient_name: recipient.name
+                    ...individualParams
+                    // No extra name parameters - only send what the template actually expects
                   };
                 }
                 
