@@ -288,7 +288,7 @@ export class WhatsAppApiClient {
       
       if (hasActualVariables) {
         // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
-        const sortedEntries = Object.entries(request.templateVariables)
+        const sortedEntries = Object.entries(request.templateVariables!)
           .sort(([a], [b]) => {
             // Extract numbers from variable names for proper sorting
             const numA = parseInt(a.replace(/\D/g, '')) || 0;
