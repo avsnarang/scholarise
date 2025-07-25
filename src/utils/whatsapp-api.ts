@@ -492,9 +492,13 @@ export class WhatsAppApiClient {
         
         // Handle specific Meta API errors
         if (data.error?.code === 100) {
-          errorMessage = 'Invalid template format or content';
+          errorMessage = `Invalid template format or content: ${data.error?.error_subcode ? `(${data.error.error_subcode}) ` : ''}${data.error?.error_user_msg || data.error?.message || 'Check template name, category, and component structure'}`;
         } else if (data.error?.code === 190) {
           errorMessage = 'Access token expired or invalid';
+        } else if (data.error?.code === 368) {
+          errorMessage = 'Template name already exists or violates naming rules';
+        } else if (data.error?.code === 132) {
+          errorMessage = 'Template content violates WhatsApp policies';
         }
         
         return {

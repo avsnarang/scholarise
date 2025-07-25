@@ -238,32 +238,87 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
+        // Validate template name for Meta (no spaces, special chars, must be lowercase)
+        const metaTemplateName = template.metaTemplateName || template.name;
+        const validatedName = metaTemplateName
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_+|_+$/g, '');
+        
+        if (!validatedName || validatedName.length < 1) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid template name. Template name must contain at least one letter or number.',
+          });
+        }
+
         // Convert our template format to Meta API format
         const components = [];
         
+        // Parse variables from template body
+        let variables = template.templateVariables || [];
+        
+        // Import template variable parser if variables not stored
+        if (!variables || variables.length === 0) {
+          const { parseTemplateVariables } = await import("@/utils/template-variables");
+          variables = parseTemplateVariables(template.templateBody);
+        }
+        
+        // Convert template body from {{variable_name}} format to {{1}}, {{2}} format for Meta
+        let metaTemplateBody = template.templateBody;
+        const variableMap: Record<string, number> = {};
+        
+        if (variables.length > 0) {
+          variables.forEach((variable, index) => {
+            const variablePattern = new RegExp(`\\{\\{${variable}\\}\\}`, 'g');
+            const placeholderNumber = index + 1;
+            metaTemplateBody = metaTemplateBody.replace(variablePattern, `{{${placeholderNumber}}}`);
+            variableMap[variable] = placeholderNumber;
+          });
+        }
+        
         // Add body component
-        components.push({
+        const bodyComponent: any = {
           type: "BODY",
-          text: template.templateBody,
-          ...(template.templateVariables.length > 0 && {
-            example: {
-              body_text: [template.templateVariables.map((_, index) => `Example ${index + 1}`)]
-            }
-          })
+          text: metaTemplateBody,
+        };
+        
+        // Add examples if there are variables
+        if (variables.length > 0) {
+          bodyComponent.example = {
+            body_text: [variables.map((variable, index) => {
+              // Use the variable key or a generic example
+              const variableInfo = variable || `Sample ${index + 1}`;
+              return typeof variableInfo === 'string' ? variableInfo : `Example ${index + 1}`;
+            })]
+          };
+        }
+        
+        components.push(bodyComponent);
+
+        console.log('Template submission details:', {
+          originalName: template.metaTemplateName || template.name,
+          validatedName,
+          originalBody: template.templateBody,
+          metaBody: metaTemplateBody,
+          variables: variables,
+          components: JSON.stringify(components, null, 2)
         });
 
         // Submit to Meta API
         const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
         const client = getDefaultWhatsAppClient();
         const response = await client.submitTemplateForApproval({
-          name: template.metaTemplateName,
+          name: validatedName,
           category: (template.category as 'AUTHENTICATION' | 'MARKETING' | 'UTILITY') || 'UTILITY',
-          language: template.metaTemplateLanguage,
+          language: template.metaTemplateLanguage || 'en',
           components: components,
           allowCategoryChange: true
         });
 
         if (!response.result || !response.data) {
+          console.error('Meta API submission failed:', response);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: response.error || 'Failed to submit template to Meta',
