@@ -376,15 +376,18 @@ export function WebhookDebugPanel() {
                     onChange={(e) => setSimulationData(prev => ({ ...prev, templateName: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="testPhone">Phone (optional)</Label>
-                  <Input
-                    id="testPhone"
-                    placeholder="+1234567890"
-                    value={simulationData.reason}
-                    onChange={(e) => setSimulationData(prev => ({ ...prev, reason: e.target.value }))}
-                  />
-                </div>
+                                 <div className="space-y-2">
+                   <Label htmlFor="testPhone">Phone Number</Label>
+                   <Input
+                     id="testPhone"
+                     placeholder="Enter your WhatsApp number (e.g., +919876543210)"
+                     value={simulationData.reason}
+                     onChange={(e) => setSimulationData(prev => ({ ...prev, reason: e.target.value }))}
+                   />
+                   <p className="text-xs text-muted-foreground">
+                     Try your own WhatsApp number first to test delivery
+                   </p>
+                 </div>
                                  <div className="space-y-2">
                    <Button 
                      onClick={async () => {
@@ -404,7 +407,7 @@ export function WebhookDebugPanel() {
                            headers: { 'Content-Type': 'application/json' },
                            body: JSON.stringify({
                              templateId: simulationData.templateName,
-                             testPhone: simulationData.reason || undefined
+                             testPhone: simulationData.reason || '+919816900056'
                            })
                          });
                          const data = await response.json();
@@ -452,7 +455,7 @@ export function WebhookDebugPanel() {
                         
                         try {
                           setLoading(true);
-                          const response = await fetch('/api/debug/verify-template', {
+                          const response = await fetch('/api/debug/compare-template-structure', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -462,14 +465,28 @@ export function WebhookDebugPanel() {
                           const data = await response.json();
                           setTestResult(data);
                           
-                          toast({
-                            title: "Template Verification Complete",
-                            description: data.success ? "Check results below" : data.error || "Verification failed"
-                          });
+                          if (data.success && data.comparison?.analysis?.issues?.length > 0) {
+                            toast({
+                              title: "Variable Mismatch Found!",
+                              description: data.comparison.analysis.issues[0],
+                              variant: "destructive"
+                            });
+                          } else if (data.success) {
+                            toast({
+                              title: "Template Structure Compared",
+                              description: "Check results below for details"
+                            });
+                          } else {
+                            toast({
+                              title: "Comparison Failed",
+                              description: data.error || "Unknown error",
+                              variant: "destructive"
+                            });
+                          }
                         } catch (error) {
                           toast({
                             title: "Error",
-                            description: "Failed to verify template",
+                            description: "Failed to compare template",
                             variant: "destructive"
                           });
                         } finally {
@@ -481,7 +498,7 @@ export function WebhookDebugPanel() {
                       className="w-full flex items-center gap-2"
                     >
                       <CheckCircle className="h-4 w-4" />
-                      Verify Template Structure
+                      Compare DB vs Meta Structure
                     </Button>
                     
                     <Button 

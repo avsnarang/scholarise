@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     console.log('🧪 Debug Test - Will send templateVariables:', Object.keys(templateVariables).length > 0 ? templateVariables : undefined);
 
     const response = await whatsappClient.sendTemplateMessage({
-      to: '+919816900056', // Use provided phone or dummy
+      to: testPhone || '+919816900056', // Use provided phone or default
       templateName: template.metaTemplateName,
       templateLanguage: template.metaTemplateLanguage || 'en',
       templateVariables: Object.keys(templateVariables).length > 0 ? templateVariables : undefined
