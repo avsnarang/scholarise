@@ -138,7 +138,7 @@ export function getPhoneConfigForContext(context: {
   
   // Branch-specific overrides (for future implementation)
   if (context.branchId && baseConfig.branchSpecificRules?.[context.branchId]) {
-    baseConfig.defaultCountryCode = baseConfig.branchSpecificRules[context.branchId];
+    baseConfig.defaultCountryCode = baseConfig.branchSpecificRules[context.branchId] || baseConfig.defaultCountryCode;
   }
   
   return baseConfig;

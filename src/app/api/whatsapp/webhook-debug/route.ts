@@ -52,7 +52,7 @@ async function checkWebhookStatus() {
       accessTokenLength: env.META_WHATSAPP_ACCESS_TOKEN?.length || 0,
       phoneNumberIdFormat: env.META_WHATSAPP_PHONE_NUMBER_ID?.match(/^\d+$/) ? 'valid' : 'invalid'
     },
-    recommendations: []
+    recommendations: [] as string[]
   };
   
   // Generate recommendations
@@ -283,8 +283,8 @@ async function checkMessageStatuses() {
         sentConfirmations: chatStats._count.sentAt,
         deliveryConfirmations: chatStats._count.deliveredAt,
         readConfirmations: chatStats._count.readAt,
-        deliveryRate: chatStats._count.id > 0 ? (chatStats._count.deliveredAt / chatStats._count.id * 100).toFixed(1) : '0',
-        readRate: chatStats._count.id > 0 ? (chatStats._count.readAt / chatStats._count.id * 100).toFixed(1) : '0',
+        deliveryRate: chatStats._count.id > 0 ? (chatStats._count.deliveredAt / chatStats._count.id * 100) : 0,
+        readRate: chatStats._count.id > 0 ? (chatStats._count.readAt / chatStats._count.id * 100) : 0,
         statusDistribution: chatStatusDistribution.reduce((acc, item) => {
           acc[item.status] = item._count;
           return acc;
@@ -295,8 +295,8 @@ async function checkMessageStatuses() {
         sentConfirmations: recipientStats._count.sentAt,
         deliveryConfirmations: recipientStats._count.deliveredAt,
         readConfirmations: recipientStats._count.readAt,
-        deliveryRate: recipientStats._count.id > 0 ? (recipientStats._count.deliveredAt / recipientStats._count.id * 100).toFixed(1) : '0',
-        readRate: recipientStats._count.id > 0 ? (recipientStats._count.readAt / recipientStats._count.id * 100).toFixed(1) : '0',
+        deliveryRate: recipientStats._count.id > 0 ? (recipientStats._count.deliveredAt / recipientStats._count.id * 100) : 0,
+        readRate: recipientStats._count.id > 0 ? (recipientStats._count.readAt / recipientStats._count.id * 100) : 0,
         statusDistribution: recipientStatusDistribution.reduce((acc, item) => {
           acc[item.status] = item._count;
           return acc;
