@@ -572,6 +572,63 @@ export class WhatsAppApiClient {
   }
 
   /**
+   * Delete template from Meta API
+   */
+  async deleteTemplate(templateId: string): Promise<WhatsAppApiResponse<{success: boolean}>> {
+    try {
+      console.log(`🗑️ Deleting template ${templateId} from Meta...`);
+      
+      const response = await fetch(
+        `${this.baseUrl}/${templateId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Failed to delete template from Meta:', data);
+        
+        // Handle specific errors
+        if (response.status === 404) {
+          // Template doesn't exist in Meta - this is okay
+          console.log('⚠️ Template not found in Meta (may have been deleted already)');
+          return {
+            result: true,
+            data: { success: true },
+            info: 'Template not found in Meta (already deleted)'
+          };
+        }
+        
+        return {
+          result: false,
+          error: data.error?.message || 'Failed to delete template from Meta',
+          info: 'Template deletion failed'
+        };
+      }
+
+      console.log('✅ Template deleted from Meta successfully');
+      
+      return {
+        result: true,
+        data: { success: true },
+        info: 'Template deleted from Meta successfully'
+      };
+    } catch (error: any) {
+      console.error('Failed to delete template from Meta:', error);
+      return {
+        result: false,
+        error: error.message || 'Unknown error occurred',
+        info: 'Failed to delete template from Meta'
+      };
+    }
+  }
+
+  /**
    * Convert response to backward-compatible format
    */
   private convertToCompatibleResponse(response: WhatsAppApiResponse<MetaSendMessageResponse>): WhatsAppApiResponse<SendMessageResponse> {

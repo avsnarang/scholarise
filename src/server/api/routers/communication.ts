@@ -1496,7 +1496,8 @@ export const communicationRouter = createTRPCRouter({
 
 
 
-  // Delete template
+  // Delete template from both local database and Meta
+  // This ensures consistency between local templates and Meta's template system
   deleteTemplate: protectedProcedure
     .input(z.object({
       templateId: z.string(),
@@ -1527,27 +1528,71 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
-        // Delete the template
+        // Also delete from Meta if template exists there
+        let metaDeletionResult = null;
+        if (existingTemplate.metaTemplateId) {
+          try {
+            console.log(`🗑️ Attempting to delete template ${existingTemplate.metaTemplateId} from Meta...`);
+            const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
+            const client = getDefaultWhatsAppClient();
+            metaDeletionResult = await client.deleteTemplate(existingTemplate.metaTemplateId);
+            
+            if (metaDeletionResult.result) {
+              console.log('✅ Template successfully deleted from Meta');
+            } else {
+              console.warn('⚠️ Failed to delete template from Meta:', metaDeletionResult.error);
+              // Continue with local deletion even if Meta deletion fails
+            }
+          } catch (error) {
+            console.error('❌ Error deleting template from Meta:', error);
+            // Continue with local deletion even if Meta deletion fails
+          }
+        }
+
+        // Delete the template from local database
         await ctx.db.whatsAppTemplate.delete({
           where: { id: input.templateId },
         });
 
-        // Log the deletion
+        // Log the deletion with Meta result
+        const logDescription = existingTemplate.metaTemplateId 
+          ? `Template "${existingTemplate.name}" deleted from local database${metaDeletionResult?.result ? ' and Meta' : ' (Meta deletion failed)'}`
+          : `Template "${existingTemplate.name}" deleted from local database (not in Meta)`;
+
         await ctx.db.communicationLog.create({
           data: {
             action: "template_deleted",
-            description: `Template "${existingTemplate.name}" deleted`,
+            description: logDescription,
             metadata: JSON.parse(JSON.stringify({
               templateId: input.templateId,
               templateName: existingTemplate.name,
-              templateCategory: existingTemplate.category
+              templateCategory: existingTemplate.category,
+              metaTemplateId: existingTemplate.metaTemplateId,
+              metaDeletionResult: metaDeletionResult ? {
+                success: metaDeletionResult.result,
+                error: metaDeletionResult.error,
+                info: metaDeletionResult.info
+              } : null
             })),
             userId: ctx.user?.id || 'system',
           }
         });
 
+        // Return appropriate message based on deletion results
+        let message = 'Template deleted successfully from local database';
+        if (existingTemplate.metaTemplateId) {
+          if (metaDeletionResult?.result) {
+            message = 'Template deleted successfully from both local database and Meta';
+          } else {
+            message = 'Template deleted from local database, but failed to delete from Meta. You may need to delete it manually from Meta\'s interface.';
+          }
+        }
+
         return {
-          message: 'Template deleted successfully'
+          message,
+          localDeletion: true,
+          metaDeletion: metaDeletionResult?.result || false,
+          metaError: metaDeletionResult?.error || null
         };
 
       } catch (error) {

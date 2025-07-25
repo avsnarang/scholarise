@@ -358,11 +358,25 @@ export default function TemplatesPage() {
       
       return { previousTemplates };
     },
-    onSuccess: () => {
-      toast({
-        title: "Template Deleted",
-        description: "Template has been deleted successfully.",
-      });
+    onSuccess: (data) => {
+      // Show appropriate message based on deletion results
+      if (data.metaDeletion) {
+        toast({
+          title: "Template Deleted ✅",
+          description: "Template has been deleted from both local database and Meta.",
+        });
+      } else if (data.metaError) {
+        toast({
+          title: "Template Partially Deleted ⚠️",
+          description: "Template deleted locally, but failed to delete from Meta. You may need to delete it manually.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Template Deleted",
+          description: "Template has been deleted successfully.",
+        });
+      }
       // Silent refresh to get server state
       refetch();
       setDeleteDialogOpen(false);
