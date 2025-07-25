@@ -333,6 +333,14 @@ export class WhatsAppApiClient {
         template: templateObj
       };
 
+      // Build the final payload exactly like the working minimal test
+      const finalPayload = {
+        messaging_product: 'whatsapp',
+        to: payload.to,
+        type: 'template',
+        template: payload.template
+      };
+
       // 🔍 DEBUG: Log the final payload being sent to Meta
       console.log('🔍 Meta API Payload:', {
         templateName: request.templateName,
@@ -340,10 +348,7 @@ export class WhatsAppApiClient {
         componentsCount: payload.template.components?.length || 0,
         components: payload.template.components,
         templateObject: payload.template,
-        fullPayload: JSON.stringify({
-          messaging_product: 'whatsapp',
-          ...payload
-        }, null, 2)
+        finalPayload: JSON.stringify(finalPayload, null, 2)
       });
 
       const response = await fetch(`${this.baseUrl}/${this.phoneNumberId}/messages`, {
@@ -352,10 +357,7 @@ export class WhatsAppApiClient {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          ...payload
-        }),
+        body: JSON.stringify(finalPayload),
       });
 
       const data = await response.json();
