@@ -39,6 +39,8 @@ import {
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { TemplateVariableMapper } from "@/components/communication/template-variable-mapper";
+import { TemplateDataPreview } from "@/components/communication/template-data-preview";
 
 const sendMessageSchema = z.object({
   title: z.string().min(1, "Message title is required"),
@@ -86,6 +88,7 @@ export default function SendMessagePage() {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [classComboboxOpen, setClassComboboxOpen] = useState(false);
   const [sectionComboboxOpen, setSectionComboboxOpen] = useState(false);
+  const [templateDataMappings, setTemplateDataMappings] = useState<Record<string, { dataField: string; fallbackValue: string }>>({});
 
   const form = useForm<SendMessageFormData>({
     resolver: zodResolver(sendMessageSchema),
@@ -247,8 +250,12 @@ export default function SendMessagePage() {
         params[variable] = "";
       });
       form.setValue("templateParameters", params);
+      
+      // Reset data mappings when template changes
+      setTemplateDataMappings({});
     } else {
       form.setValue("templateParameters", {});
+      setTemplateDataMappings({});
     }
   }, [selectedTemplate, form]);
 
@@ -402,8 +409,30 @@ export default function SendMessagePage() {
     }
 
     try {
+      // Build template parameters from data mappings
+      let templateParameters = data.templateParameters || {};
+      
+      if (data.templateId && Object.keys(templateDataMappings).length > 0) {
+        // Use data mappings to build parameters for first recipient (for validation)
+        const { buildTemplateParameters } = await import("@/utils/template-data-mapper");
+        const dataMappings = Object.entries(templateDataMappings).map(([variableName, mapping]) => ({
+          variableName,
+          dataField: mapping.dataField,
+          fallbackValue: mapping.fallbackValue
+        }));
+        
+        const recipientParameters = buildTemplateParameters(finalRecipients, dataMappings);
+        
+        // Use first recipient's parameters for the mutation (individual parameters will be built per recipient in the backend)
+        if (finalRecipients.length > 0) {
+          templateParameters = recipientParameters[finalRecipients[0].id] || {};
+        }
+      }
+
       await sendMessageMutation.mutateAsync({
         ...data,
+        templateParameters,
+        templateDataMappings: Object.keys(templateDataMappings).length > 0 ? templateDataMappings : undefined,
         recipients: finalRecipients as any,
         branchId: currentBranchId!,
         contactType: contactType,
@@ -528,32 +557,32 @@ export default function SendMessagePage() {
                     <div className="space-y-4">
                       <Separator />
                       <div>
-                        <h4 className="mb-2 text-sm font-medium">Template Parameters</h4>
+                        <h4 className="mb-2 text-sm font-medium">Template Variables Mapping</h4>
                         <p className="mb-4 text-xs text-gray-500">
-                          Fill in the dynamic values for this template
+                          Map each template variable to recipient data fields. Data will be automatically populated based on each recipient.
                         </p>
-                                                 {selectedTemplate.templateVariables.map((variable: string) => (
-                           <FormField
-                             key={variable}
-                             control={form.control}
-                             name={`templateParameters.${variable}`}
-                             render={({ field }) => (
-                               <FormItem>
-                                 <FormLabel className="capitalize">
-                                   {variable.replace(/_/g, " ")}
-                                 </FormLabel>
-                                 <FormControl>
-                                   <Input
-                                     placeholder={`Enter ${variable}`}
-                                     {...field}
-                                     value={field.value || ""}
-                                   />
-                                 </FormControl>
-                                 <FormMessage />
-                               </FormItem>
-                             )}
-                           />
-                         ))}
+                        {selectedTemplate.templateVariables.map((variable: string, index: number) => (
+                          <TemplateVariableMapper
+                            key={variable}
+                            variableName={variable}
+                            variableIndex={index + 1}
+                            mapping={templateDataMappings[variable]}
+                            onMappingChange={(dataField, fallbackValue) => {
+                              setTemplateDataMappings(prev => ({
+                                ...prev,
+                                [variable]: { dataField, fallbackValue }
+                              }));
+                            }}
+                          />
+                        ))}
+                        
+                        {/* Preview Section */}
+                        {Object.keys(templateDataMappings).length > 0 && recipients && recipients.length > 0 && (
+                          <TemplateDataPreview 
+                            dataMappings={templateDataMappings}
+                            recipients={recipients}
+                          />
+                        )}
                       </div>
                     </div>
                   )}

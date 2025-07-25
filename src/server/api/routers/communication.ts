@@ -54,6 +54,10 @@ const sendMessageSchema = z.object({
   selectedTeachers: z.array(z.string()).optional(), // For individual teacher selection
   selectedEmployees: z.array(z.string()).optional(), // For individual employee selection
   templateParameters: z.record(z.string()).optional(),
+  templateDataMappings: z.record(z.object({
+    dataField: z.string(),
+    fallbackValue: z.string()
+  })).optional(),
   scheduledAt: z.date().optional(),
   branchId: z.string().min(1, "Branch ID is required"),
 });
@@ -810,19 +814,41 @@ export const communicationRouter = createTRPCRouter({
 
           // Send to multiple recipients using bulk method
           try {
+            // Build individual parameters for each recipient if data mappings are provided
+            let recipientParameters: Record<string, Record<string, string>> = {};
+            
+            if (input.templateDataMappings) {
+              console.log('📋 Using template data mappings:', input.templateDataMappings);
+              
+              const { buildTemplateParameters } = await import("@/utils/template-data-mapper");
+              const dataMappings = Object.entries(input.templateDataMappings).map(([variableName, mapping]: [string, any]) => ({
+                variableName,
+                dataField: mapping.dataField,
+                fallbackValue: mapping.fallbackValue
+              }));
+              
+              recipientParameters = buildTemplateParameters(recipientsWithValidPhones, dataMappings);
+              console.log('📋 Built recipient parameters:', recipientParameters);
+            }
+
             whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
-              recipientsWithValidPhones.map(recipient => ({
-                phone: recipient.phone,
-                name: recipient.name,
-                variables: { 
-                  ...parameters, 
+              recipientsWithValidPhones.map(recipient => {
+                // Use individual recipient parameters if available, otherwise use default parameters
+                const individualParams = recipientParameters[recipient.id] || parameters;
+                
+                return {
+                  phone: recipient.phone,
                   name: recipient.name,
-                  // Add recipient-specific variables
-                  recipient_name: recipient.name
-                }
-              })),
+                  variables: { 
+                    ...individualParams,
+                    // Always include name as a fallback
+                    name: recipient.name,
+                    recipient_name: recipient.name
+                  }
+                };
+              }),
               template.metaTemplateName,
-              parameters,
+              parameters, // This is used as base parameters
               template.metaTemplateLanguage || 'en'
             );
             
