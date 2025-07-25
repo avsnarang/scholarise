@@ -549,6 +549,7 @@ export const communicationRouter = createTRPCRouter({
         type: string;
         className?: string;
         section?: string;
+        additional?: any;
       }> = [];
 
       const searchWhere = input.searchTerm ? {
@@ -629,6 +630,32 @@ export const communicationRouter = createTRPCRouter({
                   phone: recipientPhone,
                   type: contactType.toLowerCase(),
                   className,
+                  // Add structured data for template variables
+                  additional: {
+                    student: {
+                      name: studentName,
+                      firstName: student.firstName,
+                      lastName: student.lastName,
+                      admissionNumber: student.admissionNumber,
+                      rollNumber: student.rollNumber,
+                      class: {
+                        name: student.section?.class?.name
+                      },
+                      section: {
+                        name: student.section?.name
+                      }
+                    },
+                    contactType: contactType,
+                    contactPersonName: contactType === "STUDENT" ? studentName :
+                                     contactType === "FATHER" ? (student.parent?.fatherName || 'Father') :
+                                     contactType === "MOTHER" ? (student.parent?.motherName || 'Mother') :
+                                     'Guardian',
+                    parent: {
+                      fatherName: student.parent?.fatherName,
+                      motherName: student.parent?.motherName,
+                      guardianName: student.parent?.guardianName
+                    }
+                  }
                 });
               }
             });
@@ -649,6 +676,13 @@ export const communicationRouter = createTRPCRouter({
             name: `${teacher.firstName} ${teacher.lastName}`,
             phone: teacher.phone || '',
             type: "teacher",
+            additional: {
+              contactPersonName: `${teacher.firstName} ${teacher.lastName}`,
+              firstName: teacher.firstName,
+              lastName: teacher.lastName,
+              employeeCode: teacher.employeeCode,
+              designation: teacher.designation
+            }
           })).filter(r => r.phone);
           break;
 
@@ -666,6 +700,12 @@ export const communicationRouter = createTRPCRouter({
             name: `${employee.firstName} ${employee.lastName}`,
             phone: employee.phone || '',
             type: "employee",
+            additional: {
+              contactPersonName: `${employee.firstName} ${employee.lastName}`,
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              designation: employee.designation
+            }
           })).filter(r => r.phone);
           break;
       }

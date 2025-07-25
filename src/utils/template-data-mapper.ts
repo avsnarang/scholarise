@@ -19,9 +19,10 @@ export const AVAILABLE_DATA_FIELDS: DataFieldOption[] = [
   { value: 'student_roll_number', label: 'Roll Number', description: 'Student roll number', category: 'student' },
   { value: 'student_class', label: 'Class Name', description: 'Student current class', category: 'academic' },
   { value: 'student_section', label: 'Section Name', description: 'Student current section', category: 'academic' },
+  { value: 'class_and_section', label: 'Class & Section', description: 'Combined class and section (e.g., "Class 5 - A")', category: 'academic' },
   
-  // Parent Data
-  { value: 'parent_name', label: 'Parent Name', description: 'Name of the contact parent', category: 'parent' },
+  // Contact Person Data
+  { value: 'contact_person_name', label: 'Contact Person Name', description: 'Name of the person the phone number is registered to', category: 'parent' },
   { value: 'father_name', label: 'Father Name', description: 'Student father name', category: 'parent' },
   { value: 'mother_name', label: 'Mother Name', description: 'Student mother name', category: 'parent' },
   { value: 'guardian_name', label: 'Guardian Name', description: 'Student guardian name', category: 'parent' },
@@ -49,7 +50,7 @@ export const AVAILABLE_DATA_FIELDS: DataFieldOption[] = [
 
 export const DATA_FIELD_CATEGORIES = {
   student: { label: 'Student Information', color: 'blue' },
-  parent: { label: 'Parent/Guardian Information', color: 'green' },
+  parent: { label: 'Contact Person & Parent Information', color: 'green' },
   financial: { label: 'Financial Information', color: 'red' },
   academic: { label: 'Academic Information', color: 'purple' },
   other: { label: 'Other Information', color: 'gray' }
@@ -62,27 +63,36 @@ export function extractRecipientData(recipient: any, dataField: string, fallback
   switch (dataField) {
     // Student data
     case 'student_name':
-      return recipient.additional?.student?.name || recipient.name || fallbackValue || '';
+      return recipient.additional?.student?.name || fallbackValue || '';
     case 'student_first_name':
-      return recipient.additional?.student?.firstName || recipient.additional?.student?.name?.split(' ')[0] || recipient.name?.split(' ')[0] || fallbackValue || '';
+      return recipient.additional?.student?.firstName || recipient.additional?.firstName || fallbackValue || '';
     case 'student_admission_number':
-      return recipient.additional?.student?.admissionNumber || recipient.additional?.admissionNumber || fallbackValue || '';
+      return recipient.additional?.student?.admissionNumber || fallbackValue || '';
     case 'student_roll_number':
-      return recipient.additional?.student?.rollNumber || recipient.additional?.rollNumber || fallbackValue || '';
+      return recipient.additional?.student?.rollNumber?.toString() || fallbackValue || '';
     case 'student_class':
-      return recipient.additional?.student?.class?.name || recipient.additional?.className || fallbackValue || '';
+      return recipient.additional?.student?.class?.name || recipient.className || fallbackValue || '';
     case 'student_section':
-      return recipient.additional?.student?.section?.name || recipient.additional?.sectionName || fallbackValue || '';
+      return recipient.additional?.student?.section?.name || fallbackValue || '';
+    case 'class_and_section':
+      const className = recipient.additional?.student?.class?.name || recipient.className || '';
+      const sectionName = recipient.additional?.student?.section?.name || '';
+      if (className && sectionName) {
+        return `${className} - ${sectionName}`;
+      } else if (className) {
+        return className;
+      }
+      return fallbackValue || '';
     
-    // Parent data
-    case 'parent_name':
-      return recipient.name || fallbackValue || '';
+    // Contact Person data (the actual person the phone number belongs to)
+    case 'contact_person_name':
+      return recipient.additional?.contactPersonName || recipient.name || fallbackValue || '';
     case 'father_name':
-      return recipient.additional?.student?.father?.name || recipient.additional?.fatherName || fallbackValue || '';
+      return recipient.additional?.parent?.fatherName || fallbackValue || '';
     case 'mother_name':
-      return recipient.additional?.student?.mother?.name || recipient.additional?.motherName || fallbackValue || '';
+      return recipient.additional?.parent?.motherName || fallbackValue || '';
     case 'guardian_name':
-      return recipient.additional?.student?.guardian?.name || recipient.additional?.guardianName || fallbackValue || '';
+      return recipient.additional?.parent?.guardianName || fallbackValue || '';
     
     // Financial data
     case 'total_fee_due':
