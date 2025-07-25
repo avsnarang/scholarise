@@ -381,18 +381,20 @@ export const communicationRouter = createTRPCRouter({
         console.log('Starting Meta WhatsApp template sync...');
         const { getDefaultWhatsAppClient } = await getWhatsAppUtils();
         const whatsappClient = getDefaultWhatsAppClient();
-        const whatsappTemplates = await whatsappClient.getTemplates();
+        const templatesResponse = await whatsappClient.getTemplates();
         
-        console.log('Meta WhatsApp API response:', { 
-          type: typeof whatsappTemplates, 
-          isArray: Array.isArray(whatsappTemplates),
-          length: Array.isArray(whatsappTemplates) ? whatsappTemplates.length : 'N/A',
-          sample: Array.isArray(whatsappTemplates) && whatsappTemplates.length > 0 ? whatsappTemplates[0] : whatsappTemplates
-        });
+        console.log('Meta WhatsApp API response:', templatesResponse);
         
-        // Ensure we have an array
+        // Check if the API call was successful
+        if (!templatesResponse.result) {
+          throw new Error(`Failed to fetch templates from Meta: ${templatesResponse.error || 'Unknown error'}`);
+        }
+        
+        // Extract the templates array from the response
+        const whatsappTemplates = templatesResponse.data || [];
+        
         if (!Array.isArray(whatsappTemplates)) {
-          throw new Error(`Expected array of templates from Meta WhatsApp API, got ${typeof whatsappTemplates}. Response: ${JSON.stringify(whatsappTemplates)}`);
+          throw new Error(`Expected array of templates in response data, got ${typeof whatsappTemplates}. Response: ${JSON.stringify(templatesResponse)}`);
         }
         
         if (whatsappTemplates.length === 0) {
@@ -418,16 +420,28 @@ export const communicationRouter = createTRPCRouter({
         
         for (const whatsappTemplate of usableTemplates) {
           try {
-            // Meta WhatsApp API uses friendly_name and variables
-            const templateBody = whatsappTemplate.friendly_name || '';
+            // Meta WhatsApp API uses 'name' and components structure
+            const templateName = whatsappTemplate.name || '';
             
-            // Extract variables from template structure
-            const variables = Object.keys(whatsappTemplate.variables || {});
-              
-                          console.log(`Template ${whatsappTemplate.friendly_name} variables:`, variables);
+            // Extract template body from components (look for BODY component)
+            const bodyComponent = whatsappTemplate.components?.find((c: any) => c.type === 'BODY');
+            const templateBody = bodyComponent?.text || '';
             
+            // Extract variables from template body (look for {{1}}, {{2}}, etc.)
+            const variableMatches = templateBody.match(/\{\{\d+\}\}/g) || [];
+            const variables = variableMatches.map((match: string, index: number) => `variable_${index + 1}`);
+            
+            console.log(`Template ${templateName} body:`, templateBody);
+            console.log(`Template ${templateName} variables:`, variables);
+            
+            // Look for existing template using the compound unique constraint
             const existingTemplate = await ctx.db.whatsAppTemplate.findUnique({
-              where: { twilioContentSid: whatsappTemplate.sid }
+              where: { 
+                metaTemplateName_metaTemplateLanguage: {
+                  metaTemplateName: templateName,
+                  metaTemplateLanguage: whatsappTemplate.language || 'en'
+                }
+              }
             });
             
             if (existingTemplate) {
@@ -435,11 +449,14 @@ export const communicationRouter = createTRPCRouter({
               const updated = await ctx.db.whatsAppTemplate.update({
                 where: { id: existingTemplate.id },
                 data: {
-                  name: whatsappTemplate.friendly_name,
+                  name: templateName,
                   templateBody,
                   templateVariables: variables,
-                  category: 'UTILITY',
+                  category: whatsappTemplate.category || 'UTILITY',
                   language: whatsappTemplate.language || 'en',
+                  metaTemplateLanguage: whatsappTemplate.language || 'en',
+                  metaTemplateStatus: whatsappTemplate.status || 'APPROVED',
+                  metaTemplateId: whatsappTemplate.id,
                   status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
                   updatedAt: new Date(),
                 }
@@ -449,24 +466,24 @@ export const communicationRouter = createTRPCRouter({
               // Create new template - assign to origin branch if provided
               const created = await ctx.db.whatsAppTemplate.create({
                 data: {
-                  name: whatsappTemplate.friendly_name,
-                  twilioContentSid: whatsappTemplate.sid,
-                  metaTemplateName: whatsappTemplate.friendly_name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+                  name: templateName,
+                  metaTemplateId: whatsappTemplate.id,
+                  metaTemplateName: templateName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
                   metaTemplateLanguage: whatsappTemplate.language || 'en',
-                  metaTemplateStatus: 'PENDING', // Will need to be created in Meta Business Manager
+                  metaTemplateStatus: whatsappTemplate.status || 'APPROVED',
                   templateBody,
                   templateVariables: variables,
-                  category: 'UTILITY',
+                  category: whatsappTemplate.category || 'UTILITY',
                   language: whatsappTemplate.language || 'en',
                   status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
-                  branchId: input.originBranchId || 'default-branch-id', // Use a default or require branch
+                  branchId: input.originBranchId, // Optional - templates are now global
                   createdBy: ctx.userId!,
                 }
               });
               syncedTemplates.push(created);
             }
           } catch (templateError) {
-            console.error(`Error syncing template ${whatsappTemplate.sid}:`, templateError);
+            console.error(`Error syncing template ${whatsappTemplate.id}:`, templateError);
             // Continue with other templates
           }
         }
