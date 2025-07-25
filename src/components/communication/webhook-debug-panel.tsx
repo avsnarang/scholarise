@@ -385,58 +385,150 @@ export function WebhookDebugPanel() {
                     onChange={(e) => setSimulationData(prev => ({ ...prev, reason: e.target.value }))}
                   />
                 </div>
-                <Button 
-                  onClick={async () => {
-                    if (!simulationData.templateName) {
-                      toast({
-                        title: "Error",
-                        description: "Template ID is required",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
+                                 <div className="space-y-2">
+                   <Button 
+                     onClick={async () => {
+                       if (!simulationData.templateName) {
+                         toast({
+                           title: "Error",
+                           description: "Template ID is required",
+                           variant: "destructive"
+                         });
+                         return;
+                       }
+                       
+                       try {
+                         setLoading(true);
+                         const response = await fetch('/api/debug/test-template-send', {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({
+                             templateId: simulationData.templateName,
+                             testPhone: simulationData.reason || undefined
+                           })
+                         });
+                         const data = await response.json();
+                         setTestResult(data);
+                         
+                         if (data.success) {
+                           toast({
+                             title: "Template Test Successful",
+                             description: "Template message sent successfully"
+                           });
+                         } else {
+                           toast({
+                             title: "Template Test Failed",
+                             description: data.result?.error || data.error || "Unknown error",
+                             variant: "destructive"
+                           });
+                         }
+                       } catch (error) {
+                         toast({
+                           title: "Error",
+                           description: "Failed to test template",
+                           variant: "destructive"
+                         });
+                       } finally {
+                         setLoading(false);
+                       }
+                     }}
+                     disabled={loading} 
+                     className="w-full flex items-center gap-2"
+                   >
+                     <TestTube className="h-4 w-4" />
+                     Test Template Send
+                   </Button>
+                   
+                                       <Button 
+                      onClick={async () => {
+                        if (!simulationData.templateName) {
+                          toast({
+                            title: "Error",
+                            description: "Template ID is required",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        try {
+                          setLoading(true);
+                          const response = await fetch('/api/debug/verify-template', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              templateId: simulationData.templateName
+                            })
+                          });
+                          const data = await response.json();
+                          setTestResult(data);
+                          
+                          toast({
+                            title: "Template Verification Complete",
+                            description: data.success ? "Check results below" : data.error || "Verification failed"
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to verify template",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading} 
+                      variant="outline"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Verify Template Structure
+                    </Button>
                     
-                    try {
-                      setLoading(true);
-                      const response = await fetch('/api/debug/test-template-send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          templateId: simulationData.templateName,
-                          testPhone: simulationData.reason || undefined
-                        })
-                      });
-                      const data = await response.json();
-                      setTestResult(data);
-                      
-                      if (data.success) {
-                        toast({
-                          title: "Template Test Successful",
-                          description: "Template message sent successfully"
-                        });
-                      } else {
-                        toast({
-                          title: "Template Test Failed",
-                          description: data.result?.error || data.error || "Unknown error",
-                          variant: "destructive"
-                        });
-                      }
-                    } catch (error) {
-                      toast({
-                        title: "Error",
-                        description: "Failed to test template",
-                        variant: "destructive"
-                      });
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading} 
-                  className="w-full flex items-center gap-2"
-                >
-                  <TestTube className="h-4 w-4" />
-                  Test Template Send
-                </Button>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          const response = await fetch('/api/debug/minimal-template-test', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              templateName: 'welcome3',
+                              phone: '+919816900056'
+                            })
+                          });
+                          const data = await response.json();
+                          setTestResult(data);
+                          
+                          if (data.response?.success) {
+                            toast({
+                              title: "Minimal Test Successful",
+                              description: "Template sent with minimal payload"
+                            });
+                          } else {
+                            toast({
+                              title: "Minimal Test Failed",
+                              description: data.response?.data?.error?.message || "Unknown error",
+                              variant: "destructive"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to run minimal test",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading} 
+                      variant="secondary"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <TestTube className="h-4 w-4" />
+                      Minimal API Test
+                    </Button>
+                 </div>
               </CardContent>
             </Card>
 

@@ -286,6 +286,14 @@ export class WhatsAppApiClient {
         Object.keys(request.templateVariables).length > 0 &&
         Object.values(request.templateVariables).some(value => value && value.trim() !== '');
       
+      console.log('🔍 Variable check:', {
+        templateVariables: request.templateVariables,
+        hasTemplateVariables: !!request.templateVariables,
+        keyCount: request.templateVariables ? Object.keys(request.templateVariables).length : 0,
+        hasActualVariables,
+        willAddComponents: hasActualVariables
+      });
+      
       if (hasActualVariables) {
         // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
         const sortedEntries = Object.entries(request.templateVariables!)
