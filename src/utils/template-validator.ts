@@ -330,7 +330,7 @@ export function validateTemplateForSubmission(template: {
   let match;
   
   while ((match = variablePattern.exec(template.templateBody)) !== null) {
-    foundVariables.push(match[1]);
+    if (match[1]) foundVariables.push(match[1]);
   }
   
   // Check if declared variables match used variables

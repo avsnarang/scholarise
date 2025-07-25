@@ -294,6 +294,8 @@ export async function processBatchWithRateLimit<T, R>(
   
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
+    if (!batch) continue;
+    
     console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} items)`);
     
     for (const item of batch) {

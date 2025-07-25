@@ -172,7 +172,7 @@ async function testTemplates() {
     const client = getDefaultWhatsAppClient();
     const templatesResult = await client.getTemplates();
     
-    const result = {
+    const result: any = {
       success: templatesResult.result,
       templateCount: templatesResult.data?.length || 0,
       templates: templatesResult.data?.map(t => ({

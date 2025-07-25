@@ -415,7 +415,7 @@ export function WhatsAppIntegrationStatus({ className }: IntegrationStatusProps)
                       
                       {testResults[action.id] && (
                         <div className="space-y-2">
-                          {testResults[action.id].success ? (
+                          {testResults[action.id]!.success ? (
                             <Alert>
                               <CheckCircle className="h-4 w-4" />
                               <AlertDescription>
@@ -426,14 +426,14 @@ export function WhatsAppIntegrationStatus({ className }: IntegrationStatusProps)
                             <Alert variant="destructive">
                               <XCircle className="h-4 w-4" />
                               <AlertDescription>
-                                {testResults[action.id].error}
+                                {testResults[action.id]!.error}
                               </AlertDescription>
                             </Alert>
                           )}
-                          {testResults[action.id].data && (
+                          {testResults[action.id]!.data && (
                             <div className="bg-muted rounded-lg p-4">
                               <pre className="text-xs overflow-auto max-h-40">
-                                {JSON.stringify(testResults[action.id].data, null, 2)}
+                                {JSON.stringify(testResults[action.id]!.data, null, 2)}
                               </pre>
                             </div>
                           )}
