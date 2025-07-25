@@ -470,13 +470,19 @@ export class WhatsAppApiClient {
 
     for (const recipient of recipients) {
       try {
-        const variables = { ...defaultVariables, ...recipient.variables, name: recipient.name };
+        const variables = { ...defaultVariables, ...recipient.variables };
+        
+        // Only add name variables if we have any variables at all
+        const hasAnyVariables = Object.keys(variables).length > 0;
+        if (hasAnyVariables) {
+          variables.name = recipient.name;
+        }
 
         const response = await this.sendTemplateMessage({
           to: recipient.phone,
           templateName,
           templateLanguage,
-          templateVariables: variables
+          templateVariables: hasAnyVariables ? variables : undefined
         });
 
         if (response.result && response.data?.messages?.[0]) {
