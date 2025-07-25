@@ -531,7 +531,14 @@ export default function SendMessagePage() {
                         {templates?.map((template) => (
                           <SelectItem key={template.id} value={template.id}>
                             <div className="flex w-full items-center justify-between">
-                              <span>{template.name}</span>
+                              <div className="flex flex-col">
+                                <span>{template.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {template.templateVariables?.length > 0 
+                                    ? `${template.templateVariables.length} variable(s)` 
+                                    : 'No variables'}
+                                </span>
+                              </div>
                               <Badge
                                 className="ml-2"
                                 variant={

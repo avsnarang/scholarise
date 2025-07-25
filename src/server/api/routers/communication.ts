@@ -831,24 +831,43 @@ export const communicationRouter = createTRPCRouter({
               console.log('📋 Built recipient parameters:', recipientParameters);
             }
 
-            whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
+                      // Check if template has variables before sending parameters
+          const templateHasVariables = template.templateVariables && 
+            Array.isArray(template.templateVariables) && 
+            template.templateVariables.length > 0;
+
+          console.log('📋 Template variable analysis:', {
+            templateName: template.name,
+            metaTemplateName: template.metaTemplateName,
+            hasVariables: templateHasVariables,
+            variableCount: template.templateVariables?.length || 0,
+            variables: template.templateVariables
+          });
+
+          whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
               recipientsWithValidPhones.map(recipient => {
                 // Use individual recipient parameters if available, otherwise use default parameters
                 const individualParams = recipientParameters[recipient.id] || parameters;
                 
+                // Only include variables if template has variables defined
+                let variables = {};
+                if (templateHasVariables) {
+                  variables = { 
+                    ...individualParams,
+                    // Include name as a fallback for templates with variables
+                    name: recipient.name,
+                    recipient_name: recipient.name
+                  };
+                }
+                
                 return {
                   phone: recipient.phone,
                   name: recipient.name,
-                  variables: { 
-                    ...individualParams,
-                    // Always include name as a fallback
-                    name: recipient.name,
-                    recipient_name: recipient.name
-                  }
+                  variables
                 };
               }),
               template.metaTemplateName,
-              parameters, // This is used as base parameters
+              templateHasVariables ? parameters : {}, // Only pass base parameters if template has variables
               template.metaTemplateLanguage || 'en'
             );
             

@@ -37,6 +37,7 @@ interface RecentTemplate {
   metaRejectionReason?: string;
   metaApprovedAt?: string;
   updatedAt: string;
+  templateVariables?: string[];
 }
 
 export function WebhookDebugPanel() {
@@ -285,16 +286,17 @@ export function WebhookDebugPanel() {
                         {template.metaTemplateStatus || 'UNKNOWN'}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-600 grid grid-cols-2 gap-2">
-                      <div>Meta Name: {template.metaTemplateName}</div>
-                      <div>Meta ID: {template.metaTemplateId || 'N/A'}</div>
-                      <div>Updated: {new Date(template.updatedAt).toLocaleString()}</div>
-                      {template.metaRejectionReason && (
-                        <div className="col-span-2 text-red-600">
-                          Rejection: {template.metaRejectionReason}
+                                            <div className="text-sm text-gray-600 grid grid-cols-2 gap-2">
+                          <div>Meta Name: {template.metaTemplateName}</div>
+                          <div>Meta ID: {template.metaTemplateId || 'N/A'}</div>
+                          <div>Updated: {new Date(template.updatedAt).toLocaleString()}</div>
+                          <div>Variables: {Array.isArray(template.templateVariables) ? template.templateVariables.length : 0}</div>
+                          {template.metaRejectionReason && (
+                            <div className="col-span-2 text-red-600">
+                              Rejection: {template.metaRejectionReason}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
                   </div>
                 ))}
                 {templates.length === 0 && (

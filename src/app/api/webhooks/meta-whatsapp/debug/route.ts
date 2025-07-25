@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
             metaRejectionReason: true,
             metaApprovedAt: true,
             updatedAt: true,
+            templateVariables: true,
           }
         });
         return NextResponse.json({ templates: recentTemplates });
