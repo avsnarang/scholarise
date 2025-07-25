@@ -671,9 +671,29 @@ export const communicationRouter = createTRPCRouter({
     .input(sendMessageSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        // Validate recipients have phone numbers
-        const recipientsWithValidPhones = input.recipients.filter(r => r.phone && r.phone.trim() !== '');
-        
+        // Create message record first
+        const message = await ctx.db.communicationMessage.create({
+          data: {
+            title: input.title,
+            templateId: input.templateId || undefined,
+            customMessage: input.customMessage || undefined,
+            recipientType: input.recipientType,
+            status: "PENDING",
+            branchId: input.branchId,
+            createdBy: ctx.user?.id || 'system',
+            totalRecipients: input.recipients.length,
+            sentAt: undefined,
+            successfulSent: 0,
+            failed: 0,
+          }
+        });
+
+        // Filter recipients with valid phone numbers
+        const recipientsWithValidPhones = input.recipients.filter(recipient => {
+          const phone = recipient.phone?.replace(/\D/g, '') || '';
+          return phone && phone.length >= 10;
+        });
+
         if (recipientsWithValidPhones.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -681,51 +701,40 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
-        // Create communication message record
-        const message = await ctx.db.communicationMessage.create({
-          data: {
-            title: input.title,
-            templateId: input.templateId,
-            customMessage: input.customMessage,
-            recipientType: input.recipientType as any,
-            totalRecipients: input.recipients.length, // Use all recipients, not just valid phones
-            branchId: input.branchId,
-            createdBy: ctx.userId!,
-            scheduledAt: input.scheduledAt,
-            status: input.scheduledAt ? "SCHEDULED" : "PENDING",
-          }
+        // 🔍 DIAGNOSTIC: Log what we're trying to send
+        console.log('📤 SendMessage Debug Info:', {
+          messageId: message.id,
+          totalRecipients: input.recipients.length,
+          validPhoneRecipients: recipientsWithValidPhones.length,
+          templateId: input.templateId,
+          hasCustomMessage: !!input.customMessage,
+          recipientType: input.recipientType,
+                     userId: ctx.user?.id || 'system',
+          branchId: input.branchId
         });
-
-        // If scheduled for future, just create the message and recipients
-        if (input.scheduledAt && input.scheduledAt > new Date()) {
-          // Create recipient records
-          await ctx.db.messageRecipient.createMany({
-            data: recipientsWithValidPhones.map(recipient => ({
-              messageId: message.id,
-              recipientType: recipient.type,
-              recipientId: recipient.id,
-              recipientName: recipient.name,
-              recipientPhone: recipient.phone,
-              status: "PENDING"
-            }))
-          });
-
-          return {
-            success: true,
-            messageId: message.id,
-            scheduled: true,
-            scheduledAt: input.scheduledAt,
-            totalRecipients: recipientsWithValidPhones.length
-          };
-        }
 
         // Send immediately
         const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
-        const whatsappClient = getDefaultWhatsAppClient();
+        
+        // 🔍 DIAGNOSTIC: Test WhatsApp client initialization
+        let whatsappClient;
+        try {
+          whatsappClient = getDefaultWhatsAppClient();
+          console.log('✅ WhatsApp client initialized successfully');
+        } catch (clientError) {
+          console.error('❌ Failed to initialize WhatsApp client:', clientError);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `WhatsApp configuration error: ${clientError instanceof Error ? clientError.message : 'Unknown error'}`,
+          });
+        }
+
         let whatsappResponse;
 
         if (input.templateId) {
           // Send using template
+          console.log('📋 Attempting to send template message...');
+          
           const template = await ctx.db.whatsAppTemplate.findUnique({
             where: { id: input.templateId }
           });
@@ -737,40 +746,85 @@ export const communicationRouter = createTRPCRouter({
             });
           }
 
+          // 🔍 DIAGNOSTIC: Log template details
+          console.log('📋 Template Details:', {
+            id: template.id,
+            name: template.name,
+            metaTemplateName: template.metaTemplateName,
+            metaTemplateStatus: template.metaTemplateStatus,
+            metaTemplateLanguage: template.metaTemplateLanguage,
+            isActive: template.isActive,
+            status: template.status
+          });
+
           // Check if template has Meta template name
           if (!template.metaTemplateName) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Template does not have a valid Meta template name",
+              message: `Template "${template.name}" does not have a valid Meta template name. Please sync with Meta first.`,
+            });
+          }
+
+          // Check if template is approved
+          if (template.metaTemplateStatus !== 'APPROVED') {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Template "${template.name}" is not approved (status: ${template.metaTemplateStatus}). Only approved templates can be sent.`,
             });
           }
 
           // Use template parameters from input, or empty object
           const parameters = input.templateParameters || {};
+          console.log('📋 Template parameters:', parameters);
 
           // Send to multiple recipients using bulk method
-          whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
-            recipientsWithValidPhones.map(recipient => ({
-              phone: recipient.phone,
-              name: recipient.name,
-              variables: { ...parameters, name: recipient.name }
-            })),
-            template.metaTemplateName,
-            parameters,
-            template.metaTemplateLanguage || 'en'
-          );
+          try {
+            whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
+              recipientsWithValidPhones.map(recipient => ({
+                phone: recipient.phone,
+                name: recipient.name,
+                variables: { ...parameters, name: recipient.name }
+              })),
+              template.metaTemplateName,
+              parameters,
+              template.metaTemplateLanguage || 'en'
+            );
+            
+            console.log('✅ Bulk template message response:', {
+              result: whatsappResponse.result,
+              successful: whatsappResponse.data?.successful,
+              failed: whatsappResponse.data?.failed,
+              info: whatsappResponse.info
+            });
+          } catch (sendError) {
+            console.error('❌ Failed to send bulk template message:', sendError);
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Failed to send template message: ${sendError instanceof Error ? sendError.message : 'Unknown error'}`,
+            });
+          }
         } else if (input.customMessage) {
           // For custom messages, send individual text messages
+          console.log('💬 Attempting to send custom text messages...');
+          
           const results = [];
           let successful = 0;
           let failed = 0;
 
           for (const recipient of recipientsWithValidPhones) {
             try {
+              console.log(`📱 Sending to ${recipient.phone}...`);
+              
               const response = await whatsappClient.sendTextMessage(
                 recipient.phone,
                 input.customMessage
               );
+
+              console.log(`📱 Response for ${recipient.phone}:`, {
+                result: response.result,
+                error: response.error,
+                messageId: response.data?.messages?.[0]?.id
+              });
 
               if (response.result) {
                 results.push({ phone: recipient.phone, success: true, messageId: response.data?.messages?.[0]?.id || 'unknown' });
@@ -780,6 +834,7 @@ export const communicationRouter = createTRPCRouter({
                 failed++;
               }
             } catch (error) {
+              console.error(`❌ Error sending to ${recipient.phone}:`, error);
               results.push({ 
                 phone: recipient.phone, 
                 success: false, 
@@ -798,6 +853,12 @@ export const communicationRouter = createTRPCRouter({
             info: `Sent to ${successful} recipients, ${failed} failed`,
             provider: 'META'
           };
+          
+          console.log('✅ Custom message sending completed:', {
+            totalSent: successful,
+            totalFailed: failed,
+            overallSuccess: whatsappResponse.result
+          });
         } else {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -872,7 +933,7 @@ export const communicationRouter = createTRPCRouter({
               recipientCount: recipientsWithValidPhones.length,
               templateUsed: input.templateId ? true : false
             })),
-            userId: ctx.userId!,
+            userId: ctx.user?.id || 'system',
           }
         });
 
@@ -892,7 +953,7 @@ export const communicationRouter = createTRPCRouter({
             action: "message_send_failed",
             description: `Failed to send message "${input.title}": ${error instanceof Error ? error.message : 'Unknown error'}`,
             metadata: { error: error instanceof Error ? error.message : 'Unknown error' },
-            userId: ctx.userId!,
+            userId: ctx.user?.id || 'system',
           }
         });
 

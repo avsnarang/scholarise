@@ -185,18 +185,34 @@ export class AssessmentCalculator {
 
     // Check if component scores total matches schema total marks
     if (schema.components.length > 0) {
-      const componentScoresTotal = schema.components.reduce((sum, component) => {
+      // Filter out components that haven't been properly configured (both rawMaxScore and reducedScore are 0 or undefined)
+      const validComponents = schema.components.filter(component => 
+        component.rawMaxScore > 0 || component.reducedScore > 0
+      );
+      
+      const componentScoresTotal = validComponents.reduce((sum, component) => {
         // Use reduced score if it's > 0, otherwise use raw max score
         const componentScore = component.reducedScore > 0 ? component.reducedScore : component.rawMaxScore;
         return sum + componentScore;
       }, 0);
 
-      if (componentScoresTotal !== schema.totalMarks) {
-        const difference = componentScoresTotal - schema.totalMarks;
-        if (difference > 0) {
-          errors.push(`Component scores total (${componentScoresTotal}) exceeds schema total marks (${schema.totalMarks}) by ${difference}. Please either increase total marks to ${componentScoresTotal} or decrease component scores by ${difference}.`);
+      // Use a small epsilon for floating-point comparison to handle precision issues
+      const epsilon = 0.001;
+      const difference = Math.abs(componentScoresTotal - schema.totalMarks);
+      
+      // Only validate if we have at least one valid component
+      if (validComponents.length > 0 && difference > epsilon) {
+        // Debug logging only when there's an issue
+        console.log('🔍 Assessment Schema Validation Issue:');
+        console.log('Schema total marks:', schema.totalMarks, typeof schema.totalMarks);
+        console.log('Valid components count:', validComponents.length, 'of', schema.components.length);
+        console.log('Component scores total:', componentScoresTotal, typeof componentScoresTotal);
+        console.log('Difference:', difference.toFixed(3));
+        
+        if (componentScoresTotal > schema.totalMarks) {
+          errors.push(`Component scores total (${componentScoresTotal}) exceeds schema total marks (${schema.totalMarks}) by ${(componentScoresTotal - schema.totalMarks).toFixed(2)}. Please either increase total marks to ${componentScoresTotal} or decrease component scores by ${(componentScoresTotal - schema.totalMarks).toFixed(2)}.`);
         } else {
-          errors.push(`Component scores total (${componentScoresTotal}) is less than schema total marks (${schema.totalMarks}) by ${Math.abs(difference)}. Please either decrease total marks to ${componentScoresTotal} or increase component scores by ${Math.abs(difference)}.`);
+          errors.push(`Component scores total (${componentScoresTotal}) is less than schema total marks (${schema.totalMarks}) by ${(schema.totalMarks - componentScoresTotal).toFixed(2)}. Please either decrease total marks to ${componentScoresTotal} or increase component scores by ${(schema.totalMarks - componentScoresTotal).toFixed(2)}.`);
         }
       }
     }

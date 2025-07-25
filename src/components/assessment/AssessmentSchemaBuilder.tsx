@@ -105,25 +105,40 @@ export function AssessmentSchemaBuilder({
     const errors: string[] = [];
 
     if (components && components.length > 0 && totalMarks > 0) {
+      // Filter out components that haven't been properly configured
+      const validComponents = components.filter((component: any) => 
+        component && (component.rawMaxScore > 0 || component.reducedScore > 0)
+      );
+      
       // Check component scores total vs schema total marks
-      const componentScoresTotal = components.reduce((sum: number, component: any) => {
-        if (!component) return sum;
+      const componentScoresTotal = validComponents.reduce((sum: number, component: any) => {
         // Use reduced score if it's > 0, otherwise use raw max score
         const componentScore = (component.reducedScore > 0) ? component.reducedScore : component.rawMaxScore;
         return sum + (componentScore || 0);
       }, 0);
 
-      if (componentScoresTotal !== totalMarks) {
-        const difference = componentScoresTotal - totalMarks;
-        if (difference > 0) {
-          errors.push(`⚠️ Component scores total (${componentScoresTotal}) exceeds schema total marks (${totalMarks}) by ${difference}. Please increase total marks or decrease component scores.`);
-        } else if (componentScoresTotal > 0) {
-          errors.push(`⚠️ Component scores total (${componentScoresTotal}) is less than schema total marks (${totalMarks}) by ${Math.abs(difference)}. Please decrease total marks or increase component scores.`);
+      // Use a small epsilon for floating-point comparison
+      const epsilon = 0.001;
+      const difference = Math.abs(componentScoresTotal - totalMarks);
+
+      // Only validate if we have at least one valid component
+      if (validComponents.length > 0 && difference > epsilon) {
+        // Debug logging only when there's an issue
+        console.log('🔍 Frontend Validation Issue:');
+        console.log('Total marks from form:', totalMarks, typeof totalMarks);
+        console.log('Valid components:', validComponents.length, 'of', components.length);
+        console.log('Calculated total:', componentScoresTotal, typeof componentScoresTotal);
+        console.log('Difference:', difference.toFixed(3));
+        
+        if (componentScoresTotal > totalMarks) {
+          errors.push(`⚠️ Component scores total (${componentScoresTotal}) exceeds schema total marks (${totalMarks}) by ${(componentScoresTotal - totalMarks).toFixed(2)}. Please increase total marks or decrease component scores.`);
+        } else {
+          errors.push(`⚠️ Component scores total (${componentScoresTotal}) is less than schema total marks (${totalMarks}) by ${(totalMarks - componentScoresTotal).toFixed(2)}. Please decrease total marks or increase component scores.`);
         }
       }
 
       // Check sub-criteria totals within each component
-      components.forEach((component, index) => {
+      validComponents.forEach((component, index) => {
         if (!component || !component.subCriteria || component.subCriteria.length === 0) return;
         
         const subCriteriaTotal = component.subCriteria.reduce((sum: number, subCriteria: any) => {
@@ -528,13 +543,23 @@ export function AssessmentSchemaBuilder({
                     {(() => {
                       if (!components || components.length === 0 || !totalMarks) return null;
                       
-                      const componentScoresTotal = components.reduce((sum: number, component: any) => {
-                        if (!component) return sum;
+                      // Filter out components that haven't been properly configured
+                      const validComponents = components.filter((component: any) => 
+                        component && (component.rawMaxScore > 0 || component.reducedScore > 0)
+                      );
+                      
+                      const componentScoresTotal = validComponents.reduce((sum: number, component: any) => {
                         const componentScore = (component.reducedScore > 0) ? component.reducedScore : component.rawMaxScore;
                         return sum + (componentScore || 0);
                       }, 0);
 
-                      if (componentScoresTotal === totalMarks) {
+                      // Use epsilon for floating-point comparison
+                      const epsilon = 0.001;
+                      const difference = Math.abs(componentScoresTotal - totalMarks);
+
+                      if (validComponents.length === 0) {
+                        return null; // No components configured yet
+                      } else if (difference <= epsilon) {
                         return (
                           <TooltipProvider>
                             <Tooltip>
@@ -549,7 +574,7 @@ export function AssessmentSchemaBuilder({
                             </Tooltip>
                           </TooltipProvider>
                         );
-                      } else if (componentScoresTotal > 0) {
+                      } else {
                         return (
                           <TooltipProvider>
                             <Tooltip>
@@ -565,7 +590,6 @@ export function AssessmentSchemaBuilder({
                           </TooltipProvider>
                         );
                       }
-                      return null;
                     })()}
                   </div>
                   {form.formState.errors.totalMarks && (
