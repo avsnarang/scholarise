@@ -363,6 +363,85 @@ export function WebhookDebugPanel() {
 
             <Card>
               <CardHeader>
+                <CardTitle>Test Template Send</CardTitle>
+                <CardDescription>Test sending a template message</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="testTemplateId">Template ID</Label>
+                  <Input
+                    id="testTemplateId"
+                    placeholder="Enter template ID to test"
+                    value={simulationData.templateName}
+                    onChange={(e) => setSimulationData(prev => ({ ...prev, templateName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="testPhone">Phone (optional)</Label>
+                  <Input
+                    id="testPhone"
+                    placeholder="+1234567890"
+                    value={simulationData.reason}
+                    onChange={(e) => setSimulationData(prev => ({ ...prev, reason: e.target.value }))}
+                  />
+                </div>
+                <Button 
+                  onClick={async () => {
+                    if (!simulationData.templateName) {
+                      toast({
+                        title: "Error",
+                        description: "Template ID is required",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    try {
+                      setLoading(true);
+                      const response = await fetch('/api/debug/test-template-send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          templateId: simulationData.templateName,
+                          testPhone: simulationData.reason || undefined
+                        })
+                      });
+                      const data = await response.json();
+                      setTestResult(data);
+                      
+                      if (data.success) {
+                        toast({
+                          title: "Template Test Successful",
+                          description: "Template message sent successfully"
+                        });
+                      } else {
+                        toast({
+                          title: "Template Test Failed",
+                          description: data.result?.error || data.error || "Unknown error",
+                          variant: "destructive"
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to test template",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading} 
+                  className="w-full flex items-center gap-2"
+                >
+                  <TestTube className="h-4 w-4" />
+                  Test Template Send
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Simulate Template Update</CardTitle>
                 <CardDescription>Simulate a specific template status change</CardDescription>
               </CardHeader>

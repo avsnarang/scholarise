@@ -271,6 +271,16 @@ export class WhatsAppApiClient {
 
       // Build components with proper parameter mapping
       const components = [];
+      
+      // 🔍 DEBUG: Log what variables we received
+      console.log('🔍 WhatsApp API Debug - Template variables received:', {
+        templateName: request.templateName,
+        hasTemplateVariables: !!request.templateVariables,
+        variableKeys: request.templateVariables ? Object.keys(request.templateVariables) : [],
+        variableCount: request.templateVariables ? Object.keys(request.templateVariables).length : 0,
+        variables: request.templateVariables
+      });
+      
       if (request.templateVariables && Object.keys(request.templateVariables).length > 0) {
         // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
         const sortedEntries = Object.entries(request.templateVariables)
@@ -302,6 +312,18 @@ export class WhatsAppApiClient {
           components: components.length > 0 ? components : undefined
         }
       };
+
+      // 🔍 DEBUG: Log the final payload being sent to Meta
+      console.log('🔍 Meta API Payload:', {
+        templateName: request.templateName,
+        hasComponents: !!payload.template.components,
+        componentsCount: payload.template.components?.length || 0,
+        components: payload.template.components,
+        fullPayload: JSON.stringify({
+          messaging_product: 'whatsapp',
+          ...payload
+        }, null, 2)
+      });
 
       const response = await fetch(`${this.baseUrl}/${this.phoneNumberId}/messages`, {
         method: 'POST',
