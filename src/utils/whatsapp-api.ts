@@ -281,7 +281,12 @@ export class WhatsAppApiClient {
         variables: request.templateVariables
       });
       
-      if (request.templateVariables && Object.keys(request.templateVariables).length > 0) {
+      // Only add components if we have actual variables to send
+      const hasActualVariables = request.templateVariables && 
+        Object.keys(request.templateVariables).length > 0 &&
+        Object.values(request.templateVariables).some(value => value && value.trim() !== '');
+      
+      if (hasActualVariables) {
         // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
         const sortedEntries = Object.entries(request.templateVariables)
           .sort(([a], [b]) => {
@@ -302,15 +307,22 @@ export class WhatsAppApiClient {
         }
       }
 
+      // Build the template object without components first
+      const templateObj: any = {
+        name: request.templateName,
+        language: {
+          code: request.templateLanguage || 'en'
+        }
+      };
+      
+      // Only add components if we actually have any
+      if (components.length > 0) {
+        templateObj.components = components;
+      }
+
       const payload: MetaSendTemplateMessageRequest = {
         to: validatedNumber.formatted,
-        template: {
-          name: request.templateName,
-          language: {
-            code: request.templateLanguage || 'en'
-          },
-          components: components.length > 0 ? components : undefined
-        }
+        template: templateObj
       };
 
       // 🔍 DEBUG: Log the final payload being sent to Meta
@@ -319,6 +331,7 @@ export class WhatsAppApiClient {
         hasComponents: !!payload.template.components,
         componentsCount: payload.template.components?.length || 0,
         components: payload.template.components,
+        templateObject: payload.template,
         fullPayload: JSON.stringify({
           messaging_product: 'whatsapp',
           ...payload
