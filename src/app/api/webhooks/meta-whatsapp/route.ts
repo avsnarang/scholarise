@@ -101,35 +101,71 @@ interface MetaWhatsAppWebhookPayload {
   entry: MetaWhatsAppWebhookEntry[];
 }
 
-// Webhook signature verification for Meta
+// Enhanced webhook signature verification for Meta WhatsApp Cloud API
+// Implements Meta's security requirements: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
 function validateMetaWebhookSignature(body: string, signature: string): boolean {
   if (!env.META_WHATSAPP_APP_SECRET) {
     console.warn('🔓 Meta app secret not configured, skipping signature validation');
+    // In production, this should be a hard failure for security
+    if (env.NODE_ENV === 'production') {
+      console.error('🚨 CRITICAL: Meta app secret missing in production environment');
+      return false;
+    }
     return true; // Allow in development
+  }
+  
+  if (!signature) {
+    console.error('❌ No signature provided in webhook request');
+    return false;
   }
   
   try {
     console.log('🔐 Validating Meta webhook signature...');
     
+    // Extract the signature hash from the header (format: "sha256=hash")
+    const signatureParts = signature.split('=');
+    if (signatureParts.length !== 2 || signatureParts[0] !== 'sha256' || !signatureParts[1]) {
+      console.error('❌ Invalid signature format. Expected "sha256=hash", got:', signature.substring(0, 20) + '...');
+      return false;
+    }
+    
+    const providedSignature = signatureParts[1];
+    
+    // Generate expected signature using Meta's algorithm
     const expectedSignature = crypto
       .createHmac('sha256', env.META_WHATSAPP_APP_SECRET)
       .update(body, 'utf8')
       .digest('hex');
-      
-    const providedSignature = signature.replace('sha256=', '');
     
     console.log('📋 Signature validation details:', {
       providedSignatureLength: providedSignature.length,
       expectedSignatureLength: expectedSignature.length,
-      signaturePrefix: signature.substring(0, 10) + '...',
+      signaturePrefix: signature.substring(0, 15) + '...',
+      bodySizeBytes: body.length
     });
+    
+    // Use timing-safe comparison to prevent timing attacks
+    if (expectedSignature.length !== providedSignature.length) {
+      console.error('❌ Signature length mismatch');
+      return false;
+    }
     
     const isValid = crypto.timingSafeEqual(
       Buffer.from(expectedSignature, 'hex'),
       Buffer.from(providedSignature, 'hex')
     );
     
-    console.log(isValid ? '✅ Signature valid' : '❌ Signature invalid');
+    if (isValid) {
+      console.log('✅ Meta webhook signature validated successfully');
+    } else {
+      console.error('❌ Meta webhook signature validation failed');
+      // Only log signature details in development for security
+      if (env.NODE_ENV === 'development') {
+        console.debug('Expected signature:', expectedSignature);
+        console.debug('Provided signature:', providedSignature);
+      }
+    }
+    
     return isValid;
   } catch (error) {
     console.error('❌ Meta webhook signature validation error:', error);

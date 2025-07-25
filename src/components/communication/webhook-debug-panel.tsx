@@ -571,6 +571,55 @@ export function WebhookDebugPanel() {
                       <Settings className="h-4 w-4" />
                       Check Account Status
                     </Button>
+                    
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          const response = await fetch('/api/debug/delivery-limits');
+                          const data = await response.json();
+                          setTestResult(data);
+                          
+                          if (data.analysis?.isSandboxMode) {
+                            toast({
+                              title: "Sandbox Mode Detected",
+                              description: "Can only send to verified test numbers",
+                              variant: "destructive"
+                            });
+                          } else if (data.analysis?.isLiveMode) {
+                            toast({
+                              title: "Live Mode Active",
+                              description: "Can send to all WhatsApp numbers"
+                            });
+                          } else if (data.analysis?.possibleIssues?.length > 0) {
+                            toast({
+                              title: "Delivery Issues Found",
+                              description: "Check results for details",
+                              variant: "destructive"
+                            });
+                          } else {
+                            toast({
+                              title: "Delivery Limits Checked",
+                              description: "Review results below"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to check delivery limits",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading} 
+                      variant="outline"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      Check Delivery Limits
+                    </Button>
                  </div>
               </CardContent>
             </Card>

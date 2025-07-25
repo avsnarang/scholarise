@@ -466,7 +466,7 @@ export class WhatsAppApiClient {
   }
 
   /**
-   * Send messages to multiple recipients using template
+   * Send messages to multiple recipients using template with proper rate limiting
    */
   async sendBulkTemplateMessage(
     recipients: Array<{ phone: string; name: string; variables?: Record<string, string> }>,
@@ -474,12 +474,25 @@ export class WhatsAppApiClient {
     defaultVariables: Record<string, string> = {},
     templateLanguage: string = 'en'
   ): Promise<WhatsAppApiResponse<BulkMessageResponse>> {
+    // Import rate limiter dynamically to avoid circular dependencies
+    const { withRateLimit } = await import('./rate-limiter');
+    
     const results: Array<{ phone: string; success: boolean; messageId?: string; error?: string }> = [];
     let successful = 0;
     let failed = 0;
 
-    for (const recipient of recipients) {
+    console.log(`📊 Starting bulk message send to ${recipients.length} recipients`);
+    console.log(`📋 Template: ${templateName}, Language: ${templateLanguage}`);
+    
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i];
+      if (!recipient) continue; // Safety check
+      
+      const progress = `${i + 1}/${recipients.length}`;
+      
       try {
+        console.log(`📤 [${progress}] Sending to ${recipient.phone} (${recipient.name})`);
+        
         const variables = { ...defaultVariables, ...recipient.variables };
         
         // Only add name variables if we have any variables at all
@@ -488,12 +501,17 @@ export class WhatsAppApiClient {
           variables.name = recipient.name;
         }
 
-        const response = await this.sendTemplateMessage({
-          to: recipient.phone,
-          templateName,
-          templateLanguage,
-          templateVariables: hasAnyVariables ? variables : undefined
-        });
+        // Use rate limiter for each message
+        const response = await withRateLimit(
+          this.phoneNumberId,
+          () => this.sendTemplateMessage({
+            to: recipient.phone,
+            templateName,
+            templateLanguage,
+            templateVariables: hasAnyVariables ? variables : undefined
+          }),
+          3 // max retries
+        );
 
         if (response.result && response.data?.messages?.[0]) {
           results.push({
@@ -502,6 +520,7 @@ export class WhatsAppApiClient {
             messageId: response.data.messages[0].id
           });
           successful++;
+          console.log(`✅ [${progress}] Sent successfully to ${recipient.phone}`);
         } else {
           results.push({
             phone: recipient.phone,
@@ -509,6 +528,7 @@ export class WhatsAppApiClient {
             error: response.error
           });
           failed++;
+          console.error(`❌ [${progress}] Failed to send to ${recipient.phone}: ${response.error}`);
         }
       } catch (error: any) {
         results.push({
@@ -517,11 +537,16 @@ export class WhatsAppApiClient {
           error: error.message
         });
         failed++;
+        console.error(`❌ [${progress}] Exception sending to ${recipient.phone}:`, error.message);
       }
-
-      // Add small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Progress update every 10 messages
+      if ((i + 1) % 10 === 0) {
+        console.log(`📊 Progress: ${i + 1}/${recipients.length} processed (${successful} sent, ${failed} failed)`);
+      }
     }
+
+    console.log(`🏁 Bulk send complete: ${successful} successful, ${failed} failed`);
 
     return {
       result: successful > 0,
