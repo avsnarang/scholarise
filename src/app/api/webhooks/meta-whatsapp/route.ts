@@ -336,8 +336,17 @@ export async function GET(req: NextRequest) {
 }
 
 async function processTemplateStatusUpdate(value: any, businessAccountId: string) {
+  const updateId = `update_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  
   try {
-    console.log(`📄 Processing template status update:`, value);
+    console.log(`📄 Processing template status update [${updateId}]:`, {
+      event: value.event,
+      templateName: value.message_template_name,
+      templateId: value.message_template_id,
+      language: value.message_template_language,
+      reason: value.reason,
+      businessAccountId
+    });
     
     const {
       event,
@@ -348,9 +357,15 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
     } = value;
 
     if (!message_template_name) {
-      console.error('❌ Missing template name in status update');
+      console.error(`❌ Missing template name in status update [${updateId}]`);
       return;
     }
+
+    // Enhanced template lookup with detailed logging
+    console.log(`🔍 Looking up template [${updateId}]:`, {
+      primarySearch: { metaTemplateName: message_template_name, metaTemplateLanguage: message_template_language || 'en' },
+      hasTemplateId: !!message_template_id
+    });
 
     // Find the template in our database using multiple strategies
     let template = await db.whatsAppTemplate.findFirst({
@@ -360,36 +375,82 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       }
     });
 
-    // Fallback: try to find by Meta template ID if available
-    if (!template && message_template_id) {
-      template = await db.whatsAppTemplate.findFirst({
-        where: {
-          metaTemplateId: message_template_id,
-        }
+    if (template) {
+      console.log(`✅ Template found by metaTemplateName [${updateId}]:`, {
+        id: template.id,
+        name: template.name,
+        metaTemplateName: template.metaTemplateName,
+        currentStatus: template.metaTemplateStatus
       });
-    }
+    } else {
+      console.log(`❌ Template not found by metaTemplateName [${updateId}]`);
+      
+      // Fallback: try to find by Meta template ID if available
+      if (message_template_id) {
+        console.log(`🔍 Fallback: searching by metaTemplateId [${updateId}]:`, message_template_id);
+        template = await db.whatsAppTemplate.findFirst({
+          where: {
+            metaTemplateId: message_template_id,
+          }
+        });
+        
+        if (template) {
+          console.log(`✅ Template found by metaTemplateId [${updateId}]:`, {
+            id: template.id,
+            name: template.name,
+            metaTemplateId: template.metaTemplateId
+          });
+        }
+      }
 
-    // Fallback: try to find by name (in case of sanitized vs original name mismatch)
-    if (!template) {
-      template = await db.whatsAppTemplate.findFirst({
-        where: {
-          OR: [
-            { name: message_template_name },
-            { 
-              name: {
-                // Try to match original name by converting sanitized name back
-                contains: message_template_name.replace(/_/g, ' '),
-                mode: 'insensitive'
+      // Fallback: try to find by name (in case of sanitized vs original name mismatch)
+      if (!template) {
+        console.log(`🔍 Fallback: searching by name variations [${updateId}]`);
+        template = await db.whatsAppTemplate.findFirst({
+          where: {
+            OR: [
+              { name: message_template_name },
+              { 
+                name: {
+                  // Try to match original name by converting sanitized name back
+                  contains: message_template_name.replace(/_/g, ' '),
+                  mode: 'insensitive'
+                }
               }
-            }
-          ],
-          metaTemplateLanguage: message_template_language || 'en'
+            ],
+            metaTemplateLanguage: message_template_language || 'en'
+          }
+        });
+        
+        if (template) {
+          console.log(`✅ Template found by name variation [${updateId}]:`, {
+            id: template.id,
+            name: template.name,
+            searchedName: message_template_name
+          });
         }
-      });
+      }
     }
 
     if (!template) {
-      console.error(`❌ Template not found: ${message_template_name} (${message_template_language})`);
+      console.error(`❌ Template not found after all search attempts [${updateId}]:`, {
+        searchedName: message_template_name,
+        searchedLanguage: message_template_language || 'en',
+        searchedId: message_template_id
+      });
+      
+      // Log available templates for debugging
+      const availableTemplates = await db.whatsAppTemplate.findMany({
+        select: {
+          id: true,
+          name: true,
+          metaTemplateName: true,
+          metaTemplateId: true,
+          metaTemplateLanguage: true,
+        },
+        take: 10
+      });
+      console.log(`📋 Available templates for reference [${updateId}]:`, availableTemplates);
       return;
     }
 
@@ -419,6 +480,22 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
 
     // Store previous status for comparison
     const previousStatus = template.metaTemplateStatus;
+    const previousData = {
+      status: template.metaTemplateStatus,
+      rejectionReason: template.metaRejectionReason,
+      approvedAt: template.metaApprovedAt,
+      templateId: template.metaTemplateId
+    };
+
+    console.log(`🔄 Updating template [${updateId}]:`, {
+      templateId: template.id,
+      templateName: template.name,
+      previousStatus,
+      newStatus: status,
+      statusChanged: previousStatus !== status,
+      rejectionReason,
+      approvedAt
+    });
 
     // Update template in database
     const updatedTemplate = await db.whatsAppTemplate.update({
@@ -432,21 +509,39 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       }
     });
 
-    // Log the activity
-    await db.communicationLog.create({
+    console.log(`✅ Template updated in database [${updateId}]:`, {
+      templateId: updatedTemplate.id,
+      newStatus: updatedTemplate.metaTemplateStatus,
+      newTemplateId: updatedTemplate.metaTemplateId,
+      updatedAt: updatedTemplate.updatedAt
+    });
+
+    // Log the activity with enhanced metadata
+    const logEntry = await db.communicationLog.create({
       data: {
         action: "template_status_update",
-        description: `Template "${message_template_name}" status changed to ${status}${rejectionReason ? ` - ${rejectionReason}` : ''}`,
+        description: `Template "${message_template_name}" status changed from ${previousStatus || 'UNKNOWN'} to ${status}${rejectionReason ? ` - ${rejectionReason}` : ''}`,
         metadata: JSON.parse(JSON.stringify({
+          updateId,
           templateId: template.id,
           metaTemplateId: message_template_id,
           templateName: message_template_name,
-          status: status,
+          previousStatus,
+          newStatus: status,
           reason: rejectionReason,
-          businessAccountId
+          businessAccountId,
+          webhookEvent: event,
+          language: message_template_language || 'en',
+          timestamp: new Date().toISOString()
         })),
         userId: template.createdBy,
       }
+    });
+
+    console.log(`📝 Activity logged [${updateId}]:`, {
+      logId: logEntry.id,
+      action: logEntry.action,
+      description: logEntry.description
     });
 
     // Emit real-time update event
@@ -461,34 +556,82 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       timestamp: new Date()
     });
 
-    console.log(`📄 Template status updated successfully: ${message_template_name} -> ${status}`);
+    console.log(`🚀 Real-time event emitted [${updateId}] for template: ${message_template_name} -> ${status}`);
+    console.log(`✅ Template status update completed successfully [${updateId}]`);
+    
   } catch (error) {
-    console.error('❌ Error processing template status update:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error(`❌ Error processing template status update [${updateId}]:`, {
+      error: errorMessage,
+      stack: errorStack,
+      templateName: value.message_template_name,
+      event: value.event,
+      templateId: value.message_template_id
+    });
+    
+    // Log the error to database for tracking
+    try {
+      await db.communicationLog.create({
+        data: {
+          action: "template_status_update_error",
+          description: `Failed to update template "${value.message_template_name || 'unknown'}": ${errorMessage}`,
+          metadata: JSON.parse(JSON.stringify({
+            updateId,
+            error: errorMessage,
+            templateName: value.message_template_name,
+            event: value.event,
+            templateId: value.message_template_id,
+            timestamp: new Date().toISOString()
+          })),
+          userId: 'system',
+        }
+      });
+    } catch (logError) {
+      console.error(`❌ Failed to log error [${updateId}]:`, logError);
+    }
   }
 }
 
 // Main webhook handler for Meta (POST request)
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  console.log('🔵 META WEBHOOK STARTED:', new Date().toISOString());
+  const webhookId = `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log(`🔵 META WEBHOOK STARTED [${webhookId}]:`, new Date().toISOString());
   
   try {
+    // Get request headers for debugging
+    const headersList = await headers();
+    const isDebugRequest = headersList.get('x-debug-request') === 'true';
+    const isSimulated = headersList.get('x-simulated-webhook') === 'true';
+    
     // Get the raw body for signature verification
     const body = await req.text();
-    console.log('📩 Meta webhook received body length:', body.length);
+    console.log(`📩 Meta webhook received [${webhookId}]:`, {
+      bodyLength: body.length,
+      isDebugRequest,
+      isSimulated,
+      contentType: headersList.get('content-type'),
+    });
     
-    // Verify webhook signature in production
-    if (env.NODE_ENV === 'production') {
-      const headersList = await headers();
+    // Log raw payload in debug mode or for simulated requests
+    if (isDebugRequest || isSimulated || env.NODE_ENV === 'development') {
+      console.log(`📋 RAW WEBHOOK PAYLOAD [${webhookId}]:`, body);
+    }
+    
+    // Skip signature verification for debug/simulated requests
+    if (!isDebugRequest && !isSimulated && env.NODE_ENV === 'production') {
       const metaSignature = headersList.get('x-hub-signature-256');
       
       if (!metaSignature || !validateMetaWebhookSignature(body, metaSignature)) {
-        console.error('❌ Invalid Meta webhook signature');
+        console.error(`❌ Invalid Meta webhook signature [${webhookId}]`);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      console.log('✅ Meta webhook signature verified');
+      console.log(`✅ Meta webhook signature verified [${webhookId}]`);
     } else {
-      console.log('🔓 Signature validation skipped in development');
+      console.log(`🔓 Signature validation skipped [${webhookId}] (debug=${isDebugRequest}, simulated=${isSimulated}, env=${env.NODE_ENV})`);
     }
     
     const payload: MetaWhatsAppWebhookPayload = JSON.parse(body);
