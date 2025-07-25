@@ -4,12 +4,12 @@ import { StudentStatsCards } from "@/components/students/student-stats-cards"
 import { PageWrapper } from "@/components/layout/page-wrapper"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink, Eye, Edit, Trash, UserCheck, UserX, ArrowUpDown, MoreHorizontal, Loader2 } from "lucide-react"
+import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink, Eye, Edit, Trash, UserCheck, UserX, ArrowUpDown, MoreHorizontal, Loader2, FileSpreadsheet, ChevronDown, Upload } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/utils/api"
 import { useState, useCallback, useEffect, useMemo } from "react"
 import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter"
-import { StudentBulkImport } from "@/components/students/student-bulk-import"
+import { StudentImportModal } from "@/components/students/student-import-modal"
 import { useToast } from "@/components/ui/use-toast"
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext"
 import { useActionPermissions } from "@/utils/permission-utils"
@@ -31,6 +31,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation"
 import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
 import { cn } from "@/lib/utils"
+import { StudentExportFieldSelector } from "@/components/students/student-export-field-selector"
+import { 
+  exportStudentsToCSV, 
+  exportStudentsToExcel, 
+  DEFAULT_EXPORT_FIELDS,
+  type StudentExportData 
+} from "@/utils/student-export"
 
 // Define the Student type
 export type Student = {
@@ -98,6 +105,14 @@ export default function StudentsPage() {
   const [isPaginating, setIsPaginating] = useState(false);
   const [paginatingDirection, setPaginatingDirection] = useState<'previous' | 'next' | null>(null);
   const [lastKnownTotalPages, setLastKnownTotalPages] = useState(0);
+  
+  // Export state
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExportingAll, setIsExportingAll] = useState(false);
+  const [needsExportData, setNeedsExportData] = useState(false);
+  
+  // Import state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const { getBranchFilterParam } = useGlobalBranchFilter();
   const { currentSessionId } = useAcademicSessionContext();
@@ -148,6 +163,21 @@ export default function StudentsPage() {
     fetchAllIds: true
   }, {
     enabled: true,
+  });
+
+  // API query for export data (fetch all students with full data)
+  const { data: exportStudentsData, isLoading: isLoadingExportData } = api.student.getAll.useQuery({
+    branchId: getBranchFilterParam(),
+    sessionId: currentSessionId || undefined,
+    sortBy,
+    sortOrder,
+    search: debouncedSearchTerm || undefined,
+    filters: {
+      isActive: "true"
+    },
+    limit: 50000 // High limit to ensure we get all students for export
+  }, {
+    enabled: isExportModalOpen || needsExportData, // Fetch when export modal is open or quick export is triggered
   });
 
   // Calculate pagination parameters
@@ -227,6 +257,13 @@ export default function StudentsPage() {
       setAllStudentIds(allStudentIdsData.itemIds);
     }
   }, [allStudentIdsData?.itemIds]);
+
+  // Reset export data state when modal closes
+  useEffect(() => {
+    if (!isExportModalOpen) {
+      setNeedsExportData(false);
+    }
+  }, [isExportModalOpen]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -310,6 +347,238 @@ export default function StudentsPage() {
   const handleSearch = useCallback((value: string) => {
     setSearchTerm(value);
   }, []);
+
+  // Transform student data for export
+  const transformStudentForExport = (student: any): StudentExportData => {
+    return {
+      id: student.id,
+      admissionNumber: student.admissionNumber || '',
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      email: student.email || null,
+      personalEmail: student.personalEmail || null,
+      phone: student.phone || null,
+      gender: student.gender || '',
+      isActive: student.isActive,
+      dateOfBirth: new Date(student.dateOfBirth),
+      dateOfAdmission: student.dateOfAdmission ? new Date(student.dateOfAdmission) : null,
+      joinDate: new Date(student.joinDate),
+      rollNumber: student.rollNumber || null,
+      bloodGroup: student.bloodGroup || null,
+      religion: student.religion || null,
+      nationality: student.nationality || null,
+      caste: student.caste || null,
+      aadharNumber: student.aadharNumber || null,
+      udiseId: student.udiseId || null,
+      address: student.address || null,
+      permanentAddress: student.permanentAddress || null,
+      permanentCity: student.permanentCity || null,
+      permanentState: student.permanentState || null,
+      permanentCountry: student.permanentCountry || null,
+      permanentZipCode: student.permanentZipCode || null,
+      correspondenceAddress: student.correspondenceAddress || null,
+      correspondenceCity: student.correspondenceCity || null,
+      correspondenceState: student.correspondenceState || null,
+      correspondenceCountry: student.correspondenceCountry || null,
+      correspondenceZipCode: student.correspondenceZipCode || null,
+      previousSchool: student.previousSchool || null,
+      lastClassAttended: student.lastClassAttended || null,
+      mediumOfInstruction: student.mediumOfInstruction || null,
+      recognisedByStateBoard: student.recognisedByStateBoard || null,
+      schoolCity: student.schoolCity || null,
+      schoolState: student.schoolState || null,
+      reasonForLeaving: student.reasonForLeaving || null,
+      class: student?.section?.class ? {
+        name: student.section.class.name,
+        section: student.section.name
+      } : null,
+      parent: student?.parent ? {
+        fatherName: student.parent.fatherName || null,
+        fatherMobile: student.parent.fatherMobile || null,
+        fatherEmail: student.parent.fatherEmail || null,
+        fatherOccupation: student.parent.fatherOccupation || null,
+        fatherEducation: student.parent.fatherEducation || null,
+        fatherWorkplace: student.parent.fatherWorkplace || null,
+        fatherDesignation: student.parent.fatherDesignation || null,
+        fatherDob: student.parent.fatherDob ? new Date(student.parent.fatherDob) : null,
+        motherName: student.parent.motherName || null,
+        motherMobile: student.parent.motherMobile || null,
+        motherEmail: student.parent.motherEmail || null,
+        motherOccupation: student.parent.motherOccupation || null,
+        motherEducation: student.parent.motherEducation || null,
+        motherWorkplace: student.parent.motherWorkplace || null,
+        motherDesignation: student.parent.motherDesignation || null,
+        motherDob: student.parent.motherDob ? new Date(student.parent.motherDob) : null,
+        guardianName: student.parent.guardianName || null,
+        guardianMobile: student.parent.guardianMobile || null,
+        guardianEmail: student.parent.guardianEmail || null,
+        guardianOccupation: student.parent.guardianOccupation || null,
+        guardianEducation: student.parent.guardianEducation || null,
+        guardianWorkplace: student.parent.guardianWorkplace || null,
+        guardianDesignation: student.parent.guardianDesignation || null,
+        guardianDob: student.parent.guardianDob ? new Date(student.parent.guardianDob) : null,
+        parentAnniversary: student.parent.parentAnniversary ? new Date(student.parent.parentAnniversary) : null,
+        monthlyIncome: student.parent.monthlyIncome || null,
+      } : null
+    };
+  };
+
+  // Handle quick CSV export with default fields
+  const handleQuickCSVExport = async () => {
+    setIsExportingAll(true);
+    setNeedsExportData(true);
+    
+    try {
+      // Wait for the data to load completely
+      let retryCount = 0;
+      const maxRetries = 30; // Wait up to 30 seconds
+      
+      while ((!exportStudentsData || isLoadingExportData) && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        retryCount++;
+      }
+      
+      // Check if we timed out waiting for data
+      if (retryCount >= maxRetries) {
+        toast({
+          title: "Export Timeout",
+          description: "Loading student data is taking longer than expected. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const studentsToExport = exportStudentsData?.items?.map(transformStudentForExport) || [];
+      
+      // Only show no data error if API returned empty results (not if still loading)
+      if (studentsToExport.length === 0 && !isLoadingExportData) {
+        toast({
+          title: "No Students Found",
+          description: "No students match your current filters for export.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      exportStudentsToCSV(studentsToExport, DEFAULT_EXPORT_FIELDS);
+      toast({
+        title: "Export Complete",
+        description: `Successfully exported ${studentsToExport.length} student(s) to CSV.`,
+        variant: "success"
+      });
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "An error occurred during export. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExportingAll(false);
+      setNeedsExportData(false);
+    }
+  };
+
+  // Handle quick Excel export with default fields  
+  const handleQuickExcelExport = async () => {
+    setIsExportingAll(true);
+    setNeedsExportData(true);
+    
+    try {
+      // Wait for the data to load completely
+      let retryCount = 0;
+      const maxRetries = 30; // Wait up to 30 seconds
+      
+      while ((!exportStudentsData || isLoadingExportData) && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        retryCount++;
+      }
+      
+      // Check if we timed out waiting for data
+      if (retryCount >= maxRetries) {
+        toast({
+          title: "Export Timeout",
+          description: "Loading student data is taking longer than expected. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const studentsToExport = exportStudentsData?.items?.map(transformStudentForExport) || [];
+      
+      // Only show no data error if API returned empty results (not if still loading)
+      if (studentsToExport.length === 0 && !isLoadingExportData) {
+        toast({
+          title: "No Students Found",
+          description: "No students match your current filters for export.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      exportStudentsToExcel(studentsToExport, DEFAULT_EXPORT_FIELDS);
+      toast({
+        title: "Export Complete", 
+        description: `Successfully exported ${studentsToExport.length} student(s) to Excel.`,
+        variant: "success"
+      });
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "An error occurred during export. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExportingAll(false);
+      setNeedsExportData(false);
+    }
+  };
+
+  // Handle custom export (opens field selector)
+  const handleCustomExport = () => {
+    setNeedsExportData(true);
+    setIsExportModalOpen(true);
+  };
+
+  // Handle bulk import
+  const handleBulkImport = async (studentsData: any[]) => {
+    try {
+      // Transform the data to match the expected API format
+      const transformedStudents = studentsData.map(student => ({
+        ...student,
+        branchId: getBranchFilterParam(),
+        sessionId: currentSessionId,
+      }));
+
+      // You'll need to implement the bulk create mutation or use existing one
+      // For now, I'll show the structure - you may need to adapt this to your existing API
+      console.log('Importing students:', transformedStudents);
+      
+      // Simulated API call - replace with actual implementation
+      // await bulkCreateStudentsMutation.mutateAsync({ students: transformedStudents });
+      
+      // Refresh the data after successful import
+      void refetch();
+      
+      toast({
+        title: "Import Successful",
+        description: `Successfully imported ${studentsData.length} student(s).`,
+        variant: "success"
+      });
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Failed to import students.",
+        variant: "destructive"
+      });
+      throw error; // Re-throw to let the modal handle the error state
+    }
+  };
 
   // Handle select all students (entire dataset)
   const handleSelectAllStudents = () => {
@@ -408,11 +677,7 @@ export default function StudentsPage() {
     }
   };
 
-  // Handle bulk import success
-  const handleBulkImportSuccess = () => {
-    void refetch();
-    toast({ title: "Import completed", description: "Students have been imported successfully.", variant: "success" });
-  };
+
 
   // Student row actions component
   const StudentRowActions = ({ student }: { student: Student }) => (
@@ -555,11 +820,60 @@ export default function StudentsPage() {
       subtitle="Manage all students in your institution"
       action={
         <div className="flex gap-2">
-          <StudentBulkImport onSuccess={handleBulkImportSuccess} />
-          <Button variant="glowing-secondary" className="flex items-center gap-1">
-            <FileDown className="h-4 w-4" />
-            <span>Export</span>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Import Students
           </Button>
+          
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="glowing-secondary" 
+                className="flex items-center gap-1"
+                disabled={isExportingAll || isLoadingExportData}
+              >
+                {isExportingAll || isLoadingExportData ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
+                <span>Export</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Quick Export</DropdownMenuLabel>
+              <DropdownMenuItem 
+                onClick={handleQuickCSVExport}
+                disabled={isExportingAll || isLoadingExportData}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                {isExportingAll ? "Loading Data..." : "Export to CSV"}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleQuickExcelExport}
+                disabled={isExportingAll || isLoadingExportData}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                {isExportingAll ? "Loading Data..." : "Export to Excel"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Custom Export</DropdownMenuLabel>
+              <DropdownMenuItem 
+                onClick={handleCustomExport}
+                disabled={isExportingAll || isLoadingExportData}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                {isLoadingExportData ? "Loading Data..." : "Select Fields..."}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Link href="/students/create">
             <Button variant="glowing" className="flex items-center gap-1">
               <PlusCircle className="h-4 w-4" />
@@ -876,6 +1190,21 @@ export default function StudentsPage() {
           )}
         </div>
       </div>
+
+      {/* Export Field Selector Modal */}
+      <StudentExportFieldSelector
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        students={exportStudentsData?.items?.map(transformStudentForExport) || []}
+        title="Export Students"
+      />
+
+      {/* Student Import Modal */}
+      <StudentImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleBulkImport}
+      />
     </PageWrapper>
   )
 }

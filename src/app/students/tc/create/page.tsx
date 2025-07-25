@@ -247,9 +247,9 @@ export default function CreateTransferCertificatePage() {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Access Denied</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
                 You don't have permission to create transfer certificates.
               </p>
             </div>
@@ -260,22 +260,19 @@ export default function CreateTransferCertificatePage() {
   }
 
   return (
+    <PageWrapper
+      title="Create Transfer Certificate"
+      subtitle="Search for a student and generate their transfer certificate"
+      action={
+        <Link href="/students/tc">
+          <Button variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to TCs
+          </Button>
+        </Link>
+      }
+    >
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Transfer Certificate</h1>
-            <p className="text-sm text-gray-600">
-              Search for a student and generate their transfer certificate
-            </p>
-          </div>
-          <Link href="/students/tc">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to TCs
-            </Button>
-          </Link>
-        </div>
 
         {/* Student Search */}
         <Card>
@@ -288,7 +285,7 @@ export default function CreateTransferCertificatePage() {
           <CardContent>
             <div className="space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Enter student name or admission number..."
                   value={searchTerm}
@@ -516,5 +513,6 @@ export default function CreateTransferCertificatePage() {
           </div>
         )}
       </div>
+    </PageWrapper>
   );
 } 

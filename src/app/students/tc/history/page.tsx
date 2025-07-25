@@ -338,9 +338,9 @@ export default function TransferCertificateHistoryPage() {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Access Denied</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Access Denied</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
                 You don't have permission to view transfer certificate history.
               </p>
             </div>
@@ -351,24 +351,19 @@ export default function TransferCertificateHistoryPage() {
   }
 
   return (
+    <PageWrapper
+      title="Transfer Certificate History"
+      subtitle="View all issued transfer certificates and manage them"
+      action={
+        <Link href="/students/tc">
+          <Button variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to TCs
+          </Button>
+        </Link>
+      }
+    >
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Transfer Certificate History</h1>
-              <p className="text-sm text-gray-600">
-                View all issued transfer certificates and manage them
-              </p>
-            </div>
-          </div>
-            <Link href="/students/tc">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to TCs
-              </Button>
-            </Link>
-        </div>
 
         {/* Super Admin Notice */}
         {isSuperAdmin && (
@@ -398,7 +393,7 @@ export default function TransferCertificateHistoryPage() {
           <CardContent>
             <div className="flex space-x-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search transfer certificates..."
                   value={search}
@@ -484,13 +479,13 @@ export default function TransferCertificateHistoryPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : transferCertificates.length === 0 ? (
               <div className="text-center py-8">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No transfer certificates found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-2 text-sm font-medium">No transfer certificates found</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
                   {search ? "No transfer certificates match your search." : "No transfer certificates have been issued yet."}
                 </p>
               </div>
@@ -506,5 +501,6 @@ export default function TransferCertificateHistoryPage() {
           </CardContent>
         </Card>
       </div>
+    </PageWrapper>
   );
 } 
