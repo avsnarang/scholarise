@@ -2943,6 +2943,11 @@ model CommunicationSettings {
   notifyOnSuccess                 Boolean  @default(false)
   notificationDailySummary        Boolean  @default(true)
   
+  // Phone Normalization Settings
+  phoneNormalizationEnabled       Boolean  @default(true)
+  phoneDefaultCountryCode         String?  @default("+91")
+  phoneOrganizationCountry        String?  @default("IN")
+  
   // General Settings
   isActive                        Boolean  @default(true)
   createdAt                       DateTime @default(now())
@@ -2996,7 +3001,9 @@ model ChatMessage {
   twilioMessageId       String?             // Twilio message SID
   metaMessageId         String?             // Meta WhatsApp message ID
   status                ChatMessageStatus   @default(SENT)
-  readAt                DateTime?           // When message was read
+  sentAt                DateTime?           // When message was sent to WhatsApp servers
+  deliveredAt           DateTime?           // When message was delivered to recipient's device
+  readAt                DateTime?           // When message was read by recipient
   sentBy                String?             // User ID who sent the message (for outgoing)
   mediaUrl              String?             // URL for media messages
   mediaType             String?             // Type of media (image, document, etc.)

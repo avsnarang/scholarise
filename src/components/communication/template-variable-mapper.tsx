@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Edit3, Sparkles } from "lucide-react";
 import { 
   AVAILABLE_DATA_FIELDS, 
   DATA_FIELD_CATEGORIES, 
   type DataFieldOption 
 } from "@/utils/template-data-mapper";
+import { cn } from "@/lib/utils";
 
 interface TemplateVariableMapperProps {
   variableName: string;
@@ -80,9 +83,23 @@ export function TemplateVariableMapper({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Data Field Selector */}
         <div className="space-y-2">
-          <Label htmlFor={`dataField-${variableName}`} className="text-xs font-medium">
-            Data Source
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor={`dataField-${variableName}`} className="text-xs font-medium">
+              Data Source
+            </Label>
+            {selectedDataField !== 'custom_value' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => handleDataFieldChange('custom_value')}
+              >
+                <Edit3 className="w-3 h-3 mr-1" />
+                Custom
+              </Button>
+            )}
+          </div>
           <Select
             value={selectedDataField}
             onValueChange={handleDataFieldChange}
@@ -98,9 +115,16 @@ export function TemplateVariableMapper({
                   </div>
                   {fields.map((field) => (
                     <SelectItem key={field.value} value={field.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{field.label}</span>
-                        <span className="text-xs text-gray-500">{field.description}</span>
+                      <div className="flex items-center w-full">
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{field.label}</span>
+                            {field.value === 'custom_value' && (
+                              <Sparkles className="w-3 h-3 text-yellow-500" />
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">{field.description}</span>
+                        </div>
                       </div>
                     </SelectItem>
                   ))}
@@ -143,14 +167,34 @@ export function TemplateVariableMapper({
 
       {/* Preview what this would look like */}
       {selectedDataField && (
-        <div className="mt-3 p-3 bg-gray-50 rounded-md dark:bg-gray-800">
+        <div className={cn(
+          "mt-3 p-3 rounded-md",
+          isCustomValue 
+            ? "bg-yellow-50 border border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800" 
+            : "bg-gray-50 dark:bg-gray-800"
+        )}>
           <div className="text-xs">
             <span className="font-medium">Preview: </span>
             <span className="text-gray-600 dark:text-gray-400">
               {variableName} → {selectedField?.label}
-              {fallbackValue && ` (fallback: "${fallbackValue}")`}
+              {isCustomValue && fallbackValue && (
+                <span className="text-yellow-700 dark:text-yellow-300 font-medium">
+                  {` "${fallbackValue}"`}
+                </span>
+              )}
+              {!isCustomValue && fallbackValue && ` (fallback: "${fallbackValue}")`}
             </span>
           </div>
+          {isCustomValue && !fallbackValue && (
+            <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+              Enter your custom value above to preview
+            </div>
+          )}
+          {isCustomValue && fallbackValue && (
+            <div className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+              ✨ This custom value will be sent to all recipients
+            </div>
+          )}
         </div>
       )}
     </div>

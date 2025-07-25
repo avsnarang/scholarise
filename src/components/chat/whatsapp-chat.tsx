@@ -798,6 +798,8 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
                             </div>
                     )}
                     
+
+                    
                           {/* Debug Info */}
                           <div className="space-y-2">
                             <h4 className="font-medium text-sm flex items-center gap-2">
@@ -1018,8 +1020,8 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
         </ScrollArea>
       </div>
 
-      {/* Message Window Status */}
-      {hasPermission("create_communication_message") && conversation && messageWindow && (
+      {/* Message Window Status - Only show when template messages are required */}
+      {hasPermission("create_communication_message") && conversation && messageWindow && !messageWindow.canSendFreeform && (
         <div className="border-t border-border/50 bg-card/80 backdrop-blur-sm">
           {/* Enhanced Window Status Display */}
           <motion.div
@@ -1027,33 +1029,19 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
             animate={{ opacity: 1, y: 0 }}
             className="mx-4 my-4"
           >
-            <Alert className={cn(
-              "backdrop-blur-sm shadow-sm",
-              messageWindow.canSendFreeform 
-                ? "border-primary/20 bg-primary/5" 
-                : "border-destructive/20 bg-destructive/5"
-            )}>
-              {messageWindow.canSendFreeform ? (
-                <Clock className="text-primary h-5 w-5 mr-2" />
-              ) : (
-                <AlertTriangle className="text-destructive h-5 w-5 mr-2" />
-              )}
-              <AlertDescription className={cn(
-                "font-medium leading-relaxed",
-                messageWindow.canSendFreeform ? "text-primary" : "text-destructive"
-              )}>
+            <Alert className="backdrop-blur-sm shadow-sm border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+              <AlertTriangle className="text-amber-600 h-5 w-5 mr-2" />
+              <AlertDescription className="font-medium leading-relaxed text-amber-800 dark:text-amber-200">
                 <div className="flex flex-col gap-1">
                   <span>{getWindowStatusExplanation(messageWindow)}</span>
-                  {!messageWindow.canSendFreeform && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="p-0 h-auto justify-start text-destructive hover:text-destructive/80 font-medium"
-                      onClick={() => setShowTemplateSelector(true)}
-                    >
-                      Use Template Message →
-                    </Button>
-                  )}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto justify-start text-amber-700 hover:text-amber-600 font-medium dark:text-amber-300 dark:hover:text-amber-200"
+                    onClick={() => setShowTemplateSelector(true)}
+                  >
+                    Use Template Message →
+                  </Button>
                 </div>
               </AlertDescription>
             </Alert>

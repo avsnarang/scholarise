@@ -499,10 +499,11 @@ async function simulateWebhook(params: any) {
 
 async function bulkMessageTest(params: any) {
   const {
-    recipients = ['+1234567890', '+1234567891'],
+    recipients = ['9876543210', '8765432109'], // Test numbers without country code
     templateName,
     batchSize = 2,
-    variables = {}
+    variables = {},
+    normalizePhoneNumbers = true
   } = params;
   
   if (!templateName) {
@@ -527,7 +528,8 @@ async function bulkMessageTest(params: any) {
       recipientObjects,
       templateName,
       variables,
-      'en'
+      'en',
+      normalizePhoneNumbers
     );
     const endTime = Date.now();
     
@@ -536,6 +538,14 @@ async function bulkMessageTest(params: any) {
       duration: endTime - startTime,
       batchSize,
       results: result.data,
+      phoneNormalization: {
+        applied: result.data?.phoneNormalizationApplied,
+        normalizedCount: result.data?.results.filter(r => r.normalized).length || 0,
+        examples: result.data?.results.filter(r => r.normalized && r.originalPhone).map(r => ({
+          original: r.originalPhone,
+          normalized: r.phone
+        })).slice(0, 3) || []
+      },
       performance: {
         totalRecipients: recipients.length,
         messagesPerSecond: (recipients.length / ((endTime - startTime) / 1000)).toFixed(2),

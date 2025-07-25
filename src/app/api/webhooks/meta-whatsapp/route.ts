@@ -210,144 +210,213 @@ async function determineBranch(phoneNumberId: string) {
   }
 }
 
+// Phone number matching helper
+function phoneNumbersMatch(phone1: string, phone2: string): boolean {
+  if (!phone1 || !phone2) return false;
+  
+  // Clean both numbers - remove all non-digit characters
+  const clean1 = phone1.replace(/[^\d]/g, '');
+  const clean2 = phone2.replace(/[^\d]/g, '');
+  
+  // If either is empty after cleaning, no match
+  if (!clean1 || !clean2) return false;
+  
+  // Check if one is a suffix of the other (handles country codes)
+  const minLength = Math.min(clean1.length, clean2.length);
+  if (minLength >= 10) { // At least 10 digits to be meaningful
+    const suffix1 = clean1.slice(-10);
+    const suffix2 = clean2.slice(-10);
+    return suffix1 === suffix2;
+  }
+  
+  // For shorter numbers, require exact match
+  return clean1 === clean2;
+}
+
 async function identifyParticipant(phoneNumber: string, branchId: string) {
   try {
-    // Clean phone number for comparison
-    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    console.log(`🔍 Identifying participant for phone: ${phoneNumber} in branch: ${branchId}`);
     
-    // Try to find a student first
-    const student = await db.student.findFirst({
-      where: {
-        branchId,
-        phone: {
-          contains: cleanPhone.slice(-10), // Last 10 digits
-        },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        rollNumber: true,
-        section: {
-          select: {
-            name: true,
-            class: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+    // Try to find in students first (via all possible phone numbers)
+    const students = await db.student.findMany({
+      where: { branchId },
+      include: {
+        parent: true,
+        section: { include: { class: true } }
+      }
     });
 
-    if (student) {
-      return {
-        type: 'STUDENT',
-        id: student.id,
-        name: `${student.firstName} ${student.lastName}`,
-        metadata: {
-          rollNumber: student.rollNumber,
-          class: student.section?.class?.name,
-          section: student.section?.name,
-          phone: student.phone,
-        },
-      };
+    // Check each student's phone numbers for exact match
+    for (const student of students) {
+      // Check student's own phone
+      if (student.phone && phoneNumbersMatch(phoneNumber, student.phone)) {
+        console.log(`✅ Found student: ${student.firstName} ${student.lastName} (Student Phone)`);
+        return {
+          type: 'student',
+          id: student.id,
+          name: `${student.firstName} ${student.lastName}`,
+          metadata: {
+            class: student.section?.class?.name,
+            section: student.section?.name,
+            rollNumber: student.rollNumber,
+            parentInfo: student.parent,
+            contactDetails: {
+              contactType: 'Student Phone',
+              displayName: `${student.firstName} ${student.lastName} (Student)`,
+              phoneUsed: student.phone
+            }
+          }
+        };
+      }
+
+      // Check father's phone
+      if (student.parent?.fatherMobile && phoneNumbersMatch(phoneNumber, student.parent.fatherMobile)) {
+        console.log(`✅ Found parent: ${student.parent.fatherName} (Father of ${student.firstName})`);
+        return {
+          type: 'student',
+          id: student.id,
+          name: `${student.parent.fatherName || 'Father'} (${student.firstName} ${student.lastName})`,
+          metadata: {
+            class: student.section?.class?.name,
+            section: student.section?.name,
+            parentInfo: student.parent,
+            contactDetails: {
+              contactType: 'Father Phone',
+              displayName: `${student.parent.fatherName || 'Father'} (${student.firstName}'s Father)`,
+              phoneUsed: student.parent.fatherMobile,
+              studentName: `${student.firstName} ${student.lastName}`
+            }
+          }
+        };
+      }
+
+      // Check mother's phone
+      if (student.parent?.motherMobile && phoneNumbersMatch(phoneNumber, student.parent.motherMobile)) {
+        console.log(`✅ Found parent: ${student.parent.motherName} (Mother of ${student.firstName})`);
+        return {
+          type: 'student',
+          id: student.id,
+          name: `${student.parent.motherName || 'Mother'} (${student.firstName} ${student.lastName})`,
+          metadata: {
+            class: student.section?.class?.name,
+            section: student.section?.name,
+            parentInfo: student.parent,
+            contactDetails: {
+              contactType: 'Mother Phone',
+              displayName: `${student.parent.motherName || 'Mother'} (${student.firstName}'s Mother)`,
+              phoneUsed: student.parent.motherMobile,
+              studentName: `${student.firstName} ${student.lastName}`
+            }
+          }
+        };
+      }
+
+      // Check guardian's phone
+      if (student.parent?.guardianMobile && phoneNumbersMatch(phoneNumber, student.parent.guardianMobile)) {
+        console.log(`✅ Found parent: ${student.parent.guardianName} (Guardian of ${student.firstName})`);
+        return {
+          type: 'student',
+          id: student.id,
+          name: `${student.parent.guardianName || 'Guardian'} (${student.firstName} ${student.lastName})`,
+          metadata: {
+            class: student.section?.class?.name,
+            section: student.section?.name,
+            parentInfo: student.parent,
+            contactDetails: {
+              contactType: 'Guardian Phone',
+              displayName: `${student.parent.guardianName || 'Guardian'} (${student.firstName}'s Guardian)`,
+              phoneUsed: student.parent.guardianMobile,
+              studentName: `${student.firstName} ${student.lastName}`
+            }
+          }
+        };
+      }
     }
 
-    // Try to find a teacher
-    const teacher = await db.teacher.findFirst({
-      where: {
-        branchId,
-        phone: {
-          contains: cleanPhone.slice(-10),
-        },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        employeeCode: true,
-        subjects: true,
-      },
+    // Try to find in teachers
+    const teachers = await db.teacher.findMany({
+      where: { branchId }
     });
 
-    if (teacher) {
-      return {
-        type: 'TEACHER',
-        id: teacher.id,
-        name: `${teacher.firstName} ${teacher.lastName}`,
-        metadata: {
-          employeeCode: teacher.employeeCode,
-          subjects: teacher.subjects || [],
-          phone: teacher.phone,
-        },
-      };
+    for (const teacher of teachers) {
+      if (teacher.phone && phoneNumbersMatch(phoneNumber, teacher.phone)) {
+        console.log(`✅ Found teacher: ${teacher.firstName} ${teacher.lastName}`);
+        return {
+          type: 'teacher',
+          id: teacher.id,
+          name: `${teacher.firstName} ${teacher.lastName}`,
+          metadata: {
+            employeeCode: teacher.employeeCode,
+            designation: teacher.designation,
+            contactDetails: {
+              contactType: 'Teacher Phone',
+              displayName: `${teacher.firstName} ${teacher.lastName} (Teacher)`,
+              phoneUsed: teacher.phone
+            }
+          }
+        };
+      }
     }
 
-    // Try to find an employee
-    const employee = await db.employee.findFirst({
-      where: {
-        branchId,
-        phone: {
-          contains: cleanPhone.slice(-10),
-        },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        employeeCode: true,
-        designationRef: {
-          select: {
-            title: true,
-          },
-        },
-        departmentRef: {
-          select: {
-            name: true,
-          },
-        },
-      },
+    // Try to find in employees
+    const employees = await db.employee.findMany({
+      where: { branchId },
+      include: {
+        designationRef: true,
+        departmentRef: true
+      }
     });
 
-    if (employee) {
-      return {
-        type: 'EMPLOYEE',
-        id: employee.id,
-        name: `${employee.firstName} ${employee.lastName}`,
-        metadata: {
-          employeeCode: employee.employeeCode,
-          designation: employee.designationRef?.title,
-          department: employee.departmentRef?.name,
-          phone: employee.phone,
-        },
-      };
+    for (const employee of employees) {
+      if (employee.phone && phoneNumbersMatch(phoneNumber, employee.phone)) {
+        console.log(`✅ Found employee: ${employee.firstName} ${employee.lastName}`);
+        return {
+          type: 'employee',
+          id: employee.id,
+          name: `${employee.firstName} ${employee.lastName}`,
+          metadata: {
+            designation: employee.designation,
+            department: employee.departmentRef?.name || employee.designation,
+            contactDetails: {
+              contactType: 'Employee Phone',
+              displayName: `${employee.firstName} ${employee.lastName} (Employee)`,
+              phoneUsed: employee.phone
+            }
+          }
+        };
+      }
     }
 
-    // If no specific participant found, create a generic contact
+    // If no match found, return unknown contact
+    console.log(`❌ No match found for phone: ${phoneNumber}`);
     return {
-      type: 'UNKNOWN',
-      id: phoneNumber,
-      name: `Unknown Contact`,
+      type: 'unknown',
+      id: 'unknown',
+      name: 'Unknown Contact',
       metadata: {
-        phone: phoneNumber,
-        note: 'Contact not found in system',
-      },
+        phoneNumber: phoneNumber,
+        contactDetails: {
+          contactType: 'Unknown Contact',
+          displayName: 'Unknown Contact',
+          phoneUsed: phoneNumber
+        }
+      }
     };
-  } catch (error) {
-    console.error('Error identifying participant:', error);
+  } catch (error: any) {
+    console.error(`❌ Error identifying participant for ${phoneNumber}:`, error);
     return {
-      type: 'UNKNOWN',
-      id: phoneNumber,
-      name: `Unknown Contact`,
+      type: 'unknown',
+      id: 'unknown',
+      name: 'Unknown Contact',
       metadata: {
-        phone: phoneNumber,
+        phoneNumber: phoneNumber,
         error: error instanceof Error ? error.message : 'Unknown error',
-      },
+        contactDetails: {
+          contactType: 'Unknown Contact',
+          displayName: 'Unknown Contact',
+          phoneUsed: phoneNumber
+        }
+      }
     };
   }
 }
@@ -881,51 +950,146 @@ async function processMessageStatus(
   try {
     console.log(`📊 Processing message status update for ${status.id}: ${status.status}`);
     
-    // Find the message by Meta message ID
-    const message = await db.chatMessage.findFirst({
+    const statusTimestamp = new Date(parseInt(status.timestamp) * 1000);
+    
+    // Try to find the message in chat messages first
+    const chatMessage = await db.chatMessage.findFirst({
       where: { metaMessageId: status.id }
     });
 
-    if (!message) {
-      console.log(`⚠️ Message ${status.id} not found for status update`);
+    // Also try to find in bulk message recipients (for template messages)
+    const messageRecipient = await db.messageRecipient.findFirst({
+      where: { metaMessageId: status.id }
+    });
+
+    if (!chatMessage && !messageRecipient) {
+      console.log(`⚠️ Message ${status.id} not found in chat messages or bulk recipients for status update`);
       return;
     }
 
-    // Update message status  
-    let messageStatus: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' = 'SENT';
+    // Map Meta status to our enum values
+    let messageStatus: 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' = 'SENT';
+    let recipientStatus: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' = 'SENT';
     
     switch (status.status) {
       case 'sent':
         messageStatus = 'SENT';
+        recipientStatus = 'SENT';
         break;
       case 'delivered':
         messageStatus = 'DELIVERED';
+        recipientStatus = 'DELIVERED';
         break;
       case 'read':
         messageStatus = 'READ';
+        recipientStatus = 'READ';
         break;
       case 'failed':
         messageStatus = 'FAILED';
+        recipientStatus = 'FAILED';
         break;
       default:
         messageStatus = 'SENT';
+        recipientStatus = 'SENT';
     }
 
-    await db.chatMessage.update({
-      where: { id: message.id },
-      data: {
+    // Update chat message if found
+    if (chatMessage) {
+      const updateData: any = {
         status: messageStatus,
         metadata: {
-          ...message.metadata as any,
+          ...chatMessage.metadata as any,
           statusUpdate: status,
-          statusTimestamp: status.timestamp
+          statusTimestamp: status.timestamp,
+          lastStatusUpdate: new Date().toISOString()
         }
-      }
-    });
+      };
 
-    console.log(`✅ Status updated for message ${status.id}: ${status.status}`);
+      // Add specific timestamp fields based on status
+      switch (status.status) {
+        case 'sent':
+          updateData.sentAt = statusTimestamp;
+          break;
+        case 'delivered':
+          updateData.deliveredAt = statusTimestamp;
+          break;
+        case 'read':
+          updateData.readAt = statusTimestamp;
+          break;
+        case 'failed':
+          // Don't update timestamps for failed messages
+          break;
+      }
+
+      await db.chatMessage.update({
+        where: { id: chatMessage.id },
+        data: updateData
+      });
+
+      console.log(`✅ Chat message status updated for ${status.id}: ${status.status} at ${statusTimestamp.toISOString()}`);
+    }
+
+    // Update message recipient if found (for bulk/template messages)
+    if (messageRecipient) {
+      const updateData: any = {
+        status: recipientStatus,
+        updatedAt: new Date()
+      };
+
+      // Add specific timestamp fields
+      switch (status.status) {
+        case 'sent':
+          updateData.sentAt = statusTimestamp;
+          break;
+        case 'delivered':
+          updateData.deliveredAt = statusTimestamp;
+          break;
+        case 'read':
+          updateData.readAt = statusTimestamp;
+          break;
+        case 'failed':
+          updateData.errorMessage = status.errors?.[0]?.message || 'Message delivery failed';
+          break;
+      }
+
+      await db.messageRecipient.update({
+        where: { id: messageRecipient.id },
+        data: updateData
+      });
+
+      console.log(`✅ Message recipient status updated for ${status.id}: ${status.status}`);
+
+      // Also update the main communication message statistics
+      if (messageRecipient.messageId) {
+        const allRecipients = await db.messageRecipient.findMany({
+          where: { messageId: messageRecipient.messageId }
+        });
+
+        const stats = allRecipients.reduce((acc, recipient) => {
+          switch (recipient.status) {
+            case 'SENT':
+            case 'DELIVERED':
+            case 'READ':
+              acc.successful++;
+              break;
+            case 'FAILED':
+              acc.failed++;
+              break;
+          }
+          return acc;
+        }, { successful: 0, failed: 0 });
+
+        await db.communicationMessage.update({
+          where: { id: messageRecipient.messageId },
+          data: {
+            successfulSent: stats.successful,
+            failed: stats.failed
+          }
+        });
+      }
+    }
     
-  } catch (error) {
+  } catch (error: any) {
     console.error(`❌ Failed to process status update for message ${status.id}:`, error);
   }
 } 

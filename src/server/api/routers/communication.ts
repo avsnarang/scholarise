@@ -675,6 +675,13 @@ export const communicationRouter = createTRPCRouter({
     .input(sendMessageSchema)
     .mutation(async ({ ctx, input }) => {
       try {
+        // Get communication settings for phone normalization (defaults if not found)
+        const phoneNormalizationConfig = {
+          enabled: true,
+          defaultCountryCode: '+91',
+          organizationCountry: 'IN'
+        };
+
         // Create message record first
         const message = await ctx.db.communicationMessage.create({
           data: {
@@ -866,7 +873,12 @@ export const communicationRouter = createTRPCRouter({
               }),
               template.metaTemplateName,
               templateHasVariables ? parameters : {}, // Only pass base parameters if template has variables
-              template.metaTemplateLanguage || 'en'
+              template.metaTemplateLanguage || 'en',
+              phoneNormalizationConfig.enabled,
+              {
+                defaultCountryCode: phoneNormalizationConfig.defaultCountryCode,
+                organizationCountry: phoneNormalizationConfig.organizationCountry
+              }
             );
             
             console.log('✅ Bulk template message response:', {
@@ -1103,7 +1115,22 @@ export const communicationRouter = createTRPCRouter({
           template: true,
           branch: { select: { name: true, code: true } },
           recipients: {
-            orderBy: { createdAt: "asc" }
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              recipientType: true,
+              recipientId: true,
+              recipientName: true,
+              recipientPhone: true,
+              status: true,
+              sentAt: true,
+              deliveredAt: true,
+              readAt: true,
+              metaMessageId: true,
+              errorMessage: true,
+              createdAt: true,
+              updatedAt: true
+            }
           },
           logs: {
             orderBy: { createdAt: "desc" },
@@ -1119,7 +1146,29 @@ export const communicationRouter = createTRPCRouter({
         });
       }
 
-      return message;
+      // Add delivery statistics
+      const deliveryStats = message.recipients.reduce((acc, recipient) => {
+        switch (recipient.status) {
+          case 'SENT':
+          case 'DELIVERED':
+          case 'READ':
+            acc.delivered++;
+            break;
+          case 'FAILED':
+            acc.failed++;
+            break;
+          case 'PENDING':
+            acc.pending++;
+            break;
+        }
+        acc.total++;
+        return acc;
+      }, { delivered: 0, failed: 0, pending: 0, total: 0 });
+
+      return {
+        ...message,
+        deliveryStats
+      };
     }),
 
   // Debug environment variables for Meta WhatsApp API

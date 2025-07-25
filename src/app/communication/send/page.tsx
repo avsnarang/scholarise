@@ -565,9 +565,22 @@ export default function SendMessagePage() {
                       <Separator />
                       <div>
                         <h4 className="mb-2 text-sm font-medium">Template Variables Mapping</h4>
-                        <p className="mb-4 text-xs text-gray-500">
+                        <p className="mb-3 text-xs text-gray-500">
                           Map each template variable to recipient data fields. Data will be automatically populated based on each recipient.
                         </p>
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md dark:bg-blue-950 dark:border-blue-800">
+                          <div className="flex items-start gap-2">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">i</span>
+                              </div>
+                            </div>
+                            <div className="text-xs text-blue-800 dark:text-blue-200">
+                              <div className="font-medium mb-1">💡 Custom Variables Available</div>
+                              <div>You can use <strong>Custom Value</strong> option to send any text you want, not just pre-defined data fields. Perfect for personalized messages, announcements, or special content!</div>
+                            </div>
+                          </div>
+                        </div>
                         {selectedTemplate.templateVariables.map((variable: string, index: number) => (
                           <TemplateVariableMapper
                             key={variable}

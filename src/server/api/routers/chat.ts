@@ -179,11 +179,25 @@ export const chatRouter = createTRPCRouter({
           select: { createdAt: true }
         });
 
-        // Meta API handles message windows automatically
-        // WhatsApp Business API allows sending outside 24h window with approved templates
-        const messageWindow = { canSendFreeform: true };
+        // Calculate actual 24-hour window status for logging and debugging
+        let canSendFreeform = false;
+        if (lastIncomingMessage?.createdAt) {
+          const now = new Date();
+          const lastIncoming = new Date(lastIncomingMessage.createdAt);
+          const windowExpiry = new Date(lastIncoming.getTime() + 24 * 60 * 60 * 1000);
+          const timeLeft = windowExpiry.getTime() - now.getTime();
+          canSendFreeform = timeLeft > 0;
+        }
 
-        // Note: Meta API validation happens at the API level
+        console.log('📊 Message Window Status:', {
+          conversationId: input.conversationId,
+          hasLastIncoming: !!lastIncomingMessage?.createdAt,
+          lastIncomingAt: lastIncomingMessage?.createdAt,
+          canSendFreeform,
+          sendingFreeformMessage: true // We're sending regardless since Meta API handles validation
+        });
+
+        // Note: We proceed with sending as Meta API will handle template fallback if needed
 
         // Initialize Meta WhatsApp client with better error handling
         let whatsappClient;
@@ -259,7 +273,11 @@ export const chatRouter = createTRPCRouter({
           success: true,
           message,
           messageId: whatsappResponse.data?.messages?.[0]?.id,
-          windowInfo: messageWindow
+          windowInfo: {
+            canSendFreeform,
+            lastIncomingMessageAt: lastIncomingMessage?.createdAt,
+            reason: canSendFreeform ? '24-hour window is active' : '24-hour window expired'
+          }
         };
 
       } catch (error) {
@@ -507,13 +525,37 @@ export const chatRouter = createTRPCRouter({
         select: { createdAt: true }
       });
 
-      // Meta API handles message windows automatically
+      // Calculate actual 24-hour window status
+      let canSendFreeform = false;
+      let reason = 'No incoming messages yet';
+      let isExpired = true;
+      let needsTemplate = true;
+
+      if (lastIncomingMessage?.createdAt) {
+        const now = new Date();
+        const lastIncoming = new Date(lastIncomingMessage.createdAt);
+        const windowExpiry = new Date(lastIncoming.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+        const timeLeft = windowExpiry.getTime() - now.getTime();
+
+        if (timeLeft > 0) {
+          canSendFreeform = true;
+          reason = '24-hour window is active';
+          isExpired = false;
+          needsTemplate = false;
+        } else {
+          canSendFreeform = false;
+          reason = '24-hour window expired - template messages only';
+          isExpired = true;
+          needsTemplate = true;
+        }
+      }
+
       const windowInfo = {
-        canSendFreeform: true,
-        reason: 'Meta API handles message windows',
+        canSendFreeform,
+        reason,
         lastIncomingMessageAt: lastIncomingMessage?.createdAt || undefined,
-        isExpired: false,
-        needsTemplate: false
+        isExpired,
+        needsTemplate
       };
 
       return {
@@ -555,8 +597,6 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      // Meta API handles message windows automatically
-      
       // Get the actual last incoming message to properly calculate the 24-hour window
       const lastIncomingMessage = await ctx.db.chatMessage.findFirst({
         where: {
@@ -567,12 +607,37 @@ export const chatRouter = createTRPCRouter({
         select: { createdAt: true }
       });
 
+      // Calculate actual 24-hour window status
+      let canSendFreeform = false;
+      let reason = 'No incoming messages yet';
+      let isExpired = true;
+      let needsTemplate = true;
+
+      if (lastIncomingMessage?.createdAt) {
+        const now = new Date();
+        const lastIncoming = new Date(lastIncomingMessage.createdAt);
+        const windowExpiry = new Date(lastIncoming.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+        const timeLeft = windowExpiry.getTime() - now.getTime();
+
+        if (timeLeft > 0) {
+          canSendFreeform = true;
+          reason = '24-hour window is active';
+          isExpired = false;
+          needsTemplate = false;
+        } else {
+          canSendFreeform = false;
+          reason = '24-hour window expired - template messages only';
+          isExpired = true;
+          needsTemplate = true;
+        }
+      }
+
       const windowInfo = {
-        canSendFreeform: true,
-        reason: 'Meta API handles message windows',
+        canSendFreeform,
+        reason,
         lastIncomingMessageAt: lastIncomingMessage?.createdAt || undefined,
-        isExpired: false,
-        needsTemplate: false
+        isExpired,
+        needsTemplate
       };
 
       // Additional debugging information

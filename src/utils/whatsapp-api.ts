@@ -80,7 +80,15 @@ export interface SendMessageResponse {
 export interface BulkMessageResponse {
   successful: number;
   failed: number;
-  results: Array<{ phone: string; success: boolean; messageId?: string; error?: string }>;
+  results: Array<{ 
+    phone: string; 
+    originalPhone?: string;
+    success: boolean; 
+    messageId?: string; 
+    error?: string;
+    normalized?: boolean;
+  }>;
+  phoneNormalizationApplied?: boolean;
 }
 
 // Utility functions
@@ -466,32 +474,105 @@ export class WhatsAppApiClient {
   }
 
   /**
-   * Send messages to multiple recipients using template with proper rate limiting
+   * Send messages to multiple recipients using template with proper rate limiting and phone normalization
    */
   async sendBulkTemplateMessage(
     recipients: Array<{ phone: string; name: string; variables?: Record<string, string> }>,
     templateName: string,
     defaultVariables: Record<string, string> = {},
-    templateLanguage: string = 'en'
+    templateLanguage: string = 'en',
+    normalizePhoneNumbers: boolean = true,
+    phoneConfig?: { defaultCountryCode?: string; organizationCountry?: string }
   ): Promise<WhatsAppApiResponse<BulkMessageResponse>> {
-    // Import rate limiter dynamically to avoid circular dependencies
+    // Import utilities dynamically to avoid circular dependencies
     const { withRateLimit } = await import('./rate-limiter');
     
-    const results: Array<{ phone: string; success: boolean; messageId?: string; error?: string }> = [];
-    let successful = 0;
-    let failed = 0;
-
     console.log(`📊 Starting bulk message send to ${recipients.length} recipients`);
     console.log(`📋 Template: ${templateName}, Language: ${templateLanguage}`);
     
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
+    // Normalize phone numbers if enabled
+    let processedRecipients = recipients;
+    if (normalizePhoneNumbers) {
+      const { normalizePhoneNumbers: normalizeNumbers, getPhoneConfigForContext } = await import('./phone-number-utils');
+      
+      // Use provided config or defaults
+      const config = getPhoneConfigForContext({
+        organizationCountry: phoneConfig?.organizationCountry,
+      });
+      
+      if (phoneConfig?.defaultCountryCode) {
+        config.defaultCountryCode = phoneConfig.defaultCountryCode;
+      }
+      
+      console.log(`📞 Normalizing phone numbers with default country code ${config.defaultCountryCode}...`);
+      
+      const phoneNumbers = recipients.map(r => r.phone);
+      const normalizationResult = normalizeNumbers(phoneNumbers, config);
+      
+      console.log(`📞 Phone normalization results:`, {
+        total: normalizationResult.stats.total,
+        valid: normalizationResult.stats.valid,
+        invalid: normalizationResult.stats.invalid,
+        warnings: normalizationResult.stats.warnings
+      });
+      
+      // Log invalid numbers
+      if (normalizationResult.invalid.length > 0) {
+        console.warn(`⚠️ Invalid phone numbers found:`, normalizationResult.invalid);
+      }
+      
+      // Log warnings for normalized numbers
+      if (normalizationResult.valid.some(v => v.warnings.length > 0)) {
+        const numbersWithWarnings = normalizationResult.valid.filter(v => v.warnings.length > 0);
+        console.log(`📝 Phone numbers normalized:`, numbersWithWarnings.map(n => ({
+          original: n.original,
+          normalized: n.normalized,
+          warnings: n.warnings
+        })));
+      }
+      
+      // Create processed recipients with normalized numbers
+      processedRecipients = recipients.map((recipient, index) => {
+        const validNumber = normalizationResult.valid.find(v => v.original === recipient.phone);
+        if (validNumber) {
+          return {
+            ...recipient,
+            phone: validNumber.normalized,
+            originalPhone: recipient.phone
+          };
+        } else {
+          // Keep original phone for invalid numbers (will likely fail but at least we try)
+          console.warn(`⚠️ Keeping invalid phone number as-is: ${recipient.phone}`);
+          return {
+            ...recipient,
+            originalPhone: recipient.phone
+          };
+        }
+      });
+    }
+    
+    const results: Array<{ 
+      phone: string; 
+      originalPhone?: string;
+      success: boolean; 
+      messageId?: string; 
+      error?: string;
+      normalized?: boolean;
+    }> = [];
+    let successful = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < processedRecipients.length; i++) {
+      const recipient = processedRecipients[i];
       if (!recipient) continue; // Safety check
       
-      const progress = `${i + 1}/${recipients.length}`;
+      const progress = `${i + 1}/${processedRecipients.length}`;
+      const displayPhone = (recipient as any).originalPhone || recipient.phone;
+      const actualPhone = recipient.phone;
+      const wasNormalized = normalizePhoneNumbers && (recipient as any).originalPhone !== undefined;
       
       try {
-        console.log(`📤 [${progress}] Sending to ${recipient.phone} (${recipient.name})`);
+        console.log(`📤 [${progress}] Sending to ${displayPhone}${wasNormalized ? ` (normalized to ${actualPhone})` : ''} (${recipient.name})`);
         
         // Only use the exact variables expected by the template - no extra name variables
         const variables = { ...defaultVariables, ...recipient.variables };
@@ -500,7 +581,7 @@ export class WhatsAppApiClient {
         const response = await withRateLimit(
           this.phoneNumberId,
           () => this.sendTemplateMessage({
-            to: recipient.phone,
+            to: actualPhone,
             templateName,
             templateLanguage,
             templateVariables: Object.keys(variables).length > 0 ? variables : undefined
@@ -510,47 +591,59 @@ export class WhatsAppApiClient {
 
         if (response.result && response.data?.messages?.[0]) {
           results.push({
-            phone: recipient.phone,
+            phone: actualPhone,
+            originalPhone: (recipient as any).originalPhone,
             success: true,
-            messageId: response.data.messages[0].id
+            messageId: response.data.messages[0].id,
+            normalized: wasNormalized
           });
           successful++;
-          console.log(`✅ [${progress}] Sent successfully to ${recipient.phone}`);
+          console.log(`✅ [${progress}] Sent successfully to ${displayPhone}`);
         } else {
           results.push({
-            phone: recipient.phone,
+            phone: actualPhone,
+            originalPhone: (recipient as any).originalPhone,
             success: false,
-            error: response.error
+            error: response.error,
+            normalized: wasNormalized
           });
           failed++;
-          console.error(`❌ [${progress}] Failed to send to ${recipient.phone}: ${response.error}`);
+          console.error(`❌ [${progress}] Failed to send to ${displayPhone}: ${response.error}`);
         }
       } catch (error: any) {
         results.push({
-          phone: recipient.phone,
+          phone: actualPhone,
+          originalPhone: (recipient as any).originalPhone,
           success: false,
-          error: error.message
+          error: error.message,
+          normalized: wasNormalized
         });
         failed++;
-        console.error(`❌ [${progress}] Exception sending to ${recipient.phone}:`, error.message);
+        console.error(`❌ [${progress}] Exception sending to ${displayPhone}:`, error.message);
       }
       
       // Progress update every 10 messages
       if ((i + 1) % 10 === 0) {
-        console.log(`📊 Progress: ${i + 1}/${recipients.length} processed (${successful} sent, ${failed} failed)`);
+        console.log(`📊 Progress: ${i + 1}/${processedRecipients.length} processed (${successful} sent, ${failed} failed)`);
       }
     }
 
     console.log(`🏁 Bulk send complete: ${successful} successful, ${failed} failed`);
+    
+    if (normalizePhoneNumbers) {
+      const normalizedCount = results.filter(r => r.normalized).length;
+      console.log(`📞 Phone normalization summary: ${normalizedCount} numbers were normalized`);
+    }
 
     return {
       result: successful > 0,
       data: {
         successful,
         failed,
-        results
+        results,
+        phoneNormalizationApplied: normalizePhoneNumbers
       },
-      info: `Sent to ${successful} recipients, ${failed} failed`
+      info: `Sent to ${successful} recipients, ${failed} failed${normalizePhoneNumbers ? ' (with phone normalization)' : ''}`
     };
   }
 

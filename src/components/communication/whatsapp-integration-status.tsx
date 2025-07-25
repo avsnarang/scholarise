@@ -123,6 +123,20 @@ export function WhatsAppIntegrationStatus({ className }: IntegrationStatusProps)
       endpoint: '/api/whatsapp/test?type=connection'
     },
     {
+      id: 'webhook_status',
+      title: 'Webhook Configuration',
+      description: 'Check webhook setup and delivery status tracking',
+      icon: MessageSquare,
+      endpoint: '/api/whatsapp/webhook-debug?action=status'
+    },
+    {
+      id: 'delivery_analysis',
+      title: 'Delivery Status Analysis',
+      description: 'Analyze message delivery and read receipts',
+      icon: BarChart,
+      endpoint: '/api/whatsapp/webhook-debug?action=messages'
+    },
+    {
       id: 'templates',
       title: 'Template Management',
       description: 'Check template syncing and status',
@@ -167,6 +181,18 @@ export function WhatsAppIntegrationStatus({ className }: IntegrationStatusProps)
         messageType: 'template',
         templateName: 'hello_world',
         variables: { name: 'Test User' }
+      }
+    },
+    {
+      id: 'phone_normalization',
+      title: 'Test Phone Normalization',
+      description: 'Test automatic phone number normalization with Indian numbers',
+      action: 'bulk_test',
+      defaultParams: {
+        recipients: ['9876543210', '8765432109', '07123456789'], // Indian, Indian, UK format
+        templateName: 'hello_world',
+        normalizePhoneNumbers: true,
+        variables: {}
       }
     },
     {
