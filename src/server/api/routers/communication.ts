@@ -49,6 +49,7 @@ const sendMessageSchema = z.object({
     name: z.string(),
     phone: z.string(),
     type: z.string(),
+    additional: z.any().optional(),
   })),
   contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(), // For student-related selections
   selectedTeachers: z.array(z.string()).optional(), // For individual teacher selection
@@ -631,25 +632,29 @@ export const communicationRouter = createTRPCRouter({
                   type: contactType.toLowerCase(),
                   className,
                   // Add structured data for template variables
+                  // IMPORTANT: When messaging parents, student data ALWAYS refers to the child
                   additional: {
+                    // Student data - ALWAYS the child's information regardless of who is being contacted
                     student: {
-                      name: studentName,
-                      firstName: student.firstName,
-                      lastName: student.lastName,
-                      admissionNumber: student.admissionNumber,
-                      rollNumber: student.rollNumber,
+                      name: studentName,                    // Child's full name
+                      firstName: student.firstName,        // Child's first name
+                      lastName: student.lastName,          // Child's last name
+                      admissionNumber: student.admissionNumber, // Child's admission number
+                      rollNumber: student.rollNumber,      // Child's roll number
                       class: {
-                        name: student.section?.class?.name
+                        name: student.section?.class?.name // Child's class
                       },
                       section: {
-                        name: student.section?.name
+                        name: student.section?.name        // Child's section
                       }
                     },
                     contactType: contactType,
+                    // Contact person name - who the message is actually being sent to
                     contactPersonName: contactType === "STUDENT" ? studentName :
                                      contactType === "FATHER" ? (student.parent?.fatherName || 'Father') :
                                      contactType === "MOTHER" ? (student.parent?.motherName || 'Mother') :
                                      'Guardian',
+                    // Parent information for reference
                     parent: {
                       fatherName: student.parent?.fatherName,
                       motherName: student.parent?.motherName,
@@ -870,12 +875,27 @@ export const communicationRouter = createTRPCRouter({
             if (input.templateDataMappings) {
               console.log('📋 Using template data mappings:', input.templateDataMappings);
               
+              // Debug recipient data structure
+              console.log('📋 Recipients with valid phones (first 2):', 
+                recipientsWithValidPhones.slice(0, 2).map(r => ({
+                  id: r.id,
+                  name: r.name,
+                  type: r.type,
+                  hasAdditional: !!r.additional,
+                  additionalKeys: r.additional ? Object.keys(r.additional) : [],
+                  studentData: r.additional?.student,
+                  contactPersonName: r.additional?.contactPersonName
+                }))
+              );
+              
               const { buildTemplateParameters } = await import("@/utils/template-data-mapper");
               const dataMappings = Object.entries(input.templateDataMappings).map(([variableName, mapping]: [string, any]) => ({
                 variableName,
                 dataField: mapping.dataField,
                 fallbackValue: mapping.fallbackValue
               }));
+              
+              console.log('📋 Data mappings:', dataMappings);
               
               recipientParameters = buildTemplateParameters(recipientsWithValidPhones, dataMappings);
               console.log('📋 Built recipient parameters:', recipientParameters);

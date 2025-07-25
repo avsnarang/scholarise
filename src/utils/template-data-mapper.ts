@@ -12,20 +12,29 @@ export interface TemplateDataMapping {
 }
 
 export const AVAILABLE_DATA_FIELDS: DataFieldOption[] = [
-  // Student Data
-  { value: 'student_name', label: 'Student Name', description: 'Full name of the student', category: 'student' },
-  { value: 'student_first_name', label: 'Student First Name', description: 'First name only', category: 'student' },
-  { value: 'student_admission_number', label: 'Admission Number', description: 'Student admission/enrollment number', category: 'student' },
-  { value: 'student_roll_number', label: 'Roll Number', description: 'Student roll number', category: 'student' },
-  { value: 'student_class', label: 'Class Name', description: 'Student current class', category: 'academic' },
-  { value: 'student_section', label: 'Section Name', description: 'Student current section', category: 'academic' },
-  { value: 'class_and_section', label: 'Class & Section', description: 'Combined class and section (e.g., "Class 5 - A")', category: 'academic' },
+  // Student Data - Always refers to the child, even when messaging parents
+  { value: 'student_name', label: 'Student Name', description: 'Full name of the student (child\'s name even when messaging parents)', category: 'student' },
+  { value: 'student_first_name', label: 'Student First Name', description: 'Student\'s first name only', category: 'student' },
+  { value: 'student_admission_number', label: 'Admission Number', description: 'Student\'s admission/enrollment number', category: 'student' },
+  { value: 'student_roll_number', label: 'Roll Number', description: 'Student\'s roll number', category: 'student' },
+  { value: 'student_class', label: 'Class Name', description: 'Student\'s current class (always child\'s class, even when messaging parents)', category: 'academic' },
+  { value: 'student_section', label: 'Section Name', description: 'Student\'s current section (always child\'s section, even when messaging parents)', category: 'academic' },
+  { value: 'class', label: 'Class', description: 'Student\'s class - shorthand (always child\'s class, even when messaging parents)', category: 'academic' },
+  { value: 'section', label: 'Section', description: 'Student\'s section - shorthand (always child\'s section, even when messaging parents)', category: 'academic' },
+  { value: 'class_and_section', label: 'Class & Section', description: 'Student\'s class and section combined - always child\'s info (e.g., "Class 5 - A")', category: 'academic' },
   
   // Contact Person Data
-  { value: 'contact_person_name', label: 'Contact Person Name', description: 'Name of the person the phone number is registered to', category: 'parent' },
+  { value: 'contact_person_name', label: 'Contact Person Name', description: 'Name of the person receiving the message (student/father/mother/teacher/employee)', category: 'parent' },
+  { value: 'parent_name', label: 'Parent Name', description: 'Name of the parent (backward compatibility)', category: 'parent' },
   { value: 'father_name', label: 'Father Name', description: 'Student father name', category: 'parent' },
   { value: 'mother_name', label: 'Mother Name', description: 'Student mother name', category: 'parent' },
   { value: 'guardian_name', label: 'Guardian Name', description: 'Student guardian name', category: 'parent' },
+  
+  // Staff Data (for teacher/employee messaging)
+  { value: 'first_name', label: 'First Name', description: 'First name of the contact person (teacher/employee)', category: 'other' },
+  { value: 'last_name', label: 'Last Name', description: 'Last name of the contact person (teacher/employee)', category: 'other' },
+  { value: 'employee_code', label: 'Employee Code', description: 'Employee/Teacher ID code', category: 'other' },
+  { value: 'designation', label: 'Designation', description: 'Job title/position of the staff member', category: 'other' },
   
   // Financial Data
   { value: 'total_fee_due', label: 'Total Fee Due', description: 'Total outstanding fee amount', category: 'financial' },
@@ -60,8 +69,26 @@ export const DATA_FIELD_CATEGORIES = {
  * Extract actual data from recipient based on data field mapping
  */
 export function extractRecipientData(recipient: any, dataField: string, fallbackValue?: string): string {
+  // Add debugging for student data extraction issues
+  if (dataField.startsWith('student_') || dataField === 'class' || dataField === 'section') {
+    console.log(`🔍 Template Data Debug - ${dataField}:`, {
+      dataField,
+      hasRecipient: !!recipient,
+      hasAdditional: !!recipient?.additional,
+      hasStudent: !!recipient?.additional?.student,
+      studentData: recipient?.additional?.student,
+      recipientStructure: {
+        id: recipient?.id,
+        name: recipient?.name,
+        type: recipient?.type,
+        className: recipient?.className,
+        additionalKeys: recipient?.additional ? Object.keys(recipient.additional) : [],
+      }
+    });
+  }
+
   switch (dataField) {
-    // Student data
+    // Student data - ALWAYS refers to the child, even when messaging parents
     case 'student_name':
       return recipient.additional?.student?.name || fallbackValue || '';
     case 'student_first_name':
@@ -71,10 +98,16 @@ export function extractRecipientData(recipient: any, dataField: string, fallback
     case 'student_roll_number':
       return recipient.additional?.student?.rollNumber?.toString() || fallbackValue || '';
     case 'student_class':
+    case 'class':
+      // Always refers to the student's class, even when messaging parents
       return recipient.additional?.student?.class?.name || recipient.className || fallbackValue || '';
     case 'student_section':
+    case 'section':
+      // Always refers to the student's section, even when messaging parents
       return recipient.additional?.student?.section?.name || fallbackValue || '';
     case 'class_and_section':
+      // Combines student's class and section (e.g., "Class 5 - A")
+      // Always refers to the student's class and section, even when messaging parents
       const className = recipient.additional?.student?.class?.name || recipient.className || '';
       const sectionName = recipient.additional?.student?.section?.name || '';
       if (className && sectionName) {
@@ -86,6 +119,7 @@ export function extractRecipientData(recipient: any, dataField: string, fallback
     
     // Contact Person data (the actual person the phone number belongs to)
     case 'contact_person_name':
+    case 'parent_name':
       return recipient.additional?.contactPersonName || recipient.name || fallbackValue || '';
     case 'father_name':
       return recipient.additional?.parent?.fatherName || fallbackValue || '';
@@ -93,6 +127,16 @@ export function extractRecipientData(recipient: any, dataField: string, fallback
       return recipient.additional?.parent?.motherName || fallbackValue || '';
     case 'guardian_name':
       return recipient.additional?.parent?.guardianName || fallbackValue || '';
+    
+    // Staff data (for teachers and employees)
+    case 'first_name':
+      return recipient.additional?.firstName || fallbackValue || '';
+    case 'last_name':
+      return recipient.additional?.lastName || fallbackValue || '';
+    case 'employee_code':
+      return recipient.additional?.employeeCode || fallbackValue || '';
+    case 'designation':
+      return recipient.additional?.designation || fallbackValue || '';
     
     // Financial data
     case 'total_fee_due':

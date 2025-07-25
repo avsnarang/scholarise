@@ -348,6 +348,14 @@ export default function SendMessagePage() {
           name: `${teacher?.firstName} ${teacher?.lastName}`,
           phone: teacher?.phone || '',
           type: "teacher",
+          // Add structured data for template variables
+          additional: {
+            contactPersonName: `${teacher?.firstName} ${teacher?.lastName}`,
+            firstName: teacher?.firstName,
+            lastName: teacher?.lastName,
+            employeeCode: teacher?.employeeCode,
+            designation: teacher?.designation
+          }
         };
       }).filter(r => r.phone);
       
@@ -369,6 +377,13 @@ export default function SendMessagePage() {
           name: `${employee?.firstName} ${employee?.lastName}`,
           phone: employee?.phone || '',
           type: "employee",
+          // Add structured data for template variables
+          additional: {
+            contactPersonName: `${employee?.firstName} ${employee?.lastName}`,
+            firstName: employee?.firstName,
+            lastName: employee?.lastName,
+            designation: employee?.designation
+          }
         };
       }).filter(r => r.phone);
       
@@ -1186,6 +1201,14 @@ export default function SendMessagePage() {
                           name: `${teacher?.firstName} ${teacher?.lastName}`,
                           phone: teacher?.phone || '',
                           type: "teacher",
+                          // Add structured data for template variables consistency
+                          additional: {
+                            contactPersonName: `${teacher?.firstName} ${teacher?.lastName}`,
+                            firstName: teacher?.firstName,
+                            lastName: teacher?.lastName,
+                            employeeCode: teacher?.employeeCode,
+                            designation: teacher?.designation
+                          }
                         };
                       }).filter(r => r.phone);
                     } else if (recipientType === "EMPLOYEES") {
@@ -1197,6 +1220,13 @@ export default function SendMessagePage() {
                           name: `${employee?.firstName} ${employee?.lastName}`,
                           phone: employee?.phone || '',
                           type: "employee",
+                          // Add structured data for template variables consistency
+                          additional: {
+                            contactPersonName: `${employee?.firstName} ${employee?.lastName}`,
+                            firstName: employee?.firstName,
+                            lastName: employee?.lastName,
+                            designation: employee?.designation
+                          }
                         };
                       }).filter(r => r.phone);
                     } else if (requiresIndividualSelection) {
