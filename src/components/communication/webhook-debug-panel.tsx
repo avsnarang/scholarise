@@ -528,6 +528,49 @@ export function WebhookDebugPanel() {
                       <TestTube className="h-4 w-4" />
                       Minimal API Test
                     </Button>
+                    
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          const response = await fetch('/api/debug/whatsapp-account-status');
+                          const data = await response.json();
+                          setTestResult(data);
+                          
+                          if (data.analysis?.isInSandboxMode) {
+                            toast({
+                              title: "Account in Sandbox Mode",
+                              description: "Can only send to verified numbers",
+                              variant: "destructive"
+                            });
+                          } else if (data.analysis?.canSendToAnyNumber) {
+                            toast({
+                              title: "Account Status: LIVE",
+                              description: "Can send to any number"
+                            });
+                          } else {
+                            toast({
+                              title: "Account Status Retrieved",
+                              description: "Check results below for details"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to check account status",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading} 
+                      variant="outline"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Check Account Status
+                    </Button>
                  </div>
               </CardContent>
             </Card>
