@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     // Get specific template analysis
     const template = await db.whatsAppTemplate.findFirst({
-      where: templateId ? { id: templateId } : { name: templateName },
+      where: templateId ? { id: templateId } : templateName ? { name: templateName } : undefined,
       select: {
         id: true,
         name: true,

@@ -424,7 +424,7 @@ export default function SendMessagePage() {
         const recipientParameters = buildTemplateParameters(finalRecipients, dataMappings);
         
         // Use first recipient's parameters for the mutation (individual parameters will be built per recipient in the backend)
-        if (finalRecipients.length > 0) {
+        if (finalRecipients.length > 0 && finalRecipients[0]) {
           templateParameters = recipientParameters[finalRecipients[0].id] || {};
         }
       }

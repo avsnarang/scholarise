@@ -46,7 +46,7 @@ export function TemplateVariableMapper({
     if (!acc[field.category]) {
       acc[field.category] = [];
     }
-    acc[field.category].push(field);
+    acc[field.category]!.push(field);
     return acc;
   }, {} as Record<string, DataFieldOption[]>);
 
