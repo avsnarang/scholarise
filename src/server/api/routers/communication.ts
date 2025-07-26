@@ -2,6 +2,8 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { Permission } from "@/types/permissions";
+import { env } from "@/env.js";
+import { triggerMessageJob } from "@/utils/edge-function-client";
 
 // Lazy import Twilio utilities to prevent client-side bundling
 const getWhatsAppUtils = async () => {
@@ -775,20 +777,30 @@ export const communicationRouter = createTRPCRouter({
 
         // Create recipient records for ALL recipients
         await ctx.db.messageRecipient.createMany({
-          data: input.recipients.map(recipient => ({
-            messageId: message.id,
-            recipientType: recipient.type,
-            recipientId: recipient.id,
-            recipientName: recipient.name,
-            recipientPhone: recipient.phone || "",
-            status: "PENDING" as any
-          }))
+          data: input.recipients.map(recipient => {
+            // Normalize phone number for consistency
+            let normalizedPhone = recipient.phone || "";
+            // Remove all non-numeric characters
+            normalizedPhone = normalizedPhone.replace(/\D/g, '');
+            // Remove leading zeros or plus signs
+            if (normalizedPhone.startsWith('0')) {
+              normalizedPhone = normalizedPhone.substring(1);
+            }
+            // Ensure it's in the format that Meta API expects (without country code prefix symbols)
+            
+            return {
+              messageId: message.id,
+              recipientType: recipient.type,
+              recipientId: recipient.id,
+              recipientName: recipient.name,
+              recipientPhone: normalizedPhone,
+              status: "PENDING" as any
+            };
+          })
         });
 
         // Instead of sending immediately, queue the job for background processing
         console.log('📋 Queuing message for background processing...');
-
-        let whatsappResponse;
 
         if (input.templateId) {
           // Send using template
@@ -957,217 +969,80 @@ export const communicationRouter = createTRPCRouter({
             });
           }
 
-          // Trigger edge function for background processing (fire and forget)
-          try {
-            const { triggerMessageJob } = await import("@/utils/edge-function-client");
-            // Fire and forget - don't await this
-            triggerMessageJob({
-              jobId: messageJob.id,
-              messageId: message.id,
-              templateData: {
-                metaTemplateName: template.metaTemplateName,
-                metaTemplateLanguage: template.metaTemplateLanguage
-              },
-              recipients: recipientsWithValidPhones,
-              templateParameters: parameters,
-              templateDataMappings: input.templateDataMappings || {},
-              whatsappConfig: {
-                accessToken: communicationSettings.metaAccessToken,
-                phoneNumberId: communicationSettings.metaPhoneNumberId,
-                apiVersion: 'v21.0'
-              },
-              dryRun: input.dryRun || false
-            }).catch(error => {
-              console.error('❌ Background job failed:', error);
-              // Mark job as failed
-              ctx.db.messageJob.update({
-                where: { id: messageJob.id },
-                data: { 
-                  status: "FAILED",
-                  errorMessage: error.message,
-                  failedAt: new Date()
-                }
-              }).catch(console.error);
-            });
-          } catch (error) {
-            console.error('❌ Failed to trigger background job:', error);
-            // Mark job as failed
-            await ctx.db.messageJob.update({
-              where: { id: messageJob.id },
-              data: { 
-                status: "FAILED",
-                errorMessage: `Failed to trigger background job: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                failedAt: new Date()
-              }
-            });
-          }
-
-          whatsappResponse = {
-            result: true,
-            data: { successful: 0, failed: 0 },
-            info: 'Message queued for background processing'
+          // Trigger the edge function to send messages
+          console.log('🚀 Triggering edge function for message job:', messageJob.id);
+          
+          const edgeFunctionPayload = {
+            jobId: messageJob.id,
+            messageId: message.id,
+            templateData: {
+              metaTemplateName: template.metaTemplateName,
+              metaTemplateLanguage: template.metaTemplateLanguage || 'en'
+            },
+            recipients: recipientsWithValidPhones.map(r => ({
+              id: r.id,
+              name: r.name,
+              phone: r.phone,
+              type: r.type,
+              additional: r.additional
+            })),
+            templateParameters: parameters,
+            templateDataMappings: input.templateDataMappings || {},
+            whatsappConfig: {
+              accessToken: communicationSettings!.metaAccessToken!,
+              phoneNumberId: communicationSettings!.metaPhoneNumberId!,
+              apiVersion: env.META_WHATSAPP_API_VERSION || 'v21.0'
+            },
+            dryRun: input.dryRun || false
           };
-          } catch (sendError) {
-            console.error('❌ Failed to send bulk template message:', sendError);
+
+          // Trigger edge function asynchronously
+          void triggerMessageJob(edgeFunctionPayload);
+          
+          console.log('✅ Edge function triggered successfully');
+          
+          // Return immediately with job info
+          return {
+            success: true,
+            messageId: message.id,
+            jobId: messageJob.id,
+            totalRecipients: recipientsWithValidPhones.length,
+            successfulSent: 0,
+            failed: 0,
+            info: 'Message queued for background processing. Check message history for status.'
+          };
+
+          } catch (templateError) {
+            console.error('❌ Failed to process template message:', templateError);
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: `Failed to send template message: ${sendError instanceof Error ? sendError.message : 'Unknown error'}`,
+              message: `Failed to send template message: ${templateError instanceof Error ? templateError.message : 'Unknown error'}`,
             });
           }
+
         } else if (input.customMessage) {
-          // For custom messages, send individual text messages
-          console.log('💬 Attempting to send custom text messages...');
-          
-          const results = [];
-          let successful = 0;
-          let failed = 0;
+          // Custom message without template
+          console.log('📨 Sending custom message...');
 
-          for (const recipient of recipientsWithValidPhones) {
-            try {
-              console.log(`📱 Sending to ${recipient.phone}...`);
-              
-              // Note: This would be handled by background job in real implementation
-          const response = { result: false, error: "Custom messages not implemented in sync mode" };
-
-              console.log(`📱 Response for ${recipient.phone}:`, {
-                result: response.result,
-                error: response.error
-              });
-
-              if (response.result) {
-                results.push({ phone: recipient.phone, success: true, messageId: 'pending' });
-                successful++;
-              } else {
-                results.push({ phone: recipient.phone, success: false, error: response.error });
-                failed++;
-              }
-            } catch (error) {
-              console.error(`❌ Error sending to ${recipient.phone}:`, error);
-              results.push({ 
-                phone: recipient.phone, 
-                success: false, 
-                error: error instanceof Error ? error.message : 'Unknown error' 
-              });
-              failed++;
-            }
-
-            // Add delay to avoid rate limiting (Meta API)
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-
-          whatsappResponse = {
-            result: successful > 0,
-            data: { successful, failed, results },
-            info: `Sent to ${successful} recipients, ${failed} failed`,
-            provider: 'META'
-          };
-          
-          console.log('✅ Custom message sending completed:', {
-            totalSent: successful,
-            totalFailed: failed,
-            overallSuccess: whatsappResponse.result
+          // For now, return an error as custom messages are not yet implemented
+          throw new TRPCError({
+            code: "NOT_IMPLEMENTED",
+            message: "Custom messages are not yet implemented. Please use a template.",
           });
         } else {
+          // Neither template nor custom message provided
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Either templateId or customMessage is required",
           });
         }
-
-        // Update message status
-        await ctx.db.communicationMessage.update({
-          where: { id: message.id },
-          data: {
-            status: whatsappResponse.result ? "SENT" : "FAILED",
-            sentAt: whatsappResponse.result ? new Date() : undefined,
-            successfulSent: whatsappResponse.data?.successful || 0,
-            failed: whatsappResponse.data?.failed || 0,
-            metaMessageId: whatsappResponse.data?.results?.[0]?.messageId || undefined,
-          }
-        });
-
-        // Create recipient records for ALL recipients (including those with invalid phones)
-        const allRecipientRecords = input.recipients.map((recipient, index) => {
-          const hasValidPhone = recipient.phone && recipient.phone.trim() !== '';
-          const cleanPhone = recipient.phone?.replace(/\D/g, '') || '';
-          const isPhoneValid = cleanPhone.length >= 10;
-          
-          let status = "FAILED" as any;
-          let errorMessage = null;
-          let twilioMessageId = null;
-          let sentAt = null;
-          
-          if (!hasValidPhone) {
-            errorMessage = "No phone number provided";
-          } else if (!isPhoneValid) {
-            errorMessage = "Invalid phone number format";
-          } else {
-            // Find this recipient in the whatsappResponse results
-            const validIndex = recipientsWithValidPhones.findIndex(r => r.id === recipient.id);
-            if (validIndex !== -1 && whatsappResponse.data?.results?.[validIndex]) {
-              const result = whatsappResponse.data.results[validIndex];
-              status = result.success ? "SENT" as any : "FAILED" as any;
-              twilioMessageId = result.messageId;
-              errorMessage = result.success ? null : result.error;
-              sentAt = result.success ? new Date() : null;
-            }
-          }
-          
-          return {
-            messageId: message.id,
-            recipientType: recipient.type,
-            recipientId: recipient.id,
-            recipientName: recipient.name,
-            recipientPhone: recipient.phone || "",
-            status,
-            sentAt,
-            metaMessageId: twilioMessageId || undefined, // Using Meta API only now
-            errorMessage,
-          };
-        });
-
-        // Update existing recipient records with final status instead of creating duplicates
-        for (const recipientRecord of allRecipientRecords) {
-          await ctx.db.messageRecipient.updateMany({
-            where: {
-              messageId: recipientRecord.messageId,
-              recipientId: recipientRecord.recipientId
-            },
-            data: {
-              status: recipientRecord.status,
-              sentAt: recipientRecord.sentAt,
-              metaMessageId: recipientRecord.metaMessageId,
-              errorMessage: recipientRecord.errorMessage,
-            }
-          });
+      } catch (error) {
+        // If it's an error we already threw, re-throw it
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
-        // Log the communication activity
-        await ctx.db.communicationLog.create({
-          data: {
-            messageId: message.id,
-            action: "message_sent",
-            description: `Message "${input.title}" sent to ${recipientsWithValidPhones.length} recipients via Meta WhatsApp`,
-            metadata: JSON.parse(JSON.stringify({
-              whatsappResponse,
-              recipientCount: recipientsWithValidPhones.length,
-              templateUsed: input.templateId ? true : false
-            })),
-            userId: ctx.user?.id || 'system',
-          }
-        });
-
-        return {
-          success: whatsappResponse.result,
-          messageId: message.id,
-          totalRecipients: recipientsWithValidPhones.length,
-          successfulSent: whatsappResponse.data?.successful || 0,
-          failed: whatsappResponse.data?.failed || 0,
-          info: whatsappResponse.info
-        };
-
-      } catch (error) {
-        // Log the error
+        // Log unexpected errors
         await ctx.db.communicationLog.create({
           data: {
             action: "message_send_failed",

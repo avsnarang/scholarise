@@ -26,10 +26,12 @@ import {
   Building,
   Info,
   Edit,
-  Trash2
+  Trash2,
+  Hash,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -235,160 +237,36 @@ export default function TemplatesPage() {
     },
   });
 
-  // Sync templates mutation with optimistic feedback
+  // Sync templates mutation
   const syncTemplatesMutation = api.communication.syncTemplatesFromWhatsApp.useMutation({
-    onMutate: async () => {
-      // Show immediate feedback
-      toast({
-        title: "Syncing Templates...",
-        description: "Fetching latest templates from Meta WhatsApp API",
-      });
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Templates Synced Successfully",
-        description: `Synced ${data.syncedCount} global templates from Meta WhatsApp API. All branches can now use these templates.`,
-      });
-      // Invalidate and refetch to show new data immediately
-      utils.communication.getTemplates.invalidate();
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to Sync Templates",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Test connection mutation
-  const testConnectionMutation = api.communication.testWhatsAppConnection.useMutation({
     onSuccess: (data: any) => {
-      if (data.success) {
-        toast({
-          title: "Connection Successful",
-          description: "Successfully connected to Twilio API.",
-        });
-      } else {
-        toast({
-          title: "Connection Failed",
-          description: data.error || "Failed to connect to Twilio API.",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error) => {
       toast({
-        title: "Connection Test Failed",
+        title: "Templates synced",
+        description: `Successfully synced ${data.synced || 0} templates from Meta WhatsApp.`,
+      });
+      refetch(); // Refresh templates list
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync failed",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Debug Twilio response mutation
-  const debugTwilioMutation = api.communication.debugWhatsAppResponse.useMutation({
-    onSuccess: (data) => {
-      console.log('Debug Twilio Response:', data);
-      if (data.success) {
-        toast({
-          title: "Debug Complete",
-          description: "Check browser console for detailed Twilio API response.",
-        });
-      } else {
-        toast({
-          title: "Debug Failed",
-          description: data.error || "Failed to debug Twilio API.",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Debug Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
-      APPROVED: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300", icon: <CheckCircle className="w-3 h-3" /> },
-      PENDING: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300", icon: <Clock className="w-3 h-3" /> },
-      REJECTED: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300", icon: <XCircle className="w-3 h-3" /> },
-      PAUSED: { color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300", icon: <AlertCircle className="w-3 h-3" /> },
-      FLAGGED: { color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300", icon: <AlertCircle className="w-3 h-3" /> },
-    };
-
-    const config = statusConfig[status] || statusConfig.PENDING;
-
-    return (
-      <Badge className={cn("flex items-center gap-1", config?.color || "")}>
-        {config?.icon}
-        {status}
-      </Badge>
-    );
-  };
-
-  const handleSyncTemplates = async () => {
-    try {
-      await syncTemplatesMutation.mutateAsync({
-        originBranchId: currentBranchId || undefined, // Optional tracking of which branch initiated sync
-      });
-    } catch (error) {
-      // Error handled in mutation onError
-    }
-  };
-
-  // Delete template mutation with optimistic updates
+  // Delete template mutation
   const deleteTemplateMutation = api.communication.deleteTemplate.useMutation({
-    onMutate: async ({ templateId }) => {
-      // Cancel outgoing refetches
-      await utils.communication.getTemplates.cancel();
-      
-      // Snapshot the previous value
-      const previousTemplates = utils.communication.getTemplates.getData({ category: searchTerm || undefined });
-      
-      // Optimistically remove template
-      utils.communication.getTemplates.setData({ category: searchTerm || undefined }, (old) => {
-        if (!old) return old;
-        return old.filter((template) => template.id !== templateId);
-      });
-      
-      return { previousTemplates };
-    },
-    onSuccess: (data) => {
-      // Show appropriate message based on deletion results
-      if (data.metaDeletion) {
-        toast({
-          title: "Template Deleted ✅",
-          description: "Template has been deleted from both local database and Meta.",
-        });
-      } else if (data.metaError) {
-        toast({
-          title: "Template Partially Deleted ⚠️",
-          description: "Template deleted locally, but failed to delete from Meta. You may need to delete it manually.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Template Deleted",
-          description: "Template has been deleted successfully.",
-        });
-      }
-      // Silent refresh to get server state
-      refetch();
-      setDeleteDialogOpen(false);
-      setTemplateToDelete(null);
-    },
-    onError: (error: any, variables, context) => {
-      // Rollback on error
-      if (context?.previousTemplates) {
-        utils.communication.getTemplates.setData({ category: searchTerm || undefined }, context.previousTemplates);
-      }
+    onSuccess: () => {
       toast({
-        title: "Failed to Delete Template",
+        title: "Template deleted",
+        description: "Template has been deleted successfully.",
+      });
+      refetch(); // Refresh templates list
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
         description: error.message,
         variant: "destructive",
       });
@@ -415,17 +293,30 @@ export default function TemplatesPage() {
     submitTemplateToMetaMutation.mutate({ templateId });
   };
 
-  const handleTestConnection = async () => {
-    try {
-      await testConnectionMutation.mutateAsync();
-    } catch (error) {
-      // Error handled in mutation onError
-    }
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
+      APPROVED: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300", icon: <CheckCircle className="w-3 h-3" /> },
+      PENDING: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300", icon: <Clock className="w-3 h-3" /> },
+      REJECTED: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300", icon: <XCircle className="w-3 h-3" /> },
+      PAUSED: { color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300", icon: <AlertCircle className="w-3 h-3" /> },
+      FLAGGED: { color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300", icon: <AlertCircle className="w-3 h-3" /> },
+    };
+
+    const config = statusConfig[status] || statusConfig.PENDING;
+
+    return (
+      <Badge className={cn("flex items-center gap-1", config?.color || "")}>
+        {config?.icon}
+        {status}
+      </Badge>
+    );
   };
 
-  const handleDebugTwilio = async () => {
+  const handleSyncTemplates = async () => {
     try {
-      await debugTwilioMutation.mutateAsync();
+      await syncTemplatesMutation.mutateAsync({
+        originBranchId: currentBranchId || undefined, // Optional tracking of which branch initiated sync
+      });
     } catch (error) {
       // Error handled in mutation onError
     }
@@ -582,7 +473,6 @@ export default function TemplatesPage() {
   const filteredTemplates = templates?.filter(template =>
     template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (template.twilioContentSid && template.twilioContentSid.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (template.watiTemplateId && template.watiTemplateId.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
@@ -624,16 +514,6 @@ export default function TemplatesPage() {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={handleTestConnection}
-            disabled={testConnectionMutation.isPending}
-          >
-            <Zap className="mr-2 h-4 w-4" />
-            {testConnectionMutation.isPending
-              ? "Testing..."
-              : "Test Connection"}
-          </Button>
-
-          <Button
             onClick={handleSyncTemplates}
             disabled={syncTemplatesMutation.isPending}
           >
@@ -956,18 +836,18 @@ export default function TemplatesPage() {
                     </div>
                   )}
 
-                  <div className="border-t pt-2">
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>Messages sent:</span>
-                      <span>{selectedTemplate._count?.messages || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>Twilio Content SID:</span>
-                      <span className="font-mono text-xs">
-                        {selectedTemplate.twilioContentSid || selectedTemplate.watiTemplateId || 'N/A'}
-                      </span>
+                  {/* Timestamps */}
+                  <div>
+                    <h3 className="font-medium mb-2">Timestamps</h3>
+                    <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                      <div>Created: {format(new Date(selectedTemplate.createdAt), "PPp")}</div>
+                      <div>Updated: {format(new Date(selectedTemplate.updatedAt), "PPp")}</div>
+                      {selectedTemplate.metaApprovedAt && (
+                        <div>Approved: {format(new Date(selectedTemplate.metaApprovedAt), "PPp")}</div>
+                      )}
                     </div>
                   </div>
+
                 </div>
               ) : (
                 <div className="py-8 text-center">

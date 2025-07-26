@@ -363,7 +363,7 @@ export default function CommunicationDashboard() {
                   <AlertCircle className="mx-auto h-12 w-12 text-yellow-400 mb-4" />
                   <p className="text-gray-500 dark:text-gray-400 mb-2">No templates available</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Sync templates from Twilio or create new ones
+                    Sync templates from Meta or create new ones
                   </p>
                   {canManageTemplates && (
                     <Button variant="outline" size="sm" className="mt-3" asChild>

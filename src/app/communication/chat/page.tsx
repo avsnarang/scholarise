@@ -167,10 +167,7 @@ export default function ChatPage() {
                 </h4>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
                   Incoming WhatsApp messages from students, teachers, and parents automatically create conversations. 
-                  You can respond directly from this interface. Make sure your Twilio webhook is configured to: 
-                  <code className="mx-1 px-1 bg-blue-100 dark:bg-blue-900 rounded text-xs">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/twilio` : '/api/webhooks/twilio'}
-                  </code>
+                  You can respond directly from this interface. Make sure your Meta WhatsApp webhook is configured properly in your Meta Business dashboard.
                 </p>
               </div>
             </div>

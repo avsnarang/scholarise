@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     switch (action) {
       case 'config':
         return NextResponse.json({
-          webhookUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`,
+          webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`,
           verifyToken: env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'NOT_SET',
           appSecret: env.META_WHATSAPP_APP_SECRET ? '✅ SET' : '❌ NOT_SET',
           environment: env.NODE_ENV,
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
         };
 
         // Process the test webhook
-        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Send to our own webhook endpoint
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/meta-whatsapp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

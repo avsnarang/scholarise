@@ -125,7 +125,14 @@ serve(async (req: Request) => {
       const progress = Math.round(((i + 1) / totalRecipients) * 100)
 
       try {
-        console.log(`📤 Sending to ${recipient.phone} (${i + 1}/${totalRecipients})`)
+        console.log(`📤 Sending to recipient:`, {
+          index: i + 1,
+          total: totalRecipients,
+          recipientId: recipient.id,
+          recipientName: recipient.name,
+          recipientPhone: recipient.phone,
+          recipientType: recipient.type
+        })
 
         // Build template parameters for this recipient
         let recipientVariables: Record<string, string> = { ...(templateParameters || {}) }
@@ -161,21 +168,36 @@ serve(async (req: Request) => {
           // Add a small delay to simulate processing time
           await new Promise(resolve => setTimeout(resolve, 100))
         } else {
+          // Ensure phone number is properly formatted
+          let formattedPhone = recipient.phone
+          // Remove any non-numeric characters
+          formattedPhone = formattedPhone.replace(/\D/g, '')
+          // Ensure it doesn't start with a plus
+          if (formattedPhone.startsWith('+')) {
+            formattedPhone = formattedPhone.substring(1)
+          }
+          
+          console.log(`📱 Formatted phone number: ${recipient.phone} -> ${formattedPhone}`)
+          
           // Send actual WhatsApp message using Meta API
           messageResult = await sendWhatsAppMessage(
-            recipient.phone,
+            formattedPhone,
             templateData.metaTemplateName,
             templateData.metaTemplateLanguage || 'en',
             recipientVariables,
             whatsappConfig
           )
+          
+          console.log(`📬 WhatsApp API response:`, messageResult)
         }
 
         if (messageResult.success) {
           successfulSent++
           
-          // Update recipient status
-          await supabase
+          // Update recipient status with better error handling
+          console.log(`📝 Updating recipient ${recipient.id} with metaMessageId: ${messageResult.messageId}`)
+          
+          const { data: updateData, error: updateError } = await supabase
             .from('MessageRecipient')
             .update({
               status: 'SENT',
@@ -184,12 +206,20 @@ serve(async (req: Request) => {
             })
             .eq('messageId', messageId)
             .eq('recipientId', recipient.id)
+            .select()
+
+          if (updateError) {
+            console.error(`❌ Failed to update recipient ${recipient.id} with metaMessageId:`, updateError)
+            console.error('Update params:', { messageId, recipientId: recipient.id, metaMessageId: messageResult.messageId })
+          } else {
+            console.log(`✅ Successfully updated recipient ${recipient.id} with metaMessageId:`, updateData)
+          }
 
         } else {
           failed++
           
           // Update recipient with error
-          await supabase
+          const { error: updateError } = await supabase
             .from('MessageRecipient')
             .update({
               status: 'FAILED',
@@ -197,6 +227,10 @@ serve(async (req: Request) => {
             })
             .eq('messageId', messageId)
             .eq('recipientId', recipient.id)
+
+          if (updateError) {
+            console.error(`❌ Failed to update failed recipient ${recipient.id}:`, updateError)
+          }
         }
 
         // Update job progress (real-time)
@@ -233,7 +267,9 @@ serve(async (req: Request) => {
     }
 
     // Mark job as completed
-    await supabase
+    console.log(`📊 Marking job ${jobId} as completed with ${successfulSent} sent, ${failed} failed`)
+    
+    const { error: jobUpdateError } = await supabase
       .from('MessageJob')
       .update({
         status: 'COMPLETED',
@@ -246,17 +282,32 @@ serve(async (req: Request) => {
       })
       .eq('id', jobId)
 
+    if (jobUpdateError) {
+      console.error('❌ Failed to update job status:', jobUpdateError)
+    }
+
     // Update main message status
-    await supabase
+    console.log(`📊 Updating main message ${messageId} status`)
+    
+    const messageStatus = failed === 0 ? 'SENT' : (successfulSent === 0 ? 'FAILED' : 'SENT')
+    
+    const { error: messageUpdateError } = await supabase
       .from('CommunicationMessage')
       .update({
-        status: 'SENT',
-        sentAt: new Date().toISOString(),
+        status: messageStatus,
+        sentAt: successfulSent > 0 ? new Date().toISOString() : null,
         successfulSent,
         failed,
+        totalRecipients,
         updatedAt: new Date().toISOString()
       })
       .eq('id', messageId)
+
+    if (messageUpdateError) {
+      console.error('❌ Failed to update message status:', messageUpdateError)
+    } else {
+      console.log(`✅ Updated message ${messageId} status to ${messageStatus}`)
+    }
 
     console.log(`🎉 Job ${jobId} completed: ${successfulSent} sent, ${failed} failed`)
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -40,7 +40,6 @@ interface DeliveryLogEntry {
   sentAt?: Date | null;
   deliveredAt?: Date | null;
   errorMessage?: string | null;
-  twilioMessageId?: string | null;
 }
 
 export default function DetailedLogPage() {
@@ -54,19 +53,36 @@ export default function DetailedLogPage() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
   // Fetch message details with recipients
-  const { data: messageDetails, isLoading } = api.communication.getMessageDetails.useQuery({
+  const { data: messageDetails, isLoading, refetch: refetchDetails } = api.communication.getMessageDetails.useQuery({
     messageId: messageId || "",
   }, {
     enabled: !!messageId,
+    refetchInterval: 2000, // Always poll every 2 seconds for now, we'll control it with useEffect
   });
 
   // Fetch message job status
-  const { data: messageJob, isLoading: jobLoading } = api.communication.getMessageJob.useQuery({
+  const { data: messageJob, isLoading: jobLoading, refetch: refetchJob } = api.communication.getMessageJob.useQuery({
     messageId: messageId || "",
   }, {
     enabled: !!messageId,
-    refetchInterval: messageDetails?.status === "SENDING" ? 2000 : false, // Poll every 2 seconds if sending
+    refetchInterval: 2000, // Always poll every 2 seconds for now, we'll control it with useEffect
   });
+
+  // Combined refetch for real-time updates
+  useEffect(() => {
+    const shouldPoll = messageDetails?.status === "SENDING" || 
+                      messageJob?.status === "PROCESSING" ||
+                      messageJob?.status === "QUEUED";
+    
+    if (shouldPoll) {
+      const interval = setInterval(() => {
+        refetchDetails();
+        refetchJob();
+      }, 2000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [messageDetails?.status, messageJob?.status, refetchDetails, refetchJob]);
 
   // Export CSV functionality
   const exportCsvMutation = api.communication.exportDeliveryLog.useQuery({
@@ -214,35 +230,20 @@ export default function DetailedLogPage() {
     },
     {
       accessorKey: "sentAt",
-      header: "Sent Time",
+      header: "Sent At",
       cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.sentAt 
-            ? format(new Date(row.original.sentAt), "MMM dd, yyyy 'at' h:mm a")
-            : "Not sent"
-          }
-        </div>
+        <span className="text-sm">
+          {row.original.sentAt ? format(new Date(row.original.sentAt), "MMM dd, hh:mm a") : "-"}
+        </span>
       ),
     },
     {
       accessorKey: "deliveredAt",
-      header: "Delivered Time",
+      header: "Delivered At",
       cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.deliveredAt 
-            ? format(new Date(row.original.deliveredAt), "MMM dd, yyyy 'at' h:mm a")
-            : row.original.status === "DELIVERED" ? "Unknown" : "-"
-          }
-        </div>
-      ),
-    },
-    {
-      accessorKey: "twilioMessageId",
-      header: "Message ID",
-      cell: ({ row }) => (
-        <div className="text-xs font-mono">
-          {row.original.twilioMessageId || "-"}
-        </div>
+        <span className="text-sm">
+          {row.original.deliveredAt ? format(new Date(row.original.deliveredAt), "MMM dd, hh:mm a") : "-"}
+        </span>
       ),
     },
   ];

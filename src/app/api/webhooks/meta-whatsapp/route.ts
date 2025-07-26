@@ -949,22 +949,80 @@ async function processMessageStatus(
 ) {
   try {
     console.log(`📊 Processing message status update for ${status.id}: ${status.status}`);
+    console.log(`📊 Status details:`, {
+      messageId: status.id,
+      recipientPhone: status.recipient_id,
+      status: status.status,
+      timestamp: status.timestamp,
+      errors: status.errors
+    });
     
     const statusTimestamp = new Date(parseInt(status.timestamp) * 1000);
     
     // Try to find the message in chat messages first
-    const chatMessage = await db.chatMessage.findFirst({
+    let chatMessage = await db.chatMessage.findFirst({
       where: { metaMessageId: status.id }
     });
 
     // Also try to find in bulk message recipients (for template messages)
-    const messageRecipient = await db.messageRecipient.findFirst({
+    let messageRecipient = await db.messageRecipient.findFirst({
       where: { metaMessageId: status.id }
+    });
+
+    console.log(`🔍 Message lookup results:`, {
+      metaMessageId: status.id,
+      foundChatMessage: !!chatMessage,
+      foundMessageRecipient: !!messageRecipient,
+      recipientDetails: messageRecipient ? {
+        id: messageRecipient.id,
+        recipientId: messageRecipient.recipientId,
+        recipientPhone: messageRecipient.recipientPhone,
+        currentStatus: messageRecipient.status
+      } : null
     });
 
     if (!chatMessage && !messageRecipient) {
       console.log(`⚠️ Message ${status.id} not found in chat messages or bulk recipients for status update`);
-      return;
+      
+      // Let's check if there are any pending messages without metaMessageId
+      const phoneNumber = status.recipient_id ? `+${status.recipient_id}` : null;
+      if (phoneNumber) {
+        const pendingRecipient = await db.messageRecipient.findFirst({
+          where: {
+            recipientPhone: {
+              contains: phoneNumber.replace('+', '')
+            },
+            metaMessageId: null,
+            status: 'PENDING'
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+        
+        if (pendingRecipient) {
+          console.log(`🔄 Found pending recipient without metaMessageId, updating...`, {
+            recipientId: pendingRecipient.id,
+            recipientPhone: pendingRecipient.recipientPhone
+          });
+          
+          // Update this recipient with the metaMessageId
+          await db.messageRecipient.update({
+            where: { id: pendingRecipient.id },
+            data: {
+              metaMessageId: status.id,
+              status: 'SENT'
+            }
+          });
+          
+          // Continue processing with this recipient
+          messageRecipient = pendingRecipient;
+        }
+      }
+      
+      if (!messageRecipient) {
+        return;
+      }
     }
 
     // Map Meta status to our enum values

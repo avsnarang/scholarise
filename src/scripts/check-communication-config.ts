@@ -110,7 +110,7 @@ INSERT INTO "CommunicationSettings" (
 );`);
 
     console.log('\n🌐 Don\'t forget to configure your webhook URL in Meta:');
-    console.log(`   Webhook URL: ${process.env.NEXTAUTH_URL || 'https://your-domain.com'}/api/webhooks/meta-whatsapp`);
+    console.log(`   Webhook URL: ${process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com'}/api/webhooks/meta-whatsapp`);
     console.log('   Verify Token: (use the same token you set in metaWebhookVerifyToken)');
 
   } catch (error) {
