@@ -72,7 +72,7 @@ async function testChatMessages() {
     const conversationWithBranch = await prisma.conversation.findUnique({
       where: { id: sampleConversation.id },
       include: {
-        branch: { select: { id: true, name: true, isActive: true } }
+        branch: { select: { id: true, name: true } }
       }
     });
 

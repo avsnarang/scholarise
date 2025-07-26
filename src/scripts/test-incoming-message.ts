@@ -103,8 +103,8 @@ async function testIncomingMessage() {
     };
 
     console.log('\n🧪 Testing incoming message webhook...');
-    console.log('📱 Test message from:', testPayload.entry[0].changes[0].value.messages[0].from);
-    console.log('💬 Message content:', testPayload.entry[0].changes[0].value.messages[0].text.body);
+    console.log('📱 Test message from:', testPayload.entry[0]?.changes[0]?.value.messages[0]?.from);
+    console.log('💬 Message content:', testPayload.entry[0]?.changes[0]?.value.messages[0]?.text?.body);
     console.log('🏢 Branch:', communicationSettings.branch.name);
 
     // Send the test webhook

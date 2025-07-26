@@ -50,7 +50,7 @@ const metaConfigSchema = z.object({
   accessToken: z.string().min(1, "Access Token is required"),
   phoneNumberId: z.string().min(1, "Phone Number ID is required"),
   businessAccountId: z.string().optional(),
-  apiVersion: z.string().default("v21.0"),
+  apiVersion: z.string().min(1, "API Version is required"),
   webhookVerifyToken: z.string().min(1, "Webhook Verify Token is required"),
   isActive: z.boolean(),
 });

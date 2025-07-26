@@ -153,7 +153,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
         
         if (status === 'SUBSCRIBED') {
           setConnectionError(null);
-        } else if (status === 'SUBSCRIPTION_ERROR') {
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           const errorMsg = `Conversation list subscription error: ${err?.message || 'Unknown error'}`;
           console.error('❌', errorMsg);
           setConnectionError(errorMsg);
@@ -201,7 +201,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
         }
       )
       .subscribe((status, err) => {
-        if (status === 'SUBSCRIPTION_ERROR') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           const errorMsg = `New message subscription error: ${err?.message || 'Unknown error'}`;
           console.error('❌', errorMsg);
           setConnectionError(errorMsg);

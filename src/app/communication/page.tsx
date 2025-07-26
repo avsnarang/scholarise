@@ -97,17 +97,6 @@ export default function CommunicationDashboard() {
     dateTo: new Date(), // Today
   }, {
     enabled: shouldFetchData, // Only run when authenticated
-    onError: (error) => {
-      console.log('❌ getStats Query Error:', {
-        errorCode: error.data?.code,
-        errorMessage: error.message,
-        shouldFetchData,
-        timestamp: new Date().toISOString()
-      });
-    },
-    onSuccess: () => {
-      console.log('✅ getStats Query Success');
-    }
   });
 
   // Fetch recent messages

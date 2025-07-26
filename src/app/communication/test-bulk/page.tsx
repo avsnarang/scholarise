@@ -173,10 +173,10 @@ export default function TestBulkMessagePage() {
 
           <Button 
             onClick={handleSendTestMessage}
-            disabled={!selectedTemplate || sendTestMessageMutation.isLoading}
+            disabled={!selectedTemplate || sendTestMessageMutation.isPending}
             className="w-full"
           >
-            {sendTestMessageMutation.isLoading ? (
+            {sendTestMessageMutation.isPending ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Sending Test Message...

@@ -46,8 +46,7 @@ async function simpleChatCheck() {
     // Check if conversations have proper branch assignments
     const conversationsWithBranch = await prisma.conversation.count({
       where: {
-        branchId: { not: null },
-        branch: { isActive: true }
+        branchId: { not: '' }
       }
     });
 
@@ -57,7 +56,7 @@ async function simpleChatCheck() {
     const realtimeReady = await prisma.conversation.count({
       where: {
         isActive: true,
-        branchId: { not: null },
+        branchId: { not: '' },
         lastMessageAt: { not: null }
       }
     });

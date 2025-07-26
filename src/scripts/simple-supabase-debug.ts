@@ -98,7 +98,7 @@ async function testRealtimeSubscription() {
                 const { data: insertData, error: insertError } = await supabase
                   .from('ChatMessage')
                   .insert({
-                    conversationId: conversations[0].id,
+                    conversationId: conversations[0]!.id,
                     direction: 'OUTGOING',
                     content: 'Test realtime message ' + Date.now(),
                     messageType: 'TEXT',

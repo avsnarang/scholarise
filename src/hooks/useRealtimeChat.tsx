@@ -155,7 +155,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
         
         if (status === 'SUBSCRIBED') {
           setConnectionError(null);
-        } else if (status === 'SUBSCRIPTION_ERROR') {
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           const errorMsg = `Message subscription error: ${err?.message || 'Unknown error'}`;
           console.error('❌', errorMsg);
           setConnectionError(errorMsg);
@@ -222,7 +222,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
       .subscribe((status, err) => {
         console.log('📡 Conversation subscription status:', status, err);
         
-        if (status === 'SUBSCRIPTION_ERROR') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           const errorMsg = `Conversation subscription error: ${err?.message || 'Unknown error'}`;
           console.error('❌', errorMsg);
           setConnectionError(errorMsg);

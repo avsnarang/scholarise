@@ -37,7 +37,6 @@ async function checkChatStatus() {
     const orphanedConversations = await prisma.conversation.count({
       where: {
         OR: [
-          { branchId: null },
           { branchId: '' },
           { 
             branchId: { 
@@ -99,11 +98,7 @@ async function checkChatStatus() {
     // Check for conversations missing metadata
     const conversationsMissingMetadata = await prisma.conversation.count({
       where: {
-        OR: [
-          { lastMessageAt: null },
-          { lastMessageFrom: null },
-          { unreadCount: null }
-        ]
+        lastMessageAt: null
       }
     });
 
