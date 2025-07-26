@@ -773,19 +773,17 @@ export const communicationRouter = createTRPCRouter({
           branchId: input.branchId
         });
 
-        // Create recipient records
-        if (recipientsWithValidPhones.length > 0) {
-          await ctx.db.messageRecipient.createMany({
-            data: recipientsWithValidPhones.map(recipient => ({
-              messageId: message.id,
-              recipientType: recipient.type,
-              recipientId: recipient.id,
-              recipientName: recipient.name,
-              recipientPhone: recipient.phone,
-              status: "PENDING"
-            }))
-          });
-        }
+        // Create recipient records for ALL recipients
+        await ctx.db.messageRecipient.createMany({
+          data: input.recipients.map(recipient => ({
+            messageId: message.id,
+            recipientType: recipient.type,
+            recipientId: recipient.id,
+            recipientName: recipient.name,
+            recipientPhone: recipient.phone || "",
+            status: "PENDING" as any
+          }))
+        });
 
         // Instead of sending immediately, queue the job for background processing
         console.log('📋 Queuing message for background processing...');
@@ -1128,9 +1126,21 @@ export const communicationRouter = createTRPCRouter({
           };
         });
 
-        await ctx.db.messageRecipient.createMany({
-          data: allRecipientRecords
-        });
+        // Update existing recipient records with final status instead of creating duplicates
+        for (const recipientRecord of allRecipientRecords) {
+          await ctx.db.messageRecipient.updateMany({
+            where: {
+              messageId: recipientRecord.messageId,
+              recipientId: recipientRecord.recipientId
+            },
+            data: {
+              status: recipientRecord.status,
+              sentAt: recipientRecord.sentAt,
+              metaMessageId: recipientRecord.metaMessageId,
+              errorMessage: recipientRecord.errorMessage,
+            }
+          });
+        }
 
         // Log the communication activity
         await ctx.db.communicationLog.create({
