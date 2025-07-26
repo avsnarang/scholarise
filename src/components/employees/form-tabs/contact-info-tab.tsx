@@ -1,6 +1,7 @@
 import { useFormContext } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import type { EmployeeFormValues } from "@/server/api/employee-types";
@@ -215,7 +216,7 @@ export function ContactInfoTab() {
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Phone Number" />
+                <PhoneInput {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -230,7 +231,7 @@ export function ContactInfoTab() {
             <FormItem>
               <FormLabel>Alternate Phone</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Alternate Phone" />
+                <PhoneInput {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -275,7 +276,7 @@ export function ContactInfoTab() {
             <FormItem>
               <FormLabel>Emergency Contact Phone</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Emergency Contact Phone" />
+                <PhoneInput {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

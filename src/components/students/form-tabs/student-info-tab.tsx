@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   FormField,
   FormItem,
@@ -353,7 +354,7 @@ export function StudentInfoTab({ branch, sections, generateSchoolEmail }: Studen
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value || ""} placeholder="Phone Number" />
+                <PhoneInput {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>

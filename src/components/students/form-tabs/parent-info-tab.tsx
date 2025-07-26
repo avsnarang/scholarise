@@ -1,5 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   FormField,
   FormItem,
@@ -100,7 +101,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
+                    <PhoneInput {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -211,7 +212,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
+                    <PhoneInput {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -322,7 +323,7 @@ export function ParentInfoTab() {
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value || ""} placeholder="Mobile Number" />
+                    <PhoneInput {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
