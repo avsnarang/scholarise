@@ -24,21 +24,29 @@ interface MessageJobPayload {
 
 export async function triggerMessageJob(payload: MessageJobPayload): Promise<void> {
   try {
-    // Get Supabase configuration
+    // Get Supabase configuration - use direct process.env since this runs in server context
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase configuration missing')
+    // Call Supabase Edge Function
+    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-message`
+    
+    console.log('🔍 Edge function environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!supabaseServiceRoleKey,
+      serviceRoleKeyLength: supabaseServiceRoleKey?.length || 0,
+      serviceRoleKeyPrefix: supabaseServiceRoleKey?.substring(0, 20) + '...',
+      url: edgeFunctionUrl
+    });
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error(`Supabase configuration missing - URL: ${!!supabaseUrl}, Key: ${!!supabaseServiceRoleKey}`)
     }
 
     // Validate WhatsApp configuration
     if (!payload.whatsappConfig.accessToken || !payload.whatsappConfig.phoneNumberId) {
       throw new Error('WhatsApp configuration missing in payload')
     }
-
-    // Call Supabase Edge Function
-    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-message`
     
     console.log('📤 Triggering edge function:', {
       url: edgeFunctionUrl,
@@ -51,7 +59,7 @@ export async function triggerMessageJob(payload: MessageJobPayload): Promise<voi
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Authorization': `Bearer ${supabaseServiceRoleKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
