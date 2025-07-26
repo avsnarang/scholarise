@@ -92,14 +92,22 @@ export const createTRPCContext = async (
           env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         );
         
-        try {
-          const { data: { user }, error } = await supabase.auth.getUser(token);
-          if (!error && user) {
-            userId = user.id;
-          }
-        } catch (authError) {
-          console.error('Error verifying Supabase token:', authError);
+              try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        console.log('🔍 tRPC Context (App Router) - Token Verification:', {
+          hasToken: !!token,
+          tokenLength: token?.length || 0,
+          hasUser: !!user,
+          userId: user?.id,
+          hasError: !!error,
+          errorMessage: error?.message
+        });
+        if (!error && user) {
+          userId = user.id;
         }
+      } catch (authError) {
+        console.error('Error verifying Supabase token:', authError);
+      }
       }
       
       return createInnerTRPCContext({
@@ -138,6 +146,14 @@ export const createTRPCContext = async (
       
       try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
+        console.log('🔍 tRPC Context - Token Verification:', {
+          hasToken: !!token,
+          tokenLength: token?.length || 0,
+          hasUser: !!user,
+          userId: user?.id,
+          hasError: !!error,
+          errorMessage: error?.message
+        });
         if (!error && user) {
           userId = user.id;
         }
@@ -285,6 +301,7 @@ export const protectedProcedure = t.procedure
   .use(branchFilterMiddleware)
   .use(({ ctx, next }) => {
     if (!ctx.userId) {
+      console.log('❌ Protected Procedure - UNAUTHORIZED: No userId in context');
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({

@@ -61,6 +61,7 @@ const sendMessageSchema = z.object({
   })).optional(),
   scheduledAt: z.date().optional(),
   branchId: z.string().min(1, "Branch ID is required"),
+  dryRun: z.boolean().optional().default(false), // Add dry-run mode
 });
 
 export const communicationRouter = createTRPCRouter({
@@ -730,7 +731,13 @@ export const communicationRouter = createTRPCRouter({
           organizationCountry: 'IN'
         };
 
-        // Create message record first
+        // Filter recipients with valid phone numbers first
+        const recipientsWithValidPhones = input.recipients.filter(recipient => {
+          const phone = recipient.phone?.replace(/\D/g, '') || '';
+          return phone && phone.length >= 10;
+        });
+
+        // Create message record
         const message = await ctx.db.communicationMessage.create({
           data: {
             title: input.title,
@@ -740,17 +747,11 @@ export const communicationRouter = createTRPCRouter({
             status: "PENDING",
             branchId: input.branchId,
             createdBy: ctx.user?.id || 'system',
-            totalRecipients: input.recipients.length,
+            totalRecipients: recipientsWithValidPhones.length,
             sentAt: undefined,
             successfulSent: 0,
             failed: 0,
           }
-        });
-
-        // Filter recipients with valid phone numbers
-        const recipientsWithValidPhones = input.recipients.filter(recipient => {
-          const phone = recipient.phone?.replace(/\D/g, '') || '';
-          return phone && phone.length >= 10;
         });
 
         if (recipientsWithValidPhones.length === 0) {
@@ -768,25 +769,26 @@ export const communicationRouter = createTRPCRouter({
           templateId: input.templateId,
           hasCustomMessage: !!input.customMessage,
           recipientType: input.recipientType,
-                     userId: ctx.user?.id || 'system',
+          userId: ctx.user?.id || 'system',
           branchId: input.branchId
         });
 
-        // Send immediately
-        const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
-        
-        // 🔍 DIAGNOSTIC: Test WhatsApp client initialization
-        let whatsappClient;
-        try {
-          whatsappClient = getDefaultWhatsAppClient();
-          console.log('✅ WhatsApp client initialized successfully');
-        } catch (clientError) {
-          console.error('❌ Failed to initialize WhatsApp client:', clientError);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `WhatsApp configuration error: ${clientError instanceof Error ? clientError.message : 'Unknown error'}`,
+        // Create recipient records
+        if (recipientsWithValidPhones.length > 0) {
+          await ctx.db.messageRecipient.createMany({
+            data: recipientsWithValidPhones.map(recipient => ({
+              messageId: message.id,
+              recipientType: recipient.type,
+              recipientId: recipient.id,
+              recipientName: recipient.name,
+              recipientPhone: recipient.phone,
+              status: "PENDING"
+            }))
           });
         }
+
+        // Instead of sending immediately, queue the job for background processing
+        console.log('📋 Queuing message for background processing...');
 
         let whatsappResponse;
 
@@ -914,42 +916,99 @@ export const communicationRouter = createTRPCRouter({
             variables: template.templateVariables
           });
 
-          whatsappResponse = await whatsappClient.sendBulkTemplateMessage(
-              recipientsWithValidPhones.map(recipient => {
-                // Use individual recipient parameters if available, otherwise use default parameters
-                const individualParams = recipientParameters[recipient.id] || parameters;
-                
-                // Only include the exact variables the template expects - no extra name parameters
-                let variables = {};
-                if (templateHasVariables) {
-                  variables = { 
-                    ...individualParams
-                    // No extra name parameters - only send what the template actually expects
-                  };
-                }
-                
-                return {
-                  phone: recipient.phone,
-                  name: recipient.name,
-                  variables
-                };
-              }),
-              template.metaTemplateName,
-              templateHasVariables ? parameters : {}, // Only pass base parameters if template has variables
-              template.metaTemplateLanguage || 'en',
-              phoneNormalizationConfig.enabled,
-              {
-                defaultCountryCode: phoneNormalizationConfig.defaultCountryCode,
-                organizationCountry: phoneNormalizationConfig.organizationCountry
+          // Create MessageJob for background processing
+          console.log('📋 Creating message job for background processing...');
+          
+          const messageJob = await ctx.db.messageJob.create({
+            data: {
+              messageId: message.id,
+              status: "QUEUED",
+              totalRecipients: recipientsWithValidPhones.length,
+              processedRecipients: 0,
+              successfulSent: 0,
+              failed: 0,
+              progress: 0,
+              createdBy: ctx.user?.id || 'system',
+              metadata: {
+                templateData: {
+                  metaTemplateName: template.metaTemplateName,
+                  metaTemplateLanguage: template.metaTemplateLanguage
+                },
+                templateParameters: parameters,
+                templateDataMappings: input.templateDataMappings || {},
+                dryRun: input.dryRun || false
               }
-            );
-            
-            console.log('✅ Bulk template message response:', {
-              result: whatsappResponse.result,
-              successful: whatsappResponse.data?.successful,
-              failed: whatsappResponse.data?.failed,
-              info: whatsappResponse.info
+            }
+          });
+
+          // Update message status to indicate it's being processed
+          await ctx.db.communicationMessage.update({
+            where: { id: message.id },
+            data: { status: "SENDING" }
+          });
+
+          // Get WhatsApp configuration from database settings
+          const communicationSettings = await ctx.db.communicationSettings.findFirst({
+            where: { branchId: input.branchId }
+          });
+
+          if (!communicationSettings?.metaAccessToken || !communicationSettings?.metaPhoneNumberId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "WhatsApp configuration not found. Please configure WhatsApp settings first.",
             });
+          }
+
+          // Trigger edge function for background processing (fire and forget)
+          try {
+            const { triggerMessageJob } = await import("@/utils/edge-function-client");
+            // Fire and forget - don't await this
+            triggerMessageJob({
+              jobId: messageJob.id,
+              messageId: message.id,
+              templateData: {
+                metaTemplateName: template.metaTemplateName,
+                metaTemplateLanguage: template.metaTemplateLanguage
+              },
+              recipients: recipientsWithValidPhones,
+              templateParameters: parameters,
+              templateDataMappings: input.templateDataMappings || {},
+              whatsappConfig: {
+                accessToken: communicationSettings.metaAccessToken,
+                phoneNumberId: communicationSettings.metaPhoneNumberId,
+                apiVersion: 'v21.0'
+              },
+              dryRun: input.dryRun || false
+            }).catch(error => {
+              console.error('❌ Background job failed:', error);
+              // Mark job as failed
+              ctx.db.messageJob.update({
+                where: { id: messageJob.id },
+                data: { 
+                  status: "FAILED",
+                  errorMessage: error.message,
+                  failedAt: new Date()
+                }
+              }).catch(console.error);
+            });
+          } catch (error) {
+            console.error('❌ Failed to trigger background job:', error);
+            // Mark job as failed
+            await ctx.db.messageJob.update({
+              where: { id: messageJob.id },
+              data: { 
+                status: "FAILED",
+                errorMessage: `Failed to trigger background job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                failedAt: new Date()
+              }
+            });
+          }
+
+          whatsappResponse = {
+            result: true,
+            data: { successful: 0, failed: 0 },
+            info: 'Message queued for background processing'
+          };
           } catch (sendError) {
             console.error('❌ Failed to send bulk template message:', sendError);
             throw new TRPCError({
@@ -969,19 +1028,16 @@ export const communicationRouter = createTRPCRouter({
             try {
               console.log(`📱 Sending to ${recipient.phone}...`);
               
-              const response = await whatsappClient.sendTextMessage(
-                recipient.phone,
-                input.customMessage
-              );
+              // Note: This would be handled by background job in real implementation
+          const response = { result: false, error: "Custom messages not implemented in sync mode" };
 
               console.log(`📱 Response for ${recipient.phone}:`, {
                 result: response.result,
-                error: response.error,
-                messageId: response.data?.messages?.[0]?.id
+                error: response.error
               });
 
               if (response.result) {
-                results.push({ phone: recipient.phone, success: true, messageId: response.data?.messages?.[0]?.id || 'unknown' });
+                results.push({ phone: recipient.phone, success: true, messageId: 'pending' });
                 successful++;
               } else {
                 results.push({ phone: recipient.phone, success: false, error: response.error });
@@ -1067,7 +1123,7 @@ export const communicationRouter = createTRPCRouter({
             recipientPhone: recipient.phone || "",
             status,
             sentAt,
-            metaMessageId: twilioMessageId, // Using Meta API only now
+            metaMessageId: twilioMessageId || undefined, // Using Meta API only now
             errorMessage,
           };
         });
@@ -1232,6 +1288,33 @@ export const communicationRouter = createTRPCRouter({
         ...message,
         deliveryStats
       };
+    }),
+
+  // Get message job status
+  getMessageJob: protectedProcedure
+    .input(z.object({
+      messageId: z.string().min(1, "Message ID is required"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const job = await ctx.db.messageJob.findUnique({
+        where: { messageId: input.messageId },
+        select: {
+          id: true,
+          status: true,
+          progress: true,
+          totalRecipients: true,
+          processedRecipients: true,
+          successfulSent: true,
+          failed: true,
+          errorMessage: true,
+          startedAt: true,
+          completedAt: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
+      return job;
     }),
 
   // Debug environment variables for Meta WhatsApp API
@@ -1444,19 +1527,30 @@ export const communicationRouter = createTRPCRouter({
         return {
           id: null,
           branchId: input.branchId,
+          // Twilio settings
           twilioAccountSid: "",
           twilioAuthToken: "",
           twilioWhatsAppFrom: "",
           twilioIsActive: false,
+          // Meta WhatsApp settings
+          metaAccessToken: "",
+          metaPhoneNumberId: "",
+          metaBusinessAccountId: "",
+          metaApiVersion: "v23.0",
+          metaWebhookVerifyToken: "",
+          metaIsActive: false,
+          // Template settings
           templateAutoSyncEnabled: true,
           templateSyncInterval: 24,
           templateDefaultCategory: "UTILITY",
           templateDefaultLanguage: "en",
+          // Message settings
           messageEnableScheduling: true,
           messageMaxRecipientsPerMessage: 1000,
           messageRetryFailedMessages: true,
           messageMaxRetryAttempts: 3,
           messageRetryDelay: 30,
+          // Notification settings
           notificationEmailEnabled: false,
           notificationEmail: "",
           notifyOnFailures: true,
@@ -1473,19 +1567,30 @@ export const communicationRouter = createTRPCRouter({
   saveSettings: protectedProcedure
     .input(z.object({
       branchId: z.string().min(1, "Branch ID is required"),
+      // Twilio settings
       twilioAccountSid: z.string().optional(),
       twilioAuthToken: z.string().optional(),
       twilioWhatsAppFrom: z.string().optional(),
       twilioIsActive: z.boolean().default(false),
+      // Meta WhatsApp settings
+      metaAccessToken: z.string().optional(),
+      metaPhoneNumberId: z.string().optional(),
+      metaBusinessAccountId: z.string().optional(),
+      metaApiVersion: z.string().default("v23.0"),
+      metaWebhookVerifyToken: z.string().optional(),
+      metaIsActive: z.boolean().default(false),
+      // Template settings
       templateAutoSyncEnabled: z.boolean().default(true),
       templateSyncInterval: z.number().min(1).max(72).default(24),
       templateDefaultCategory: z.string().optional(),
       templateDefaultLanguage: z.string().default("en"),
+      // Message settings
       messageEnableScheduling: z.boolean().default(true),
       messageMaxRecipientsPerMessage: z.number().min(1).max(10000).default(1000),
       messageRetryFailedMessages: z.boolean().default(true),
       messageMaxRetryAttempts: z.number().min(0).max(10).default(3),
       messageRetryDelay: z.number().min(5).max(300).default(30),
+      // Notification settings
       notificationEmailEnabled: z.boolean().default(false),
       notificationEmail: z.string().optional(),
       notifyOnFailures: z.boolean().default(true),

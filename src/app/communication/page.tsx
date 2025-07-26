@@ -4,6 +4,7 @@ import React from "react";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/providers/auth-provider";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,12 +72,42 @@ function StatCard({ title, value, description, icon, trend, className }: StatCar
 export default function CommunicationDashboard() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
+  const { user, session, loading: authLoading } = useAuth();
+  
+  // Check authentication state properly
+  const isAuthenticated = !!user && !!session;
+  const shouldFetchData = isAuthenticated && !authLoading && !!session?.access_token;
+
+  // Debug authentication state
+  console.log('🔍 Communication Dashboard Auth State:', {
+    isAuthenticated,
+    authLoading,
+    shouldFetchData,
+    hasUser: !!user,
+    hasSession: !!session,
+    hasAccessToken: !!session?.access_token,
+    userId: user?.id,
+    sessionAccessToken: session?.access_token ? '***' + session.access_token.slice(-10) : 'none'
+  });
 
   // Fetch communication statistics
   const { data: stats, isLoading: statsLoading } = api.communication.getStats.useQuery({
     branchId: currentBranchId || undefined,
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Start of month
     dateTo: new Date(), // Today
+  }, {
+    enabled: shouldFetchData, // Only run when authenticated
+    onError: (error) => {
+      console.log('❌ getStats Query Error:', {
+        errorCode: error.data?.code,
+        errorMessage: error.message,
+        shouldFetchData,
+        timestamp: new Date().toISOString()
+      });
+    },
+    onSuccess: () => {
+      console.log('✅ getStats Query Success');
+    }
   });
 
   // Fetch recent messages
@@ -84,11 +115,15 @@ export default function CommunicationDashboard() {
     branchId: currentBranchId || undefined,
     limit: 5,
     offset: 0,
+  }, {
+    enabled: shouldFetchData, // Only run when authenticated
   });
 
   // Fetch available templates (now global)
   const { data: templates, isLoading: templatesLoading } = api.communication.getTemplates.useQuery({
     isActive: true,
+  }, {
+    enabled: shouldFetchData, // Only run when authenticated
   });
 
   // Permission checks

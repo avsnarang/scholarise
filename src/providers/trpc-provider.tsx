@@ -37,9 +37,10 @@ export function TRPCProvider({
         return;
       }
       
-      // Filter out tRPC development logging noise
+      // Filter out tRPC development logging noise (but allow our debug logs)
       if (
         process.env.NODE_ENV === 'development' &&
+        !errorString.includes('🔍') && // Keep our debug logs
         (errorString.includes('query #') || 
          errorString.includes('.getAll {}') ||
          errorString.includes('[[ <<'))

@@ -74,6 +74,7 @@ import {
   logRealtimeEvent 
 } from "@/utils/chat-realtime-utils";
 import { useToast } from "@/components/ui/use-toast";
+import { useRealtimeChat } from "@/hooks/useRealtimeChat";
 
 interface WhatsAppChatProps {
   conversationId: string | null;
@@ -93,7 +94,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
   const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({});
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  // API calls
+  // API calls - REMOVED refetchInterval polling for realtime subscriptions
   const { data: conversation, isLoading: conversationLoading, error: conversationError, refetch: refetchConversation } = api.chat.getConversation.useQuery(
     { conversationId: conversationId! },
     { enabled: !!conversationId }
@@ -103,7 +104,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
     { conversationId: conversationId! },
     { 
       enabled: !!conversationId,
-      refetchInterval: REALTIME_INTERVALS.MESSAGES // ⚡ Realtime message polling
+      // ⚡ REMOVED: refetchInterval: REALTIME_INTERVALS.MESSAGES // Old polling approach
     }
   );
 
@@ -111,9 +112,15 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
     { conversationId: conversationId! },
     { 
       enabled: !!conversationId,
-      refetchInterval: REALTIME_INTERVALS.WINDOW_STATUS // ⚡ Realtime window status
+      // ⚡ REMOVED: refetchInterval: REALTIME_INTERVALS.WINDOW_STATUS // Old polling approach
     }
   );
+
+  // ⚡ NEW: Real-time chat subscription
+  const { isConnected, newMessageCount, connectionError, markAsViewed, refreshMessages } = useRealtimeChat({
+    conversationId: conversationId!,
+    branchId: conversation?.branchId || "",
+  });
 
   const { data: templates } = api.chat.getTemplates.useQuery(
     { branchId: conversation?.branchId || "" },
@@ -127,9 +134,8 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
       if (messageInputRef.current) {
         messageInputRef.current.focus();
       }
-      // ⚡ Immediate realtime updates
-      refetchMessages();
-      refetchMessageWindow();
+      // ⚡ Real-time subscriptions handle updates automatically
+      // No need for manual refetch calls
     },
     onError: (error) => {
       setIsLoading(false);
@@ -146,9 +152,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
       setShowTemplateSelector(false);
       setSelectedTemplate("");
       setTemplateVariables({});
-      // ⚡ Immediate realtime updates
-      refetchMessages();
-      refetchMessageWindow();
+      // ⚡ Real-time subscriptions handle updates automatically
       toast({
         title: "Template message sent",
         description: "Your template message has been sent successfully.",
@@ -167,9 +171,9 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
   const markAsReadMutation = api.chat.markAsRead.useMutation({
     onSuccess: () => {
       console.log('✅ Successfully marked conversation as read');
-      // Refetch conversation to update unread count in the chat header
+      // Mark as viewed in realtime hook
+      markAsViewed();
       refetchConversation();
-      // The sidebar will automatically refresh due to its real-time polling
       toast({
         title: "Marked as read",
         description: "All messages in this conversation have been marked as read.",
@@ -535,6 +539,45 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
                       {conversation?.participantPhone?.replace('whatsapp:', '') || 'No phone'}
                     </span>
                     
+                    {/* Real-time connection status */}
+                    <span className="mx-1">•</span>
+                    <div className={cn(
+                      "flex items-center gap-1",
+                      isConnected ? "text-green-600" : connectionError ? "text-red-600" : "text-yellow-600"
+                    )}>
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        isConnected ? "bg-green-500" : connectionError ? "bg-red-500" : "bg-yellow-500"
+                      )}></div>
+                      <span className="text-[10px] font-medium">
+                        {isConnected ? "Live" : connectionError ? "Error" : "Connecting..."}
+                      </span>
+                      {connectionError && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 px-1 text-[10px]"
+                          onClick={refreshMessages}
+                          title={`Connection error: ${connectionError}. Click to retry.`}
+                        >
+                          Retry
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* New message count indicator */}
+                    {newMessageCount > 0 && (
+                      <>
+                        <span className="mx-1">•</span>
+                        <div className="flex items-center gap-1 text-blue-600">
+                          <MessageCircle className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">
+                            {newMessageCount} new
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    
                     {/* Window status indicator - minimal */}
                     {messageWindow?.canSendFreeform && timeRemaining && timeRemaining !== "EXPIRED" && (
                       <>
@@ -841,7 +884,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
 
       {/* Messages Area */}
       <div className="flex-1 flex flex-col min-h-0 relative">
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1" id="messages-container">
           <div className="p-4 space-y-4">
             {messagesLoading ? (
               <div className="space-y-6">

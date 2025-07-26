@@ -54,6 +54,7 @@ import {
   REALTIME_INTERVALS,
   logRealtimeEvent
 } from "@/utils/chat-realtime-utils";
+import { useRealtimeConversationList } from "@/hooks/useRealtimeConversationList";
 
 interface WhatsAppSidebarProps {
   selectedConversationId?: string | null;
@@ -160,7 +161,7 @@ export function WhatsAppSidebar({
   const [searchTerm, setSearchTerm] = useState("");
   const [participantFilter, setParticipantFilter] = useState<string>("all");
 
-  // Fetch conversations
+  // Fetch conversations - REMOVED refetchInterval polling for realtime subscriptions
   const { 
     data: conversationsData, 
     isLoading: conversationsLoading, 
@@ -172,15 +173,15 @@ export function WhatsAppSidebar({
     limit: 100,
   }, {
     enabled: !!currentBranchId && hasPermission("view_communication_logs"),
-    refetchInterval: REALTIME_INTERVALS.CONVERSATIONS, // ⚡ Realtime polling will handle read state updates
+    // ⚡ REMOVED: refetchInterval: REALTIME_INTERVALS.CONVERSATIONS // Old polling approach
   });
 
-  // Fetch chat statistics with faster refresh
+  // Fetch chat statistics - REMOVED refetchInterval polling 
   const { data: stats, refetch: refetchStats } = api.chat.getStats.useQuery({
     branchId: currentBranchId || "",
   }, {
     enabled: !!currentBranchId && hasPermission("view_communication_logs"),
-    refetchInterval: REALTIME_INTERVALS.STATS, // ⚡ Realtime stats
+    // ⚡ REMOVED: refetchInterval: REALTIME_INTERVALS.STATS // Old polling approach
   });
 
   // Refresh contact metadata mutation
@@ -196,6 +197,15 @@ export function WhatsAppSidebar({
     onError: (error) => {
       console.error('❌ Failed to refresh metadata:', error);
     },
+  });
+
+  // ⚡ NEW: Real-time conversation list subscription
+  const { 
+    isConnected, 
+    connectionError,
+    highlightedConversations,
+  } = useRealtimeConversationList({
+    branchId: currentBranchId || "",
   });
 
   // Get enhanced contact type display text
@@ -341,12 +351,36 @@ export function WhatsAppSidebar({
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-primary" />
               <h1 className="text-base font-semibold">WhatsApp Chat</h1>
+              {/* Real-time connection indicator */}
+              <div className={cn(
+                "flex items-center gap-1 text-xs",
+                isConnected ? "text-green-600" : connectionError ? "text-red-600" : "text-yellow-600"
+              )}>
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  isConnected ? "bg-green-500" : connectionError ? "bg-red-500" : "bg-yellow-500"
+                )}></div>
+                <span className="font-medium text-[10px]">
+                  {isConnected ? "Live" : connectionError ? "Error" : "..."}
+                </span>
+                {connectionError && (
+                  <span 
+                    className="text-[9px] text-red-500 cursor-pointer hover:underline" 
+                    title={`Connection error: ${connectionError}`}
+                  >
+                    !
+                  </span>
+                )}
+              </div>
             </div>
-            {totalUnread > 0 && (
-              <Badge variant="default" className="h-4 text-xs px-1.5">
-                {formatUnreadCount(totalUnread)}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Unread count indicator */}
+              {totalUnread > 0 && (
+                <Badge variant="default" className="h-4 text-xs px-1.5">
+                  {formatUnreadCount(totalUnread)}
+                </Badge>
+              )}
+            </div>
           </div>
 
                     {/* Styled Controls Grid */}
@@ -494,9 +528,14 @@ export function WhatsAppSidebar({
                       selectedConversationId === conversation.id && 
                       "bg-primary/10 border-primary/20 shadow-sm",
                       // ⚡ Enhanced styling for unread conversations using utility
-                      getUnreadConversationClasses(conversation.unreadCount)
+                      getUnreadConversationClasses(conversation.unreadCount),
+                      // ⚡ NEW: Highlight new conversations
+                      highlightedConversations.has(conversation.id) && 
+                      "ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20"
                     )}
-                    onClick={() => onConversationSelect?.(conversation.id)}
+                    onClick={() => {
+                      onConversationSelect?.(conversation.id);
+                    }}
                   >
                     <div className="relative shrink-0">
                       <Avatar className="h-8 w-8 ring-1 ring-background shadow-sm">

@@ -46,6 +46,15 @@ const twilioConfigSchema = z.object({
   isActive: z.boolean(),
 });
 
+const metaConfigSchema = z.object({
+  accessToken: z.string().min(1, "Access Token is required"),
+  phoneNumberId: z.string().min(1, "Phone Number ID is required"),
+  businessAccountId: z.string().optional(),
+  apiVersion: z.string().default("v21.0"),
+  webhookVerifyToken: z.string().min(1, "Webhook Verify Token is required"),
+  isActive: z.boolean(),
+});
+
 const templateSettingsSchema = z.object({
   autoSyncEnabled: z.boolean(),
   syncInterval: z.coerce.number().min(1, "Sync interval must be at least 1 hour").max(72, "Sync interval cannot exceed 72 hours"),
@@ -70,6 +79,7 @@ const notificationSettingsSchema = z.object({
 });
 
 type TwilioConfigFormData = z.infer<typeof twilioConfigSchema>;
+type MetaConfigFormData = z.infer<typeof metaConfigSchema>;
 type TemplateSettingsFormData = z.infer<typeof templateSettingsSchema>;
 type MessageSettingsFormData = z.infer<typeof messageSettingsSchema>;
 type NotificationSettingsFormData = z.infer<typeof notificationSettingsSchema>;
@@ -79,7 +89,7 @@ export default function CommunicationSettingsPage() {
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState("twilio-config");
+  const [activeTab, setActiveTab] = useState("meta-config");
   const [testingConnection, setTestingConnection] = useState(false);
 
   // Load existing settings
@@ -117,7 +127,19 @@ export default function CommunicationSettingsPage() {
     },
   });
 
-  // Update form when settings load
+  const metaForm = useForm<MetaConfigFormData>({
+    resolver: zodResolver(metaConfigSchema),
+    defaultValues: {
+      accessToken: "",
+      phoneNumberId: "",
+      businessAccountId: "",
+      apiVersion: "v21.0",
+      webhookVerifyToken: "",
+      isActive: true,
+    },
+  });
+
+  // Update forms when settings load
   React.useEffect(() => {
     if (existingSettings) {
       const settings = existingSettings as any;
@@ -127,8 +149,17 @@ export default function CommunicationSettingsPage() {
         whatsAppFrom: settings.twilioWhatsAppFrom || "whatsapp:+14155238886",
         isActive: settings.twilioIsActive ?? true,
       });
+
+      metaForm.reset({
+        accessToken: settings.metaAccessToken || "",
+        phoneNumberId: settings.metaPhoneNumberId || "",
+        businessAccountId: settings.metaBusinessAccountId || "",
+        apiVersion: settings.metaApiVersion || "v21.0",
+        webhookVerifyToken: settings.metaWebhookVerifyToken || "",
+        isActive: settings.metaIsActive ?? false,
+      });
     }
-  }, [existingSettings, twilioForm]);
+  }, [existingSettings, twilioForm, metaForm]);
 
   const templateForm = useForm<TemplateSettingsFormData>({
     resolver: zodResolver(templateSettingsSchema),
@@ -301,6 +332,20 @@ export default function CommunicationSettingsPage() {
     });
   };
 
+  const handleSaveMetaConfig = (data: MetaConfigFormData) => {
+    if (!currentBranchId) return;
+    
+    saveSettingsMutation.mutate({
+      branchId: currentBranchId,
+      metaAccessToken: data.accessToken,
+      metaPhoneNumberId: data.phoneNumberId,
+      metaBusinessAccountId: data.businessAccountId,
+      metaApiVersion: data.apiVersion,
+      metaWebhookVerifyToken: data.webhookVerifyToken,
+      metaIsActive: data.isActive,
+    });
+  };
+
   const handleSaveTemplateSettings = (data: TemplateSettingsFormData) => {
     if (!currentBranchId) return;
     
@@ -378,7 +423,11 @@ export default function CommunicationSettingsPage() {
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="meta-config" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Meta WhatsApp
+            </TabsTrigger>
             <TabsTrigger value="twilio-config" className="flex items-center gap-2">
               <Key className="w-4 h-4" />
               Twilio API
@@ -396,6 +445,197 @@ export default function CommunicationSettingsPage() {
               Notifications
             </TabsTrigger>
           </TabsList>
+
+          {/* Meta WhatsApp Configuration */}
+          <TabsContent value="meta-config">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-green-600" />
+                  Meta WhatsApp Business API Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure your Meta WhatsApp Business API credentials for sending and receiving messages
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormProvider {...metaForm}>
+                  <form onSubmit={metaForm.handleSubmit(handleSaveMetaConfig)} className="space-y-6">
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <Badge variant={existingSettings?.metaIsActive ? "default" : "secondary"}>
+                        {existingSettings?.metaIsActive ? "Active" : "Inactive"}
+                      </Badge>
+                      {existingSettings?.metaIsActive && (
+                        <Badge variant="outline" className="text-green-600">
+                          Ready for incoming messages
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={metaForm.control}
+                        name="accessToken"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Access Token *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="password" 
+                                placeholder="EAAxxxxxxxxx..." 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Your Meta WhatsApp Business API access token
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={metaForm.control}
+                        name="phoneNumberId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number ID *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="123456789012345" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Your WhatsApp Business phone number ID from Meta
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={metaForm.control}
+                        name="businessAccountId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Business Account ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="123456789012345" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Your Meta Business Account ID (optional)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={metaForm.control}
+                        name="apiVersion"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>API Version</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select API version" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="v21.0">v21.0 (Latest)</SelectItem>
+                                <SelectItem value="v20.0">v20.0</SelectItem>
+                                <SelectItem value="v19.0">v19.0</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Meta WhatsApp API version to use
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={metaForm.control}
+                      name="webhookVerifyToken"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Webhook Verify Token *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="your-secure-webhook-token" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            A secure token for webhook verification. Use the same token in your Meta WhatsApp webhook configuration.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={metaForm.control}
+                      name="isActive"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Enable Meta WhatsApp Integration</FormLabel>
+                            <FormDescription>
+                              When enabled, the system will use Meta WhatsApp API for bidirectional messaging
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator />
+
+                    {/* Webhook Configuration Info */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+                        📡 Webhook Configuration Required
+                      </h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                        To receive incoming messages, configure these settings in your Meta WhatsApp Business dashboard:
+                      </p>
+                      <div className="text-xs font-mono bg-blue-100 dark:bg-blue-900/40 p-2 rounded">
+                        <div>Webhook URL: <span className="text-blue-800 dark:text-blue-200">{process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com'}/api/webhooks/meta-whatsapp</span></div>
+                        <div>Verify Token: <span className="text-blue-800 dark:text-blue-200">(use the same token entered above)</span></div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <Button type="submit" disabled={saveSettingsMutation.isPending}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {saveSettingsMutation.isPending ? "Saving..." : "Save Meta Configuration"}
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          // Test webhook functionality
+                          window.open('/api/webhooks/meta-whatsapp/debug?action=config', '_blank');
+                        }}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Test Configuration
+                      </Button>
+                    </div>
+                  </form>
+                </FormProvider>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Twilio API Configuration */}
           <TabsContent value="twilio-config">

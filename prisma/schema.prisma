@@ -9,98 +9,96 @@ datasource db {
 }
 
 model Branch {
-  id                         String                       @id @default(cuid())
-  name                       String
-  code                       String                       @unique
-  address                    String?
-  city                       String?
-  state                      String?
-  country                    String?
-  phone                      String?
-  email                      String?
-  createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime                     @updatedAt
-  order                      Int                          @default(0)
-  admissionLeads             AdmissionLead[]
-  AssessmentCategory         AssessmentCategory[]
-  AssessmentConfiguration    AssessmentConfiguration[]
-  AssessmentMarks            AssessmentMarks[]
-  assessmentPermissions      AssessmentPermission[]
-  assessmentSchemas          AssessmentSchema[]
-  backgroundTasks            BackgroundTask[]
-  chapters                   Chapter[]
-  classes                    Class[]
-  classwiseFees              ClasswiseFee[]
-  concessionApprovalSettings ConcessionApprovalSettings[]
-  concessionTypes            ConcessionType[]
-  courtesyCallFeedbacks      CourtesyCallFeedback[]
-  departments                Department[]
-  designations               Designation[]
-  emailConfiguration         EmailConfiguration?
-  employees                  Employee[]
-  employeeBranchAccess       EmployeeBranchAccess[]
-  ExamConfiguration          ExamConfiguration[]
-  ExamSchedule               ExamSchedule[]
-  ExamType                   ExamType[]
-  feeCollections             FeeCollection[]
-  feeHeads                   FeeHead[]
-  feeTerms                   FeeTerm[]
-  gradeScales                GradeScale[]
-  leavePolicies              LeavePolicy[]
-  MarksEntry                 MarksEntry[]
-  moneyCollections           MoneyCollection[]
-  rbacRoles                  RbacRole[]
-  SeatingPlan                SeatingPlan[]
-  students                   Student[]
-  studentAssessmentScores    StudentAssessmentScore[]
-  studentConcessions         StudentConcession[]
-  subjectTeachers            SubjectTeacher[]
-  teachers                   Teacher[]
-  terms                      Term[]
-  transportRoutes            TransportRoute[]
-  transportBuses             TransportBus[]
-  transportFeeStructures     TransportFeeStructure[]
-  transportConfigurations    TransportConfiguration[]
-  transportStaff             TransportStaff[]
-  transportNotifications     TransportNotification[]
-  transportNotificationConfigs TransportNotificationConfig[]
-  transportInspections       TransportBusInspection[]
+  id                           String                        @id @default(cuid())
+  name                         String
+  code                         String                        @unique
+  address                      String?
+  city                         String?
+  state                        String?
+  country                      String?
+  phone                        String?
+  email                        String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  order                        Int                           @default(0)
+  admissionLeads               AdmissionLead[]
+  AssessmentCategory           AssessmentCategory[]
+  AssessmentConfiguration      AssessmentConfiguration[]
+  AssessmentMarks              AssessmentMarks[]
+  assessmentPermissions        AssessmentPermission[]
+  assessmentSchemas            AssessmentSchema[]
+  backgroundTasks              BackgroundTask[]
+  chapters                     Chapter[]
+  classes                      Class[]
+  classwiseFees                ClasswiseFee[]
+  communicationMessages        CommunicationMessage[]
+  communicationSettings        CommunicationSettings?
+  concessionApprovalSettings   ConcessionApprovalSettings[]
+  concessionTypes              ConcessionType[]
+  conversations                Conversation[]
+  courtesyCallFeedbacks        CourtesyCallFeedback[]
+  departments                  Department[]
+  designations                 Designation[]
+  emailConfiguration           EmailConfiguration?
+  employees                    Employee[]
+  employeeBranchAccess         EmployeeBranchAccess[]
+  ExamConfiguration            ExamConfiguration[]
+  ExamSchedule                 ExamSchedule[]
+  ExamType                     ExamType[]
+  feeCollections               FeeCollection[]
+  feeHeads                     FeeHead[]
+  feeTerms                     FeeTerm[]
+  gradeScales                  GradeScale[]
+  leavePolicies                LeavePolicy[]
+  MarksEntry                   MarksEntry[]
+  moneyCollections             MoneyCollection[]
+  rbacRoles                    RbacRole[]
+  SeatingPlan                  SeatingPlan[]
+  staffMoves                   StaffMove[]
+  students                     Student[]
+  studentAssessmentScores      StudentAssessmentScore[]
+  studentConcessions           StudentConcession[]
+  subjectTeachers              SubjectTeacher[]
+  teachers                     Teacher[]
+  terms                        Term[]
+  transportBuses               TransportBus[]
+  transportInspections         TransportBusInspection[]
+  transportConfigurations      TransportConfiguration?
+  transportFeeStructures       TransportFeeStructure[]
   transportInspectionTemplates TransportInspectionTemplate[]
-  userRoles                  UserRole[]
-  attendanceDevices          AttendanceDevice[]
-  attendanceLocations        AttendanceLocation[]
-  attendanceWindows          AttendanceWindow[]
-  locationTypes              LocationType[]
-  whatsappTemplates          WhatsAppTemplate[]
-  communicationMessages      CommunicationMessage[]
-  communicationSettings      CommunicationSettings?
-  conversations              Conversation[]
-  staffMoves                 StaffMove[]
+  transportNotifications       TransportNotification[]
+  transportNotificationConfigs TransportNotificationConfig[]
+  transportRoutes              TransportRoute[]
+  transportStaff               TransportStaff[]
+  userRoles                    UserRole[]
+  whatsappTemplates            WhatsAppTemplate[]
+  attendanceDevices            AttendanceDevice[]
+  attendanceLocations          AttendanceLocation[]
+  attendanceWindows            AttendanceWindow[]
+  locationTypes                LocationType[]
 }
 
 model User {
-  id                    String                 @id // Supabase user ID
-  authIdentifier        String?                @unique // Username for parents, email for others (stored in Supabase Auth email field)
-  email                 String?                // Real email address
-  firstName             String?
-  lastName              String?
-  phone                 String?
-  avatarUrl             String?
-  userType              String?                // 'parent', 'student', 'teacher', 'employee', 'staff'
-  isActive              Boolean                @default(true)
-  lastLoginAt           DateTime?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  metadata              Json?
-
-  // Relationships
-  student               Student?
-  parent                Parent?
-  teacher               Teacher?
-  employee              Employee?
-  admissionStaff        AdmissionStaff?
-  userRoles             UserRole[]
-  staffMoves            StaffMove[]
+  id             String          @id
+  email          String?
+  firstName      String?
+  lastName       String?
+  phone          String?
+  avatarUrl      String?
+  isActive       Boolean         @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  metadata       Json?
+  authIdentifier String?         @unique
+  userType       String?
+  admissionStaff AdmissionStaff?
+  employee       Employee?
+  parent         Parent?
+  staffMoves     StaffMove[]
+  student        Student?
+  teacher        Teacher?
+  userRoles      UserRole[]
 
   @@index([authIdentifier])
   @@index([email])
@@ -212,9 +210,9 @@ model Parent {
   fatherAadharNumber   String?
   guardianAadharNumber String?
   motherAadharNumber   String?
-  userId               String?   @unique // NEW: Foreign key to User
-  students             Student[]
+  userId               String?   @unique
   user                 User?     @relation(fields: [userId], references: [id])
+  students             Student[]
 
   @@index([userId])
 }
@@ -319,9 +317,9 @@ model Teacher {
   sections                   Section[]
   SubjectTeacher             SubjectTeacher[]
   branch                     Branch                 @relation(fields: [branchId], references: [id])
+  user                       User?                  @relation(fields: [userId], references: [id])
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
-  user                       User?                @relation(fields: [userId], references: [id])
   staffAttendances           StaffAttendance[]
 
   @@index([employeeCode])
@@ -400,33 +398,32 @@ model Employee {
   branch                     Branch                 @relation(fields: [branchId], references: [id])
   departmentRef              Department?            @relation("EmployeeDepartment", fields: [departmentId], references: [id])
   designationRef             Designation?           @relation("EmployeeDesignation", fields: [designationId], references: [id])
+  user                       User?                  @relation(fields: [userId], references: [id])
   branchAccessRecords        EmployeeBranchAccess[] @relation("EmployeeBranchAccessRecords")
   salaries                   EmployeeSalary[]
   leaveApplications          LeaveApplication[]
   leaveBalances              LeaveBalance[]
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
-  user                       User?                  @relation(fields: [userId], references: [id])
   staffAttendances           StaffAttendance[]
 
   @@index([userId])
 }
 
 model StaffMove {
-  id              String   @id @default(cuid())
-  originalId      String   // ID of the original record (teacher or employee)
-  newId           String   // ID of the new record after move
-  fromType        String   // "TEACHER" or "EMPLOYEE"
-  toType          String   // "TEACHER" or "EMPLOYEE"
-  reason          String   // Reason for the move
-  movedBy         String   // User ID who performed the move
-  movedAt         DateTime @default(now())
-  originalData    Json     // Backup of original data
-  branchId        String
-  
-  branch          Branch   @relation(fields: [branchId], references: [id])
-  mover           User     @relation(fields: [movedBy], references: [id])
-  
+  id           String   @id @default(cuid())
+  originalId   String
+  newId        String
+  fromType     String
+  toType       String
+  reason       String
+  movedBy      String
+  movedAt      DateTime @default(now())
+  originalData Json
+  branchId     String
+  branch       Branch   @relation(fields: [branchId], references: [id])
+  mover        User     @relation(fields: [movedBy], references: [id])
+
   @@index([originalId, fromType])
   @@index([newId, toType])
   @@index([movedBy])
@@ -484,25 +481,25 @@ model Section {
 }
 
 model AcademicSession {
-  id                      String                      @id @default(cuid())
+  id                      String                   @id @default(cuid())
   name                    String
   startDate               DateTime
   endDate                 DateTime
-  isActive                Boolean                     @default(true)
-  createdAt               DateTime                    @default(now())
-  updatedAt               DateTime                    @updatedAt
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   academicRecords         AcademicRecord[]
   classes                 Class[]
-  classwiseFees           ClasswiseFee[]              @relation("ClasswiseFeeSession")
-  concessionTypes         ConcessionType[]            @relation("ConcessionTypeSession")
-  feeCollections          FeeCollection[]             @relation("FeeCollectionSession")
-  feeHeads                FeeHead[]                   @relation("FeeHeadSession")
-  feeTerms                FeeTerm[]                   @relation("FeeTermSession")
-  moneyCollections        MoneyCollection[]           @relation("MoneyCollectionSession")
-  studentConcessions      StudentConcession[]         @relation("StudentConcessionSession")
+  classwiseFees           ClasswiseFee[]           @relation("ClasswiseFeeSession")
+  concessionTypes         ConcessionType[]         @relation("ConcessionTypeSession")
+  feeCollections          FeeCollection[]          @relation("FeeCollectionSession")
+  feeHeads                FeeHead[]                @relation("FeeHeadSession")
+  feeTerms                FeeTerm[]                @relation("FeeTermSession")
+  moneyCollections        MoneyCollection[]        @relation("MoneyCollectionSession")
+  studentConcessions      StudentConcession[]      @relation("StudentConcessionSession")
   terms                   Term[]
-  transportFeeStructures  TransportFeeStructure[]     @relation("TransportFeeSession")
-  transportConfigurations TransportConfiguration[]    @relation("TransportConfigSession")
+  transportConfigurations TransportConfiguration[] @relation("TransportConfigSession")
+  transportFeeStructures  TransportFeeStructure[]  @relation("TransportFeeSession")
 }
 
 model Term {
@@ -564,100 +561,86 @@ model StudentSibling {
 }
 
 model TransportRoute {
-  id            String                    @id @default(cuid())
+  id            String                  @id @default(cuid())
   name          String
   description   String?
-  startLocation String?
-  endLocation   String?
-  totalDistance Float?                    // in kilometers
-  estimatedTime Int?                      // in minutes
-  isActive      Boolean                   @default(true)
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  isActive      Boolean                 @default(true)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
   branchId      String
-  
-  // Relations
-  branch        Branch                    @relation(fields: [branchId], references: [id])
-  stops         TransportStop[]
+  endLocation   String?
+  estimatedTime Int?
+  startLocation String?
+  totalDistance Float?
   assignments   TransportAssignment[]
   buses         TransportBusRoute[]
   feeStructures TransportFeeStructure[]
+  branch        Branch                  @relation(fields: [branchId], references: [id])
+  stops         TransportStop[]
   trips         TransportTrip[]
 }
 
 model TransportStop {
-  id            String                    @id @default(cuid())
+  id            String                  @id @default(cuid())
   name          String
   address       String?
+  distance      Float?
+  sequence      Int
+  isActive      Boolean                 @default(true)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  routeId       String
+  dropTime      String?
   latitude      Float?
   longitude     Float?
-  distance      Float?                    // distance from school in km
-  sequence      Int                       // order in the route
-  pickupTime    String?                   // HH:MM format
-  dropTime      String?                   // HH:MM format
-  isActive      Boolean                   @default(true)
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  routeId       String
-  
-  // Relations
-  route         TransportRoute            @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pickupTime    String?
   assignments   TransportAssignment[]
   feeStructures TransportFeeStructure[]
-  
+  route         TransportRoute          @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
   @@unique([routeId, sequence])
 }
 
 model TransportBus {
-  id                String                    @id @default(cuid())
-  busNumber         String                    @unique
-  registrationNo    String?
-  capacity          Int
-  purchaseDate      DateTime?
-  model             String?
-  fuelType          String                    @default("Diesel") // Diesel, Petrol, CNG, Electric
-  isActive          Boolean                   @default(true)
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  branchId          String
-
-  // Insurance Details
-  insuranceNumber   String?
-  insuranceExpiry   DateTime?
-  pollutionCert     String?
-  pollutionExpiry   DateTime?
-  fitnessExpiry     DateTime?
-
-  // Financial Details
-  loanAmount        Float?
-  loanEmi           Float?
-  loanStartDate     DateTime?
-  loanFulfillmentDate DateTime?
-  loanProvider      String?
-
-  // Tax Details
-  lastTaxSubmissionDate DateTime?
-  nextTaxDueDate    DateTime?
-  taxType           String?
-  taxAmount         Float?
-  taxSubmissionFrequency String? // Monthly, Quarterly, Yearly
-
-  // Permit Details
-  permitType        String?
-  permitNumber      String?
-  permitIssueDate   DateTime?
-  permitExpiryDate  DateTime?
-  permitIssuedBy    String?
-
-  // Relations
-  branch            Branch                    @relation(fields: [branchId], references: [id])
-  routes            TransportBusRoute[]
-  fuelLogs          TransportFuelLog[]
-  maintenanceLogs   TransportMaintenanceLog[]
-  trips             TransportTrip[]
-  staffAssignments  TransportStaffAssignment[]
-  notifications     TransportNotification[]
-  inspections       TransportBusInspection[]
+  id                     String                     @id @default(cuid())
+  busNumber              String                     @unique
+  registrationNo         String?
+  capacity               Int
+  purchaseDate           DateTime?
+  model                  String?
+  fuelType               String                     @default("Diesel")
+  isActive               Boolean                    @default(true)
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  branchId               String
+  insuranceNumber        String?
+  insuranceExpiry        DateTime?
+  pollutionCert          String?
+  pollutionExpiry        DateTime?
+  fitnessExpiry          DateTime?
+  loanAmount             Float?
+  loanEmi                Float?
+  loanStartDate          DateTime?
+  loanFulfillmentDate    DateTime?
+  loanProvider           String?
+  lastTaxSubmissionDate  DateTime?
+  nextTaxDueDate         DateTime?
+  taxType                String?
+  taxAmount              Float?
+  taxSubmissionFrequency String?
+  permitType             String?
+  permitNumber           String?
+  permitIssueDate        DateTime?
+  permitExpiryDate       DateTime?
+  permitIssuedBy         String?
+  branch                 Branch                     @relation(fields: [branchId], references: [id])
+  inspections            TransportBusInspection[]
+  routes                 TransportBusRoute[]
+  fuelLogs               TransportFuelLog[]
+  maintenanceLogs        TransportMaintenanceLog[]
+  notifications          TransportNotification[]
+  staffAssignments       TransportStaffAssignment[]
+  trips                  TransportTrip[]
 
   @@index([busNumber])
   @@index([branchId])
@@ -672,40 +655,36 @@ model TransportBusRoute {
   isActive  Boolean        @default(true)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
-  
-  // Relations
   bus       TransportBus   @relation(fields: [busId], references: [id])
   route     TransportRoute @relation(fields: [routeId], references: [id])
-  
+
   @@unique([busId, routeId, startDate])
 }
 
 model TransportFuelLog {
-  id               String         @id @default(cuid())
-  busId            String
-  fuelDate         DateTime       @default(now())
-  fuelQuantity     Float          // in liters
-  pricePerLiter    Float
-  totalAmount      Float
-  odometerReading  Int?           // km reading
-  fuelStation      String?
-  receiptNumber    String?
-  notes            String?
-  createdBy        String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  
-  // Relations
-  bus              TransportBus   @relation(fields: [busId], references: [id])
-  
+  id              String       @id @default(cuid())
+  busId           String
+  fuelDate        DateTime     @default(now())
+  fuelQuantity    Float
+  pricePerLiter   Float
+  totalAmount     Float
+  odometerReading Int?
+  fuelStation     String?
+  receiptNumber   String?
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  bus             TransportBus @relation(fields: [busId], references: [id])
+
   @@index([busId, fuelDate])
 }
 
 model TransportMaintenanceLog {
-  id              String         @id @default(cuid())
+  id              String       @id @default(cuid())
   busId           String
-  maintenanceDate DateTime       @default(now())
-  maintenanceType String         // Regular, Repair, Emergency
+  maintenanceDate DateTime     @default(now())
+  maintenanceType String
   description     String
   cost            Float?
   serviceProvider String?
@@ -714,139 +693,122 @@ model TransportMaintenanceLog {
   invoiceNumber   String?
   notes           String?
   createdBy       String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
-  // Relations
-  bus             TransportBus   @relation(fields: [busId], references: [id])
-  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  bus             TransportBus @relation(fields: [busId], references: [id])
+
   @@index([busId, maintenanceDate])
 }
 
 model TransportFeeStructure {
-  id              String                    @id @default(cuid())
+  id              String                @id @default(cuid())
   name            String
   description     String?
-  feeType         TransportFeeType          @default(ROUTE_WISE)
+  feeType         TransportFeeType      @default(ROUTE_WISE)
   amount          Float
   sessionId       String
   branchId        String
-  routeId         String?                   // for route-wise fees
-  stopId          String?                   // for stop-wise fees
-  applicableFrom  DateTime                  @default(now())
+  routeId         String?
+  stopId          String?
+  applicableFrom  DateTime              @default(now())
   applicableUntil DateTime?
-  isActive        Boolean                   @default(true)
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  
-  // Relations
-  session         AcademicSession           @relation("TransportFeeSession", fields: [sessionId], references: [id])
-  branch          Branch                    @relation(fields: [branchId], references: [id])
-  route           TransportRoute?           @relation(fields: [routeId], references: [id])
-  stop            TransportStop?            @relation(fields: [stopId], references: [id])
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   assignments     TransportAssignment[]
-  
+  branch          Branch                @relation(fields: [branchId], references: [id])
+  route           TransportRoute?       @relation(fields: [routeId], references: [id])
+  session         AcademicSession       @relation("TransportFeeSession", fields: [sessionId], references: [id])
+  stop            TransportStop?        @relation(fields: [stopId], references: [id])
+
   @@index([branchId, sessionId])
   @@index([feeType])
 }
 
 model TransportAssignment {
-  id                    String                    @id @default(cuid())
-  studentId             String
-  routeId               String?
-  stopId                String?
-  feeStructureId        String?
-  assignmentType        TransportAssignmentType   @default(ROUTE_STOP)
-  startDate             DateTime                  @default(now())
-  endDate               DateTime?
-  isActive              Boolean                   @default(true)
-  assignedBy            String?
-  notes                 String?
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  
-  // Relations
-  student               Student                   @relation(fields: [studentId], references: [id])
-  route                 TransportRoute?           @relation(fields: [routeId], references: [id])
-  stop                  TransportStop?            @relation(fields: [stopId], references: [id])
-  feeStructure          TransportFeeStructure?    @relation(fields: [feeStructureId], references: [id])
-  
+  id             String                  @id @default(cuid())
+  startDate      DateTime                @default(now())
+  endDate        DateTime?
+  isActive       Boolean                 @default(true)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  studentId      String
+  stopId         String?
+  assignedBy     String?
+  assignmentType TransportAssignmentType @default(ROUTE_STOP)
+  feeStructureId String?
+  notes          String?
+  routeId        String?
+  feeStructure   TransportFeeStructure?  @relation(fields: [feeStructureId], references: [id])
+  route          TransportRoute?         @relation(fields: [routeId], references: [id])
+  stop           TransportStop?          @relation(fields: [stopId], references: [id])
+  student        Student                 @relation(fields: [studentId], references: [id])
+
   @@index([studentId])
   @@index([routeId])
   @@index([stopId])
 }
 
 model TransportConfiguration {
-  id                          String   @id @default(cuid())
-  branchId                    String   @unique
-  sessionId                   String
-  feeCalculationMethod        TransportFeeType @default(ROUTE_WISE)
-  allowStopWiseFees           Boolean  @default(true)
-  allowRouteWiseFees          Boolean  @default(true)
-  defaultFuelType             String   @default("Diesel")
-  autoCalculateDistances      Boolean  @default(true)
-  requireDriverDetails        Boolean  @default(true)
-  requireConductorDetails     Boolean  @default(false)
-  enableFuelTracking          Boolean  @default(true)
-  enableMaintenanceTracking   Boolean  @default(true)
-  maxCapacityPerBus           Int      @default(50)
-  fuelAlertThreshold          Float    @default(10.0) // liters
-  maintenanceAlertDays        Int      @default(30)
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
-  
-  // Relations
-  branch                      Branch   @relation(fields: [branchId], references: [id])
-  session                     AcademicSession @relation("TransportConfigSession", fields: [sessionId], references: [id])
-  
+  id                        String           @id @default(cuid())
+  branchId                  String           @unique
+  sessionId                 String
+  feeCalculationMethod      TransportFeeType @default(ROUTE_WISE)
+  allowStopWiseFees         Boolean          @default(true)
+  allowRouteWiseFees        Boolean          @default(true)
+  defaultFuelType           String           @default("Diesel")
+  autoCalculateDistances    Boolean          @default(true)
+  requireDriverDetails      Boolean          @default(true)
+  requireConductorDetails   Boolean          @default(false)
+  enableFuelTracking        Boolean          @default(true)
+  enableMaintenanceTracking Boolean          @default(true)
+  maxCapacityPerBus         Int              @default(50)
+  fuelAlertThreshold        Float            @default(10.0)
+  maintenanceAlertDays      Int              @default(30)
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  branch                    Branch           @relation(fields: [branchId], references: [id])
+  session                   AcademicSession  @relation("TransportConfigSession", fields: [sessionId], references: [id])
+
   @@index([branchId])
 }
 
 model TransportStaff {
-  id                  String                    @id @default(cuid())
-  employeeCode        String?                   @unique
-  firstName           String
-  lastName            String
-  phone               String?
-  email               String?
-  address             String?
-  staffType           TransportStaffType
-  status              TransportStaffStatus      @default(ACTIVE)
-  dateOfJoining       DateTime?
-  dateOfLeaving       DateTime?
-  
-  // License Details
-  licenseNumber       String?
-  licenseType         String?
-  licenseIssueDate    DateTime?
-  licenseExpiryDate   DateTime?
-  licenseIssuedBy     String?
-  
-  // Medical Details
-  medicalCertNumber   String?
-  medicalIssueDate    DateTime?
-  medicalExpiryDate   DateTime?
-  medicalIssuedBy     String?
-  bloodGroup          String?
-  medicalConditions   String?
-  emergencyContact    String?
-  emergencyPhone      String?
-  
-  // Employment Details
-  salary              Float?
-  allowances          Float?
-  bankAccountNumber   String?
-  bankName            String?
-  ifscCode            String?
-  
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
-  branchId            String
-
-  // Relations
-  branch              Branch                    @relation(fields: [branchId], references: [id])
-  busAssignments      TransportStaffAssignment[]
-  notifications       TransportNotification[]
+  id                String                     @id @default(cuid())
+  employeeCode      String?                    @unique
+  firstName         String
+  lastName          String
+  phone             String?
+  email             String?
+  address           String?
+  staffType         TransportStaffType
+  status            TransportStaffStatus       @default(ACTIVE)
+  dateOfJoining     DateTime?
+  dateOfLeaving     DateTime?
+  licenseNumber     String?
+  licenseType       String?
+  licenseIssueDate  DateTime?
+  licenseExpiryDate DateTime?
+  licenseIssuedBy   String?
+  medicalCertNumber String?
+  medicalIssueDate  DateTime?
+  medicalExpiryDate DateTime?
+  medicalIssuedBy   String?
+  bloodGroup        String?
+  medicalConditions String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  salary            Float?
+  allowances        Float?
+  bankAccountNumber String?
+  bankName          String?
+  ifscCode          String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  branchId          String
+  notifications     TransportNotification[]
+  branch            Branch                     @relation(fields: [branchId], references: [id])
+  busAssignments    TransportStaffAssignment[]
 
   @@index([employeeCode])
   @@index([branchId])
@@ -854,21 +816,19 @@ model TransportStaff {
 }
 
 model TransportStaffAssignment {
-  id              String                    @id @default(cuid())
-  busId           String
-  staffId         String
-  staffType       TransportStaffType
-  isPrimary       Boolean                   @default(true)
-  startDate       DateTime                  @default(now())
-  endDate         DateTime?
-  isActive        Boolean                   @default(true)
-  notes           String?
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-
-  // Relations
-  bus             TransportBus              @relation(fields: [busId], references: [id])
-  staff           TransportStaff            @relation(fields: [staffId], references: [id])
+  id        String             @id @default(cuid())
+  busId     String
+  staffId   String
+  staffType TransportStaffType
+  isPrimary Boolean            @default(true)
+  startDate DateTime           @default(now())
+  endDate   DateTime?
+  isActive  Boolean            @default(true)
+  notes     String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  bus       TransportBus       @relation(fields: [busId], references: [id])
+  staff     TransportStaff     @relation(fields: [staffId], references: [id])
 
   @@unique([busId, staffId, staffType, isActive])
   @@index([busId])
@@ -876,7 +836,7 @@ model TransportStaffAssignment {
 }
 
 model TransportTrip {
-  id                    String                    @id @default(cuid())
+  id                    String          @id @default(cuid())
   busId                 String
   routeId               String?
   driverId              String?
@@ -884,26 +844,18 @@ model TransportTrip {
   tripDate              DateTime
   startTime             DateTime
   endTime               DateTime?
-  
-  // Kilometer Readings
   startKilometerReading Int
   endKilometerReading   Int?
   totalDistance         Float?
-  
-  // Trip Details
   numberOfStudents      Int?
   fuelConsumed          Float?
-  tripType              String                    @default("Regular") // Regular, Emergency, Maintenance
+  tripType              String          @default("Regular")
   notes                 String?
-  
-  // Status
-  isCompleted           Boolean                   @default(false)
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-
-  // Relations
-  bus                   TransportBus              @relation(fields: [busId], references: [id])
-  route                 TransportRoute?           @relation(fields: [routeId], references: [id])
+  isCompleted           Boolean         @default(false)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  bus                   TransportBus    @relation(fields: [busId], references: [id])
+  route                 TransportRoute? @relation(fields: [routeId], references: [id])
 
   @@index([busId])
   @@index([routeId])
@@ -911,39 +863,30 @@ model TransportTrip {
 }
 
 model TransportNotification {
-  id                String                    @id @default(cuid())
-  type              NotificationType
-  title             String
-  message           String
-  targetDate        DateTime
-  reminderDays      Int                       @default(7)
-  method            NotificationMethod        @default(EMAIL)
-  status            NotificationStatus        @default(PENDING)
-  
-  // Target Details
-  busId             String?
-  staffId           String?
-  recipientEmail    String?
-  recipientPhone    String?
-  
-  // Scheduling
-  scheduledDate     DateTime
-  sentDate          DateTime?
-  readDate          DateTime?
-  
-  // Metadata
-  retryCount        Int                       @default(0)
-  errorMessage      String?
-  isRecurring       Boolean                   @default(false)
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  branchId          String
-
-  // Relations
-  branch            Branch                    @relation(fields: [branchId], references: [id])
-  bus               TransportBus?             @relation(fields: [busId], references: [id])
-  staff             TransportStaff?           @relation(fields: [staffId], references: [id])
+  id             String             @id @default(cuid())
+  type           NotificationType
+  title          String
+  message        String
+  targetDate     DateTime
+  reminderDays   Int                @default(7)
+  method         NotificationMethod @default(EMAIL)
+  status         NotificationStatus @default(PENDING)
+  busId          String?
+  staffId        String?
+  recipientEmail String?
+  recipientPhone String?
+  scheduledDate  DateTime
+  sentDate       DateTime?
+  readDate       DateTime?
+  retryCount     Int                @default(0)
+  errorMessage   String?
+  isRecurring    Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  branchId       String
+  branch         Branch             @relation(fields: [branchId], references: [id])
+  bus            TransportBus?      @relation(fields: [busId], references: [id])
+  staff          TransportStaff?    @relation(fields: [staffId], references: [id])
 
   @@index([branchId])
   @@index([type])
@@ -952,32 +895,30 @@ model TransportNotification {
 }
 
 model TransportBusInspection {
-  id                    String                    @id @default(cuid())
-  busId                 String
-  inspectionDate        DateTime                  @default(now())
-  inspectionType        String                    @default("Regular") // Regular, Pre-Trip, Post-Trip, Quarterly, Annual
-  inspectorName         String
-  inspectorEmployeeId   String?
-  odometerReading       Int?
-  fuelLevel             Float?
-  status                InspectionStatus          @default(PENDING)
-  overallRating         String?                   // Excellent, Good, Fair, Poor, Failed
-  totalIssues           Int                       @default(0)
-  criticalIssues        Int                       @default(0)
-  notes                 String?
-  recommendations       String?
-  nextInspectionDue     DateTime?
-  isCompleted           Boolean                   @default(false)
-  completedAt           DateTime?
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  branchId              String
-
-  // Relations
-  bus                   TransportBus              @relation(fields: [busId], references: [id])
-  branch                Branch                    @relation(fields: [branchId], references: [id])
-  items                 TransportInspectionItem[]
-  photos                TransportInspectionPhoto[]
+  id                  String                     @id @default(cuid())
+  busId               String
+  inspectionDate      DateTime                   @default(now())
+  inspectionType      String                     @default("Regular")
+  inspectorName       String
+  inspectorEmployeeId String?
+  odometerReading     Int?
+  fuelLevel           Float?
+  status              InspectionStatus           @default(PENDING)
+  overallRating       String?
+  totalIssues         Int                        @default(0)
+  criticalIssues      Int                        @default(0)
+  notes               String?
+  recommendations     String?
+  nextInspectionDue   DateTime?
+  isCompleted         Boolean                    @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  branchId            String
+  branch              Branch                     @relation(fields: [branchId], references: [id])
+  bus                 TransportBus               @relation(fields: [busId], references: [id])
+  items               TransportInspectionItem[]
+  photos              TransportInspectionPhoto[]
 
   @@index([busId])
   @@index([inspectionDate])
@@ -986,94 +927,79 @@ model TransportBusInspection {
 }
 
 model TransportInspectionTemplate {
-  id              String                    @id @default(cuid())
-  name            String
-  description     String?
-  category        InspectionItemType
-  isRequired      Boolean                   @default(true)
-  checklistItems  Json                      // Array of inspection items
-  isActive        Boolean                   @default(true)
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  branchId        String
-
-  // Relations
-  branch          Branch                    @relation(fields: [branchId], references: [id])
+  id             String             @id @default(cuid())
+  name           String
+  description    String?
+  category       InspectionItemType
+  isRequired     Boolean            @default(true)
+  checklistItems Json
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  branchId       String
+  branch         Branch             @relation(fields: [branchId], references: [id])
 
   @@index([branchId])
   @@index([category])
 }
 
 model TransportInspectionItem {
-  id                    String                    @id @default(cuid())
-  inspectionId          String
-  templateItemId        String?
-  itemName              String
-  category              InspectionItemType
-  description           String?
-  isChecked             Boolean                   @default(false)
-  hasProblem            Boolean                   @default(false)
-  severity              InspectionSeverity?
-  problemDescription    String?
-  recommendations       String?
-  photoUrls             String[]                  @default([])
-  isRequired            Boolean                   @default(true)
-  sequence              Int                       @default(0)
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-
-  // Relations
-  inspection            TransportBusInspection    @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-  photos                TransportInspectionPhoto[]
+  id                 String                     @id @default(cuid())
+  inspectionId       String
+  templateItemId     String?
+  itemName           String
+  category           InspectionItemType
+  description        String?
+  isChecked          Boolean                    @default(false)
+  hasProblem         Boolean                    @default(false)
+  severity           InspectionSeverity?
+  problemDescription String?
+  recommendations    String?
+  photoUrls          String[]                   @default([])
+  isRequired         Boolean                    @default(true)
+  sequence           Int                        @default(0)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  inspection         TransportBusInspection     @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  photos             TransportInspectionPhoto[]
 
   @@index([inspectionId])
   @@index([category])
 }
 
 model TransportInspectionPhoto {
-  id                    String                    @id @default(cuid())
-  inspectionId          String
-  inspectionItemId      String?
-  photoUrl              String
-  caption               String?
-  category              String?                   // Before, After, Problem, General
-  uploadedBy            String?
-  createdAt             DateTime                  @default(now())
-
-  // Relations
-  inspection            TransportBusInspection    @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-  inspectionItem        TransportInspectionItem?  @relation(fields: [inspectionItemId], references: [id], onDelete: Cascade)
+  id               String                   @id @default(cuid())
+  inspectionId     String
+  inspectionItemId String?
+  photoUrl         String
+  caption          String?
+  category         String?
+  uploadedBy       String?
+  createdAt        DateTime                 @default(now())
+  inspection       TransportBusInspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  inspectionItem   TransportInspectionItem? @relation(fields: [inspectionItemId], references: [id], onDelete: Cascade)
 
   @@index([inspectionId])
   @@index([inspectionItemId])
 }
 
 model TransportNotificationConfig {
-  id                        String                    @id @default(cuid())
-  type                      NotificationType
-  isEnabled                 Boolean                   @default(true)
-  reminderDays              Int                       @default(7)
-  method                    NotificationMethod        @default(EMAIL)
-  
-  // Email Settings
-  emailTemplate             String?
-  emailSubject              String?
-  
-  // WhatsApp Settings
-  whatsappTemplate          String?
-  
-  // Advanced Settings
-  maxRetries                Int                       @default(3)
-  retryIntervalHours        Int                       @default(24)
-  isRecurring               Boolean                   @default(false)
-  recurringFrequencyDays    Int?
-  
-  createdAt                 DateTime                  @default(now())
-  updatedAt                 DateTime                  @updatedAt
-  branchId                  String
-
-  // Relations
-  branch                    Branch                    @relation(fields: [branchId], references: [id])
+  id                     String             @id @default(cuid())
+  type                   NotificationType
+  isEnabled              Boolean            @default(true)
+  reminderDays           Int                @default(7)
+  method                 NotificationMethod @default(EMAIL)
+  emailTemplate          String?
+  emailSubject           String?
+  whatsappTemplate       String?
+  maxRetries             Int                @default(3)
+  retryIntervalHours     Int                @default(24)
+  isRecurring            Boolean            @default(false)
+  recurringFrequencyDays Int?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  branchId               String
+  branch                 Branch             @relation(fields: [branchId], references: [id])
 
   @@unique([branchId, type])
   @@index([branchId])
@@ -1209,10 +1135,10 @@ model Subject {
   code                    String?
   description             String?
   isActive                Boolean                   @default(true)
-  isOptional              Boolean                   @default(false)
-  displayOrder            Int                       @default(0)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
+  isOptional              Boolean                   @default(false)
+  displayOrder            Int                       @default(0)
   AssessmentConfiguration AssessmentConfiguration[]
   assessmentSchemas       AssessmentSchema[]
   chapters                Chapter[]
@@ -1636,12 +1562,12 @@ model AdmissionStaff {
   updatedAt            DateTime               @updatedAt
   AdmissionApplication AdmissionApplication[]
   admissionLeads       AdmissionLead[]
+  user                 User?                  @relation(fields: [userId], references: [id])
   assessments          Assessment[]
   followUps            FollowUp[]
   leadDocuments        LeadDocument[]
   leadInteractions     LeadInteraction[]
   paymentTransactions  PaymentTransaction[]
-  user                 User?                  @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
@@ -2594,6 +2520,243 @@ model SeatingPlan {
   @@index([studentId])
 }
 
+model WhatsAppTemplate {
+  id                   String                 @id @default(cuid())
+  name                 String
+  description          String?
+  watiTemplateId       String?                @unique
+  templateBody         String
+  templateVariables    String[]               @default([])
+  category             String
+  language             String                 @default("en")
+  status               WhatsAppTemplateStatus @default(PENDING)
+  isActive             Boolean                @default(true)
+  branchId             String?
+  createdBy            String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  twilioContentSid     String?                @unique
+  metaTemplateId       String?
+  metaTemplateLanguage String                 @default("en")
+  metaTemplateName     String
+  metaTemplateStatus   String?
+  metaApprovedAt       DateTime?
+  metaRejectionReason  String?
+  metaSubmittedAt      DateTime?
+  messages             CommunicationMessage[]
+  branch               Branch?                @relation(fields: [branchId], references: [id])
+
+  @@unique([metaTemplateName, metaTemplateLanguage])
+  @@index([branchId])
+  @@index([status])
+  @@index([isActive])
+  @@index([metaTemplateName])
+}
+
+model CommunicationMessage {
+  id              String             @id @default(cuid())
+  title           String
+  templateId      String?
+  customMessage   String?
+  messageType     MessageType        @default(WHATSAPP)
+  recipientType   RecipientType
+  status          MessageStatus      @default(PENDING)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  totalRecipients Int                @default(0)
+  successfulSent  Int                @default(0)
+  failed          Int                @default(0)
+  watiMessageId   String?
+  branchId        String
+  createdBy       String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  twilioMessageId String?
+  metaMessageId   String?
+  logs            CommunicationLog[]
+  branch          Branch             @relation(fields: [branchId], references: [id])
+  template        WhatsAppTemplate?  @relation(fields: [templateId], references: [id])
+  job             MessageJob?
+  recipients      MessageRecipient[]
+
+  @@index([branchId])
+  @@index([status])
+  @@index([messageType])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@index([metaMessageId])
+}
+
+model MessageRecipient {
+  id              String               @id @default(cuid())
+  messageId       String
+  recipientType   String
+  recipientId     String
+  recipientName   String
+  recipientPhone  String
+  status          RecipientStatus      @default(PENDING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  watiMessageId   String?
+  errorMessage    String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  twilioMessageId String?
+  metaMessageId   String?
+  message         CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([recipientType])
+  @@index([status])
+  @@index([metaMessageId])
+}
+
+model CommunicationLog {
+  id          String                @id @default(cuid())
+  messageId   String?
+  action      String
+  description String
+  metadata    Json?
+  userId      String
+  createdAt   DateTime              @default(now())
+  message     CommunicationMessage? @relation(fields: [messageId], references: [id])
+
+  @@index([messageId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model MessageJob {
+  id                  String               @id @default(cuid())
+  messageId           String               @unique
+  status              JobStatus            @default(QUEUED)
+  priority            Int                  @default(0)
+  attempts            Int                  @default(0)
+  maxAttempts         Int                  @default(3)
+  scheduledAt         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  failedAt            DateTime?
+  errorMessage        String?
+  errorStack          String?
+  progress            Int                  @default(0)
+  totalRecipients     Int                  @default(0)
+  processedRecipients Int                  @default(0)
+  successfulSent      Int                  @default(0)
+  failed              Int                  @default(0)
+  metadata            Json?
+  createdBy           String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  message             CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([priority, scheduledAt])
+  @@index([createdAt])
+  @@index([createdBy])
+}
+
+model CommunicationSettings {
+  id                             String   @id @default(cuid())
+  branchId                       String   @unique
+  watiApiUrl                     String?
+  watiApiToken                   String?
+  watiPhoneNumberId              String?
+  watiIsActive                   Boolean  @default(false)
+  templateAutoSyncEnabled        Boolean  @default(true)
+  templateSyncInterval           Int      @default(24)
+  templateDefaultCategory        String?  @default("UTILITY")
+  templateDefaultLanguage        String   @default("en")
+  messageEnableScheduling        Boolean  @default(true)
+  messageMaxRecipientsPerMessage Int      @default(1000)
+  messageRetryFailedMessages     Boolean  @default(true)
+  messageMaxRetryAttempts        Int      @default(3)
+  messageRetryDelay              Int      @default(30)
+  notificationEmailEnabled       Boolean  @default(false)
+  notificationEmail              String?
+  notifyOnFailures               Boolean  @default(true)
+  notifyOnSuccess                Boolean  @default(false)
+  notificationDailySummary       Boolean  @default(true)
+  isActive                       Boolean  @default(true)
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+  createdBy                      String?
+  updatedBy                      String?
+  twilioAccountSid               String?
+  twilioAuthToken                String?
+  twilioIsActive                 Boolean  @default(false)
+  twilioWhatsAppFrom             String?
+  metaAccessToken                String?
+  metaApiVersion                 String?  @default("v21.0")
+  metaBusinessAccountId          String?
+  metaIsActive                   Boolean  @default(false)
+  metaPhoneNumberId              String?
+  metaWebhookVerifyToken         String?
+  phoneDefaultCountryCode        String?  @default("+91")
+  phoneNormalizationEnabled      Boolean  @default(true)
+  phoneOrganizationCountry       String?  @default("IN")
+  branch                         Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId])
+  @@index([isActive])
+  @@index([metaPhoneNumberId])
+}
+
+model Conversation {
+  id                 String               @id @default(cuid())
+  participantType    String
+  participantId      String
+  participantName    String
+  participantPhone   String
+  branchId           String
+  lastMessageAt      DateTime?
+  lastMessageContent String?
+  lastMessageFrom    ChatMessageDirection
+  unreadCount        Int                  @default(0)
+  isActive           Boolean              @default(true)
+  metadata           Json?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  messages           ChatMessage[]
+  branch             Branch               @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, participantPhone])
+  @@index([branchId])
+  @@index([participantType])
+  @@index([participantPhone])
+  @@index([lastMessageAt])
+  @@index([isActive])
+}
+
+model ChatMessage {
+  id              String               @id @default(cuid())
+  conversationId  String
+  direction       ChatMessageDirection
+  content         String
+  messageType     ChatMessageType      @default(TEXT)
+  twilioMessageId String?
+  status          ChatMessageStatus    @default(SENT)
+  readAt          DateTime?
+  sentBy          String?
+  mediaUrl        String?
+  mediaType       String?
+  metadata        Json?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  metaMessageId   String?
+  deliveredAt     DateTime?
+  sentAt          DateTime?
+  conversation    Conversation         @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([direction])
+  @@index([createdAt])
+  @@index([twilioMessageId])
+  @@index([metaMessageId])
+  @@index([status])
+}
+
 enum CallerType {
   TEACHER
   HEAD
@@ -2734,122 +2897,6 @@ enum AssessmentPermissionType {
   VIEW_ONLY
 }
 
-// Communication Module Models
-model WhatsAppTemplate {
-  id                    String                 @id @default(cuid())
-  name                  String
-  description           String?
-  watiTemplateId        String?                @unique // Template ID from Wati API (optional)
-  twilioContentSid      String?                @unique // Twilio Content SID (legacy, optional)
-  metaTemplateName      String                 // Meta WhatsApp template name (required)
-  metaTemplateLanguage  String                 @default("en") // Meta template language code
-  metaTemplateStatus    String?                // Meta template status (APPROVED, PENDING, REJECTED, FLAGGED, PAUSED)
-  metaTemplateId        String?                // Meta template ID after approval
-  metaRejectionReason   String?                // Meta rejection reason if rejected
-  metaSubmittedAt       DateTime?              // When template was submitted to Meta
-  metaApprovedAt        DateTime?              // When template was approved by Meta
-  templateBody          String                 // Template content
-  templateVariables     String[]               @default([]) // Variables that can be customized
-  category              String                 // Category like "utility", "marketing", etc.
-  language              String                 @default("en")
-  status                WhatsAppTemplateStatus @default(PENDING)
-  isActive              Boolean                @default(true)
-  branchId              String?                // Optional - templates are now global but can track origin branch
-  createdBy             String
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  
-  // Relations
-  branch                Branch?                @relation(fields: [branchId], references: [id])
-  messages              CommunicationMessage[]
-  
-  @@unique([metaTemplateName, metaTemplateLanguage])
-  @@index([branchId])
-  @@index([status])
-  @@index([isActive])
-  @@index([metaTemplateName])
-}
-
-model CommunicationMessage {
-  id                    String              @id @default(cuid())
-  title                 String
-  templateId            String?
-  customMessage         String?             // For custom messages not using templates
-  messageType           MessageType         @default(WHATSAPP)
-  recipientType         RecipientType
-  status                MessageStatus       @default(PENDING)
-  scheduledAt           DateTime?           // For scheduled messages
-  sentAt                DateTime?
-  totalRecipients       Int                 @default(0)
-  successfulSent        Int                 @default(0)
-  failed                Int                 @default(0)
-  watiMessageId         String?             // ID from Wati API (optional)
-  twilioMessageId       String?             // ID from Twilio API (optional)
-  metaMessageId         String?             // ID from Meta WhatsApp API (optional)
-  branchId              String
-  createdBy             String
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  // Relations
-  branch                Branch              @relation(fields: [branchId], references: [id])
-  template              WhatsAppTemplate?   @relation(fields: [templateId], references: [id])
-  recipients            MessageRecipient[]
-  logs                  CommunicationLog[]
-  
-  @@index([branchId])
-  @@index([status])
-  @@index([messageType])
-  @@index([createdBy])
-  @@index([createdAt])
-  @@index([metaMessageId])
-}
-
-model MessageRecipient {
-  id                    String              @id @default(cuid())
-  messageId             String
-  recipientType         String              // "student", "teacher", "employee", "parent"
-  recipientId           String              // ID of the recipient
-  recipientName         String
-  recipientPhone        String
-  status                RecipientStatus     @default(PENDING)
-  sentAt                DateTime?
-  deliveredAt           DateTime?
-  readAt                DateTime?
-  watiMessageId         String?             // Individual message ID from Wati (optional)
-  twilioMessageId       String?             // Individual message ID from Twilio (optional)
-  metaMessageId         String?             // Individual message ID from Meta WhatsApp (optional)
-  errorMessage          String?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  // Relations
-  message               CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  
-  @@index([messageId])
-  @@index([recipientType])
-  @@index([status])
-  @@index([metaMessageId])
-}
-
-model CommunicationLog {
-  id                    String              @id @default(cuid())
-  messageId             String?
-  action                String              // "template_created", "message_sent", "delivery_confirmed", etc.
-  description           String
-  metadata              Json?               // Additional data
-  userId                String
-  createdAt             DateTime            @default(now())
-  
-  // Relations
-  message               CommunicationMessage? @relation(fields: [messageId], references: [id])
-  
-  @@index([messageId])
-  @@index([userId])
-  @@index([createdAt])
-}
-
-// Communication Enums
 enum WhatsAppTemplateStatus {
   PENDING
   APPROVED
@@ -2864,20 +2911,20 @@ enum MessageType {
 }
 
 enum RecipientType {
-  ALL_STUDENTS
   INDIVIDUAL_STUDENTS
   ENTIRE_CLASS
   SPECIFIC_SECTION
-  INDIVIDUAL_SECTION
   MULTIPLE_CLASSES
   ALL_TEACHERS
   SPECIFIC_TEACHERS
-  TEACHERS
   ALL_EMPLOYEES
   SPECIFIC_EMPLOYEES
-  EMPLOYEES
   PARENTS
   CUSTOM_GROUP
+  ALL_STUDENTS
+  INDIVIDUAL_SECTION
+  TEACHERS
+  EMPLOYEES
 }
 
 enum MessageStatus {
@@ -2898,134 +2945,18 @@ enum RecipientStatus {
   FAILED
 }
 
-// Communication Settings Model
-model CommunicationSettings {
-  id                              String   @id @default(cuid())
-  branchId                        String   @unique
-  
-  // Wati API Configuration (optional)
-  watiApiUrl                      String?
-  watiApiToken                    String?
-  watiPhoneNumberId               String?
-  watiIsActive                    Boolean  @default(false)
-  
-  // Twilio API Configuration (optional)
-  twilioAccountSid                String?
-  twilioAuthToken                 String?
-  twilioWhatsAppFrom              String?
-  twilioIsActive                  Boolean  @default(false)
-  
-  // Meta WhatsApp API Configuration (optional)
-  metaAccessToken                 String?
-  metaPhoneNumberId               String?
-  metaBusinessAccountId           String?
-  metaApiVersion                  String?  @default("v21.0")
-  metaWebhookVerifyToken          String?
-  metaIsActive                    Boolean  @default(false)
-  
-  // Template Settings
-  templateAutoSyncEnabled         Boolean  @default(true)
-  templateSyncInterval            Int      @default(24) // hours
-  templateDefaultCategory         String?  @default("UTILITY")
-  templateDefaultLanguage         String   @default("en")
-  
-  // Message Settings
-  messageEnableScheduling         Boolean  @default(true)
-  messageMaxRecipientsPerMessage  Int      @default(1000)
-  messageRetryFailedMessages      Boolean  @default(true)
-  messageMaxRetryAttempts         Int      @default(3)
-  messageRetryDelay               Int      @default(30) // seconds
-  
-  // Notification Settings
-  notificationEmailEnabled        Boolean  @default(false)
-  notificationEmail               String?
-  notifyOnFailures                Boolean  @default(true)
-  notifyOnSuccess                 Boolean  @default(false)
-  notificationDailySummary        Boolean  @default(true)
-  
-  // Phone Normalization Settings
-  phoneNormalizationEnabled       Boolean  @default(true)
-  phoneDefaultCountryCode         String?  @default("+91")
-  phoneOrganizationCountry        String?  @default("IN")
-  
-  // General Settings
-  isActive                        Boolean  @default(true)
-  createdAt                       DateTime @default(now())
-  updatedAt                       DateTime @updatedAt
-  createdBy                       String?
-  updatedBy                       String?
-  
-  // Relations
-  branch                          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  
-  @@index([branchId])
-  @@index([isActive])
-  @@index([metaPhoneNumberId])
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRYING
 }
 
-// Chat System Models for Bidirectional Communication
-model Conversation {
-  id                    String              @id @default(cuid())
-  participantType       String              // "student", "teacher", "employee", "parent"
-  participantId         String              // ID of the participant (student/teacher/employee/parent)
-  participantName       String              // Cached name for display
-  participantPhone      String              // Phone number (WhatsApp number)
-  branchId              String
-  lastMessageAt         DateTime?           // Last message timestamp for sorting
-  lastMessageContent    String?             // Preview of last message
-  lastMessageFrom       ChatMessageDirection // Who sent the last message
-  unreadCount           Int                 @default(0) // Unread messages from participant
-  isActive              Boolean             @default(true)
-  metadata              Json?               // Additional data (class info, etc.)
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  // Relations
-  branch                Branch              @relation(fields: [branchId], references: [id])
-  messages              ChatMessage[]
-  
-  @@unique([branchId, participantPhone]) // One conversation per phone number per branch
-  @@index([branchId])
-  @@index([participantType])
-  @@index([participantPhone])
-  @@index([lastMessageAt])
-  @@index([isActive])
-}
-
-model ChatMessage {
-  id                    String              @id @default(cuid())
-  conversationId        String
-  direction             ChatMessageDirection // INCOMING or OUTGOING
-  content               String              // Message content
-  messageType           ChatMessageType     @default(TEXT)
-  twilioMessageId       String?             // Twilio message SID
-  metaMessageId         String?             // Meta WhatsApp message ID
-  status                ChatMessageStatus   @default(SENT)
-  sentAt                DateTime?           // When message was sent to WhatsApp servers
-  deliveredAt           DateTime?           // When message was delivered to recipient's device
-  readAt                DateTime?           // When message was read by recipient
-  sentBy                String?             // User ID who sent the message (for outgoing)
-  mediaUrl              String?             // URL for media messages
-  mediaType             String?             // Type of media (image, document, etc.)
-  metadata              Json?               // Additional Twilio metadata
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  // Relations
-  conversation          Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  @@index([conversationId])
-  @@index([direction])
-  @@index([createdAt])
-  @@index([twilioMessageId])
-  @@index([metaMessageId])
-  @@index([status])
-}
-
-// Chat Enums
 enum ChatMessageDirection {
-  INCOMING    // Message from user to school
-  OUTGOING    // Message from school to user
+  INCOMING
+  OUTGOING
 }
 
 enum ChatMessageType {

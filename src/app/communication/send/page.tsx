@@ -34,13 +34,15 @@ import {
   School,
   Building,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Loader
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { TemplateVariableMapper } from "@/components/communication/template-variable-mapper";
 import { TemplateDataPreview } from "@/components/communication/template-data-preview";
+import { MessageJobProgress } from "@/components/communication/message-job-progress";
 
 const sendMessageSchema = z.object({
   title: z.string().min(1, "Message title is required"),
@@ -89,6 +91,7 @@ export default function SendMessagePage() {
   const [classComboboxOpen, setClassComboboxOpen] = useState(false);
   const [sectionComboboxOpen, setSectionComboboxOpen] = useState(false);
   const [templateDataMappings, setTemplateDataMappings] = useState<Record<string, { dataField: string; fallbackValue: string }>>({});
+  const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 
   const form = useForm<SendMessageFormData>({
     resolver: zodResolver(sendMessageSchema),
@@ -138,6 +141,7 @@ export default function SendMessagePage() {
       setContactType(["STUDENT"]);
       setClassComboboxOpen(false);
       setSectionComboboxOpen(false);
+      setActiveMessageId(null);
     },
     onError: (error) => {
       toast({
@@ -444,7 +448,7 @@ export default function SendMessagePage() {
         }
       }
 
-      await sendMessageMutation.mutateAsync({
+      const result = await sendMessageMutation.mutateAsync({
         ...data,
         templateParameters,
         templateDataMappings: Object.keys(templateDataMappings).length > 0 ? templateDataMappings : undefined,
@@ -454,6 +458,11 @@ export default function SendMessagePage() {
         selectedTeachers: selectedTeachers,
         selectedEmployees: selectedEmployees,
       } as any);
+      
+      // Set messageId if available (for background processing)
+      if (result && 'messageId' in result && result.messageId) {
+        setActiveMessageId(result.messageId);
+      }
     } catch (error) {
       // Error handled in mutation onError
       console.error("Send message error:", error);
@@ -1307,6 +1316,36 @@ export default function SendMessagePage() {
           </div>
         </form>
       </FormProvider>
+      
+      {/* Message Job Progress Section */}
+      {activeMessageId && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Loader className="h-5 w-5 animate-spin" />
+              Message Sending Progress
+            </CardTitle>
+            <CardDescription>
+              Real-time progress of your message delivery
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MessageJobProgress messageId={activeMessageId} />
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Show loading state when sending without active job */}
+      {sendMessageMutation.isPending && !activeMessageId && (
+        <Card className="mt-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center space-x-2">
+              <Loader className="h-5 w-5 animate-spin" />
+              <span>Sending message...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 

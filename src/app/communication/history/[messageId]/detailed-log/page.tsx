@@ -60,6 +60,14 @@ export default function DetailedLogPage() {
     enabled: !!messageId,
   });
 
+  // Fetch message job status
+  const { data: messageJob, isLoading: jobLoading } = api.communication.getMessageJob.useQuery({
+    messageId: messageId || "",
+  }, {
+    enabled: !!messageId,
+    refetchInterval: messageDetails?.status === "SENDING" ? 2000 : false, // Poll every 2 seconds if sending
+  });
+
   // Export CSV functionality
   const exportCsvMutation = api.communication.exportDeliveryLog.useQuery({
     messageId: messageId || "",
@@ -334,6 +342,48 @@ export default function DetailedLogPage() {
         </div>
       </div>
 
+      {/* Job Progress Bar */}
+      {messageJob && messageJob.status === "PROCESSING" && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              Sending Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progress</span>
+                <span>{messageJob.progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${messageJob.progress}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {messageJob.processedRecipients} of {messageJob.totalRecipients} processed
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Job Error Message */}
+      {messageJob?.errorMessage && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="text-sm text-red-800">
+                <strong>Job Error:</strong> {messageJob.errorMessage}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -341,7 +391,14 @@ export default function DetailedLogPage() {
             <CardTitle className="text-sm font-medium">Total Recipients</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <div className="text-2xl font-bold">
+              {messageJob?.totalRecipients || stats.total || 0}
+            </div>
+            {messageJob && messageJob.totalRecipients !== stats.total && (
+              <div className="text-xs text-muted-foreground">
+                Database: {stats.total}
+              </div>
+            )}
           </CardContent>
         </Card>
         
@@ -350,7 +407,9 @@ export default function DetailedLogPage() {
             <CardTitle className="text-sm font-medium">Successfully Sent</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.sent || 0}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {messageJob?.successfulSent || stats.sent || 0}
+            </div>
           </CardContent>
         </Card>
         
@@ -359,7 +418,9 @@ export default function DetailedLogPage() {
             <CardTitle className="text-sm font-medium">Failed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.failed || 0}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {messageJob?.failed || stats.failed || 0}
+            </div>
           </CardContent>
         </Card>
         
