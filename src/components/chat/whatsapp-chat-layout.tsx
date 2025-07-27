@@ -39,7 +39,7 @@ export function WhatsAppChatLayout({
         }
       }
     }
-    return [15, 85]; // Default layout - 15% sidebar, 85% content
+    return [20, 80]; // Default layout - 15% sidebar, 85% content
   };
 
   const defaultLayout = getSavedLayout();
@@ -58,7 +58,7 @@ export function WhatsAppChatLayout({
       >
         <ResizablePanel 
           defaultSize={defaultLayout[0]} 
-          minSize={15} 
+          minSize={20} 
           maxSize={30}
           id="sidebar"
         >

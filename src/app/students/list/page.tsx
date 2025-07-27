@@ -38,6 +38,7 @@ import {
   DEFAULT_EXPORT_FIELDS,
   type StudentExportData 
 } from "@/utils/student-export"
+import { StudentFilters, type StudentFilters as StudentFiltersType } from "@/components/students/student-filters"
 
 // Define the Student type
 export type Student = {
@@ -114,6 +115,11 @@ export default function StudentsPage() {
   // Import state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  // Filter state
+  const [filters, setFilters] = useState<StudentFiltersType>({
+    isActive: "true" // Default to active students
+  });
+
   const { getBranchFilterParam } = useGlobalBranchFilter();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -134,6 +140,23 @@ export default function StudentsPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setCursors([undefined]);
+    setRowSelection({});
+    setAllStudentsSelected(false);
+  }, [filters, debouncedSearchTerm]);
+
+  // Filter handlers
+  const handleFiltersChange = useCallback((newFilters: StudentFiltersType) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleSearchChange = useCallback((search: string) => {
+    setSearchTerm(search);
+  }, []);
+
   // API query for loading students
   const { data: studentsData, isLoading, refetch } = api.student.getAll.useQuery({
     branchId: getBranchFilterParam(),
@@ -144,7 +167,11 @@ export default function StudentsPage() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: "true" // Default filter for active students
+      isActive: filters.isActive || "true", // Use filter state with fallback
+      classId: filters.classId,
+      sectionId: filters.sectionId,
+      gender: filters.gender,
+      ageRange: filters.ageRange
     }
   }, {
     enabled: true,
@@ -158,7 +185,11 @@ export default function StudentsPage() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: "true"
+      isActive: filters.isActive || "true",
+      classId: filters.classId,
+      sectionId: filters.sectionId,
+      gender: filters.gender,
+      ageRange: filters.ageRange
     },
     fetchAllIds: true
   }, {
@@ -899,17 +930,21 @@ export default function StudentsPage() {
               {isLoading ? 'Loading...' : `Showing ${currentStudents.length} of ${totalCount} students`}
             </p>
           </div>
-          
-                      <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  placeholder="Search students..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-64"
-                />
+        </div>
+
+        {/* Filter Component */}
+        <StudentFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onSearchChange={handleSearchChange}
+          searchTerm={searchTerm}
+          totalCount={totalCount}
+        />
+
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2">
                 
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                   <Select
                     value={sortBy}
                     onValueChange={(value) => {
@@ -1177,8 +1212,6 @@ export default function StudentsPage() {
             )}
           </div>
 
-
-
           {/* No Students Found */}
           {!isLoading && currentStudents.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
@@ -1186,7 +1219,6 @@ export default function StudentsPage() {
             </div>
           )}
         </div>
-      </div>
 
       {/* Export Field Selector Modal */}
       <StudentExportFieldSelector

@@ -749,6 +749,13 @@ export const chatRouter = createTRPCRouter({
           templateName: template.metaTemplateName,
           templateLanguage: template.metaTemplateLanguage,
           templateVariables: input.templateVariables,
+          templateData: {
+            headerType: template.headerType || undefined,
+            headerContent: template.headerContent || undefined,
+            headerMediaUrl: template.headerMediaUrl || undefined,
+            footerText: template.footerText || undefined,
+            buttons: template.buttons as any[] || undefined,
+          },
         });
 
         if (!whatsappResponse.result) {

@@ -14,6 +14,55 @@
     scrollbar-width: none;  /* Firefox */
   }
 
+  /* Thin scrollbar utilities */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .scrollbar-track-gray-100::-webkit-scrollbar-track {
+    background-color: rgb(248 250 252);
+    border-radius: 4px;
+    border: 1px solid rgb(241 245 249);
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 4px;
+    border: 1px solid rgb(241 245 249);
+    transition: background-color 0.2s ease;
+  }
+
+  .scrollbar-thumb-gray-300:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(156 163 175);
+  }
+
+  .dark .scrollbar-track-gray-800::-webkit-scrollbar-track {
+    background-color: rgb(15 23 42);
+    border: 1px solid rgb(30 41 59);
+    border-radius: 4px;
+  }
+
+  .dark .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+    background-color: rgb(75 85 99);
+    border-radius: 4px;
+    border: 1px solid rgb(30 41 59);
+    transition: background-color 0.2s ease;
+  }
+
+  .dark .scrollbar-thumb-gray-600:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(107 114 128);
+  }
+
   /* Enhanced Custom scrollbar styling for sidebar */
   .sidebar-scrollbar {
     /* Ensure scrollbar appears at the very edge */

@@ -4,6 +4,11 @@ interface MessageJobPayload {
   templateData?: {
     metaTemplateName: string
     metaTemplateLanguage: string
+    headerType?: string
+    headerContent?: string
+    headerMediaUrl?: string
+    footerText?: string
+    buttons?: any[]
   }
   recipients: Array<{
     id: string
@@ -53,7 +58,8 @@ export async function triggerMessageJob(payload: MessageJobPayload): Promise<voi
       jobId: payload.jobId,
       messageId: payload.messageId,
       recipientCount: payload.recipients?.length || 0,
-      hasWhatsAppConfig: !!payload.whatsappConfig.accessToken
+      hasWhatsAppConfig: !!payload.whatsappConfig.accessToken,
+      payloadSize: JSON.stringify(payload).length
     });
     
     const response = await fetch(edgeFunctionUrl, {
@@ -67,7 +73,13 @@ export async function triggerMessageJob(payload: MessageJobPayload): Promise<voi
 
     if (!response.ok) {
       const error = await response.text()
-      throw new Error(`Edge function failed: ${error}`)
+      console.error('❌ Edge function HTTP error:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: error
+      });
+      throw new Error(`Edge function failed (${response.status}): ${error}`)
     }
 
     const result = await response.json()

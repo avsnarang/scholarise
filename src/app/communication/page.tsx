@@ -5,10 +5,11 @@ import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/providers/auth-provider";
-import { AppLayout } from "@/components/layout/app-layout";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CommunicationStatsCards } from "@/components/communication/communication-stats-cards";
 import { 
   MessageSquare, 
   Send, 
@@ -27,47 +28,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  description?: string;
-  icon: React.ReactNode;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-  className?: string;
-}
 
-function StatCard({ title, value, description, icon, trend, className }: StatCardProps) {
-  return (
-    <Card className={cn("", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          {title}
-        </CardTitle>
-        <div className="h-4 w-4 text-gray-400">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
-        {description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {description}
-          </p>
-        )}
-        {trend && (
-          <div className={cn(
-            "flex items-center text-xs",
-            trend.isPositive ? "text-green-600" : "text-red-600"
-          )}>
-            <TrendingUp className="mr-1 h-3 w-3" />
-            {trend.isPositive ? "+" : ""}{trend.value}% from last month
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function CommunicationDashboard() {
   const { currentBranchId } = useBranchContext();
@@ -90,15 +51,6 @@ export default function CommunicationDashboard() {
     sessionAccessToken: session?.access_token ? '***' + session.access_token.slice(-10) : 'none'
   });
 
-  // Fetch communication statistics
-  const { data: stats, isLoading: statsLoading } = api.communication.getStats.useQuery({
-    branchId: currentBranchId || undefined,
-    dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Start of month
-    dateTo: new Date(), // Today
-  }, {
-    enabled: shouldFetchData, // Only run when authenticated
-  });
-
   // Fetch recent messages
   const { data: recentMessages, isLoading: messagesLoading } = api.communication.getMessages.useQuery({
     branchId: currentBranchId || undefined,
@@ -108,11 +60,15 @@ export default function CommunicationDashboard() {
     enabled: shouldFetchData, // Only run when authenticated
   });
 
-  // Fetch available templates (now global)
+  // Fetch available templates with auto-refresh (now global)
   const { data: templates, isLoading: templatesLoading } = api.communication.getTemplates.useQuery({
     isActive: true,
   }, {
     enabled: shouldFetchData, // Only run when authenticated
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: true, // Always refetch on mount
+    staleTime: 1000 * 60, // Consider data stale after 1 minute
+    cacheTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 
   // Permission checks
@@ -141,279 +97,310 @@ export default function CommunicationDashboard() {
   };
 
   return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              Communication Dashboard
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Manage WhatsApp messages and communication with students, teachers, and parents
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {canManageSettings && (
-              <Button variant="outline" asChild>
-                <Link href="/communication/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </Button>
-            )}
+    <div className="@container/main flex min-h-screen flex-col bg-background">
+      <div className="flex-1 space-y-6 p-4 lg:p-6">
+          {/* Header */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                Communication Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage WhatsApp messages and communication with students, teachers, and parents
+              </p>
+            </div>
             
-            {canCreateMessage && (
-              <Button asChild>
-                <Link href="/communication/send">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Send Message
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Messages"
-            value={stats?.totalMessages ?? 0}
-            description="All time messages sent"
-            icon={<MessageSquare className="h-4 w-4" />}
-            className="border-l-4 border-l-blue-500"
-          />
-          
-          <StatCard
-            title="Successfully Sent"
-            value={stats?.sentMessages ?? 0}
-            description="This month"
-            icon={<CheckCircle className="h-4 w-4" />}
-            className="border-l-4 border-l-green-500"
-          />
-          
-          <StatCard
-            title="Failed Messages"
-            value={stats?.failedMessages ?? 0}
-            description="Requires attention"
-            icon={<XCircle className="h-4 w-4" />}
-            className="border-l-4 border-l-red-500"
-          />
-          
-          <StatCard
-            title="Delivery Rate"
-            value={`${stats?.deliveryRate?.toFixed(1) ?? 0}%`}
-            description="Overall success rate"
-            icon={<TrendingUp className="h-4 w-4" />}
-            className="border-l-4 border-l-purple-500"
-          />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* WhatsApp Chat Interface */}
-          {canViewLogs && (
-            <Card className="border-dashed border-gray-300 hover:border-green-500 transition-colors cursor-pointer">
-              <Link href="/chat" target="_blank" rel="noopener noreferrer" className="block p-6 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  WhatsApp Chat Interface
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Full-screen chat interface to view and respond to WhatsApp messages
-                </p>
-                <div className="mt-3 text-xs text-green-600 dark:text-green-400">
-                  Opens in new window
-                </div>
-              </Link>
-            </Card>
-          )}
-
-          {/* Send Message */}
-          {canCreateMessage && (
-            <Card className="border-dashed border-gray-300 hover:border-blue-500 transition-colors cursor-pointer">
-              <Link href="/communication/send" className="block p-6 text-center">
-                <MessageCircle className="mx-auto h-12 w-12 text-blue-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Send New Message
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Compose and send WhatsApp messages to students, teachers, or parents
-                </p>
-              </Link>
-            </Card>
-          )}
-
-          {/* Manage Templates */}
-          {canManageTemplates && (
-            <Card className="border-dashed border-gray-300 hover:border-green-500 transition-colors cursor-pointer">
-              <Link href="/communication/templates" className="block p-6 text-center">
-                <MessageSquare className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Manage Templates
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Create and manage WhatsApp message templates approved by Meta
-                </p>
-              </Link>
-            </Card>
-          )}
-
-          {/* View History */}
-          {canViewLogs && (
-            <Card className="border-dashed border-gray-300 hover:border-purple-500 transition-colors cursor-pointer">
-              <Link href="/communication/history" className="block p-6 text-center">
-                <History className="mx-auto h-12 w-12 text-purple-500 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Message History
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  View detailed logs and delivery status of all sent messages
-                </p>
-              </Link>
-            </Card>
-          )}
-        </div>
-
-        {/* Recent Messages & Templates */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Messages */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Recent Messages</CardTitle>
-                <CardDescription>Latest communication activities</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/communication/history">View All</Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {messagesLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : recentMessages?.messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">No messages sent yet</p>
-                  {canCreateMessage && (
-                    <Button variant="outline" size="sm" className="mt-3" asChild>
-                      <Link href="/communication/send">Send First Message</Link>
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentMessages?.messages.map((message) => (
-                    <div key={message.id} className="flex items-start justify-between p-3 border rounded-lg">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {message.title}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {message.totalRecipients} recipients • {formatDistanceToNow(new Date(message.createdAt))} ago
-                        </p>
-                        {message.template && (
-                          <p className="text-xs text-blue-600 dark:text-blue-400">
-                            Template: {message.template.name}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-2">
-                        {getStatusBadge(message.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Available Templates */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>WhatsApp Templates</CardTitle>
-                <CardDescription>Approved templates ready to use</CardDescription>
-              </div>
-              {canManageTemplates && (
+            <div className="flex items-center gap-2">
+              {canManageSettings && (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/communication/templates">Manage</Link>
+                  <Link href="/communication/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
                 </Button>
               )}
-            </CardHeader>
-            <CardContent>
-              {templatesLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : templates?.length === 0 ? (
-                <div className="text-center py-8">
-                  <AlertCircle className="mx-auto h-12 w-12 text-yellow-400 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400 mb-2">No templates available</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Sync templates from Meta or create new ones
-                  </p>
-                  {canManageTemplates && (
-                    <Button variant="outline" size="sm" className="mt-3" asChild>
-                      <Link href="/communication/templates">Manage Templates</Link>
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {templates?.slice(0, 4).map((template) => (
-                    <div key={template.id} className="flex items-start justify-between p-3 border rounded-lg">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {template.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                          {template.category} • {template.language}
-                        </p>
-                        {template.description && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
-                            {template.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-2">
-                        <Badge className={cn(
-                          template.status === 'APPROVED' 
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                        )}>
-                          {template.status}
+              
+              {canCreateMessage && (
+                <Button size="sm" asChild className="bg-[#00501B] hover:bg-[#00501B]/90 dark:bg-[#7AAD8B] dark:hover:bg-[#7AAD8B]/90">
+                  <Link href="/communication/send">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Send Message
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Statistics Cards */}
+          <CommunicationStatsCards 
+            dateFrom={new Date(new Date().getFullYear(), new Date().getMonth(), 1)}
+            dateTo={new Date()}
+          />
+
+          {/* Quick Actions */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* WhatsApp Chat Interface */}
+              {canViewLogs && (
+                <Card className="group relative overflow-hidden border transition-all duration-200 hover:shadow-md hover:border-[#00501B]/20 dark:hover:border-[#7AAD8B]/20">
+                  <Link href="/chat" target="_blank" rel="noopener noreferrer" className="block">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#00501B]/10 dark:bg-[#7AAD8B]/10">
+                          <MessageSquare className="h-5 w-5 text-[#00501B] dark:text-[#7AAD8B]" />
+                        </div>
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          New Tab
                         </Badge>
                       </div>
-                    </div>
-                  ))}
-                  {templates && templates.length > 4 && (
-                    <div className="text-center pt-2">
-                      <Link 
-                        href="/communication/templates" 
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        View {templates.length - 4} more templates
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <h3 className="font-medium text-foreground group-hover:text-[#00501B] dark:group-hover:text-[#7AAD8B] transition-colors">
+                        WhatsApp Chat
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        View and respond to WhatsApp messages
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
               )}
-            </CardContent>
-          </Card>
+
+              {/* Send Message */}
+              {canCreateMessage && (
+                <Card className="group relative overflow-hidden border transition-all duration-200 hover:shadow-md hover:border-[#00501B]/20 dark:hover:border-[#7AAD8B]/20">
+                  <Link href="/communication/send" className="block">
+                    <CardHeader className="pb-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                        <MessageCircle className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <h3 className="font-medium text-foreground group-hover:text-blue-600 transition-colors">
+                        Send Message
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Compose and send new messages
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              )}
+
+              {/* Manage Templates */}
+              {canManageTemplates && (
+                <Card className="group relative overflow-hidden border transition-all duration-200 hover:shadow-md hover:border-[#00501B]/20 dark:hover:border-[#7AAD8B]/20">
+                  <Link href="/communication/templates" className="block">
+                    <CardHeader className="pb-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                        <MessageSquare className="h-5 w-5 text-emerald-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <h3 className="font-medium text-foreground group-hover:text-emerald-600 transition-colors">
+                        Templates
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage WhatsApp templates
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              )}
+
+              {/* View History */}
+              {canViewLogs && (
+                <Card className="group relative overflow-hidden border transition-all duration-200 hover:shadow-md hover:border-[#00501B]/20 dark:hover:border-[#7AAD8B]/20">
+                  <Link href="/communication/history" className="block">
+                    <CardHeader className="pb-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+                        <History className="h-5 w-5 text-purple-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <h3 className="font-medium text-foreground group-hover:text-purple-600 transition-colors">
+                        Message History
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        View delivery logs and status
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Recent Messages */}
+            <Card className="bg-gradient-to-br from-card to-card/50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg font-semibold">Recent Messages</CardTitle>
+                  <CardDescription className="text-sm">
+                    Latest communication activities
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/communication/history" className="text-[#00501B] border-[#00501B]/20 hover:bg-[#00501B]/5 dark:text-[#7AAD8B] dark:border-[#7AAD8B]/20 dark:hover:bg-[#7AAD8B]/5">
+                    View All
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {messagesLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-3 bg-muted rounded w-3/4 mb-2"></div>
+                        <div className="h-2 bg-muted rounded w-1/2"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : recentMessages?.messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+                      <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">No messages sent yet</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Start by sending your first message
+                    </p>
+                    {canCreateMessage && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/communication/send">Send First Message</Link>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentMessages?.messages.map((message) => (
+                      <div key={message.id} className="group rounded-lg border bg-card/50 p-3 transition-colors hover:bg-card">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {message.title}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Users className="h-3 w-3" />
+                              <span>{message.totalRecipients} recipients</span>
+                              <span>•</span>
+                              <span>{formatDistanceToNow(new Date(message.createdAt))} ago</span>
+                            </div>
+                            {message.template && (
+                              <p className="text-xs text-[#00501B] dark:text-[#7AAD8B]">
+                                Template: {message.template.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="ml-3 flex-shrink-0">
+                            {getStatusBadge(message.status)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Available Templates */}
+            <Card className="bg-gradient-to-br from-card to-card/50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg font-semibold">WhatsApp Templates</CardTitle>
+                  <CardDescription className="text-sm">
+                    Approved templates ready to use
+                  </CardDescription>
+                </div>
+                {canManageTemplates && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/communication/templates" className="text-[#00501B] border-[#00501B]/20 hover:bg-[#00501B]/5 dark:text-[#7AAD8B] dark:border-[#7AAD8B]/20 dark:hover:bg-[#7AAD8B]/5">
+                      Manage
+                    </Link>
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {templatesLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-3 bg-muted rounded w-3/4 mb-2"></div>
+                        <div className="h-2 bg-muted rounded w-1/2"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : templates?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 mb-4">
+                      <AlertCircle className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">No templates available</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Sync templates from Meta or create new ones
+                    </p>
+                    {canManageTemplates && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/communication/templates">Manage Templates</Link>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {templates?.slice(0, 4).map((template) => (
+                      <div key={template.id} className="group rounded-lg border bg-card/50 p-3 transition-colors hover:bg-card">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {template.name}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground capitalize">
+                              <span>{template.category}</span>
+                              <span>•</span>
+                              <span>{template.language}</span>
+                            </div>
+                            {template.description && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {template.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="ml-3 flex-shrink-0">
+                            <Badge 
+                              variant={template.status === 'APPROVED' ? 'default' : 'secondary'}
+                              className={cn(
+                                template.status === 'APPROVED' 
+                                  ? "bg-[#00501B]/10 text-[#00501B] dark:bg-[#7AAD8B]/10 dark:text-[#7AAD8B]"
+                                  : "bg-amber-500/10 text-amber-600"
+                              )}
+                            >
+                              {template.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {templates && templates.length > 4 && (
+                      <div className="text-center pt-2">
+                        <Link 
+                          href="/communication/templates" 
+                          className="text-sm text-[#00501B] dark:text-[#7AAD8B] hover:underline"
+                        >
+                          View {templates.length - 4} more templates
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-  );
+    );
 } 

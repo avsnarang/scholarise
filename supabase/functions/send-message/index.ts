@@ -1,14 +1,5 @@
 /// <reference types="https://deno.land/x/types/react/index.d.ts" />
 
-// Deno global types
-declare global {
-  const Deno: {
-    env: {
-      get(key: string): string | undefined;
-    };
-  };
-}
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -22,6 +13,7 @@ interface JobPayload {
   messageId: string
   templateData?: any
   recipients: Array<{
+    messageRecipientId: string
     id: string
     name: string
     phone: string
@@ -45,9 +37,14 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    // Initialize Supabase client - use the same URL as the application
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    console.log('🔗 Database connection:', {
+      url: supabaseUrl,
+      hasKey: !!supabaseKey
+    });
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Parse request body
@@ -140,7 +137,8 @@ serve(async (req: Request) => {
         if (templateDataMappings && Object.keys(templateDataMappings).length > 0) {
           // Apply template data mappings
           for (const [variableName, mapping] of Object.entries(templateDataMappings)) {
-            recipientVariables[variableName] = extractRecipientData(recipient, mapping.dataField, mapping.fallbackValue)
+            const typedMapping = mapping as { dataField: string; fallbackValue: string }
+            recipientVariables[variableName] = extractRecipientData(recipient, typedMapping.dataField, typedMapping.fallbackValue)
           }
         }
 
@@ -185,7 +183,14 @@ serve(async (req: Request) => {
             templateData.metaTemplateName,
             templateData.metaTemplateLanguage || 'en',
             recipientVariables,
-            whatsappConfig
+            whatsappConfig,
+            {
+              headerType: templateData.headerType,
+              headerContent: templateData.headerContent,
+              headerMediaUrl: templateData.headerMediaUrl,
+              footerText: templateData.footerText,
+              buttons: templateData.buttons
+            }
           )
           
           console.log(`📬 WhatsApp API response:`, messageResult)
@@ -195,7 +200,7 @@ serve(async (req: Request) => {
           successfulSent++
           
           // Update recipient status with better error handling
-          console.log(`📝 Updating recipient ${recipient.id} with metaMessageId: ${messageResult.messageId}`)
+          console.log(`📝 Updating recipient ${recipient.messageRecipientId} with metaMessageId: ${messageResult.messageId}`)
           
           const { data: updateData, error: updateError } = await supabase
             .from('MessageRecipient')
@@ -204,16 +209,15 @@ serve(async (req: Request) => {
               sentAt: new Date().toISOString(),
               metaMessageId: messageResult.messageId
             })
-            .eq('messageId', messageId)
-            .eq('recipientId', recipient.id)
+            .eq('id', recipient.messageRecipientId)
             .select()
 
           if (updateError) {
-            console.error(`❌ Failed to update recipient ${recipient.id} with metaMessageId:`, updateError)
-            console.error('Update params:', { messageId, recipientId: recipient.id, metaMessageId: messageResult.messageId })
-          } else {
-            console.log(`✅ Successfully updated recipient ${recipient.id} with metaMessageId:`, updateData)
-          }
+            console.error(`❌ Failed to update recipient ${recipient.messageRecipientId} with metaMessageId:`, updateError)
+            console.error('Update params:', { messageRecipientId: recipient.messageRecipientId, metaMessageId: messageResult.messageId })
+                      } else {
+              console.log(`✅ Successfully updated recipient ${recipient.messageRecipientId} with metaMessageId:`, updateData)
+            }
 
         } else {
           failed++
@@ -225,11 +229,10 @@ serve(async (req: Request) => {
               status: 'FAILED',
               errorMessage: messageResult.error
             })
-            .eq('messageId', messageId)
-            .eq('recipientId', recipient.id)
+            .eq('id', recipient.messageRecipientId)
 
           if (updateError) {
-            console.error(`❌ Failed to update failed recipient ${recipient.id}:`, updateError)
+            console.error(`❌ Failed to update failed recipient ${recipient.messageRecipientId}:`, updateError)
           }
         }
 
@@ -261,8 +264,7 @@ serve(async (req: Request) => {
             status: 'FAILED',
             errorMessage: error instanceof Error ? error.message : String(error)
           })
-          .eq('messageId', messageId)
-          .eq('recipientId', recipient?.id || '')
+          .eq('id', recipient?.messageRecipientId || '')
       }
     }
 
@@ -396,14 +398,33 @@ async function sendWhatsAppMessage(
   templateName: string,
   language: string,
   variables: Record<string, string>,
-  config: { accessToken: string; phoneNumberId: string; apiVersion?: string }
+  config: { accessToken: string; phoneNumberId: string; apiVersion?: string },
+  templateData?: {
+    headerType?: string
+    headerContent?: string
+    headerMediaUrl?: string
+    footerText?: string
+    buttons?: any[]
+  }
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const apiVersion = config.apiVersion || 'v21.0'
     const url = `https://graph.facebook.com/${apiVersion}/${config.phoneNumberId}/messages`
 
     // Prepare template payload
-    const templatePayload: any = {
+    const templatePayload: {
+      messaging_product: string
+      to: string
+      type: string
+      template: {
+        name: string
+        language: { code: string }
+        components?: Array<{
+          type: string
+          parameters: Array<{ type: string; text: string }>
+        }>
+      }
+    } = {
       messaging_product: 'whatsapp',
       to: phoneNumber,
       type: 'template',
@@ -413,7 +434,25 @@ async function sendWhatsAppMessage(
       }
     }
 
-    // Add template variables if present
+    // Build components array for rich template support
+    const components: any[] = []
+    
+    // Add header component for media headers (images, videos, documents)
+    if (templateData?.headerType && 
+        templateData.headerType !== "TEXT" && 
+        templateData.headerMediaUrl) {
+      components.push({
+        type: 'header',
+        parameters: [{
+          type: templateData.headerType.toLowerCase(),
+          [templateData.headerType.toLowerCase()]: {
+            link: templateData.headerMediaUrl
+          }
+        }]
+      })
+    }
+    
+    // Add body component with variables if present
     if (variables && Object.keys(variables).length > 0) {
       const sortedEntries = Object.entries(variables).sort(([a], [b]) => {
         const numA = parseInt(a.replace(/\D/g, '')) || 0
@@ -422,14 +461,19 @@ async function sendWhatsAppMessage(
       })
 
       if (sortedEntries.length > 0) {
-        templatePayload.template.components = [{
+        components.push({
           type: 'body',
           parameters: sortedEntries.map(([_, value]) => ({
             type: 'text',
             text: String(value || '')
           }))
-        }]
+        })
       }
+    }
+    
+    // Add components to template payload if any exist
+    if (components.length > 0) {
+      templatePayload.template.components = components
     }
 
     const response = await fetch(url, {

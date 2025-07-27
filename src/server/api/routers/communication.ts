@@ -39,6 +39,7 @@ const sendMessageSchema = z.object({
   templateId: z.string().optional(),
   customMessage: z.string().optional(),
   recipientType: z.enum([
+    "ALL_CONTACTS",
     "ALL_STUDENTS",
     "INDIVIDUAL_STUDENTS",
     "ENTIRE_CLASS",
@@ -88,6 +89,18 @@ export const communicationRouter = createTRPCRouter({
 
       const templates = await ctx.db.whatsAppTemplate.findMany({
         where: whereConditions,
+        include: {
+          templateButtons: {
+            orderBy: { order: 'asc' },
+          },
+          templateMedia: true,
+          branch: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
 
@@ -138,7 +151,7 @@ export const communicationRouter = createTRPCRouter({
       }
     }),
 
-  // Create a new template
+  // Create a new template with rich media support
   createTemplate: protectedProcedure
     .input(z.object({
       name: z.string().min(1, "Template name is required"),
@@ -150,6 +163,32 @@ export const communicationRouter = createTRPCRouter({
       branchId: z.string().optional(),
       metaTemplateName: z.string(),
       metaTemplateLanguage: z.string(),
+      
+      // Rich Media and Interactive Components
+      headerType: z.enum(["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]).optional(),
+      headerContent: z.string().optional(),
+      headerMediaUrl: z.string().optional(),
+      footerText: z.string().max(60, "Footer text cannot exceed 60 characters").optional(),
+      buttons: z.array(z.object({
+        id: z.string(),
+        type: z.enum(["CALL_TO_ACTION", "QUICK_REPLY", "URL", "PHONE_NUMBER"]),
+        text: z.string().max(25, "Button text cannot exceed 25 characters"),
+        url: z.string().optional(),
+        phoneNumber: z.string().optional(),
+        payload: z.string().optional(),
+        order: z.number().default(0)
+      })).max(3, "Maximum 3 buttons allowed").optional(),
+      interactiveType: z.enum(["BUTTON", "LIST", "CTA_URL"]).optional(),
+      templateMedia: z.array(z.object({
+        id: z.string(),
+        type: z.enum(["IMAGE", "VIDEO", "DOCUMENT", "AUDIO"]),
+        url: z.string(),
+        filename: z.string(),
+        mimeType: z.string(),
+        size: z.number(),
+        supabasePath: z.string(),
+        bucket: z.string().default("whatsapp-media")
+      })).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       try {
@@ -167,7 +206,7 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
-        // Create the template
+        // Create the template with rich media support
         const template = await ctx.db.whatsAppTemplate.create({
           data: {
             name: input.name,
@@ -183,8 +222,47 @@ export const communicationRouter = createTRPCRouter({
             isActive: true,
             branchId: input.branchId,
             createdBy: ctx.user?.id || 'system',
+            
+            // Rich Media and Interactive Components
+            headerType: input.headerType,
+            headerContent: input.headerContent,
+            headerMediaUrl: input.headerMediaUrl,
+            footerText: input.footerText,
+            buttons: input.buttons ? JSON.parse(JSON.stringify(input.buttons)) : null,
+            interactiveType: input.interactiveType,
           },
         });
+
+        // Create template buttons if provided
+        if (input.buttons && input.buttons.length > 0) {
+          await ctx.db.templateButton.createMany({
+            data: input.buttons.map(button => ({
+              templateId: template.id,
+              type: button.type,
+              text: button.text,
+              url: button.url,
+              phoneNumber: button.phoneNumber,
+              payload: button.payload,
+              order: button.order,
+            })),
+          });
+        }
+
+        // Create template media if provided
+        if (input.templateMedia && input.templateMedia.length > 0) {
+          await ctx.db.templateMedia.createMany({
+            data: input.templateMedia.map(media => ({
+              templateId: template.id,
+              type: media.type,
+              url: media.url,
+              filename: media.filename,
+              mimeType: media.mimeType,
+              size: media.size,
+              supabaseBucket: media.bucket,
+              supabasePath: media.supabasePath,
+            })),
+          });
+        }
 
         // Log the creation
         await ctx.db.communicationLog.create({
@@ -286,7 +364,28 @@ export const communicationRouter = createTRPCRouter({
           });
         }
         
-        // Add body component
+        // Add header component if present
+        if (template.headerType) {
+          const headerComponent: any = {
+            type: "HEADER"
+          };
+          
+          if (template.headerType === "TEXT" && template.headerContent) {
+            headerComponent.format = "TEXT";
+            headerComponent.text = template.headerContent;
+          } else if (template.headerType !== "TEXT" && template.headerMediaUrl) {
+            headerComponent.format = template.headerType;
+            headerComponent.example = {
+              header_handle: [template.headerMediaUrl]
+            };
+          }
+          
+          if (headerComponent.format) {
+            components.push(headerComponent);
+          }
+        }
+        
+        // Add body component (required)
         const bodyComponent: any = {
           type: "BODY",
           text: metaTemplateBody,
@@ -304,6 +403,66 @@ export const communicationRouter = createTRPCRouter({
         }
         
         components.push(bodyComponent);
+        
+        // Add footer component if present
+        if (template.footerText && template.footerText.trim()) {
+          components.push({
+            type: "FOOTER",
+            text: template.footerText.trim()
+          });
+        }
+        
+        // Add buttons component if present
+        if (template.buttons && Array.isArray(template.buttons) && template.buttons.length > 0) {
+          const buttonsComponent: any = {
+            type: "BUTTONS",
+            buttons: []
+          };
+          
+          // Sort buttons by order and convert to Meta format
+          const validButtons = template.buttons
+            .filter((btn): btn is Record<string, any> => 
+              btn !== null && typeof btn === 'object' && !Array.isArray(btn)
+            )
+            .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+            .slice(0, 3); // Max 3 buttons
+          
+          for (const button of validButtons) {
+            if (!button || typeof button !== 'object') continue;
+            
+            const metaButton: any = {
+              text: (button as any).text || "Button"
+            };
+            
+            switch ((button as any).type) {
+              case "URL":
+              case "CALL_TO_ACTION":
+                if ((button as any).url) {
+                  metaButton.type = "URL";
+                  metaButton.url = (button as any).url;
+                }
+                break;
+              case "PHONE_NUMBER":
+                if ((button as any).phoneNumber) {
+                  metaButton.type = "PHONE_NUMBER";
+                  metaButton.phone_number = (button as any).phoneNumber;
+                }
+                break;
+              case "QUICK_REPLY":
+              default:
+                metaButton.type = "QUICK_REPLY";
+                break;
+            }
+            
+            if (metaButton.type) {
+              buttonsComponent.buttons.push(metaButton);
+            }
+          }
+          
+          if (buttonsComponent.buttons.length > 0) {
+            components.push(buttonsComponent);
+          }
+        }
 
         console.log('Template submission details:', {
           originalName: template.metaTemplateName || template.name,
@@ -527,11 +686,12 @@ export const communicationRouter = createTRPCRouter({
       }
     }),
 
-  // Get recipients based on filters
+  // Get recipients based on filters with optimizations
   getRecipients: protectedProcedure
     .input(z.object({
       recipientType: z.enum([
-        "ALL_STUDENTS",
+        "ALL_CONTACTS",
+        "ALL_STUDENTS", 
         "INDIVIDUAL_STUDENTS",
         "ENTIRE_CLASS",
         "INDIVIDUAL_SECTION",
@@ -543,7 +703,9 @@ export const communicationRouter = createTRPCRouter({
       classIds: z.array(z.string()).optional(),
       sectionIds: z.array(z.string()).optional(),
       searchTerm: z.string().optional(),
-      contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(), // For student contact selection
+      contactType: z.array(z.enum(["STUDENT", "FATHER", "MOTHER"])).optional(),
+      limit: z.number().min(1).max(1000).default(500), // Add pagination
+      offset: z.number().min(0).default(0),
     }))
     .query(async ({ ctx, input }) => {
       let recipients: Array<{
@@ -564,6 +726,217 @@ export const communicationRouter = createTRPCRouter({
       } : {};
 
       switch (input.recipientType) {
+        case "ALL_CONTACTS":
+          // Optimized parallel queries for all contacts (no limit for comprehensive contact list)
+          const [allStudents, allTeachers, allEmployees] = await Promise.all([
+            ctx.db.student.findMany({
+              where: {
+                branchId: input.branchId,
+                isActive: true,
+                ...(input.searchTerm && {
+                  OR: [
+                    { firstName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { lastName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { admissionNumber: { contains: input.searchTerm, mode: 'insensitive' } },
+                  ]
+                })
+              },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                admissionNumber: true,
+                rollNumber: true,
+                section: {
+                  select: {
+                    name: true,
+                    class: { select: { name: true } }
+                  }
+                },
+                parent: {
+                  select: {
+                    fatherName: true,
+                    motherName: true,
+                    guardianName: true,
+                    fatherMobile: true,
+                    motherMobile: true,
+                    guardianMobile: true
+                  }
+                }
+              },
+              // No limit for ALL_CONTACTS to show all students
+            }),
+            ctx.db.teacher.findMany({
+              where: {
+                branchId: input.branchId,
+                isActive: true,
+                ...(input.searchTerm && {
+                  OR: [
+                    { firstName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { lastName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { phone: { contains: input.searchTerm, mode: 'insensitive' } },
+                  ]
+                })
+              },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                employeeCode: true,
+                designation: true
+              },
+              // No limit for ALL_CONTACTS to show all teachers
+            }),
+            ctx.db.employee.findMany({
+              where: {
+                branchId: input.branchId,
+                isActive: true,
+                ...(input.searchTerm && {
+                  OR: [
+                    { firstName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { lastName: { contains: input.searchTerm, mode: 'insensitive' } },
+                    { phone: { contains: input.searchTerm, mode: 'insensitive' } },
+                  ]
+                })
+              },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                designation: true
+              },
+              // No limit for ALL_CONTACTS to show all employees
+            })
+          ]);
+
+          // Add students and their parents
+          allStudents.forEach(student => {
+            const studentName = `${student.firstName} ${student.lastName}`;
+            const className = student.section?.class?.name;
+            
+            // Add student contact
+            if (student.phone) {
+              recipients.push({
+                id: student.id,
+                name: studentName,
+                phone: student.phone,
+                type: "student",
+                className,
+                additional: {
+                  student: {
+                    name: studentName,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    admissionNumber: student.admissionNumber,
+                    rollNumber: student.rollNumber,
+                    class: { name: student.section?.class?.name },
+                    section: { name: student.section?.name }
+                  },
+                  contactType: "STUDENT",
+                  contactPersonName: studentName
+                }
+              });
+            }
+
+            // Add parent contacts
+            if (student.parent?.fatherMobile) {
+              recipients.push({
+                id: `father-${student.id}`,
+                name: `${student.parent.fatherName || 'Father'} (${studentName})`,
+                phone: student.parent.fatherMobile,
+                type: "father",
+                className,
+                additional: {
+                  student: {
+                    name: studentName,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    admissionNumber: student.admissionNumber,
+                    rollNumber: student.rollNumber,
+                    class: { name: student.section?.class?.name },
+                    section: { name: student.section?.name }
+                  },
+                  contactType: "FATHER",
+                  contactPersonName: student.parent.fatherName || 'Father',
+                  parent: {
+                    fatherName: student.parent.fatherName,
+                    motherName: student.parent.motherName,
+                    guardianName: student.parent.guardianName
+                  }
+                }
+              });
+            }
+
+            if (student.parent?.motherMobile) {
+              recipients.push({
+                id: `mother-${student.id}`,
+                name: `${student.parent.motherName || 'Mother'} (${studentName})`,
+                phone: student.parent.motherMobile,
+                type: "mother",
+                className,
+                additional: {
+                  student: {
+                    name: studentName,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    admissionNumber: student.admissionNumber,
+                    rollNumber: student.rollNumber,
+                    class: { name: student.section?.class?.name },
+                    section: { name: student.section?.name }
+                  },
+                  contactType: "MOTHER",
+                  contactPersonName: student.parent.motherName || 'Mother',
+                  parent: {
+                    fatherName: student.parent.fatherName,
+                    motherName: student.parent.motherName,
+                    guardianName: student.parent.guardianName
+                  }
+                }
+              });
+            }
+          });
+
+          // Add teachers
+          allTeachers.forEach(teacher => {
+            if (teacher.phone) {
+              recipients.push({
+                id: teacher.id,
+                name: `${teacher.firstName} ${teacher.lastName}`,
+                phone: teacher.phone,
+                type: "teacher",
+                additional: {
+                  contactPersonName: `${teacher.firstName} ${teacher.lastName}`,
+                  firstName: teacher.firstName,
+                  lastName: teacher.lastName,
+                  employeeCode: teacher.employeeCode,
+                  designation: teacher.designation
+                }
+              });
+            }
+          });
+
+          // Add employees
+          allEmployees.forEach(employee => {
+            if (employee.phone) {
+              recipients.push({
+                id: employee.id,
+                name: `${employee.firstName} ${employee.lastName}`,
+                phone: employee.phone,
+                type: "employee",
+                additional: {
+                  contactPersonName: `${employee.firstName} ${employee.lastName}`,
+                  firstName: employee.firstName,
+                  lastName: employee.lastName,
+                  designation: employee.designation
+                }
+              });
+            }
+          });
+          break;
+
         case "ALL_STUDENTS":
         case "INDIVIDUAL_STUDENTS":
         case "ENTIRE_CLASS":
@@ -775,9 +1148,9 @@ export const communicationRouter = createTRPCRouter({
           branchId: input.branchId
         });
 
-        // Create recipient records for ALL recipients
-        await ctx.db.messageRecipient.createMany({
-          data: input.recipients.map(recipient => {
+        // Create recipient records for ALL recipients and get their IDs
+        const messageRecipients = await Promise.all(
+          input.recipients.map(async (recipient) => {
             // Normalize phone number for consistency
             let normalizedPhone = recipient.phone || "";
             // Remove all non-numeric characters
@@ -788,16 +1161,27 @@ export const communicationRouter = createTRPCRouter({
             }
             // Ensure it's in the format that Meta API expects (without country code prefix symbols)
             
+            const messageRecipient = await ctx.db.messageRecipient.create({
+              data: {
+                messageId: message.id,
+                recipientType: recipient.type,
+                recipientId: recipient.id,
+                recipientName: recipient.name,
+                recipientPhone: normalizedPhone,
+                status: "PENDING" as any
+              }
+            });
+            
             return {
-              messageId: message.id,
-              recipientType: recipient.type,
-              recipientId: recipient.id,
-              recipientName: recipient.name,
-              recipientPhone: normalizedPhone,
-              status: "PENDING" as any
+              messageRecipientId: messageRecipient.id,
+              id: recipient.id,
+              name: recipient.name,
+              phone: recipient.phone,
+              type: recipient.type,
+              additional: recipient.additional
             };
           })
-        });
+        );
 
         // Instead of sending immediately, queue the job for background processing
         console.log('📋 Queuing message for background processing...');
@@ -933,7 +1317,7 @@ export const communicationRouter = createTRPCRouter({
             data: {
               messageId: message.id,
               status: "QUEUED",
-              totalRecipients: recipientsWithValidPhones.length,
+              totalRecipients: messageRecipients.length,
               processedRecipients: 0,
               successfulSent: 0,
               failed: 0,
@@ -977,15 +1361,14 @@ export const communicationRouter = createTRPCRouter({
             messageId: message.id,
             templateData: {
               metaTemplateName: template.metaTemplateName,
-              metaTemplateLanguage: template.metaTemplateLanguage || 'en'
+              metaTemplateLanguage: template.metaTemplateLanguage || 'en',
+              headerType: template.headerType || undefined,
+              headerContent: template.headerContent || undefined,
+              headerMediaUrl: template.headerMediaUrl || undefined,
+              footerText: template.footerText || undefined,
+              buttons: template.buttons as any[] || undefined,
             },
-            recipients: recipientsWithValidPhones.map(r => ({
-              id: r.id,
-              name: r.name,
-              phone: r.phone,
-              type: r.type,
-              additional: r.additional
-            })),
+            recipients: messageRecipients,
             templateParameters: parameters,
             templateDataMappings: input.templateDataMappings || {},
             whatsappConfig: {
@@ -996,17 +1379,41 @@ export const communicationRouter = createTRPCRouter({
             dryRun: input.dryRun || false
           };
 
-          // Trigger edge function asynchronously
-          void triggerMessageJob(edgeFunctionPayload);
-          
-          console.log('✅ Edge function triggered successfully');
+          // Trigger edge function asynchronously with error handling
+          try {
+            await triggerMessageJob(edgeFunctionPayload);
+            console.log('✅ Edge function triggered successfully');
+          } catch (edgeError) {
+            console.error('❌ Failed to trigger edge function:', edgeError);
+            
+            // Update message job status to failed
+            await ctx.db.messageJob.update({
+              where: { id: messageJob.id },
+              data: {
+                status: "FAILED",
+                errorMessage: `Failed to trigger edge function: ${edgeError instanceof Error ? edgeError.message : 'Unknown error'}`,
+                failedAt: new Date()
+              }
+            });
+            
+            // Update message status to failed
+            await ctx.db.communicationMessage.update({
+              where: { id: message.id },
+              data: { status: "FAILED" }
+            });
+            
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Failed to queue message for sending: ${edgeError instanceof Error ? edgeError.message : 'Unknown error'}`,
+            });
+          }
           
           // Return immediately with job info
           return {
             success: true,
             messageId: message.id,
             jobId: messageJob.id,
-            totalRecipients: recipientsWithValidPhones.length,
+            totalRecipients: messageRecipients.length,
             successfulSent: 0,
             failed: 0,
             info: 'Message queued for background processing. Check message history for status.'
@@ -1605,8 +2012,9 @@ export const communicationRouter = createTRPCRouter({
         "Delivery Status",
         "Sent Time",
         "Delivered Time",
+        "Read Time",
         "Error Message",
-        "Twilio Message ID"
+        "Meta Message ID"
       ];
 
       const csvRows = messageDetails.recipients.map(recipient => {
@@ -1628,9 +2036,10 @@ export const communicationRouter = createTRPCRouter({
           phoneStatus,
           recipient.status,
           recipient.sentAt ? new Date(recipient.sentAt).toLocaleString() : "Not sent",
-          "N/A", // deliveredAt - would need webhook integration
+          recipient.deliveredAt ? new Date(recipient.deliveredAt).toLocaleString() : "Not delivered",
+          recipient.readAt ? new Date(recipient.readAt).toLocaleString() : "Not read",
           recipient.errorMessage || "N/A",
-          recipient.twilioMessageId || "N/A"
+          recipient.metaMessageId || "N/A"
         ];
       });
 
@@ -1660,6 +2069,32 @@ export const communicationRouter = createTRPCRouter({
       templateVariables: z.array(z.string()),
       metaTemplateName: z.string(),
       metaTemplateLanguage: z.string(),
+      
+      // Rich Media and Interactive Components
+      headerType: z.enum(["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]).optional(),
+      headerContent: z.string().optional(),
+      headerMediaUrl: z.string().optional(),
+      footerText: z.string().max(60, "Footer text cannot exceed 60 characters").optional(),
+      buttons: z.array(z.object({
+        id: z.string(),
+        type: z.enum(["CALL_TO_ACTION", "QUICK_REPLY", "URL", "PHONE_NUMBER"]),
+        text: z.string().max(25, "Button text cannot exceed 25 characters"),
+        url: z.string().optional(),
+        phoneNumber: z.string().optional(),
+        payload: z.string().optional(),
+        order: z.number().default(0)
+      })).max(3, "Maximum 3 buttons allowed").optional(),
+      interactiveType: z.enum(["BUTTON", "LIST", "CTA_URL"]).optional(),
+      templateMedia: z.array(z.object({
+        id: z.string(),
+        type: z.enum(["IMAGE", "VIDEO", "DOCUMENT", "AUDIO"]),
+        url: z.string(),
+        filename: z.string(),
+        mimeType: z.string(),
+        size: z.number(),
+        supabasePath: z.string(),
+        bucket: z.string().default("whatsapp-media")
+      })).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       try {
@@ -1700,23 +2135,77 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
-        // Update the template
-        const updatedTemplate = await ctx.db.whatsAppTemplate.update({
-          where: { id: input.templateId },
-          data: {
-            name: input.name,
-            description: input.description,
-            category: input.category,
-            language: input.language,
-            templateBody: input.templateBody,
-            templateVariables: input.templateVariables,
-            metaTemplateName: input.metaTemplateName,
-            metaTemplateLanguage: input.metaTemplateLanguage,
-            // Reset meta status since content changed
-            metaTemplateStatus: null,
-            metaTemplateId: null,
-            updatedAt: new Date()
-          },
+        // Update the template with rich media support
+        const updatedTemplate = await ctx.db.$transaction(async (tx) => {
+          // Delete existing buttons and media
+          await tx.templateButton.deleteMany({
+            where: { templateId: input.templateId },
+          });
+          
+          await tx.templateMedia.deleteMany({
+            where: { templateId: input.templateId },
+          });
+
+          // Update the main template
+          const template = await tx.whatsAppTemplate.update({
+            where: { id: input.templateId },
+            data: {
+              name: input.name,
+              description: input.description,
+              category: input.category,
+              language: input.language,
+              templateBody: input.templateBody,
+              templateVariables: input.templateVariables,
+              metaTemplateName: input.metaTemplateName,
+              metaTemplateLanguage: input.metaTemplateLanguage,
+              
+              // Rich Media and Interactive Components
+              headerType: input.headerType,
+              headerContent: input.headerContent,
+              headerMediaUrl: input.headerMediaUrl,
+              footerText: input.footerText,
+              buttons: input.buttons ? JSON.parse(JSON.stringify(input.buttons)) : null,
+              interactiveType: input.interactiveType,
+              
+              // Reset meta status since content changed
+              metaTemplateStatus: null,
+              metaTemplateId: null,
+              updatedAt: new Date()
+            },
+          });
+
+          // Create new template buttons if provided
+          if (input.buttons && input.buttons.length > 0) {
+            await tx.templateButton.createMany({
+              data: input.buttons.map(button => ({
+                templateId: input.templateId,
+                type: button.type,
+                text: button.text,
+                url: button.url,
+                phoneNumber: button.phoneNumber,
+                payload: button.payload,
+                order: button.order,
+              })),
+            });
+          }
+
+          // Create new template media if provided
+          if (input.templateMedia && input.templateMedia.length > 0) {
+            await tx.templateMedia.createMany({
+              data: input.templateMedia.map(media => ({
+                templateId: input.templateId,
+                type: media.type,
+                url: media.url,
+                filename: media.filename,
+                mimeType: media.mimeType,
+                size: media.size,
+                supabaseBucket: media.bucket,
+                supabasePath: media.supabasePath,
+              })),
+            });
+          }
+
+          return template;
         });
 
         // Log the update
@@ -1875,6 +2364,12 @@ export const communicationRouter = createTRPCRouter({
       try {
         const template = await ctx.db.whatsAppTemplate.findUnique({
           where: { id: input.templateId },
+          include: {
+            templateButtons: {
+              orderBy: { order: 'asc' },
+            },
+            templateMedia: true,
+          },
         });
 
         if (!template) {
@@ -1967,6 +2462,182 @@ export const communicationRouter = createTRPCRouter({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to delete message',
+        });
+      }
+    }),
+
+  // Retry failed messages
+  retryFailedRecipients: protectedProcedure
+    .input(z.object({
+      messageId: z.string().min(1, "Message ID is required"),
+      recipientIds: z.array(z.string()).optional(), // If not provided, retry all failed recipients
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Get the original message
+        const originalMessage = await ctx.db.communicationMessage.findUnique({
+          where: { id: input.messageId },
+          include: {
+            template: true,
+            recipients: {
+              where: input.recipientIds ? 
+                { id: { in: input.recipientIds }, status: "FAILED" } :
+                { status: "FAILED" }
+            }
+          }
+        });
+
+        if (!originalMessage) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Message not found",
+          });
+        }
+
+        const failedRecipients = originalMessage.recipients;
+
+        if (failedRecipients.length === 0) {
+          return {
+            message: "No failed recipients found to retry",
+            retriedCount: 0
+          };
+        }
+
+        // Update failed recipients back to PENDING status
+        await ctx.db.messageRecipient.updateMany({
+          where: {
+            id: { in: failedRecipients.map(r => r.id) }
+          },
+          data: {
+            status: "PENDING",
+            errorMessage: null,
+            updatedAt: new Date()
+          }
+        });
+
+        // Get WhatsApp configuration
+        const whatsappConfig = await ctx.db.communicationSettings.findUnique({
+          where: { branchId: originalMessage.branchId },
+        });
+
+        if (!whatsappConfig?.metaAccessToken || !whatsappConfig?.metaPhoneNumberId) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "WhatsApp configuration not found or incomplete for this branch",
+          });
+        }
+
+        // Create a new job for retry
+        const retryJob = await ctx.db.messageJob.create({
+          data: {
+            messageId: originalMessage.id,
+            status: "QUEUED",
+            priority: 1, // Higher priority for retries
+            totalRecipients: failedRecipients.length,
+            processedRecipients: 0,
+            successfulSent: 0,
+            failed: 0,
+            metadata: {
+              isRetry: true,
+              originalJobDate: new Date(),
+              retryRecipientIds: failedRecipients.map(r => r.id)
+            },
+            createdBy: ctx.user?.id || ctx.userId,
+          }
+        });
+
+        // Prepare data for Edge Function
+        const jobPayload = {
+          jobId: retryJob.id,
+          messageId: originalMessage.id,
+          templateData: originalMessage.template ? {
+            metaTemplateName: originalMessage.template.metaTemplateName,
+            metaTemplateLanguage: originalMessage.template.metaTemplateLanguage || 'en'
+          } : null,
+          recipients: failedRecipients.map(recipient => ({
+            messageRecipientId: recipient.id,
+            id: recipient.recipientId,
+            name: recipient.recipientName,
+            phone: recipient.recipientPhone,
+            type: recipient.recipientType,
+            additional: {} // Add any additional data if needed
+          })),
+          whatsappConfig: {
+            accessToken: whatsappConfig.metaAccessToken,
+            phoneNumberId: whatsappConfig.metaPhoneNumberId,
+            apiVersion: whatsappConfig.metaApiVersion || 'v21.0'
+          },
+          dryRun: false
+        };
+
+        // Call Edge Function
+        const { env } = await import("@/env.js");
+        const edgeResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+          },
+          body: JSON.stringify(jobPayload)
+        });
+
+        if (!edgeResponse.ok) {
+          const errorText = await edgeResponse.text();
+          console.error('Edge function error:', errorText);
+          
+          // Update job status to failed
+          await ctx.db.messageJob.update({
+            where: { id: retryJob.id },
+            data: {
+              status: "FAILED",
+              errorMessage: `Edge function failed: ${errorText}`,
+              failedAt: new Date()
+            }
+          });
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to queue retry job",
+          });
+        }
+
+        // Update message status if needed
+        await ctx.db.communicationMessage.update({
+          where: { id: originalMessage.id },
+          data: {
+            status: "SENDING",
+            updatedAt: new Date()
+          }
+        });
+
+        // Log the retry action
+        await ctx.db.communicationLog.create({
+          data: {
+            messageId: originalMessage.id,
+            action: "message_retry",
+            description: `Retrying ${failedRecipients.length} failed recipients for message "${originalMessage.title}"`,
+            metadata: {
+              retriedRecipientIds: failedRecipients.map(r => r.id),
+              retryJobId: retryJob.id
+            },
+            userId: ctx.user?.id || ctx.userId,
+          }
+        });
+
+        return {
+          message: "Retry initiated successfully",
+          retriedCount: failedRecipients.length,
+          jobId: retryJob.id
+        };
+
+      } catch (error) {
+        console.error('Error retrying failed recipients:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to retry failed recipients',
         });
       }
     }),

@@ -55,6 +55,9 @@ interface DataTableProps<TData, TValue> {
   // Props for controlled row selection by parent
   rowSelection?: Record<string, boolean>;
   onRowSelectionChange?: (updater: React.SetStateAction<Record<string, boolean>>) => void;
+  // Server-side pagination support
+  pagination?: PaginationState;
+  onPaginationChange?: (updater: PaginationState | ((old: PaginationState) => PaginationState)) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -69,13 +72,19 @@ export function DataTable<TData, TValue>({
   onSortingChange, // Added
   rowSelection, // Controlled row selection state from parent
   onRowSelectionChange, // Handler for selection changes from parent
+  pagination: externalPagination, // Server-side pagination state
+  onPaginationChange, // Server-side pagination change handler
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [pagination, setPagination] = React.useState<PaginationState>({
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>({
     pageIndex: 0, // Controlled by parent via cursor logic, this is for display
     pageSize: pageSize,
   });
+
+  // Use external pagination if provided, otherwise use internal
+  const pagination = externalPagination || internalPagination;
+  const setPagination = onPaginationChange || setInternalPagination;
   const [error, setError] = React.useState<string | null>(null);
 
   // Validate data and columns before rendering
@@ -132,14 +141,14 @@ export function DataTable<TData, TValue>({
 
   // Sync pageSize prop with table's internal state if prop changes
   React.useEffect(() => {
-    // table.setPageSize(pageSize); // This is handled by parent via onPageSizeChange now
-    // The pagination state has pageSize, which is initialized by the pageSize prop.
-    // If the pageSize prop to DataTable changes, we need to update the pagination state.
-    setPagination(prev => ({
+    // Only update internal pagination if not using external pagination
+    if (!externalPagination) {
+      setInternalPagination(prev => ({
         ...prev,
         pageSize: pageSize
-    }));
-  }, [pageSize]);
+      }));
+    }
+  }, [pageSize, externalPagination]);
 
   // If there's an error, show a message
   if (error) {
@@ -295,34 +304,30 @@ export function DataTable<TData, TValue>({
             </Select>
           </div>
 
-          {pageCount === -1 && (
-            <>
-              <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <span className="sr-only">Go to previous page</span>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-8 w-8 p-0"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  <span className="sr-only">Go to next page</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {pageCount === -1 ? table.getPageCount() : pageCount}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to next page</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

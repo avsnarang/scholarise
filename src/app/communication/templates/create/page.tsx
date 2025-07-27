@@ -6,11 +6,9 @@ import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchContext } from "@/hooks/useBranchContext";
 
-import { TemplateBuilder } from "@/components/communication/template-builder";
+import { EnhancedTemplateBuilder } from "@/components/communication/enhanced-template-builder";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { AlertCircle } from "lucide-react";
 
 export default function CreateTemplatePage() {
   const router = useRouter();
@@ -18,20 +16,30 @@ export default function CreateTemplatePage() {
   const { hasPermission } = usePermissions();
   const { currentBranchId } = useBranchContext();
 
-  // Create template mutation
+  // Get utils for cache invalidation
+  const utils = api.useUtils();
+
+  // Create template mutation with cache invalidation
   const createTemplateMutation = api.communication.createTemplate.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Invalidate template queries to refresh all template lists
+      await utils.communication.getTemplates.invalidate();
+      
+      // Show success message
       toast({
-        title: "Template Created Successfully",
-        description: `Template "${data.name}" has been created and is ready for submission to Meta.`,
+        title: "🎉 Template Created Successfully!",
+        description: `Template "${data.name}" has been created and is ready for submission to Meta for approval.`,
+        duration: 5000,
       });
+      
       router.push("/communication/templates");
     },
     onError: (error) => {
       toast({
-        title: "Failed to Create Template",
+        title: "❌ Failed to Create Template",
         description: error.message,
         variant: "destructive",
+        duration: 5000,
       });
     },
   });
@@ -42,6 +50,14 @@ export default function CreateTemplatePage() {
       branchId: currentBranchId || undefined,
       metaTemplateName: templateData.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
       metaTemplateLanguage: templateData.language || 'en',
+      // Include all the new rich media fields
+      headerType: templateData.headerType,
+      headerContent: templateData.headerContent,
+      headerMediaUrl: templateData.headerMediaUrl,
+      footerText: templateData.footerText,
+      buttons: templateData.buttons || [],
+      interactiveType: templateData.interactiveType,
+      templateMedia: templateData.templateMedia || [],
     });
   };
 
@@ -67,32 +83,11 @@ export default function CreateTemplatePage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Create Template</h1>
-            <p className="text-muted-foreground">
-              Create WhatsApp message templates with dynamic variables
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/communication/templates">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Templates
-          </Link>
-        </Button>
-      </div>
-
-      {/* Template Builder */}
-      <TemplateBuilder
-        onSave={handleSave}
-        onCancel={handleCancel}
-        isLoading={createTemplateMutation.isPending}
-        showHeader={false}
-      />
-    </div>
+    <EnhancedTemplateBuilder
+      onSave={handleSave}
+      onCancel={handleCancel}
+      isLoading={createTemplateMutation.isPending}
+      showHeader={true}
+    />
   );
 } 

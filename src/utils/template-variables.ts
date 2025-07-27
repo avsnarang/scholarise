@@ -487,7 +487,25 @@ export const getCategoryByVariable = (variableKey: string): VariableCategory | u
 export const parseTemplateVariables = (templateContent: string): string[] => {
   const variableRegex = /\{\{([^}]+)\}\}/g;
   const matches = [...templateContent.matchAll(variableRegex)];
-  return matches.map(match => match[1]?.trim()).filter(Boolean) as string[];
+  
+  return matches
+    .map(match => match[1]?.trim())
+    .filter((variable): variable is string => Boolean(variable))
+    .filter(variable => {
+      // Filter out variables that contain invalid characters for variable names
+      // Allow letters, numbers, underscores, and hyphens
+      const validVariableRegex = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
+      if (!validVariableRegex.test(variable)) {
+        console.warn(`Invalid template variable format: "{{${variable}}}" - variables should only contain letters, numbers, underscores, and hyphens`);
+        return false;
+      }
+      return true;
+    });
+};
+
+// Helper function to escape special regex characters
+const escapeRegExp = (string: string): string => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 };
 
 export const renderTemplate = (
@@ -498,8 +516,15 @@ export const renderTemplate = (
   
   // Replace variables in {{variable}} format
   Object.entries(variables).forEach(([key, value]) => {
-    const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
-    renderedContent = renderedContent.replace(regex, value);
+    try {
+      // Escape special regex characters in the key
+      const escapedKey = escapeRegExp(key);
+      const regex = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'g');
+      renderedContent = renderedContent.replace(regex, value);
+    } catch (error) {
+      // If regex creation fails for any reason, skip this replacement
+      console.warn(`Failed to create regex for template variable "${key}":`, error);
+    }
   });
   
   return renderedContent;

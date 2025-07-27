@@ -265,6 +265,13 @@ export class WhatsAppApiClient {
     templateName: string;
     templateLanguage?: string;
     templateVariables?: Record<string, string>;
+    templateData?: {
+      headerType?: string;
+      headerContent?: string;
+      headerMediaUrl?: string;
+      footerText?: string;
+      buttons?: any[];
+    };
   }): Promise<WhatsAppApiResponse<MetaSendMessageResponse>> {
     try {
       const validatedNumber = this.validateWhatsAppNumber(request.to);
@@ -301,7 +308,13 @@ export class WhatsAppApiClient {
         hasActualVariables,
         willAddComponents: hasActualVariables
       });
+      // Add header component parameters if template has header with variables
+      if (request.templateData?.headerType === "TEXT" && request.templateData.headerContent) {
+        // For now, headers with variables are not commonly used, but we can add support later
+        // This is mainly for media headers which don't need parameters
+      }
       
+      // Add body component parameters if we have variables
       if (hasActualVariables) {
         // Sort variables by key to ensure consistent order (var1, var2, var3, etc.)
         const sortedEntries = Object.entries(request.templateVariables!)
@@ -322,6 +335,23 @@ export class WhatsAppApiClient {
           });
         }
       }
+      
+      // Add header component for media headers
+      if (request.templateData?.headerType && 
+          request.templateData.headerType !== "TEXT" && 
+          request.templateData.headerMediaUrl) {
+        components.push({
+          type: 'header',
+          parameters: [{
+            type: request.templateData.headerType.toLowerCase(),
+            [request.templateData.headerType.toLowerCase()]: {
+              link: request.templateData.headerMediaUrl
+            }
+          }]
+        });
+      }
+      
+      // Note: Footer and buttons don't need parameters as they're static in the template
 
       // Build the template object without components first
       const templateObj: any = {

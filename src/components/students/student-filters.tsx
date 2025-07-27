@@ -1,175 +1,280 @@
-import { useState, useEffect } from "react";
-import { Filter, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { api } from "@/utils/api";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Search, 
+  Filter, 
+  X, 
+  Plus
+} from "lucide-react"
+import { api } from "@/utils/api"
+import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter"
+import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext"
+import { cn } from "@/lib/utils"
 
 export interface StudentFilters {
-  sectionId?: string;
-  gender?: string;
-  isActive?: boolean;
+  search?: string
+  classId?: string
+  sectionId?: string
+  gender?: string
+  isActive?: string
+  ageRange?: {
+    min?: number
+    max?: number
+  }
 }
 
 interface StudentFiltersProps {
-  filters: StudentFilters;
-  onFilterChange: (filters: StudentFilters) => void;
+  filters: StudentFilters
+  onFiltersChange: (filters: StudentFilters) => void
+  onSearchChange: (search: string) => void
+  searchTerm: string
+  totalCount?: number
+  className?: string
 }
 
-export function StudentFilters({ filters, onFilterChange }: StudentFiltersProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [localFilters, setLocalFilters] = useState<StudentFilters>(filters);
+export function StudentFilters({
+  filters,
+  onFiltersChange,
+  onSearchChange,
+  searchTerm,
+  totalCount = 0,
+  className
+}: StudentFiltersProps) {
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
-  // Update local filters when parent filters change
-  useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
+  const { getBranchFilterParam } = useGlobalBranchFilter()
+  const { currentSessionId } = useAcademicSessionContext()
 
-  // Fetch sections from the API (since students belong to sections, not classes directly)
+  // Fetch classes for the current branch
+  const { data: classesData } = api.class.getAll.useQuery({
+    branchId: getBranchFilterParam() || undefined,
+    sessionId: currentSessionId || undefined,
+  })
+
+  // Fetch sections based on selected class
   const { data: sectionsData } = api.section.getAll.useQuery({
-    includeClass: true,
-    isActive: true,
-  });
-  const sections = sectionsData || [];
+    branchId: getBranchFilterParam() || undefined,
+    classId: filters.classId || undefined,
+  }, {
+    enabled: !!filters.classId
+  })
 
   const handleFilterChange = (key: keyof StudentFilters, value: any) => {
-    // Handle special values for "All" options
-    if (value === 'all_sections' || value === 'all_genders') {
-      value = undefined;
+    const newFilters = { ...filters, [key]: value }
+    
+    // Clear section when class changes
+    if (key === 'classId') {
+      newFilters.sectionId = undefined
     }
+    
+    onFiltersChange(newFilters)
+  }
 
-    setLocalFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+  const clearFilter = (key: keyof StudentFilters) => {
+    const newFilters = { ...filters }
+    delete newFilters[key]
+    onFiltersChange(newFilters)
+  }
 
-  const applyFilters = () => {
-    onFilterChange(localFilters);
-    setIsOpen(false);
-  };
+  const clearAllFilters = () => {
+    onFiltersChange({})
+    onSearchChange("")
+  }
 
-  const resetFilters = () => {
-    const emptyFilters: StudentFilters = {};
-    setLocalFilters(emptyFilters);
-    onFilterChange(emptyFilters);
-  };
+  const getActiveFilters = () => {
+    const active = []
+    
+    if (filters.classId && classesData) {
+      const className = classesData.find(c => c.id === filters.classId)?.name
+      if (className) active.push({ key: 'classId', label: `Class: ${className}` })
+    }
+    
+    if (filters.sectionId && sectionsData) {
+      const sectionName = sectionsData.find(s => s.id === filters.sectionId)?.name
+      if (sectionName) active.push({ key: 'sectionId', label: `Section: ${sectionName}` })
+    }
+    
+    if (filters.gender) {
+      active.push({ key: 'gender', label: `Gender: ${filters.gender}` })
+    }
+    
+    if (filters.isActive && filters.isActive !== 'all') {
+      const statusLabel = filters.isActive === 'true' ? 'Active' : 'Inactive'
+      active.push({ key: 'isActive', label: `Status: ${statusLabel}` })
+    }
+    
+    return active
+  }
 
-  const getActiveFilterCount = () => {
-    return Object.values(filters).filter((value) => value !== undefined).length;
-  };
+  const activeFilters = getActiveFilters()
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          className="flex items-center gap-2"
-          onClick={() => setIsOpen(true)}
-        >
-          <Filter className="h-4 w-4" />
-          <span>Filters</span>
-          {getActiveFilterCount() > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs text-white">
-              {getActiveFilterCount()}
-            </span>
-          )}
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-[300px] sm:w-[400px]">
-        <SheetHeader>
-          <SheetTitle>Filter Students</SheetTitle>
-          <SheetDescription>
-            Apply filters to narrow down the student list
-          </SheetDescription>
-        </SheetHeader>
-        <div className="mt-6 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="sectionFilter" className="flex items-center gap-2">
-              Section
-              {localFilters.sectionId && (
-                <span className="inline-flex h-2 w-2 rounded-full bg-blue-600"></span>
+    <div className={cn("flex items-center gap-3", className)}>
+      {/* Search */}
+      <div className="relative flex-1 max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search students..."
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Filter Button */}
+      <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="relative">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+            {activeFilters.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                {activeFilters.length}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-3" align="end">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">Filters</h4>
+              {activeFilters.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="h-6 px-2 text-xs"
+                >
+                  Clear all
+                </Button>
               )}
-            </Label>
-            <Select
-              value={localFilters.sectionId || "all_sections"}
-              onValueChange={(value) => handleFilterChange("sectionId", value)}
+            </div>
+
+            {/* Class Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Class</label>
+              <Select
+                value={filters.classId || "all"}
+                onValueChange={(value) => handleFilterChange('classId', value === "all" ? undefined : value)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="All classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All classes</SelectItem>
+                  {classesData?.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Section Filter */}
+            {filters.classId && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Section</label>
+                <Select
+                  value={filters.sectionId || "all"}
+                  onValueChange={(value) => handleFilterChange('sectionId', value === "all" ? undefined : value)}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="All sections" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sections</SelectItem>
+                    {sectionsData?.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Gender Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Gender</label>
+              <Select
+                value={filters.gender || "all"}
+                onValueChange={(value) => handleFilterChange('gender', value === "all" ? undefined : value)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="All genders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All genders</SelectItem>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Status</label>
+              <Select
+                value={filters.isActive || "all"}
+                onValueChange={(value) => handleFilterChange('isActive', value === "all" ? undefined : value)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <div className="flex items-center gap-1">
+          {activeFilters.map((filter) => (
+            <Badge
+              key={filter.key}
+              variant="secondary"
+              className="flex items-center gap-1 text-xs px-2 py-1"
             >
-              <SelectTrigger id="sectionFilter">
-                <SelectValue placeholder="All Sections" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_sections">All Sections</SelectItem>
-                {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.class.name} - {section.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="genderFilter" className="flex items-center gap-2">
-              Gender
-              {localFilters.gender && (
-                <span className="inline-flex h-2 w-2 rounded-full bg-blue-600"></span>
-              )}
-            </Label>
-            <Select
-              value={localFilters.gender || "all_genders"}
-              onValueChange={(value) => handleFilterChange("gender", value)}
-            >
-              <SelectTrigger id="genderFilter">
-                <SelectValue placeholder="All Genders" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_genders">All Genders</SelectItem>
-                <SelectItem value="Male">Male</SelectItem>
-                <SelectItem value="Female">Female</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="activeFilter" className="flex items-center gap-2">
-              Active Students Only
-              {localFilters.isActive !== undefined && (
-                <span className="inline-flex h-2 w-2 rounded-full bg-blue-600"></span>
-              )}
-            </Label>
-            <Switch
-              id="activeFilter"
-              checked={localFilters.isActive === true}
-              onCheckedChange={(checked) => handleFilterChange("isActive", checked || undefined)}
-            />
-          </div>
-
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={resetFilters} className="flex items-center gap-1">
-              <X className="h-4 w-4" />
-              Reset
-            </Button>
-            <Button onClick={applyFilters}>Apply Filters</Button>
-          </div>
+              {filter.label}
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-destructive"
+                onClick={() => clearFilter(filter.key as keyof StudentFilters)}
+              />
+            </Badge>
+          ))}
         </div>
-      </SheetContent>
-    </Sheet>
-  );
+      )}
+
+      {/* Results Count */}
+      {totalCount > 0 && (
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {totalCount} {totalCount === 1 ? 'student' : 'students'}
+        </span>
+      )}
+    </div>
+  )
 }

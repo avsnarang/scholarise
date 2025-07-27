@@ -556,13 +556,14 @@ export function WhatsAppSidebar({
                       )}
                     </div>
                     
-                    <div className="flex-1 ml-2 min-w-0">
-                        {/* Contact name - full width */}
+                    <div className="flex-1 ml-2 min-w-0 overflow-hidden">
+                        {/* Contact name - responsive width */}
                         <div className="mb-1 min-w-0">
                           <h4 className={cn(
-                            "text-sm truncate text-foreground",
+                            "text-sm truncate text-foreground block w-full overflow-hidden whitespace-nowrap",
                             conversation.unreadCount > 0 ? "font-bold" : "font-semibold"
-                          )}>
+                          )}
+                          title={conversation.participantName}>
                             {conversation.participantName}
                           </h4>
                         </div>

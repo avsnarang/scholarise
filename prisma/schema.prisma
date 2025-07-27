@@ -2543,7 +2543,20 @@ model WhatsAppTemplate {
   metaApprovedAt       DateTime?
   metaRejectionReason  String?
   metaSubmittedAt      DateTime?
+  
+  // Rich Media and Interactive Components
+  headerType           String?                // TEXT, IMAGE, VIDEO, DOCUMENT
+  headerContent        String?                // Text content for header
+  headerMediaUrl       String?                // URL for media header
+  footerText           String?                // Footer text content
+  buttons              Json?                  // JSON array of button objects
+  mediaAttachments     Json?                  // JSON array of media attachments
+  interactiveType      String?                // BUTTON, LIST, CTA_URL
+  interactiveContent   Json?                  // JSON content for interactive elements
+  
   messages             CommunicationMessage[]
+  templateButtons      TemplateButton[]
+  templateMedia        TemplateMedia[]
   branch               Branch?                @relation(fields: [branchId], references: [id])
 
   @@unique([metaTemplateName, metaTemplateLanguage])
@@ -2551,6 +2564,44 @@ model WhatsAppTemplate {
   @@index([status])
   @@index([isActive])
   @@index([metaTemplateName])
+}
+
+model TemplateButton {
+  id           String   @id @default(cuid())
+  templateId   String
+  type         String   // CALL_TO_ACTION, QUICK_REPLY, URL, PHONE_NUMBER
+  text         String
+  url          String?
+  phoneNumber  String?
+  payload      String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  template     WhatsAppTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  @@index([templateId])
+  @@index([type])
+}
+
+model TemplateMedia {
+  id             String   @id @default(cuid())
+  templateId     String
+  type           String   // IMAGE, VIDEO, DOCUMENT, AUDIO
+  url            String
+  filename       String?
+  mimeType       String?
+  size           Int?
+  caption        String?
+  supabaseBucket String   @default("whatsapp-media")
+  supabasePath   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  template       WhatsAppTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  @@index([templateId])
+  @@index([type])
 }
 
 model CommunicationMessage {
@@ -2747,7 +2798,18 @@ model ChatMessage {
   metaMessageId   String?
   deliveredAt     DateTime?
   sentAt          DateTime?
+  
+  // Rich Media and Interactive Components
+  headerType      String?              // TEXT, IMAGE, VIDEO, DOCUMENT
+  headerContent   String?              // Text content for header
+  headerMediaUrl  String?              // URL for media header
+  footerText      String?              // Footer text content
+  buttons         Json?                // JSON array of button objects
+  interactiveType String?              // BUTTON, LIST, CTA_URL
+  interactiveContent Json?             // JSON content for interactive elements
+  
   conversation    Conversation         @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  mediaAttachments ChatMessageMedia[]
 
   @@index([conversationId])
   @@index([direction])
@@ -2755,6 +2817,26 @@ model ChatMessage {
   @@index([twilioMessageId])
   @@index([metaMessageId])
   @@index([status])
+}
+
+model ChatMessageMedia {
+  id             String      @id @default(cuid())
+  messageId      String
+  type           String      // IMAGE, VIDEO, DOCUMENT, AUDIO, STICKER
+  url            String
+  filename       String?
+  mimeType       String?
+  size           Int?
+  caption        String?
+  supabaseBucket String      @default("whatsapp-media")
+  supabasePath   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  message        ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+  @@index([type])
 }
 
 enum CallerType {
@@ -2911,6 +2993,7 @@ enum MessageType {
 }
 
 enum RecipientType {
+  ALL_CONTACTS
   INDIVIDUAL_STUDENTS
   ENTIRE_CLASS
   SPECIFIC_SECTION

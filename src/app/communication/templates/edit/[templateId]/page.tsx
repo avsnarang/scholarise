@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchContext } from "@/hooks/useBranchContext";
-import { TemplateBuilder } from "@/components/communication/template-builder";
+import { EnhancedTemplateBuilder } from "@/components/communication/enhanced-template-builder";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,22 @@ export default function EditTemplatePage() {
 
   const templateId = params?.templateId as string;
 
+  // Get utils for cache invalidation
+  const utils = api.useUtils();
+
   // Fetch template data for editing
   const { data: templateData, isLoading: isLoadingTemplate, error } = api.communication.getTemplateById.useQuery(
     { templateId },
     { enabled: !!templateId }
   );
 
-  // Update template mutation
+  // Update template mutation with cache invalidation
   const updateTemplateMutation = api.communication.updateTemplate.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Invalidate template queries to refresh all template lists
+      await utils.communication.getTemplates.invalidate();
+      await utils.communication.getTemplateById.invalidate({ templateId });
+      
       toast({
         title: "Template Updated Successfully",
         description: `Template "${data.name}" has been updated.`,
@@ -50,6 +57,14 @@ export default function EditTemplatePage() {
       ...formData,
       metaTemplateName: formData.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
       metaTemplateLanguage: formData.language || 'en',
+      // Include all rich media fields
+      headerType: formData.headerType,
+      headerContent: formData.headerContent,
+      headerMediaUrl: formData.headerMediaUrl,
+      footerText: formData.footerText,
+      buttons: formData.buttons || [],
+      interactiveType: formData.interactiveType,
+      templateMedia: formData.templateMedia || [],
     });
   };
 
@@ -166,13 +181,40 @@ export default function EditTemplatePage() {
 
       {/* Template Builder */}
       {templateData && (
-        <TemplateBuilder
+        <EnhancedTemplateBuilder
           initialData={{
             name: templateData.name,
             description: templateData.description || undefined,
             category: templateData.category as any,
             language: templateData.language,
             templateBody: templateData.templateBody,
+            // Include all rich media fields
+            headerType: templateData.headerType as any,
+            headerContent: templateData.headerContent || undefined,
+            headerMediaUrl: templateData.headerMediaUrl || undefined,
+            footerText: templateData.footerText || undefined,
+            // Convert relational buttons to the format expected by the UI
+            buttons: templateData.templateButtons?.map(btn => ({
+              id: btn.id,
+              type: btn.type as any,
+              text: btn.text,
+              url: btn.url || undefined,
+              phoneNumber: btn.phoneNumber || undefined,
+              payload: btn.payload || undefined,
+              order: btn.order || 0
+            })) || (templateData.buttons as any[]) || undefined,
+            interactiveType: templateData.interactiveType as any,
+            // Use the relational templateMedia if available, otherwise fall back to JSON field
+            templateMedia: templateData.templateMedia?.map(media => ({
+              id: media.id,
+              type: media.type as any,
+              url: media.url,
+              filename: media.filename || '',
+              mimeType: media.mimeType || '',
+              size: media.size || 0,
+              supabasePath: media.supabasePath || '',
+              bucket: media.supabaseBucket || 'whatsapp-media'
+            })) || undefined,
           }}
           onSave={handleSave}
           onCancel={handleCancel}

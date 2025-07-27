@@ -38,6 +38,7 @@ import { examinationRouter } from "./routers/examination";
 import { courtesyCallsRouter } from "./routers/courtesy-calls";
 import { communicationRouter } from "./routers/communication";
 import { chatRouter } from "./routers/chat";
+import { mediaRouter } from "./routers/media";
 import { transportationRouter } from "./routers/transportation";
 import { staffMoveRouter } from "@/server/api/routers/staffMove";
 
@@ -86,6 +87,7 @@ export const appRouter = createTRPCRouter({
   courtesyCalls: courtesyCallsRouter,
   communication: communicationRouter,
   chat: chatRouter,
+  media: mediaRouter,
   transportation: transportationRouter,
   staffMove: staffMoveRouter,
 });

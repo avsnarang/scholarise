@@ -524,8 +524,8 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-foreground truncate text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h4 className="font-semibold text-foreground truncate text-sm flex-1 min-w-0" title={conversation?.participantName}>
                     {conversation?.participantName || 'Unknown Contact'}
                   </h4>
                     <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-primary/5 border-primary/20 text-primary shrink-0">
@@ -727,26 +727,28 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
                               Contact Information
                             </h4>
                             <div className="space-y-1 text-sm bg-muted/30 p-3 rounded-lg">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Name:</span>
-                                <span className="font-medium">{conversation.participantName}</span>
+                              <div className="flex justify-between items-center min-w-0">
+                                <span className="text-muted-foreground shrink-0">Name:</span>
+                                <span className="font-medium truncate text-right flex-1 min-w-0 ml-2" title={conversation.participantName}>
+                                  {conversation.participantName}
+                                </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Type:</span>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground shrink-0">Type:</span>
                       <Badge variant="outline" className="text-xs">
                                   {getContactTypeDisplay(conversation)}
                       </Badge>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Phone:</span>
-                    <span className="font-mono text-xs">
+                              <div className="flex justify-between items-center min-w-0">
+                                <span className="text-muted-foreground shrink-0">Phone:</span>
+                    <span className="font-mono text-xs truncate text-right flex-1 min-w-0 ml-2" title={conversation.participantPhone?.replace('whatsapp:', '')}>
                                   {conversation.participantPhone?.replace('whatsapp:', '')}
                     </span>
                               </div>
                               {(conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata && (conversation.metadata.contactDetails as any)?.studentName) && (
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Student:</span>
-                                  <span className="font-medium">
+                                <div className="flex justify-between items-center min-w-0">
+                                  <span className="text-muted-foreground shrink-0">Student:</span>
+                                  <span className="font-medium truncate text-right flex-1 min-w-0 ml-2" title={(conversation.metadata.contactDetails as any).studentName}>
                                     {(conversation.metadata.contactDetails as any).studentName}
                                   </span>
                                 </div>
