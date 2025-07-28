@@ -67,8 +67,7 @@ export default function CommunicationDashboard() {
     enabled: shouldFetchData, // Only run when authenticated
     refetchOnWindowFocus: true, // Refetch when user returns to tab
     refetchOnMount: true, // Always refetch on mount
-    staleTime: 1000 * 60, // Consider data stale after 1 minute
-    cacheTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    staleTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 
   // Permission checks

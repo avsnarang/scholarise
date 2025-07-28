@@ -27,7 +27,6 @@ import { dashboardRouter } from "@/server/api/routers/dashboard";
 import { salaryRouter } from "./routers/salary";
 import { departmentRouter } from "./routers/department";
 import { designationRouter } from "./routers/designation";
-import { admissionRouter } from "./routers/admission";
 import { admissionsRouter } from "./routers/admissions";
 import { questionPaperRouter } from "./routers/questionPaper";
 import { moneyCollectionRouter } from "./routers/money-collection";
@@ -76,7 +75,6 @@ export const appRouter = createTRPCRouter({
   salary: salaryRouter,
   department: departmentRouter,
   designation: designationRouter,
-  admission: admissionRouter,
   admissions: admissionsRouter,
   questionPaper: questionPaperRouter,
   moneyCollection: moneyCollectionRouter,

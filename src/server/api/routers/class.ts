@@ -6,8 +6,9 @@ import { type Prisma } from "@prisma/client";
 // Define the schema for class creation and updates
 const classSchema = z.object({
   name: z.string().min(1, "Class name is required"),
-  grade: z.number().int().min(1).max(12).optional(),
+  grade: z.string().min(1).optional(),
   description: z.string().optional(),
+  age: z.number().int().min(1).max(25).optional(),
   isActive: z.boolean().default(true),
   branchId: z.string().min(1, "Branch is required"),
   sessionId: z.string().min(1, "Academic session is required"),
@@ -218,8 +219,9 @@ export const classRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string().min(1, "Class name is required").optional(),
-        grade: z.number().int().min(1).max(12).optional(),
+        grade: z.string().min(1).optional(),
         description: z.string().optional(),
+        age: z.number().int().min(1).max(25).optional(),
         isActive: z.boolean().optional(),
         displayOrder: z.number().int().optional(),
       })

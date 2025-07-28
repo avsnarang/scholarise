@@ -9,8 +9,14 @@ const isPublicRoute = (pathname: string): boolean => {
     '/login',
     '/sign-in',
     '/auth/callback',
+    '/register',
+    '/registration-success',
   ];
-  return publicRoutes.some(route => pathname === route || pathname.startsWith(route));
+  
+  // Check for dynamic registration routes: /register/[branchId]/[sessionId]
+  const dynamicRegisterMatch = /^\/register\/[^\/]+\/[^\/]+\/?$/.test(pathname);
+  
+  return publicRoutes.some(route => pathname === route || pathname.startsWith(route)) || dynamicRegisterMatch;
 };
 
 const isApiRoute = (pathname: string): boolean => {

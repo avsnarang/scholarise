@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 type ClassForOrdering = {
   id: string;
   name: string;
-  grade?: number | null;
+  grade?: string | null;
   isActive: boolean;
   displayOrder?: number;
   _count?: {

@@ -301,7 +301,7 @@ export const transferCertificateRouter = createTRPCRouter({
               isActive: true, // Only active students
             },
             {
-              transferCertificate: {
+              transferCertificates: {
                 none: {}, // Students without existing TCs
               },
             },

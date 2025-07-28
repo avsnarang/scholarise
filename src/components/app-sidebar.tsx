@@ -29,6 +29,9 @@ import {
   MessageSquare,
   BarChart3,
   MonitorSpeaker,
+  UserPlus,
+  FolderOpen,
+  CheckSquare,
 } from "lucide-react"
 import { type Prisma } from "@prisma/client"
 import { useBranchContext } from "@/hooks/useBranchContext"
@@ -333,23 +336,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const erpItems = [
     {
       title: "Admissions",
-      href: "/admissions/dashboard",
+      href: "/admissions",
       icon: School,
-              permissions: [Permission.MANAGE_ADMISSIONS],
+      permissions: [Permission.MANAGE_ADMISSIONS],
       children: [
         {
-          title: "Dashboard",
-          href: "/admissions/dashboard",
+          title: "Inquiries",
+          href: "/admissions/inquiries",
           permissions: [Permission.MANAGE_ADMISSIONS],
         },
         {
-          title: "Leads",
-          href: "/admissions/leads",
-          permissions: [Permission.MANAGE_ADMISSIONS],
-        },
-        {
-          title: "Applications",
-          href: "/admissions/applications",
+          title: "Register Student",
+          href: "/admissions/inquiries?openModal=true",
           permissions: [Permission.MANAGE_ADMISSIONS],
         },
         {

@@ -21,7 +21,7 @@ model Branch {
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
   order                        Int                           @default(0)
-  admissionLeads               AdmissionLead[]
+
   AssessmentCategory           AssessmentCategory[]
   AssessmentConfiguration      AssessmentConfiguration[]
   AssessmentMarks              AssessmentMarks[]
@@ -76,6 +76,7 @@ model Branch {
   attendanceLocations          AttendanceLocation[]
   attendanceWindows            AttendanceWindow[]
   locationTypes                LocationType[]
+  admissionInquiries           AdmissionInquiry[]
 }
 
 model User {
@@ -92,7 +93,7 @@ model User {
   metadata       Json?
   authIdentifier String?         @unique
   userType       String?
-  admissionStaff AdmissionStaff?
+
   employee       Employee?
   parent         Parent?
   staffMoves     StaffMove[]
@@ -131,6 +132,8 @@ model Student {
   updatedAt               DateTime                 @updatedAt
   branchId                String
   parentId                String?
+  sectionId               String?
+  userId                  String?                  @unique
   username                String?
   password                String?
   permanentAddress        String?
@@ -143,43 +146,59 @@ model Student {
   correspondenceState     String?
   correspondenceCountry   String?
   correspondenceZipCode   String?
+  enrolledYear            Int?
+  residenceType           String?
+  medicalConditions       String?
+  emergencyContactName    String?
+  emergencyContactPhone   String?
+  emergencyContactRelation String?
   previousSchool          String?
   lastClassAttended       String?
   mediumOfInstruction     String?
   recognisedByStateBoard  Boolean?
-  schoolCity              String?
-  schoolState             String?
-  reasonForLeaving        String?
+  transferCertificateNumber String?
+  transportRoute          String?
+  pickupPoint             String?
+  houseName               String?
+  scholarshipDetails      String?
   clerkId                 String?
   cbse10RollNumber        String?
   cbse12RollNumber        String?
-  sectionId               String?
-  userId                  String?                  @unique
-  academicRecords         AcademicRecord[]
-  AssessmentMarks         AssessmentMarks[]
-  courtesyCallFeedbacks   CourtesyCallFeedback[]
-  feeCollections          FeeCollection[]
-  MarksEntry              MarksEntry[]
-  MoneyCollectionItem     MoneyCollectionItem[]
-  seatingPlans            SeatingPlan[]
-  branch                  Branch                   @relation(fields: [branchId], references: [id])
+  schoolCity              String?
+  schoolState             String?
+  reasonForLeaving        String?
+  
+  // Relations
+  admissionInquiry        AdmissionInquiry?
+  branch                  Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   parent                  Parent?                  @relation(fields: [parentId], references: [id])
   section                 Section?                 @relation(fields: [sectionId], references: [id])
   user                    User?                    @relation(fields: [userId], references: [id])
-  studentAssessmentScores StudentAssessmentScore[]
-  studentConcessions      StudentConcession[]
+  
+  // Required relationship fields for existing models
+  academicRecords         AcademicRecord[]
+  assessmentMarks         AssessmentMarks[]
+  courtesyCallFeedbacks   CourtesyCallFeedback[]
+  feeCollections          FeeCollection[]
+  marksEntries            MarksEntry[]
+  moneyCollectionItems    MoneyCollectionItem[]
+  seatingPlans            SeatingPlan[]
   siblingsOf              StudentSibling[]         @relation("SiblingToStudent")
   siblings                StudentSibling[]         @relation("StudentToSibling")
-  StudentSubject          StudentSubject[]
-  transferCertificate     TransferCertificate[]
+  studentAssessmentScores StudentAssessmentScore[]
+  studentAttendances      StudentAttendance[]
+  studentConcessions      StudentConcession[]
+  studentSubjects         StudentSubject[]
+  transferCertificates    TransferCertificate[]
   transportAssignments    TransportAssignment[]
-  StudentAttendance       StudentAttendance[]
 
+  @@index([admissionNumber])
+  @@index([branchId])
+  @@index([parentId])
+  @@index([sectionId])
   @@index([userId])
-  @@index([admissionNumber, branchId], map: "student_admission_branch_idx")
-  @@index([branchId, isActive], map: "student_branch_active_idx")
-  @@index([branchId, admissionNumber], map: "student_branch_admission_idx")
-  @@index([sectionId, isActive], map: "student_section_active_idx")
+  @@index([rollNumber, branchId])
+  @@index([isActive])
 }
 
 model Parent {
@@ -440,7 +459,8 @@ model Class {
   sessionId               String
   displayOrder            Int                       @default(0)
   description             String?
-  grade                   Int?
+  grade                   String?
+  age                     Int?
   AssessmentConfiguration AssessmentConfiguration[]
   assessmentSchemas       AssessmentSchema[]
   blueprints              Blueprint[]
@@ -500,6 +520,7 @@ model AcademicSession {
   terms                   Term[]
   transportConfigurations TransportConfiguration[] @relation("TransportConfigSession")
   transportFeeStructures  TransportFeeStructure[]  @relation("TransportFeeSession")
+  admissionInquiries      AdmissionInquiry[]
 }
 
 model Term {
@@ -1453,235 +1474,6 @@ model Designation {
   branchId    String
   branch      Branch     @relation(fields: [branchId], references: [id])
   employees   Employee[] @relation("EmployeeDesignation")
-}
-
-model AdmissionLead {
-  id                       String                @id @default(cuid())
-  firstName                String
-  lastName                 String
-  email                    String?
-  phone                    String?
-  parentName               String?
-  parentPhone              String?
-  parentEmail              String?
-  address                  String?
-  city                     String?
-  state                    String?
-  country                  String?
-  zipCode                  String?
-  gradeApplyingFor         String?
-  academicSession          String?
-  sourceId                 String?
-  status                   AdmissionStatus       @default(NEW)
-  notes                    String?
-  assignedToId             String?
-  createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @updatedAt
-  branchId                 String
-  leadType                 String?
-  appliedClass             String?
-  birthDate                DateTime?
-  gender                   String?
-  nextFollowUpDate         DateTime?
-  lastContactDate          DateTime?
-  registrationNumber       String?
-  provisionalInvoiceNumber String?
-  application              AdmissionApplication?
-  assignedTo               AdmissionStaff?       @relation(fields: [assignedToId], references: [id])
-  branch                   Branch                @relation(fields: [branchId], references: [id])
-  source                   LeadSource?           @relation(fields: [sourceId], references: [id])
-  offer                    AdmissionOffer?
-  assessments              Assessment[]
-  followUps                FollowUp[]
-  documents                LeadDocument[]
-  interactions             LeadInteraction[]
-  payments                 PaymentTransaction[]
-}
-
-model LeadSource {
-  id          String          @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  leads       AdmissionLead[]
-}
-
-model LeadInteraction {
-  id            String          @id @default(cuid())
-  leadId        String
-  type          String
-  description   String
-  date          DateTime
-  conductedById String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  conductedBy   AdmissionStaff? @relation(fields: [conductedById], references: [id])
-  lead          AdmissionLead   @relation(fields: [leadId], references: [id])
-}
-
-model LeadDocument {
-  id           String          @id @default(cuid())
-  leadId       String
-  name         String
-  type         String
-  url          String
-  uploadedAt   DateTime        @default(now())
-  uploadedById String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  lead         AdmissionLead   @relation(fields: [leadId], references: [id])
-  uploadedBy   AdmissionStaff? @relation(fields: [uploadedById], references: [id])
-}
-
-model FollowUp {
-  id            String          @id @default(cuid())
-  leadId        String
-  scheduledDate DateTime
-  description   String
-  status        FollowUpStatus  @default(PENDING)
-  completedDate DateTime?
-  assignedToId  String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  assignedTo    AdmissionStaff? @relation(fields: [assignedToId], references: [id])
-  lead          AdmissionLead   @relation(fields: [leadId], references: [id])
-}
-
-model AdmissionStaff {
-  id                   String                 @id @default(cuid())
-  userId               String?                @unique
-  clerkId              String?
-  name                 String
-  email                String?
-  phone                String?
-  role                 String
-  isActive             Boolean                @default(true)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  AdmissionApplication AdmissionApplication[]
-  admissionLeads       AdmissionLead[]
-  user                 User?                  @relation(fields: [userId], references: [id])
-  assessments          Assessment[]
-  followUps            FollowUp[]
-  leadDocuments        LeadDocument[]
-  leadInteractions     LeadInteraction[]
-  paymentTransactions  PaymentTransaction[]
-
-  @@index([userId])
-}
-
-model AdmissionApplication {
-  id                String                   @id @default(cuid())
-  leadId            String                   @unique
-  applicationNumber String                   @unique
-  applicationDate   DateTime                 @default(now())
-  status            ApplicationStatus        @default(SUBMITTED)
-  currentStage      String?
-  assignedToId      String?
-  reviewedById      String?
-  reviewDate        DateTime?
-  decisionDate      DateTime?
-  decisionById      String?
-  decisionNotes     String?
-  offerAcceptedDate DateTime?
-  feePaid           Boolean                  @default(false)
-  feeAmount         Float?
-  feeDate           DateTime?
-  enrollmentDate    DateTime?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  assignedTo        AdmissionStaff?          @relation(fields: [assignedToId], references: [id])
-  lead              AdmissionLead            @relation(fields: [leadId], references: [id])
-  requirements      ApplicationRequirement[]
-  stages            ApplicationStage[]
-}
-
-model ApplicationStage {
-  id            String               @id @default(cuid())
-  applicationId String
-  name          String
-  description   String?
-  sequence      Int
-  startDate     DateTime?
-  endDate       DateTime?
-  status        StageStatus          @default(PENDING)
-  completedById String?
-  completedDate DateTime?
-  notes         String?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  application   AdmissionApplication @relation(fields: [applicationId], references: [id])
-}
-
-model ApplicationRequirement {
-  id            String               @id @default(cuid())
-  applicationId String
-  name          String
-  description   String?
-  isRequired    Boolean              @default(true)
-  status        RequirementStatus    @default(PENDING)
-  completedDate DateTime?
-  notes         String?
-  documentUrl   String?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  application   AdmissionApplication @relation(fields: [applicationId], references: [id])
-}
-
-model PaymentTransaction {
-  id            String          @id @default(cuid())
-  leadId        String
-  amount        Float
-  method        String
-  status        String
-  type          String
-  reference     String?
-  transactionId String?
-  invoiceNumber String?
-  paymentDate   DateTime        @default(now())
-  notes         String?
-  processedById String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  lead          AdmissionLead   @relation(fields: [leadId], references: [id])
-  processedBy   AdmissionStaff? @relation(fields: [processedById], references: [id])
-}
-
-model Assessment {
-  id            String          @id @default(cuid())
-  leadId        String
-  scheduledDate DateTime
-  actualDate    DateTime?
-  assessorId    String?
-  type          String
-  subject       String?
-  status        String
-  score         Float?
-  maxScore      Float?
-  result        String?
-  notes         String?
-  location      String?
-  duration      Int?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  assessor      AdmissionStaff? @relation(fields: [assessorId], references: [id])
-  lead          AdmissionLead   @relation(fields: [leadId], references: [id])
-}
-
-model AdmissionOffer {
-  id             String        @id @default(cuid())
-  leadId         String        @unique
-  offerDate      DateTime      @default(now())
-  expiryDate     DateTime
-  status         String
-  offerLetterUrl String?
-  terms          String?
-  confirmedDate  DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  lead           AdmissionLead @relation(fields: [leadId], references: [id])
 }
 
 model EmployeeBranchAccess {
@@ -2859,67 +2651,6 @@ enum AttendanceStatus {
   LATE
 }
 
-enum AdmissionStatus {
-  NEW
-  CONTACTED
-  ENGAGED
-  TOUR_SCHEDULED
-  TOUR_COMPLETED
-  APPLICATION_SENT
-  APPLICATION_RECEIVED
-  FEE_PAID
-  ASSESSMENT_SCHEDULED
-  ASSESSMENT_COMPLETED
-  INTERVIEW_SCHEDULED
-  INTERVIEW_COMPLETED
-  DECISION_PENDING
-  OFFERED
-  ACCEPTED
-  REJECTED
-  WAITLISTED
-  ENROLLED
-  CLOSED_LOST
-  ARCHIVE
-}
-
-enum FollowUpStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-  RESCHEDULED
-}
-
-enum ApplicationStatus {
-  DRAFT
-  SUBMITTED
-  UNDER_REVIEW
-  IN_PROCESS
-  AWAITING_DOCUMENTS
-  READY_FOR_DECISION
-  OFFERED
-  ACCEPTED
-  REJECTED
-  WAITLISTED
-  WITHDRAWN
-  ENROLLED
-}
-
-enum StageStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  SKIPPED
-  FAILED
-}
-
-enum RequirementStatus {
-  PENDING
-  SUBMITTED
-  APPROVED
-  REJECTED
-  WAIVED
-}
-
 enum QuestionType {
   MCQ
   SHORT_ANSWER
@@ -3131,4 +2862,68 @@ enum InspectionItemType {
   INTERIOR
   EXTERIOR
   DOCUMENTATION
+}
+
+// New simplified admission models
+model AdmissionInquiry {
+  id                  String                 @id @default(cuid())
+  registrationNumber  String                 @unique
+  firstName           String
+  lastName            String
+  parentName          String
+  parentPhone         String
+  parentEmail         String?
+  classApplying       String
+  dateOfBirth         DateTime?
+  gender              String?
+  address             String?
+  status              InquiryStatus          @default(NEW)
+  source              String?
+  notes               String?
+  assignedToId        String?
+  followUpDate        DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  branchId            String
+  sessionId           String?
+  studentId           String?               @unique
+  
+  branch              Branch                 @relation(fields: [branchId], references: [id])
+  session             AcademicSession?       @relation(fields: [sessionId], references: [id])
+  student             Student?               @relation(fields: [studentId], references: [id])
+  followUps           InquiryFollowUp[]
+  
+  @@index([branchId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([parentPhone])
+}
+
+model InquiryFollowUp {
+  id                 String             @id @default(cuid())
+  inquiryId          String
+  followUpDate       DateTime
+  notes              String?
+  contactMethod      String?           // PHONE, EMAIL, VISIT, WHATSAPP
+  outcome            String?
+  nextFollowUpDate   DateTime?
+  createdAt          DateTime          @default(now())
+  createdById        String?
+  
+  inquiry            AdmissionInquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  @@index([inquiryId])
+  @@index([followUpDate])
+}
+
+// Simplified enums for admission system
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  VISIT_SCHEDULED
+  VISITED
+  FORM_SUBMITTED
+  ADMITTED
+  REJECTED
+  CLOSED
 }

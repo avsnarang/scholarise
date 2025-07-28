@@ -31,7 +31,8 @@ const classEditSchema = z.object({
   name: z.string().min(1, "Class name is required"),
   isActive: z.boolean().default(true),
   displayOrder: z.number().int().min(0).default(0),
-  grade: z.number().int().min(1).max(12).optional().nullable(),
+  grade: z.string().min(1).optional().nullable(),
+  age: z.number().int().min(1).max(25).optional().nullable(),
   description: z.string().optional().nullable(),
 });
 
@@ -98,7 +99,8 @@ export function EditClassModal({
       name: "",
       isActive: true,
       displayOrder: 0,
-      grade: null,
+      grade: "",
+      age: null,
       description: null,
     },
   });
@@ -141,7 +143,8 @@ export function EditClassModal({
         name: existingClass.name,
         isActive: existingClass.isActive,
         displayOrder: existingClass.displayOrder || 0,
-        grade: existingClass.grade || null,
+        grade: existingClass.grade || "",
+        age: existingClass.age || null,
         description: existingClass.description || null,
       });
 
@@ -226,6 +229,11 @@ export function EditClassModal({
       // Only include grade if it's not null
       if (classData.grade !== null && classData.grade !== undefined) {
         updateData.grade = classData.grade;
+      }
+      
+      // Only include age if it's not null
+      if (classData.age !== null && classData.age !== undefined) {
+        updateData.age = classData.age;
       }
       
       // Only include description if it's not null/undefined
@@ -358,8 +366,27 @@ export function EditClassModal({
                         <FormLabel className="dark:text-gray-200">Grade</FormLabel>
                         <FormControl>
                           <Input 
+                            placeholder="e.g. Pre-K, Kindergarten, Grade 1" 
+                            {...field}
+                            value={field.value || ""}
+                            className="dark:bg-[#202020] dark:border-[#303030] dark:text-white dark:placeholder-gray-400 focus-visible:ring-primary"
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500 dark:text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={classForm.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="dark:text-gray-200">Age (in Years)</FormLabel>
+                        <FormControl>
+                          <Input 
                             type="number" 
-                            placeholder="e.g. 1" 
+                            placeholder="e.g. 6" 
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}

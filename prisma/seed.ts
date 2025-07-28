@@ -43,7 +43,8 @@ async function main() {
       data: {
         name: 'Class I',
         description: 'First grade',
-        grade: 1,
+        grade: 'Grade 1',
+        age: 6,
         branchId: branch.id,
         sessionId: session.id,
         displayOrder: 1,
@@ -53,7 +54,8 @@ async function main() {
       data: {
         name: 'Class II',
         description: 'Second grade',
-        grade: 2,
+        grade: 'Grade 2',
+        age: 7,
         branchId: branch.id,
         sessionId: session.id,
         displayOrder: 2,
@@ -63,7 +65,8 @@ async function main() {
       data: {
         name: 'Class III',
         description: 'Third grade',
-        grade: 3,
+        grade: 'Grade 3',
+        age: 8,
         branchId: branch.id,
         sessionId: session.id,
         displayOrder: 3,

@@ -32,7 +32,8 @@ const classSchema = z.object({
   name: z.string().min(1, "Class name is required"),
   isActive: z.boolean(),
   displayOrder: z.number().int().min(0),
-  grade: z.number().int().min(1).max(12).optional(),
+  grade: z.string().min(1).optional(),
+  age: z.number().int().min(1).max(25).optional(),
 });
 
 // Step 2: Section creation schema (for the current combined model)
@@ -85,6 +86,7 @@ export function CreateClassModal({
       isActive: true,
       displayOrder: 0,
       grade: undefined,
+      age: undefined,
     },
   });
 
@@ -122,6 +124,7 @@ export function CreateClassModal({
         isActive: classInfo.isActive,
         displayOrder: classInfo.displayOrder,
         grade: classInfo.grade,
+        age: classInfo.age,
         branchId,
         sessionId,
       });
@@ -187,7 +190,7 @@ export function CreateClassModal({
       name: "",
       isActive: true,
       displayOrder: 0,
-      grade: undefined,
+      grade: "",
     });
     sectionsForm.reset({
       sections: [
@@ -267,8 +270,26 @@ export function CreateClassModal({
                     <FormLabel className="dark:text-gray-200">Grade</FormLabel>
                     <FormControl>
                       <Input 
+                        placeholder="e.g. Pre-K, Kindergarten, Grade 1" 
+                        {...field}
+                        className="dark:bg-[#202020] dark:border-[#303030] dark:text-white dark:placeholder-gray-400 focus-visible:ring-primary"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 dark:text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={classForm.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-gray-200">Age (in Years)</FormLabel>
+                    <FormControl>
+                      <Input 
                         type="number" 
-                        placeholder="e.g. 1" 
+                        placeholder="e.g. 6" 
                         {...field}
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}

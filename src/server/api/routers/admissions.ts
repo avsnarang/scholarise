@@ -1,341 +1,278 @@
 import { z } from "zod"
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc"
 import { TRPCError } from "@trpc/server"
-import {
-  ApplicationStatus,
-  AdmissionStatus,
-  FollowUpStatus,
-  RequirementStatus,
-} from "@prisma/client"
+import { InquiryStatus } from "@prisma/client"
 
 export const admissionsRouter = createTRPCRouter({
-  // Applications
-  getApplications: protectedProcedure
+  // Create new admission inquiry (public registration)
+  createInquiry: publicProcedure
     .input(
       z.object({
-        status: z.nativeEnum(ApplicationStatus).optional(),
-        limit: z.number().min(1).max(100).default(10),
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        parentName: z.string().min(1),
+        parentPhone: z.string().min(10),
+        parentEmail: z.string().email().optional(),
+        classApplying: z.string().min(1),
+        dateOfBirth: z.date().optional(),
+        gender: z.string().optional(),
+        address: z.string().optional(),
+        source: z.string().optional(),
+        branchId: z.string(),
+        sessionId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Generate registration number
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      const registrationNumber = `ADM${year}${randomNum}`;
+
+      return ctx.db.admissionInquiry.create({
+        data: {
+          ...input,
+          registrationNumber,
+          status: InquiryStatus.NEW,
+        },
+      });
+    }),
+
+  // Get all inquiries for admin dashboard
+  getInquiries: protectedProcedure
+    .input(
+      z.object({
+        status: z.nativeEnum(InquiryStatus).optional(),
+        branchId: z.string().optional(),
+        sessionId: z.string().optional(),
+        limit: z.number().min(1).max(100).default(20),
         cursor: z.string().nullish(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const applications = await ctx.db.admissionApplication.findMany({
+      const inquiries = await ctx.db.admissionInquiry.findMany({
         take: input.limit + 1,
         cursor: input.cursor ? { id: input.cursor } : undefined,
         where: {
           status: input.status,
+          branchId: input.branchId,
+          sessionId: input.sessionId,
         },
         include: {
-          lead: {
+          branch: {
             select: {
-              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          session: {
+            select: {
+              name: true,
+            },
+          },
+          student: {
+            select: {
+              admissionNumber: true,
               firstName: true,
               lastName: true,
-              email: true,
-              phone: true,
             },
           },
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          stages: {
-            where: { status: "IN_PROGRESS" },
-            orderBy: { sequence: "asc" },
-            take: 1,
-          }
-        },
-        orderBy: {
-          applicationDate: "desc",
-        },
-      })
-
-      let nextCursor: typeof input.cursor | undefined = undefined
-      if (applications.length > input.limit) {
-        const nextItem = applications.pop()
-        nextCursor = nextItem!.id
-      }
-
-      return {
-        items: applications,
-        nextCursor,
-      }
-    }),
-
-  createApplication: protectedProcedure
-    .input(
-      z.object({
-        leadId: z.string(),
-        applicationNumber: z.string(),
-        documents: z.array(z.string()).optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.admissionApplication.create({
-        data: {
-          applicationNumber: input.applicationNumber,
-          lead: { connect: { id: input.leadId } },
-          status: ApplicationStatus.SUBMITTED,
-          applicationDate: new Date(),
-          ...(input.documents && input.documents.length > 0 && {
-            requirements: {
-              create: input.documents.map((docUrl) => ({
-                name: "Submitted Document",
-                documentUrl: docUrl,
-                status: RequirementStatus.SUBMITTED,
-                isRequired: true,
-              })),
-            },
-          }),
-        },
-      })
-    }),
-
-  updateApplicationStatus: protectedProcedure
-    .input(
-      z.object({
-        applicationId: z.string(),
-        status: z.nativeEnum(ApplicationStatus),
-        remarks: z.string().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.admissionApplication.update({
-        where: { id: input.applicationId },
-        data: {
-          status: input.status,
-          decisionNotes: input.remarks,
-          ...(input.status === ApplicationStatus.OFFERED || input.status === ApplicationStatus.ACCEPTED || input.status === ApplicationStatus.REJECTED ? { decisionDate: new Date() } : {}),
-        },
-      })
-    }),
-
-  // Leads
-  getLeads: protectedProcedure
-    .input(
-      z.object({
-        status: z.nativeEnum(AdmissionStatus).optional(),
-        limit: z.number().min(1).max(100).default(10),
-        cursor: z.string().nullish(),
-      })
-    )
-    .query(async ({ ctx, input }) => {
-      const leads = await ctx.db.admissionLead.findMany({
-        take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
-        where: {
-          status: input.status,
-        },
-        include: {
-          source: true,
-          interactions: {
-            orderBy: {
-              date: "desc",
-            },
+          followUps: {
+            orderBy: { followUpDate: "desc" },
             take: 1,
           },
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-            }
-          }
         },
         orderBy: {
           createdAt: "desc",
         },
-      })
+      });
 
-      let nextCursor: typeof input.cursor | undefined = undefined
-      if (leads.length > input.limit) {
-        const nextItem = leads.pop()
-        nextCursor = nextItem!.id
+      let nextCursor: typeof input.cursor | undefined = undefined;
+      if (inquiries.length > input.limit) {
+        const nextItem = inquiries.pop();
+        nextCursor = nextItem!.id;
       }
 
       return {
-        items: leads,
+        items: inquiries,
         nextCursor,
-      }
+      };
     }),
 
-  createLead: protectedProcedure
+  // Update inquiry status
+  updateInquiry: protectedProcedure
     .input(
       z.object({
-        firstName: z.string(),
-        lastName: z.string(),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
-        branchId: z.string(),
-        sourceId: z.string().optional(),
+        id: z.string(),
+        status: z.nativeEnum(InquiryStatus).optional(),
         notes: z.string().optional(),
-        parentName: z.string().optional(),
-        gradeApplyingFor: z.string().optional(),
+        assignedToId: z.string().optional(),
+        followUpDate: z.date().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.admissionLead.create({
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          email: input.email,
-          phone: input.phone,
-          branchId: input.branchId,
-          sourceId: input.sourceId,
-          status: AdmissionStatus.NEW,
-          notes: input.notes,
-          parentName: input.parentName,
-          gradeApplyingFor: input.gradeApplyingFor,
-        },
-      })
+      const { id, ...data } = input;
+      return ctx.db.admissionInquiry.update({
+        where: { id },
+        data,
+      });
     }),
 
-  addLeadInteraction: protectedProcedure
+  // Add follow-up
+  addFollowUp: protectedProcedure
     .input(
       z.object({
-        leadId: z.string(),
-        type: z.enum(["CALL", "EMAIL", "MEETING", "SMS", "WHATSAPP", "WALK_IN", "EVENT", "OTHER"]),
-        description: z.string(),
-        date: z.date(),
+        inquiryId: z.string(),
+        followUpDate: z.date(),
+        notes: z.string().optional(),
+        contactMethod: z.string().optional(),
+        outcome: z.string().optional(),
+        nextFollowUpDate: z.date().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.leadInteraction.create({
+      return ctx.db.inquiryFollowUp.create({
         data: {
-          leadId: input.leadId,
-          type: input.type,
-          description: input.description,
-          date: input.date,
+          ...input,
+          createdById: ctx.userId,
         },
-      })
+      });
     }),
 
-  // Admitted Students
-  getAdmittedStudents: protectedProcedure
-    .input(
-      z.object({
-        status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
-        limit: z.number().min(1).max(100).default(10),
-        cursor: z.string().nullish(),
-        branchId: z.string().optional(),
-      })
-    )
-    .query(async ({ ctx, input }) => {
-      const students = await ctx.db.student.findMany({
-        take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
-        where: {
-          ...(input.status !== undefined && { isActive: input.status === "ACTIVE" }),
-          ...(input.branchId && { branchId: input.branchId }),
-        },
-        include: {
-          section: true,
-          branch: true,
-        },
-        orderBy: {
-          dateOfAdmission: "desc",
-        },
-      })
-
-      let nextCursor: typeof input.cursor | undefined = undefined
-      if (students.length > input.limit) {
-        const nextItem = students.pop()
-        nextCursor = nextItem!.id
-      }
-
-      return {
-        items: students,
-        nextCursor,
-      }
-    }),
-
-  // Dashboard Stats
+  // Get dashboard stats
   getDashboardStats: protectedProcedure
-    .input(z.object({ branchId: z.string().optional() }))
+    .input(
+      z.object({
+        branchId: z.string().optional(),
+        sessionId: z.string().optional(),
+        fromDate: z.date().optional(),
+        toDate: z.date().optional(),
+      })
+    )
     .query(async ({ ctx, input }) => {
-      const thirtyDaysAgo = new Date(new Date().setDate(new Date().getDate() - 30))
-      const whereClause = input.branchId ? { lead: { branchId: input.branchId } } : {}
-      const leadWhereClause = input.branchId ? { branchId: input.branchId } : {}
+      const baseWhere = {
+        branchId: input.branchId,
+        sessionId: input.sessionId,
+        ...(input.fromDate && input.toDate ? {
+          createdAt: {
+            gte: input.fromDate,
+            lte: input.toDate,
+          },
+        } : {}),
+      };
 
       const [
-        totalApplications,
-        activeLeads,
-        admittedStudentsCount,
-        lastMonthApplications,
-        lastMonthLeads,
-        lastMonthAdmitted,
+        totalInquiries,
+        newInquiries,
+        contactedInquiries,
+        visitedInquiries,
+        admittedInquiries,
       ] = await Promise.all([
-        ctx.db.admissionApplication.count({ where: whereClause }),
-        ctx.db.admissionLead.count({
-          where: {
-            ...leadWhereClause,
-            status: {
-              in: [
-                AdmissionStatus.NEW,
-                AdmissionStatus.CONTACTED,
-                AdmissionStatus.ENGAGED,
-                AdmissionStatus.APPLICATION_SENT,
-                AdmissionStatus.TOUR_SCHEDULED,
-                AdmissionStatus.TOUR_COMPLETED,
-                AdmissionStatus.ASSESSMENT_SCHEDULED,
-                AdmissionStatus.INTERVIEW_SCHEDULED,
-              ],
-            },
-          },
-        }),
-        ctx.db.student.count({
-          where: {
-            isActive: true,
-            ...(input.branchId && { branchId: input.branchId }),
-          },
-        }),
-        ctx.db.admissionApplication.count({
-          where: {
-            ...whereClause,
-            applicationDate: {
-              gte: thirtyDaysAgo,
-            },
-          },
-        }),
-        ctx.db.admissionLead.count({
-          where: {
-            ...leadWhereClause,
-            createdAt: {
-              gte: thirtyDaysAgo,
-            },
-            status: {
-              in: [
-                AdmissionStatus.NEW,
-                AdmissionStatus.CONTACTED,
-                AdmissionStatus.ENGAGED,
-                AdmissionStatus.APPLICATION_SENT,
-                AdmissionStatus.TOUR_SCHEDULED,
-                AdmissionStatus.TOUR_COMPLETED,
-                AdmissionStatus.ASSESSMENT_SCHEDULED,
-                AdmissionStatus.INTERVIEW_SCHEDULED,
-              ],
-            },
-          },
-        }),
-        ctx.db.student.count({
-          where: {
-            isActive: true,
-            ...(input.branchId && { branchId: input.branchId }),
-            dateOfAdmission: {
-              gte: thirtyDaysAgo,
-            },
-          },
-        }),
-      ])
+        ctx.db.admissionInquiry.count({ where: baseWhere }),
+        ctx.db.admissionInquiry.count({ where: { ...baseWhere, status: InquiryStatus.NEW } }),
+        ctx.db.admissionInquiry.count({ where: { ...baseWhere, status: InquiryStatus.CONTACTED } }),
+        ctx.db.admissionInquiry.count({ where: { ...baseWhere, status: InquiryStatus.VISITED } }),
+        ctx.db.admissionInquiry.count({ where: { ...baseWhere, status: InquiryStatus.ADMITTED } }),
+      ]);
+
+      const conversionRate = totalInquiries > 0 ? Math.round((admittedInquiries / totalInquiries) * 100) : 0;
 
       return {
-        totalApplications,
-        activeLeads,
-        admittedStudents: admittedStudentsCount,
-        lastMonthApplications,
-        lastMonthLeads,
-        lastMonthAdmitted,
-      }
+        totalInquiries,
+        newInquiries,
+        contactedInquiries,
+        visitedInquiries,
+        admittedInquiries,
+        conversionRate,
+      };
     }),
-}) 
+
+  // Get recent activity
+  getRecentActivity: protectedProcedure
+    .input(
+      z.object({
+        branchId: z.string().optional(),
+        sessionId: z.string().optional(),
+        limit: z.number().min(1).max(50).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.db.admissionInquiry.findMany({
+        take: input.limit,
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        },
+        include: {
+          followUps: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+    }),
+
+  // Convert inquiry to student admission
+  admitStudent: protectedProcedure
+    .input(
+      z.object({
+        inquiryId: z.string(),
+        studentData: z.object({
+          firstName: z.string(),
+          lastName: z.string(),
+          dateOfBirth: z.date(),
+          gender: z.string(),
+          address: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          bloodGroup: z.string().optional(),
+          // Add other required student fields
+        }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const inquiry = await ctx.db.admissionInquiry.findUnique({
+        where: { id: input.inquiryId },
+        include: { branch: true },
+      });
+
+      if (!inquiry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Admission inquiry not found",
+        });
+      }
+
+      // Generate admission number
+      const year = new Date().getFullYear();
+      const branchCode = inquiry.branch.code;
+      const count = await ctx.db.student.count({
+        where: { branchId: inquiry.branchId },
+      });
+      const admissionNumber = `${branchCode}${year}${(count + 1).toString().padStart(4, '0')}`;
+
+      // Create student record
+      const student = await ctx.db.student.create({
+        data: {
+          ...input.studentData,
+          admissionNumber,
+          branchId: inquiry.branchId,
+          joinDate: new Date(),
+          dateOfAdmission: new Date(),
+        },
+      });
+
+      // Update inquiry status and link to student
+      await ctx.db.admissionInquiry.update({
+        where: { id: input.inquiryId },
+        data: {
+          status: InquiryStatus.ADMITTED,
+          studentId: student.id,
+        },
+      });
+
+      return student;
+    }),
+}); 

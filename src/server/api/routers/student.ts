@@ -1932,12 +1932,12 @@ export const studentRouter = createTRPCRouter({
                   });
 
                   // Create Academic Record for the current session
-                  if (student.section?.class?.id) {
+                  if (student.sectionId) {
                     await prisma.academicRecord.create({
                       data: {
                         studentId: student.id,
                         sessionId,
-                        classId: student.section.class.id,
+                        classId: student.sectionId,
                         status: "ENROLLED",
                       },
                     });

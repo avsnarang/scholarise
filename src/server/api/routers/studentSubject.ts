@@ -69,7 +69,7 @@ export const studentSubjectRouter = createTRPCRouter({
               },
             },
           },
-          StudentSubject: {
+          studentSubjects: {
             include: {
               subject: {
                 select: {
@@ -126,7 +126,7 @@ export const studentSubjectRouter = createTRPCRouter({
           }));
 
         // Keep existing optional subjects from StudentSubject
-        const optionalSubjects = student.StudentSubject || [];
+        const optionalSubjects = student.studentSubjects || [];
 
         return {
           ...student,
@@ -315,16 +315,16 @@ export const studentSubjectRouter = createTRPCRouter({
         include: {
           _count: {
             select: {
-              StudentSubject: true,
+              studentSubjects: true,
             },
           },
         },
       });
 
       const totalStudents = students.length;
-      const studentsWithMappings = students.filter(s => s._count.StudentSubject > 0).length;
+      const studentsWithMappings = students.filter(s => s._count.studentSubjects > 0).length;
       const studentsWithoutMappings = totalStudents - studentsWithMappings;
-      const totalMappings = students.reduce((sum, s) => sum + s._count.StudentSubject, 0);
+      const totalMappings = students.reduce((sum, s) => sum + s._count.studentSubjects, 0);
       const averageSubjectsPerStudent = totalStudents > 0 ? totalMappings / totalStudents : 0;
 
       return {
