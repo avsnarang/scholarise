@@ -80,6 +80,7 @@ type RegistrationFormValues = z.infer<typeof registrationSchema>;
 interface RegistrationFormProps {
   onSuccess?: (inquiry: any) => void;
   className?: string;
+  isInternalRegistration?: boolean; // Flag to indicate if it's an internal registration
   sessionData?: {
     id: string;
     name: string;
@@ -100,7 +101,7 @@ interface RegistrationFormProps {
   };
 }
 
-export function RegistrationForm({ onSuccess, className, sessionData, branchData }: RegistrationFormProps) {
+export function RegistrationForm({ onSuccess, className, isInternalRegistration = false, sessionData, branchData }: RegistrationFormProps) {
   const router = useRouter();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -127,7 +128,7 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
   const currentSession = sessionData || sessionsData?.find(session => session.id === effectiveSessionId);
 
   // Function to calculate age as of April 1st of session year
-  const calculateAge = (dateOfBirth: Date): { ageText: string; sessionYear: number } | null => {
+  const calculateAge = (dateOfBirth: Date): { ageText: string; sessionYear: number; ageInYears: number } | null => {
     if (!currentSession || !dateOfBirth) {
       return null;
     }
@@ -148,21 +149,25 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
       end: april1st
     });
     
-    // Build age text
-    const parts = [];
-    if (duration.years && duration.years > 0) {
-      parts.push(`${duration.years} year${duration.years !== 1 ? 's' : ''}`);
-    }
+    // Build age text - simplified for minimal design
+    const ageInYears = differenceInYears(april1st, dateOfBirth);
+    const ageText = `${ageInYears} years`;
     if (duration.months && duration.months > 0) {
-      parts.push(`${duration.months} month${duration.months !== 1 ? 's' : ''}`);
-    }
-    if (duration.days && duration.days > 0) {
-      parts.push(`${duration.days} day${duration.days !== 1 ? 's' : ''}`);
+      return { ageText: `${ageInYears} years, ${duration.months} months`, sessionYear, ageInYears };
     }
     
-    const ageText = parts.length > 0 ? parts.join(', ') : '0 days';
+    return { ageText, sessionYear, ageInYears };
+  };
+
+  // Function to get eligible classes - simplified
+  const getEligibleClasses = (ageInYears: number) => {
+    if (!classesData) return [];
     
-    return { ageText, sessionYear };
+    return classesData.filter((classItem: any) => {
+      if (classItem.age === null || classItem.age === undefined) return true;
+      // Student is eligible if their age meets or exceeds the class minimum age
+      return ageInYears >= classItem.age;
+    });
   };
 
   const form = useForm<RegistrationFormValues>({
@@ -231,6 +236,7 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
       percentageObtained: values.percentageObtained || undefined,
       branchId: effectiveBranchId,
       sessionId: effectiveSessionId || undefined,
+      isInternalRegistration: isInternalRegistration, // Pass the registration source flag
     };
 
     createInquiry.mutate(transformedValues);
@@ -292,13 +298,16 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
   return (
     <div className={cn("w-full px-4 sm:px-6 lg:px-8", className)}>
       {/* Header */}
-      <div className="text-center mb-8">
-        <div className="w-12 h-12 bg-[#00501B] rounded-lg flex items-center justify-center mx-auto mb-4">
-          <GraduationCap className="w-6 h-6 text-white" />
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#00501B]">
+          <GraduationCap className="h-6 w-6 text-white" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Student Registration</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Please fill out the information below to register your child for admission
+        <h1 className="mb-2 text-2xl font-semibold text-gray-900 sm:text-3xl dark:text-white">
+          Student Registration
+        </h1>
+        <p className="mx-auto max-w-2xl text-gray-600 dark:text-gray-400">
+          Please fill out the information below to register your child for
+          admission
         </p>
       </div>
 
@@ -308,20 +317,22 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                <User className="w-5 h-5 text-[#00501B]" />
+                <User className="h-5 w-5 text-[#00501B] dark:text-[#7AAD8B]" />
                 Student Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">First Name *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        First Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} className="h-10" />
+                        <Input {...field} className="h-12 text-base" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -333,70 +344,68 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Last Name *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Last Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} className="h-10" />
+                        <Input {...field} className="h-12 text-base" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                 <FormField
                   control={form.control}
                   name="dateOfBirth"
                   render={({ field }) => {
                     const ageInfo = calculateAge(field.value);
-                    const ageInYears = ageInfo ? Math.floor(differenceInYears(new Date(ageInfo.sessionYear, 3, 1), field.value)) : null;
-                    
-                    // Find eligible class based on age
-                    const eligibleClass = ageInYears && classesData ? 
-                      classesData.find(classItem => (classItem as any).age === ageInYears) : null;
-                    
+
                     return (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Date of Birth *</FormLabel>
+                        <FormLabel className="text-sm font-medium">
+                          Date of Birth <span className="text-red-500">*</span>
+                        </FormLabel>
                         <DatePicker
                           value={field.value}
                           onChange={(date: Date) => {
                             field.onChange(date);
-                            
-                            // Auto-select eligible class when date changes
+
+                            // Auto-select the most appropriate class when date changes
                             if (date) {
                               const newAgeInfo = calculateAge(date);
-                              const newAgeInYears = newAgeInfo ? Math.floor(differenceInYears(new Date(newAgeInfo.sessionYear, 3, 1), date)) : null;
-                              const newEligibleClass = newAgeInYears && classesData ? 
-                                classesData.find(classItem => (classItem as any).age === newAgeInYears) : null;
-                              
-                              if (newEligibleClass) {
-                                form.setValue("classApplying", newEligibleClass.name);
-                              } else {
-                                form.setValue("classApplying", "");
+                              if (newAgeInfo && classesData) {
+                                const eligibleClasses = getEligibleClasses(
+                                  newAgeInfo.ageInYears,
+                                );
+                                if (eligibleClasses.length > 0) {
+                                  // Find the class with the highest age requirement that the student qualifies for
+                                  const bestClass = eligibleClasses.reduce(
+                                    (best, current) => {
+                                      const currentAge =
+                                        (current as any).age || 0;
+                                      const bestAge = (best as any).age || 0;
+                                      return currentAge > bestAge
+                                        ? current
+                                        : best;
+                                    },
+                                  );
+                                  form.setValue(
+                                    "classApplying",
+                                    bestClass.name,
+                                  );
+                                } else {
+                                  form.setValue("classApplying", "");
+                                }
                               }
                             }
                           }}
                           placeholder="Select date"
-                          className="h-10"
+                          className="h-10 border-gray-200 dark:border-[#606060] dark:bg-[#252525] dark:text-white"
                         />
                         <FormMessage />
-                        
-                        {ageInfo && (
-                          <div className="mt-2 space-y-1">
-                            <p className="text-sm text-gray-600">
-                              Age as of April 1st, {ageInfo.sessionYear}: {ageInfo.ageText}
-                            </p>
-                            {eligibleClass && (
-                              <p className="text-sm text-green-600 font-medium">
-                                Eligible for: {eligibleClass.name}
-                              </p>
-                            )}
-                            {ageInYears && !eligibleClass && (
-                              <p className="text-sm text-orange-600">
-                                No class available for age {ageInYears} years
-                              </p>
-                            )}
-                          </div>
-                        )}
                       </FormItem>
                     );
                   }}
@@ -407,26 +416,35 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="gender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Gender *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel className="text-sm font-medium">
+                        Gender <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger className="h-10">
                             <SelectValue placeholder="Select gender" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="Male" className="cursor-pointer">
+                            Male
+                          </SelectItem>
+                          <SelectItem value="Female" className="cursor-pointer">
+                            Female
+                          </SelectItem>
+                          <SelectItem value="Other" className="cursor-pointer">
+                            Other
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-6">
                 <FormField
                   control={form.control}
                   name="classApplying"
@@ -434,71 +452,78 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                     // Calculate eligible class based on student's age
                     const dateOfBirth = form.watch("dateOfBirth");
                     const ageInfo = calculateAge(dateOfBirth);
-                    const ageInYears = ageInfo ? Math.floor(differenceInYears(new Date(ageInfo.sessionYear, 3, 1), dateOfBirth)) : null;
-                    const eligibleClass = ageInYears && classesData ? 
-                      classesData.find(classItem => (classItem as any).age === ageInYears) : null;
-                    
-                    // Show only eligible class or all classes if no DOB selected
-                    const availableClasses = dateOfBirth && eligibleClass ? [eligibleClass] : classesData || [];
-                    const isRestricted = dateOfBirth && !!eligibleClass;
-                    
+
+                    // Auto-select the most appropriate class
+                    const selectedClass =
+                      ageInfo && classesData
+                        ? (() => {
+                            const eligibleClasses = getEligibleClasses(
+                              ageInfo.ageInYears,
+                            );
+                            if (eligibleClasses.length > 0) {
+                              // Find the class with the highest age requirement that the student qualifies for
+                              return eligibleClasses.reduce((best, current) => {
+                                const currentAge = (current as any).age || 0;
+                                const bestAge = (best as any).age || 0;
+                                return currentAge > bestAge ? current : best;
+                              });
+                            }
+                            return null;
+                          })()
+                        : null;
+
+                    // Auto-set the field value when class is determined
+                    if (selectedClass && field.value !== selectedClass.name) {
+                      field.onChange(selectedClass.name);
+                    }
+
                     return (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">
-                          Class Applying For *
-                          {isRestricted && (
-                            <span className="text-green-600 text-xs ml-2">(Auto-selected based on age)</span>
-                          )}
+                          Class Applying For{" "}
+                          <span className="text-red-500">*</span>
                         </FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value} 
-                          disabled={isLoadingClasses || isRestricted}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-10">
-                              <SelectValue 
-                                placeholder={
-                                  isLoadingClasses ? "Loading..." : 
-                                  !dateOfBirth ? "Please select date of birth first" :
-                                  isRestricted ? eligibleClass.name :
-                                  "Select class"
-                                } 
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {isLoadingClasses ? (
-                              <div className="flex items-center justify-center gap-2 p-4 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading classes...
-                              </div>
-                            ) : !dateOfBirth ? (
-                              <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-                                Please select date of birth first
-                              </div>
-                            ) : availableClasses.length > 0 ? (
-                              availableClasses.map((classItem) => (
-                                <SelectItem key={classItem.id} value={classItem.name}>
-                                  {classItem.name}
-                                  {(classItem as any).age && (
-                                    <span className="text-gray-500 ml-2">(Age: {(classItem as any).age} years)</span>
-                                  )}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-                                No classes available for this age
-                              </div>
+                        {selectedClass ? (
+                          <div className="flex h-10 items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-[#606060] dark:bg-[#252525] dark:text-white">
+                            <span className="text-gray-900">
+                              {selectedClass.name}
+                            </span>
+                            {(selectedClass as any).age && (
+                              <span className="text-xs text-gray-500">
+                                Age {(selectedClass as any).age}+
+                              </span>
                             )}
-                          </SelectContent>
-                        </Select>
+                          </div>
+                        ) : (
+                          <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500 dark:border-[#606060] dark:bg-[#252525] dark:text-white">
+                            {!dateOfBirth
+                              ? "Please select date of birth first"
+                              : "No suitable class found"}
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     );
                   }}
                 />
               </div>
+
+              {/* Age Display - positioned after selection fields */}
+              {(() => {
+                const dateOfBirth = form.watch("dateOfBirth");
+                const ageInfo = calculateAge(dateOfBirth);
+
+                return ageInfo ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <div className="text-sm text-gray-600">
+                      Age as of April 1st, {ageInfo.sessionYear}:{" "}
+                      <span className="font-medium text-gray-900">
+                        {ageInfo.ageText}
+                      </span>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </CardContent>
           </Card>
 
@@ -506,18 +531,20 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                <Users className="w-5 h-5 text-[#00501B]" />
+                <Users className="h-5 w-5 text-[#00501B] dark:text-[#7AAD8B]" />
                 Parent Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                 <FormField
                   control={form.control}
                   name="fatherName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Father's Name *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Father's Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -531,7 +558,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="motherName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Mother's Name</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Mother's Name
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -545,9 +574,16 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="fatherMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Father's Mobile *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Father's Mobile <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} type="tel" className="h-10" placeholder="WhatsApp preferred" />
+                        <Input
+                          {...field}
+                          type="tel"
+                          className="h-10"
+                          placeholder="WhatsApp preferred"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -559,7 +595,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="motherMobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Mother's Mobile</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Mother's Mobile
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} type="tel" className="h-10" />
                       </FormControl>
@@ -569,13 +607,15 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="fatherEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Father's Email *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Father's Email <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} type="email" className="h-10" />
                       </FormControl>
@@ -589,7 +629,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="motherEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Mother's Email</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Mother's Email
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} type="email" className="h-10" />
                       </FormControl>
@@ -605,7 +647,7 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                <MapPin className="w-5 h-5 text-[#00501B]" />
+                <MapPin className="h-5 w-5 text-[#00501B] dark:text-[#7AAD8B]" />
                 Address Information
               </CardTitle>
             </CardHeader>
@@ -615,11 +657,14 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                 name="residentialAddress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Residential Address *</FormLabel>
+                    <FormLabel className="text-sm font-medium">
+                      Residential Address{" "}
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field} 
-                        className="min-h-[80px] resize-none"
+                      <Textarea
+                        {...field}
+                        className="min-h-[80px] resize-none dark:border-[#606060] dark:bg-[#252525] dark:text-white"
                         placeholder="Enter complete residential address"
                       />
                     </FormControl>
@@ -628,13 +673,15 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                 <FormField
                   control={form.control}
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">City *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        City <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -648,7 +695,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="state"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">State *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        State <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -662,7 +711,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Country *</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Country <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -678,21 +729,23 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-medium">
-                <BookOpen className="w-5 h-5 text-[#00501B]" />
+                <BookOpen className="h-5 w-5 text-[#00501B] dark:text-[#7AAD8B]" />
                 Previous School Details
               </CardTitle>
-              <CardDescription className="text-sm text-gray-600">
+              <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
                 Optional information about previous education
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                 <FormField
                   control={form.control}
                   name="classLastAttended"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Class Last Attended</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Class Last Attended
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -706,7 +759,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="percentageObtained"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Percentage/Grade Obtained</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Percentage/Grade Obtained
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -720,7 +775,9 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
                   name="schoolLastAttended"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Name of School Last Attended</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        Name of School Last Attended
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} className="h-10" />
                       </FormControl>
@@ -734,10 +791,10 @@ export function RegistrationForm({ onSuccess, className, sessionData, branchData
 
           {/* Submit Button */}
           <div className="flex justify-center pt-6">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={createInquiry.isPending}
-              className="w-full sm:w-auto min-w-[250px] h-12 text-base bg-[#00501B] hover:bg-[#00501B]/90"
+              className="h-12 w-full min-w-[250px] bg-[#00501B] text-base hover:bg-[#00501B]/90 sm:w-auto"
             >
               {createInquiry.isPending ? (
                 <>

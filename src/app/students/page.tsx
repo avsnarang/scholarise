@@ -39,6 +39,7 @@ import {
   TrendingUp,
   AlertTriangle
 } from "lucide-react";
+import { StudentManagementPageGuard } from "@/components/auth/page-guard";
 
 // Type definitions for API responses
 interface AcademicSession {
@@ -49,7 +50,7 @@ interface AcademicSession {
   endDate: Date;
 }
 
-export default function StudentsDashboard() {
+function StudentsDashboardContent() {
   const { currentBranchId } = useBranchContext();
   const { isSuperAdmin } = usePermissions();
   const router = useRouter();
@@ -752,5 +753,13 @@ export default function StudentsDashboard() {
         </Tabs>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function StudentsDashboard() {
+  return (
+    <StudentManagementPageGuard>
+      <StudentsDashboardContent />
+    </StudentManagementPageGuard>
   );
 } 

@@ -17,8 +17,9 @@ import { generateTransferCertificatePDF } from "@/lib/utils/tc-pdf";
 import { useActionPermissions } from "@/utils/permission-utils";
 import { Permission } from "@/types/permissions";
 import type { ColumnDef } from "@tanstack/react-table";
+import { PageGuard } from "@/components/auth/page-guard";
 
-export default function TransferCertificatePage() {
+function TransferCertificatePageContent() {
   const [search, setSearch] = useState("");
   const [lastRefetch, setLastRefetch] = useState(0);
   const { getBranchFilterParam } = useGlobalBranchFilter();
@@ -344,5 +345,17 @@ export default function TransferCertificatePage() {
         </Card>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function TransferCertificatePage() {
+  return (
+    <PageGuard
+      permissions={[Permission.MANAGE_TRANSFER_CERTIFICATES]}
+      title="Transfer Certificate Access Required"
+      message="You need transfer certificate management permissions to access this page. Contact your administrator to request access."
+    >
+      <TransferCertificatePageContent />
+    </PageGuard>
   );
 } 

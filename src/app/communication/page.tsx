@@ -27,10 +27,9 @@ import {
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { CommunicationPageGuard } from "@/components/auth/page-guard";
 
-
-
-export default function CommunicationDashboard() {
+function CommunicationDashboardContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { user, session, loading: authLoading } = useAuth();
@@ -402,4 +401,12 @@ export default function CommunicationDashboard() {
         </div>
       </div>
     );
+}
+
+export default function CommunicationDashboard() {
+  return (
+    <CommunicationPageGuard>
+      <CommunicationDashboardContent />
+    </CommunicationPageGuard>
+  );
 } 

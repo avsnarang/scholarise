@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, UserPlus, Users, GraduationCap } from "lucide-react";
 import Link from "next/link";
+import { CreateStudentPageGuard } from "@/components/auth/page-guard";
 
-export default function CreateStudentPage() {
+function CreateStudentPageContent() {
   return (
     <div className="px-4 lg:px-6 w-full">
       {/* Header Section */}
@@ -39,5 +40,13 @@ export default function CreateStudentPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function CreateStudentPage() {
+  return (
+    <CreateStudentPageGuard>
+      <CreateStudentPageContent />
+    </CreateStudentPageGuard>
   );
 }

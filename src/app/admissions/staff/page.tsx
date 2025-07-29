@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBranchContext } from "@/hooks/useBranchContext";
+import { AdmissionsPageGuard } from "@/components/auth/page-guard";
 
-export default function StaffPage() {
+function StaffPageContent() {
   const { currentBranchId } = useBranchContext();
   
   return (
@@ -21,5 +22,13 @@ export default function StaffPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function StaffPage() {
+  return (
+    <AdmissionsPageGuard>
+      <StaffPageContent />
+    </AdmissionsPageGuard>
   );
 } 

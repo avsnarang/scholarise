@@ -49,6 +49,8 @@ const routePermissions: Record<string, string[]> = {
   '/admissions/leads': ['manage_admissions'],
   '/admissions/settings': ['manage_admissions'],
   '/admissions/staff': ['manage_admissions'],
+  '/admissions/inquiries': ['manage_admissions'],
+  '/admissions/register': ['manage_admissions'],
   
   // Money Collection
   '/money-collection': ['view_money_collection'],
@@ -91,6 +93,14 @@ const routePermissions: Record<string, string[]> = {
   '/classes/[id]/edit': ['edit_class'],
   '/classes/[id]/students': ['manage_class_students'],
   '/classes/assignments': ['view_teachers'],
+  
+  // Subjects
+  '/subjects': ['view_subjects'],
+  '/subjects/manage': ['manage_subjects'],
+  '/subjects/teacher-assignments': ['manage_subject_assignments'],
+  '/subjects/class-mapping': ['manage_class_subjects'],
+  '/subjects/student-mapping': ['manage_student_subjects'],
+  '/subjects/class-overview': ['view_subjects'],
   
   // Attendance
   '/attendance': ['view_attendance'],
@@ -159,10 +169,12 @@ const routePermissions: Record<string, string[]> = {
   '/communication/templates': ['manage_whatsapp_templates'],
   '/communication/history': ['view_communication_logs'],
   '/communication/settings': ['manage_communication_settings'],
-  '/communication/chat': ['view_chat'],
+  '/communication/chat': ['view_communication_logs'],
+  '/communication/test-bulk': ['create_communication_message'],
+  '/communication/debug': ['manage_communication_settings'],
   
   // Chat
-  '/chat': ['view_chat'],
+  '/chat': ['view_communication_logs'],
   
   '/question-papers/view': ['view_question_papers'],
   

@@ -1,15 +1,20 @@
-import { type Metadata } from "next"
+"use client";
+
 import { AdmissionsDashboard } from "@/components/admissions/admissions-dashboard"
+import { AdmissionsPageGuard } from "@/components/auth/page-guard";
 
-export const metadata: Metadata = {
-  title: "Admissions Dashboard",
-  description: "Overview of admission inquiries, registrations, and analytics",
-}
-
-export default function AdmissionsDashboardPage() {
+function AdmissionsDashboardPageContent() {
   return (
     <div className="flex-1">
       <AdmissionsDashboard />
     </div>
-  )
+  );
+}
+
+export default function AdmissionsDashboardPage() {
+  return (
+    <AdmissionsPageGuard>
+      <AdmissionsDashboardPageContent />
+    </AdmissionsPageGuard>
+  );
 } 

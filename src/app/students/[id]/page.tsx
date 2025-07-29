@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import type { Metadata } from "next";
+import { StudentManagementPageGuard } from "@/components/auth/page-guard";
 
 const InfoField = ({ icon: Icon, label, value, className = "" }: { 
   icon?: any, 
@@ -50,7 +51,7 @@ const InfoSection = ({ title, icon: Icon, children, className = "" }: {
   </Card>
 );
 
-export default function StudentDetailPage() {
+function StudentDetailPageContent() {
   const params = useParams() || {};
   const studentId = params.id as string;
   const router = useRouter();
@@ -531,5 +532,13 @@ export default function StudentDetailPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function StudentDetailPage() {
+  return (
+    <StudentManagementPageGuard>
+      <StudentDetailPageContent />
+    </StudentManagementPageGuard>
   );
 }

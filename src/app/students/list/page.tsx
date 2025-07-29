@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PlusCircle, FileDown, FileText, AlertTriangle, ExternalLink, Eye, Edit, Trash, UserCheck, UserX, ArrowUpDown, MoreHorizontal, Loader2, FileSpreadsheet, ChevronDown, Upload } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { api } from "@/utils/api"
 import { useState, useCallback, useEffect, useMemo } from "react"
 import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter"
@@ -28,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { StudentManagementPageGuard } from "@/components/auth/page-guard"
 import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils"
 import { cn } from "@/lib/utils"
 import { StudentExportFieldSelector } from "@/components/students/student-export-field-selector"
@@ -91,7 +92,7 @@ const StudentSkeleton = () => (
   </div>
 );
 
-export default function StudentsPage() {
+function StudentsPageContent() {
   // State management
   const [currentStudents, setCurrentStudents] = useState<Student[]>([]);
   const [pageSize, setPageSize] = useState(50);
@@ -1236,4 +1237,12 @@ export default function StudentsPage() {
       />
     </PageWrapper>
   )
+}
+
+export default function StudentsPage() {
+  return (
+    <StudentManagementPageGuard>
+      <StudentsPageContent />
+    </StudentManagementPageGuard>
+  );
 }

@@ -50,45 +50,46 @@ export default function BranchSessionRegistrationPage() {
 
   if (isBranchLoading || !branch || !currentSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center dark:bg-[#101010]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-[#00501B]" />
-          <p className="text-gray-600">Loading registration page...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-[#00501B] dark:text-white" />
+          <p className="text-gray-600 dark:text-white">Loading registration page...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-[#A65A2008] dark:bg-[#202020]">
       {/* Header */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="sticky top-0 z-50 border-b bg-white/95 shadow-sm backdrop-blur-sm dark:bg-[#101010]">
+        <div className="mx-auto max-w-full px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-xl flex items-center justify-center shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#00501B] to-[#007B2D] shadow-lg">
                 <GraduationCap className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-white">
                   The Scholars' Home, {branch.name}
                 </h1>
-                <p className="text-sm text-gray-600">
-                  Excellence in Education • Student Registration • {currentSession.name}
+                <p className="text-sm text-gray-600 dark:text-white">
+                  Shaping the Future • Student Registration •{" "}
+                  {currentSession.name}
                 </p>
               </div>
             </div>
-            
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-gray-600">
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 sm:gap-6 dark:text-white">
               {branch?.phone && (
                 <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-[#00501B]" />
+                  <Phone className="h-4 w-4 text-[#00501B] dark:text-white" />
                   <span className="font-medium">{branch.phone}</span>
                 </div>
               )}
               {branch?.email && (
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-[#00501B]" />
+                  <Mail className="h-4 w-4 text-[#00501B] dark:text-white" />
                   <span className="font-medium">{branch.email}</span>
                 </div>
               )}
@@ -100,75 +101,77 @@ export default function BranchSessionRegistrationPage() {
       {/* Main Content */}
       <div className="w-full">
         {/* Hero Section */}
-        <div className="bg-white/80 backdrop-blur-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="border-b bg-white/80 backdrop-blur-sm dark:bg-[#101010]">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="text-center">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl lg:text-5xl dark:text-white">
                 Welcome to your Educational Journey
               </h2>
-              <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-4">
-                Begin your child's admission process at <strong>The Scholars' Home, {branch.name}</strong> for the <strong>{currentSession.name}</strong> academic session.
+              <p className="mx-auto mb-4 max-w-3xl text-lg text-gray-600 sm:text-xl dark:text-white">
+                Begin your child's admission process at{" "}
+                <strong>The Scholars' Home, {branch.name}</strong> for the
+                academic session <strong>{currentSession.name}</strong>.
               </p>
-              <p className="text-base text-gray-600 max-w-2xl mx-auto mb-8">
+              <p className="mx-auto mb-8 max-w-2xl text-base text-gray-600 dark:text-white">
                 Our team will guide you through every step of the journey.
               </p>
-              
-              {/* Quick Info Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                <div className="bg-white/60 rounded-xl p-4 border border-gray-200">
-                  <Clock className="h-8 w-8 text-[#00501B] mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">Quick Process</h3>
-                  <p className="text-sm text-gray-600">Complete in 5-10 minutes</p>
-                </div>
-                <div className="bg-white/60 rounded-xl p-4 border border-gray-200">
-                  <FileText className="h-8 w-8 text-[#00501B] mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">Simple Form</h3>
-                  <p className="text-sm text-gray-600">Easy to fill information</p>
-                </div>
-                <div className="bg-white/60 rounded-xl p-4 border border-gray-200">
-                  <CheckCircle2 className="h-8 w-8 text-[#00501B] mx-auto mb-2" />
-                  <h3 className="font-semibold text-gray-900">Instant Confirmation</h3>
-                  <p className="text-sm text-gray-600">Get registration ID immediately</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Registration Form Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <RegistrationForm
-            sessionData={currentSession}
-            branchData={branch}
-          />
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+          <RegistrationForm sessionData={currentSession} branchData={branch} />
         </div>
 
         {/* Information Section */}
-        <div className="bg-white/80 backdrop-blur-sm border-t">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="border-t bg-white/80 backdrop-blur-sm dark:bg-[#101010]">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
               {/* Admission Process */}
-              <Card className="bg-white/60 backdrop-blur-sm">
+              <Card className="bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <CheckCircle2 className="h-6 w-6 text-[#00501B]" />
+                  <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <CheckCircle2 className="h-6 w-6 text-[#00501B] dark:text-white" />
                     Admission Process
                   </h3>
                   <div className="space-y-4">
                     {[
-                      { step: 1, title: "Submit Registration", desc: "Complete and submit this form" },
-                      { step: 2, title: "School Contact", desc: "We'll contact you within 24 hours" },
-                      { step: 3, title: "Schedule Visit", desc: "Tour our facilities and meet our team" },
-                      { step: 4, title: "Assessment", desc: "Simple assessment for appropriate placement" },
-                      { step: 5, title: "Admission Decision", desc: "Receive your admission status" }
+                      {
+                        step: 1,
+                        title: "Submit Registration",
+                        desc: "Complete and submit this form",
+                      },
+                      {
+                        step: 2,
+                        title: "School Contact",
+                        desc: "We'll contact you within 24-48 hours",
+                      },
+                      {
+                        step: 3,
+                        title: "Schedule Visit",
+                        desc: "Tour our facilities and meet our team",
+                      },
+                      {
+                        step: 4,
+                        title: "Assessment",
+                        desc: "Simple assessment for appropriate placement",
+                      },
+                      {
+                        step: 5,
+                        title: "Admission Decision",
+                        desc: "Receive your admission status",
+                      },
                     ].map((item) => (
                       <div key={item.step} className="flex items-start gap-3">
-                        <div className="h-8 w-8 bg-gradient-to-br from-[#00501B] to-[#007B2D] text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#00501B] to-[#007B2D] text-sm font-bold text-white shadow-sm dark:bg-gradient-to-br dark:from-white dark:to-gray-200 dark:text-gray-900">
                           {item.step}
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{item.title}</p>
-                          <p className="text-sm text-gray-600">{item.desc}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {item.title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-white">{item.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -177,10 +180,10 @@ export default function BranchSessionRegistrationPage() {
               </Card>
 
               {/* Documents Required */}
-              <Card className="bg-white/60 backdrop-blur-sm">
+              <Card className="bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <FileText className="h-6 w-6 text-[#00501B]" />
+                  <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <FileText className="h-6 w-6 text-[#00501B] dark:text-white" />
                     Documents Required
                   </h3>
                   <div className="space-y-3">
@@ -190,74 +193,89 @@ export default function BranchSessionRegistrationPage() {
                       "Previous Academic Records",
                       "Passport Size Photographs",
                       "Aadhar Card (Student & Parents)",
-                      "Address Proof"
+                      "Address Proof",
                     ].map((doc, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <div className="h-2 w-2 bg-[#00501B] rounded-full"></div>
-                        <span className="text-gray-700">{doc}</span>
+                        <div className="h-2 w-2 rounded-full bg-[#00501B] dark:bg-white"></div>
+                        <span className="text-gray-700 dark:text-white">{doc}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> Documents can be submitted during the school visit. 
-                      You don't need them to complete this registration.
+                  <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:bg-blue-950 dark:border-blue-800">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>Note:</strong> Documents can be submitted during
+                      the school visit. You don't need them to complete this
+                      registration.
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Contact Information */}
-              <Card className="bg-white/60 backdrop-blur-sm">
+              <Card className="bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <Phone className="h-6 w-6 text-[#00501B]" />
+                  <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <Phone className="h-6 w-6 text-[#00501B] dark:text-white" />
                     Need Help?
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                        <Phone className="h-6 w-6 text-white" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D]">
+                        <Phone className="h-6 w-6 text-white dark:text-white" />
                       </div>
-                                          <div>
-                      <p className="font-semibold text-gray-900">Call Us</p>
-                      <p className="text-gray-700 font-medium">{branch?.phone || "+91 98765 43210"}</p>
-                      <p className="text-sm text-gray-600">Mon-Sat: 9 AM - 6 PM</p>
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white">Call Us</p>
+                        <p className="font-medium text-gray-700 dark:text-white">
+                          {branch?.phone || "+91 98765 43210"}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-white">
+                          Mon-Sat: 8 AM - 3 PM
+                        </p>
+                      </div>
                     </div>
-                    </div>
-                    
+
                     <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                        <Mail className="h-6 w-6 text-white" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D]">
+                        <Mail className="h-6 w-6 text-white dark:text-white" />
                       </div>
-                                          <div>
-                      <p className="font-semibold text-gray-900">Email Us</p>
-                      <p className="text-gray-700 font-medium">{branch?.email || "admissions@thescholars.edu"}</p>
-                      <p className="text-sm text-gray-600">Response within 2 hours</p>
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white">Email Us</p>
+                        <p className="font-medium text-gray-700 dark:text-white">
+                          {branch?.email || "admissions@thescholars.edu"}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-white">
+                          Response within 2-4 hours
+                        </p>
+                      </div>
                     </div>
-                    </div>
-                    
+
                     <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                        <MapPin className="h-6 w-6 text-white" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D]">
+                        <MapPin className="h-6 w-6 text-white dark:text-white" />
                       </div>
-                                          <div>
-                      <p className="font-semibold text-gray-900">Visit Us</p>
-                      <p className="text-gray-700">{branch.name} Campus</p>
-                      {branch?.address ? (
-                        <div className="text-gray-700">
-                          <p>{branch.address}</p>
-                          {(branch.city || branch.state) && (
-                            <p>
-                              {branch.city}{branch.city && branch.state && ", "}{branch.state}
-                              {branch.country && ` - ${branch.country}`}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-gray-700">Contact us for address details</p>
-                      )}
-                    </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white">Visit Us</p>
+                        <p className="text-gray-700 dark:text-white">
+                          The Scholars' Home, {branch.name}
+                        </p>
+                        {branch?.address ? (
+                          <div className="text-gray-700 dark:text-white">
+                            <p>{branch.address}</p>
+                            {(branch.city || branch.state) && (
+                              <p>
+                                {branch.city}
+                                {branch.city && branch.state && ", "}
+                                {branch.state}
+                                {branch.country && ` - ${branch.country}`}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 dark:text-white">
+                            Contact us for address details
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -268,20 +286,24 @@ export default function BranchSessionRegistrationPage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="bg-white text-white dark:bg-[#050505]">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-8 w-8 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                <GraduationCap className="h-5 w-5 text-white" />
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D] dark:bg-[#101010]">
+                <GraduationCap className="h-5 w-5 text-white dark:text-white" />
               </div>
-              <h3 className="text-xl font-bold">The Scholars' Home, {branch.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                The Scholars' Home, {branch.name}
+              </h3>
             </div>
-            <p className="text-gray-300 mb-4">
-              Empowering minds, shaping futures through quality education and holistic development.
+            <p className="mb-4 text-gray-600 dark:text-white">
+              Empowering minds, shaping futures through quality education and
+              holistic development.
             </p>
-            <p className="text-sm text-gray-400">
-              © 2025 The Scholars' Home Educational Institution. All rights reserved.
+            <p className="text-sm text-gray-400 dark:text-white">
+              © 2025 The Scholars' Home, {branch.name} | Educational
+              Institution. All rights reserved.
             </p>
           </div>
         </div>

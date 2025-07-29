@@ -2882,6 +2882,34 @@ model AdmissionInquiry {
   notes               String?
   assignedToId        String?
   followUpDate        DateTime?
+  registrationSource  String?                // "ONLINE" or "OFFLINE"
+  registeredByName    String?                // Name of staff member who registered (for offline)
+  
+  // Detailed parent information
+  motherName          String?
+  motherMobile        String?
+  motherEmail         String?
+  
+  // Detailed address information
+  city                String?
+  state               String?
+  country             String?
+  
+  // Previous school information
+  classLastAttended   String?
+  schoolLastAttended  String?
+  percentageObtained  String?
+  
+  // Workflow-specific fields
+  contactMethod       String?                // Call/Email for CONTACTED stage
+  contactNotes        String?                // Notes from contact for CONTACTED stage
+  visitScheduledDate  DateTime?              // Date & time for VISIT_SCHEDULED stage
+  interviewScheduledDate DateTime?           // Date & time for INTERVIEW_SCHEDULED stage
+  interviewMode       String?                // Online/Offline for INTERVIEW_SCHEDULED stage
+  interviewNotes      String?                // Notes for INTERVIEW_CONCLUDED stage
+  interviewRemarks    String?                // Remarks for INTERVIEW_CONCLUDED stage
+  interviewMarks      Int?                   // Marks for INTERVIEW_CONCLUDED stage
+  
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
   branchId            String
@@ -2923,7 +2951,10 @@ enum InquiryStatus {
   VISIT_SCHEDULED
   VISITED
   FORM_SUBMITTED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_CONCLUDED
   ADMITTED
   REJECTED
   CLOSED
+  ARCHIVED
 }

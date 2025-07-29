@@ -28,98 +28,112 @@ export default function BranchSessionSelectionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-white dark:bg-[#181818]">
       {/* Header */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-sm border-b">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b bg-white/95 shadow-sm backdrop-blur-sm dark:bg-[#101010]">
+        <div className="mx-auto max-w-full px-4 py-6 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-16 w-16 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-xl flex items-center justify-center shadow-lg">
-                <GraduationCap className="h-10 w-10 text-white" />
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#00501B] to-[#007B2D] shadow-lg dark:bg-[#101010]">
+                <GraduationCap className="h-10 w-10 text-white dark:text-white" />
               </div>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight mb-2">
+            <h1 className="mb-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
               The Scholars' Home
             </h1>
-            <p className="text-lg text-gray-600">
-              Excellence in Education • Student Admission Registration
+            <p className="text-lg text-gray-600 dark:text-white">
+              Shaping the Future • Student Admission Registration
             </p>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="border-0 bg-white/80 shadow-xl backdrop-blur-sm dark:bg-[#252525]">
+          <CardHeader className="pb-8 text-center">
+            <CardTitle className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">
               Select your Campus & Academic Session
             </CardTitle>
-            <p className="text-lg text-gray-600">
-              Choose your preferred campus and academic session to begin the registration process
+            <p className="text-lg text-gray-600 dark:text-white">
+              Choose your preferred campus and academic session to begin the
+              registration process
             </p>
           </CardHeader>
-          
-          <CardContent className="space-y-8">
+
+          <CardContent className="space-y-8 dark:bg-[#252525]">
             {/* Branch Selection */}
             <div className="space-y-6">
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Your Campus</h3>
-                <p className="text-gray-600">Choose from our campuses across different locations</p>
+                <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+                  Select Your Campus
+                </h3>
+                <p className="text-gray-600 dark:text-white">
+                  Choose from our campuses across different locations
+                </p>
               </div>
-              
+
               {isBranchesLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#00501B]" />
-                  <span className="ml-3 text-gray-600 text-lg">Loading campuses...</span>
+                  <Loader2 className="h-8 w-8 animate-spin text-[#00501B] dark:text-white" />
+                  <span className="ml-3 text-lg text-gray-600 dark:text-white">
+                    Loading campuses...
+                  </span>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {branches?.map((branch) => (
                     <div
                       key={branch.id}
                       onClick={() => setSelectedBranch(branch.id)}
-                      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                      className={`relative cursor-pointer rounded-xl border-2 p-6 transition-all duration-300 hover:shadow-lg dark:border-[#606060] ${
                         selectedBranch === branch.id
-                          ? 'border-[#00501B] bg-gradient-to-r from-[#00501B]/5 to-[#007B2D]/5 shadow-md'
-                          : 'border-gray-200 hover:border-[#00501B]/50'
+                          ? "border-[#00501B] bg-[#00501B]/5 shadow-md dark:border-[#909090] dark:bg-[#353535]"
+                          : "border-gray-200 hover:border-[#00501B]/50 dark:border-[#101010] dark:hover:border-[#909090]"
                       }`}
                     >
                       {selectedBranch === branch.id && (
                         <div className="absolute top-4 right-4">
-                          <div className="h-6 w-6 bg-[#00501B] rounded-full flex items-center justify-center">
-                            <CheckCircle2 className="h-4 w-4 text-white" />
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00501B] dark:border-2 dark:border-[#909090] dark:bg-[#202020]">
+                            <CheckCircle2 className="h-4 w-4 text-white dark:text-white" />
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                            <GraduationCap className="h-6 w-6 text-white" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D] dark:bg-[#101010]">
+                            <GraduationCap className="h-6 w-6 text-white dark:text-white" />
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900">The Scholars' Home</h4>
-                            <p className="text-[#00501B] font-medium">{branch.name}</p>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                              The Scholars' Home
+                            </h4>
+                            <p className="font-medium text-[#00501B] dark:text-white">
+                              {branch.name}
+                            </p>
                           </div>
                         </div>
-                        
-                        <div className="space-y-2 text-sm text-gray-600">
+
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-white">
                           {branch.city && (
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-[#00501B]" />
-                              <span>{branch.city}{branch.state && `, ${branch.state}`}</span>
+                              <MapPin className="h-4 w-4 text-[#00501B] dark:text-white" />
+                              <span>
+                                {branch.city}
+                                {branch.state && `, ${branch.state}`}
+                              </span>
                             </div>
                           )}
                           {branch.phone && (
                             <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-[#00501B]" />
+                              <Phone className="h-4 w-4 text-[#00501B] dark:text-white" />
                               <span>{branch.phone}</span>
                             </div>
                           )}
                           {branch.email && (
                             <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-[#00501B]" />
+                              <Mail className="h-4 w-4 text-[#00501B] dark:text-white" />
                               <span>{branch.email}</span>
                             </div>
                           )}
@@ -134,14 +148,20 @@ export default function BranchSessionSelectionPage() {
             {/* Session Selection */}
             <div className="space-y-6">
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Academic Session</h3>
-                <p className="text-gray-600">Choose the academic year for your admission</p>
+                <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+                  Select Academic Session
+                </h3>
+                <p className="text-gray-600 dark:text-white">
+                  Choose the academic year for your admission
+                </p>
               </div>
-              
+
               {isSessionsLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#00501B]" />
-                  <span className="ml-3 text-gray-600 text-lg">Loading academic sessions...</span>
+                  <Loader2 className="h-8 w-8 animate-spin text-[#00501B] dark:text-white" />
+                  <span className="ml-3 text-lg text-gray-600 dark:text-white">
+                    Loading academic sessions...
+                  </span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
@@ -149,34 +169,42 @@ export default function BranchSessionSelectionPage() {
                     <div
                       key={session.id}
                       onClick={() => setSelectedSession(session.id)}
-                      className={`relative p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md ${
+                      className={`relative cursor-pointer rounded-xl border-2 p-5 transition-all duration-300 hover:shadow-md dark:border-[#606060] ${
                         selectedSession === session.id
-                          ? 'border-[#00501B] bg-gradient-to-r from-[#00501B]/5 to-[#007B2D]/5 shadow-sm'
-                          : 'border-gray-200 hover:border-[#00501B]/50'
+                          ? "border-[#00501B] bg-[#00501B]/5 dark:border-[#909090] dark:bg-[#353535]"
+                          : "border-gray-200 hover:border-[#00501B]/50 dark:border-[#101010] dark:hover:border-[#909090]"
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                            <Calendar className="h-6 w-6 text-white" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+                            <Calendar className="h-6 w-6 text-white dark:text-white" />
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-lg">{session.name}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                              <span className="text-sm text-green-600 font-medium">Active Academic Session</span>
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {session.name}
+                            </h4>
+                            <div className="mt-1 flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-500"></div>
+                              <span className="text-sm font-medium text-green-600 dark:text-white">
+                                Active Academic Session
+                              </span>
                             </div>
                             {session.startDate && session.endDate && (
-                              <p className="text-sm text-gray-500 mt-1">
-                                {new Date(session.startDate).toLocaleDateString()} - {new Date(session.endDate).toLocaleDateString()}
+                              <p className="mt-1 text-sm text-gray-500 dark:text-white">
+                                {new Date(
+                                  session.startDate,
+                                ).toLocaleDateString()}{" "}
+                                -{" "}
+                                {new Date(session.endDate).toLocaleDateString()}
                               </p>
                             )}
                           </div>
                         </div>
-                        
+
                         {selectedSession === session.id && (
-                          <div className="h-6 w-6 bg-[#00501B] rounded-full flex items-center justify-center">
-                            <CheckCircle2 className="h-4 w-4 text-white" />
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#00501B] dark:bg-[#101010]">
+                            <CheckCircle2 className="h-4 w-4 text-white dark:text-white" />
                           </div>
                         )}
                       </div>
@@ -189,10 +217,11 @@ export default function BranchSessionSelectionPage() {
             {/* Proceed Button */}
             <div className="pt-6">
               <Button
+                variant="default"
                 onClick={handleProceed}
                 disabled={!selectedBranch || !selectedSession}
                 size="lg"
-                className="w-full h-14 text-lg bg-gradient-to-r from-[#00501B] to-[#007B2D] hover:from-[#007B2D] hover:to-[#00501B] transition-all duration-300"
+                className="h-14 w-full text-lg transition-all duration-300"
               >
                 {!selectedBranch || !selectedSession ? (
                   "Please select campus and session"
@@ -208,51 +237,73 @@ export default function BranchSessionSelectionPage() {
         </Card>
 
         {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-          <Card className="bg-white/60 backdrop-blur-sm border-0">
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <Card className="border-0 bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
             <CardContent className="p-6 text-center">
-              <Phone className="h-12 w-12 text-[#00501B] mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Need Help?</h3>
-              <p className="text-sm text-gray-600 mb-3">Call us for assistance</p>
-              <p className="font-medium text-gray-900">+91 98765 43210</p>
+              <Phone className="mx-auto mb-4 h-12 w-12 text-[#00501B] dark:text-white" />
+              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
+                Need Help?
+              </h3>
+              <p className="mb-3 text-sm text-gray-600 dark:text-white">
+                Call us for assistance
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                +91 86288 00056
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/60 backdrop-blur-sm border-0">
+          <Card className="border-0 bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
             <CardContent className="p-6 text-center">
-              <Mail className="h-12 w-12 text-[#00501B] mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Email Support</h3>
-              <p className="text-sm text-gray-600 mb-3">Get support via email</p>
-              <p className="font-medium text-gray-900">admissions@thescholars.edu</p>
+              <Mail className="mx-auto mb-4 h-12 w-12 text-[#00501B] dark:text-white" />
+              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
+                Email Support
+              </h3>
+              <p className="mb-3 text-sm text-gray-600 dark:text-white">
+                Get support via email
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                admissions@tsh.edu.in
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/60 backdrop-blur-sm border-0">
+          <Card className="border-0 bg-white/60 backdrop-blur-sm dark:bg-[#101010]">
             <CardContent className="p-6 text-center">
-              <MapPin className="h-12 w-12 text-[#00501B] mx-auto mb-4" />
-              <h3 className="font-semibold text-gray-900 mb-2">Visit Campus</h3>
-              <p className="text-sm text-gray-600 mb-3">Schedule a campus tour</p>
-              <p className="font-medium text-gray-900">Multiple Locations</p>
+              <MapPin className="mx-auto mb-4 h-12 w-12 text-[#00501B] dark:text-white" />
+              <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
+                Visit Campus
+              </h3>
+              <p className="mb-3 text-sm text-gray-600 dark:text-white">
+                Schedule a campus tour
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                Multiple Locations
+              </p>
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mt-16 bg-white text-white dark:bg-[#101010]">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-8 w-8 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-lg flex items-center justify-center">
-                <GraduationCap className="h-5 w-5 text-white" />
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D]">
+                <GraduationCap className="h-5 w-5 text-white dark:text-white" />
               </div>
-              <h3 className="text-xl font-bold">The Scholars' Home</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                The Scholars' Home
+              </h3>
             </div>
-            <p className="text-gray-300 mb-4">
-              Empowering minds, shaping futures through quality education and holistic development.
+            <p className="mb-4 text-gray-600 dark:text-white">
+              Empowering minds, shaping futures through quality education and
+              holistic development.
             </p>
-            <p className="text-sm text-gray-400">
-              © 2025 The Scholars' Home Educational Institution. All rights reserved.
+            <p className="text-sm text-gray-600 dark:text-white">
+              © 2025 The Scholars' Home | Educational Institution. All rights
+              reserved.
             </p>
           </div>
         </div>

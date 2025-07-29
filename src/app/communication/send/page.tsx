@@ -50,6 +50,8 @@ import { TemplateVariableMapper } from "@/components/communication/template-vari
 import { TemplateDataPreview } from "@/components/communication/template-data-preview";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { extractRecipientData } from "@/utils/template-data-mapper";
+import { PageGuard } from "@/components/auth/page-guard";
+import { Permission } from "@/types/permissions";
 
 const sendMessageSchema = z.object({
   title: z.string().min(1, "Message title is required"),
@@ -83,7 +85,7 @@ const STEPS = [
   { id: 'review', title: 'Review & Send', description: 'Review and confirm your message' }
 ];
 
-export default function SendMessagePage() {
+function SendMessagePageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { hasPermission } = usePermissions();
@@ -450,76 +452,79 @@ export default function SendMessagePage() {
 
   if (!hasPermission("create_communication_message")) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Access Denied
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            You don't have permission to send messages.
-          </p>
+      <PageGuard permissions={[Permission.CREATE_COMMUNICATION_MESSAGE]}>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Access Denied
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              You don't have permission to send messages.
+            </p>
+          </div>
         </div>
-      </div>
+      </PageGuard>
     );
   }
 
   return (
-    <div className="w-full bg-gradient-to-br from-background via-background to-muted/20 flex flex-col min-h-screen">
-      <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 flex-1 flex flex-col">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-primary/20 to-primary/10 p-3 rounded-xl">
-              <MessageSquare className="h-7 w-7 text-primary" />
+    <PageGuard permissions={[Permission.CREATE_COMMUNICATION_MESSAGE]}>
+      <div className="w-full bg-gradient-to-br from-background via-background to-muted/20 flex flex-col min-h-screen">
+        <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 flex-1 flex flex-col">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-gradient-to-br from-primary/20 to-primary/10 p-3 rounded-xl">
+                <MessageSquare className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                  Send Message
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Create and send WhatsApp messages to your selected recipients
+                </p>
+            </div>
           </div>
-          <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Send Message
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Create and send WhatsApp messages to your selected recipients
-              </p>
-          </div>
+          <Button variant="outline" size="sm" asChild className="w-fit">
+              <Link href="/communication" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
         </div>
-        <Button variant="outline" size="sm" asChild className="w-fit">
-            <Link href="/communication" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </div>
 
-        {/* Progress Steps */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            {STEPS.map((step, index) => (
-              <div key={step.id} className={cn(
-                "flex items-center gap-3 flex-1",
-                index < STEPS.length - 1 && "pr-4"
-              )}>
-                <div className={cn(
-                  "flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold text-sm transition-all",
-                  index <= currentStep 
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                    : "bg-background text-muted-foreground border-muted-foreground/30"
+          {/* Progress Steps */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              {STEPS.map((step, index) => (
+                <div key={step.id} className={cn(
+                  "flex items-center gap-3 flex-1",
+                  index < STEPS.length - 1 && "pr-4"
                 )}>
-                  {index < currentStep ? (
-                    <Check className="w-5 h-5" />
-                  ) : (
-                    index + 1
-                  )}
-                              </div>
-                <div className="flex-1">
                   <div className={cn(
-                    "font-medium text-sm transition-colors",
-                    index <= currentStep ? "text-foreground" : "text-muted-foreground"
+                    "flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold text-sm transition-all",
+                    index <= currentStep 
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                      : "bg-background text-muted-foreground border-muted-foreground/30"
                   )}>
-                    {step.title}
+                    {index < currentStep ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      index + 1
+                    )}
+                              </div>
+                  <div className="flex-1">
+                    <div className={cn(
+                      "font-medium text-sm transition-colors",
+                      index <= currentStep ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {step.title}
                             </div>
-                  <div className="text-xs text-muted-foreground">
-                    {step.description}
-                  </div>
+                    <div className="text-xs text-muted-foreground">
+                      {step.description}
+                    </div>
                               </div>
                 {index < STEPS.length - 1 && (
                   <ChevronRight className={cn(
@@ -528,9 +533,9 @@ export default function SendMessagePage() {
                   )} />
                 )}
                             </div>
-            ))}
-                      </div>
-          <Progress value={getProgress()} className="h-2" />
+              ))}
+                        </div>
+            <Progress value={getProgress()} className="h-2" />
                     </div>
 
                  <FormProvider {...form}>
@@ -1362,5 +1367,18 @@ export default function SendMessagePage() {
       </FormProvider>
       </div>
     </div>
+    </PageGuard>
+  );
+}
+
+export default function SendMessagePage() {
+  return (
+    <PageGuard
+      permissions={[Permission.CREATE_COMMUNICATION_MESSAGE]}
+      title="Send Message Access Required"
+      message="You need message sending permissions to access this page. Contact your administrator to request 'Create Communication Message' permission."
+    >
+      <SendMessagePageContent />
+    </PageGuard>
   );
 } 

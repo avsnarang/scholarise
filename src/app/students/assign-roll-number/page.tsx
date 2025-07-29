@@ -13,8 +13,10 @@ import { Check, Loader2, Save } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
+import { PageGuard } from "@/components/auth/page-guard";
+import { Permission } from "@/types/permissions";
 
-export default function AssignRollNumberPage() {
+function AssignRollNumberPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { getBranchFilterParam } = useGlobalBranchFilter();
@@ -296,5 +298,17 @@ export default function AssignRollNumberPage() {
         </Card>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function AssignRollNumberPage() {
+  return (
+    <PageGuard
+      permissions={[Permission.EDIT_STUDENT]}
+      title="Roll Number Assignment Access Required"
+      message="You need student editing permissions to assign roll numbers. Contact your administrator to request 'Edit Student' permission."
+    >
+      <AssignRollNumberPageContent />
+    </PageGuard>
   );
 } 

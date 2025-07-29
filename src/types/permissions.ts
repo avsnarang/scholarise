@@ -3,13 +3,25 @@ export enum Permission {
   // Dashboard
   VIEW_DASHBOARD = "view_dashboard",
   
-  // Student permissions
+  // Student Management permissions
   VIEW_STUDENTS = "view_students",
   CREATE_STUDENT = "create_student",
   EDIT_STUDENT = "edit_student",
   DELETE_STUDENT = "delete_student",
-  MANAGE_ADMISSIONS = "manage_admissions",
+  IMPORT_STUDENTS = "import_students",
+  EXPORT_STUDENTS = "export_students",
   MANAGE_TRANSFER_CERTIFICATES = "manage_transfer_certificates",
+  MANAGE_ROLL_NUMBERS = "manage_roll_numbers",
+  VIEW_OWN_STUDENTS = "view_own_students",
+
+  // Admissions permissions
+  MANAGE_ADMISSIONS = "manage_admissions",
+  VIEW_ADMISSION_INQUIRIES = "view_admission_inquiries",
+  CREATE_ADMISSION_INQUIRY = "create_admission_inquiry",
+  EDIT_ADMISSION_INQUIRY = "edit_admission_inquiry",
+  MANAGE_ADMISSION_WORKFLOW = "manage_admission_workflow",
+  ACCESS_ADMISSION_REPORTS = "access_admission_reports",
+  MANAGE_ADMISSION_SETTINGS = "manage_admission_settings",
   
   // Money Collection permissions
   VIEW_MONEY_COLLECTION = "view_money_collection",
@@ -74,6 +86,39 @@ export enum Permission {
   MANAGE_TRANSPORT_ROUTES = "manage_transport_routes",
   MANAGE_TRANSPORT_STOPS = "manage_transport_stops",
   MANAGE_TRANSPORT_ASSIGNMENTS = "manage_transport_assignments",
+  CREATE_TRANSPORT_ROUTE = "create_transport_route",
+  EDIT_TRANSPORT_ROUTE = "edit_transport_route",
+  DELETE_TRANSPORT_ROUTE = "delete_transport_route",
+  VIEW_TRANSPORT_ROUTES = "view_transport_routes",
+  CREATE_TRANSPORT_STOP = "create_transport_stop",
+  EDIT_TRANSPORT_STOP = "edit_transport_stop",
+  DELETE_TRANSPORT_STOP = "delete_transport_stop",
+  VIEW_TRANSPORT_STOPS = "view_transport_stops",
+  MANAGE_TRANSPORT_VEHICLES = "manage_transport_vehicles",
+  CREATE_TRANSPORT_VEHICLE = "create_transport_vehicle",
+  EDIT_TRANSPORT_VEHICLE = "edit_transport_vehicle",
+  DELETE_TRANSPORT_VEHICLE = "delete_transport_vehicle",
+  VIEW_TRANSPORT_VEHICLES = "view_transport_vehicles",
+  MANAGE_TRANSPORT_DRIVERS = "manage_transport_drivers",
+  CREATE_TRANSPORT_DRIVER = "create_transport_driver",
+  EDIT_TRANSPORT_DRIVER = "edit_transport_driver",
+  DELETE_TRANSPORT_DRIVER = "delete_transport_driver",
+  VIEW_TRANSPORT_DRIVERS = "view_transport_drivers",
+  MANAGE_TRANSPORT_FEES = "manage_transport_fees",
+  VIEW_TRANSPORT_FEES = "view_transport_fees",
+  COLLECT_TRANSPORT_FEES = "collect_transport_fees",
+  MANAGE_TRANSPORT_SCHEDULES = "manage_transport_schedules",
+  VIEW_TRANSPORT_SCHEDULES = "view_transport_schedules",
+  TRACK_TRANSPORT_VEHICLES = "track_transport_vehicles",
+  VIEW_TRANSPORT_TRACKING = "view_transport_tracking",
+  MANAGE_TRANSPORT_MAINTENANCE = "manage_transport_maintenance",
+  VIEW_TRANSPORT_MAINTENANCE = "view_transport_maintenance",
+  GENERATE_TRANSPORT_REPORTS = "generate_transport_reports",
+  VIEW_TRANSPORT_REPORTS = "view_transport_reports",
+  MANAGE_TRANSPORT_ATTENDANCE = "manage_transport_attendance",
+  VIEW_TRANSPORT_ATTENDANCE = "view_transport_attendance",
+  SEND_TRANSPORT_ALERTS = "send_transport_alerts",
+  MANAGE_TRANSPORT_SETTINGS = "manage_transport_settings",
   
   // Fees permissions
   VIEW_FEES = "view_fees",
@@ -93,6 +138,12 @@ export enum Permission {
   MANAGE_ACADEMIC_SESSIONS = "manage_academic_sessions",
   MANAGE_SUBJECTS = "manage_subjects",
   MANAGE_ATTENDANCE_CONFIG = "manage_attendance_config",
+  
+  // Subject-specific permissions
+  VIEW_SUBJECTS = "view_subjects",
+  MANAGE_SUBJECT_ASSIGNMENTS = "manage_subject_assignments",
+  MANAGE_CLASS_SUBJECTS = "manage_class_subjects",
+  MANAGE_STUDENT_SUBJECTS = "manage_student_subjects",
   
   // Question Paper permissions
   VIEW_QUESTION_PAPERS = "view_question_papers",
@@ -131,6 +182,10 @@ export enum Permission {
   SEND_TO_ALL_EMPLOYEES = "send_to_all_employees",
   SEND_TO_PARENTS = "send_to_parents",
   
+  // Chat permissions
+  VIEW_CHAT = "view_chat",
+  MANAGE_CHAT_SETTINGS = "manage_chat_settings",
+  
   // Reports permissions
   VIEW_REPORTS = "view_reports",
   
@@ -140,10 +195,6 @@ export enum Permission {
   MANAGE_EMAIL_CONFIG = "manage_email_config",
   MANAGE_AI_CONFIG = "manage_ai_config",
   MANAGE_BACKGROUND_SERVICES = "manage_background_services",
-  
-  // Chat permissions
-  VIEW_CHAT = "view_chat",
-  MANAGE_CHAT_SETTINGS = "manage_chat_settings",
   
   // RBAC Management permissions
   MANAGE_PERMISSIONS = "manage_permissions",

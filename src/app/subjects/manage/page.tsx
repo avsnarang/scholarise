@@ -1,16 +1,15 @@
+"use client";
+
 import { Suspense } from "react";
 import { SubjectsDataTable } from "@/components/settings/subjects/subjects-data-table";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { FileDown, BookOpen, PlusCircle } from "lucide-react";
 import { SubjectStatsCards } from "@/components/settings/subjects/subject-stats-cards";
+import { PageGuard } from "@/components/auth/page-guard";
+import { Permission } from "@/types/permissions";
 
-export const metadata = {
-  title: "Manage Subjects",
-  description: "Manage school subjects and their CBSE codes",
-};
-
-export default function ManageSubjectsPage() {
+function ManageSubjectsPageContent() {
   return (
     <PageWrapper
       title="Manage Subjects"
@@ -28,5 +27,17 @@ export default function ManageSubjectsPage() {
         </Suspense>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function ManageSubjectsPage() {
+  return (
+    <PageGuard
+      permissions={[Permission.MANAGE_SUBJECTS]}
+      title="Subject Management Access Required"
+      message="You need subject management permissions to access this page. This section allows creating, editing, and managing school subjects."
+    >
+      <ManageSubjectsPageContent />
+    </PageGuard>
   );
 } 

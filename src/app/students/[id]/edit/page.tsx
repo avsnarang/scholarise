@@ -9,8 +9,10 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { EnhancedStudentForm } from "@/components/students/enhanced-student-form";
+import { PageGuard } from "@/components/auth/page-guard";
+import { Permission } from "@/types/permissions";
 
-export default function EditStudentPage() {
+function EditStudentPageContent() {
   const params = useParams() || {};
   const studentId = params.id as string;
   const router = useRouter();
@@ -157,5 +159,17 @@ export default function EditStudentPage() {
         <EnhancedStudentForm initialData={formattedData} isEditing={true} />
       </div>
     </div>
+  );
+}
+
+export default function EditStudentPage() {
+  return (
+    <PageGuard
+      permissions={[Permission.EDIT_STUDENT]} 
+      title="Edit Student Access Required"
+      message="You need student editing permissions to modify student information. Contact your administrator to request 'Edit Student' permission."
+    >
+      <EditStudentPageContent />
+    </PageGuard>
   );
 }

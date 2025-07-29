@@ -2,7 +2,7 @@ import { RolesManagement } from "@/components/admin/roles-management";
 
 export default function RolesPage() {
   return (
-    <div className="container mx-auto py-6">
+    <div className="min-h-screen bg-background">
       <RolesManagement />
     </div>
   );

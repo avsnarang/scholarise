@@ -13,8 +13,9 @@ import {
   ExternalLink, Copy, QrCode, Share, Globe, 
   GraduationCap, Calendar, MapPin, Mail, Phone 
 } from "lucide-react";
+import { AdmissionsPageGuard } from "@/components/auth/page-guard";
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { currentBranchId, currentBranch } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -280,5 +281,13 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <AdmissionsPageGuard>
+      <SettingsPageContent />
+    </AdmissionsPageGuard>
   );
 } 

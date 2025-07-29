@@ -153,9 +153,10 @@ export type StudentFormValues = z.infer<typeof editStudentSchema>;
 interface EnhancedStudentFormProps {
   initialData?: Partial<StudentFormValues>;
   isEditing?: boolean;
+  onSuccess?: () => void;
 }
 
-export function EnhancedStudentForm({ initialData, isEditing = false }: EnhancedStudentFormProps) {
+export function EnhancedStudentForm({ initialData, isEditing = false, onSuccess }: EnhancedStudentFormProps) {
   const router = useRouter();
   const { branch } = useGlobalBranchFilter();
   const { currentSessionId, isLoading: isSessionLoading } = useAcademicSessionContext();
@@ -371,12 +372,18 @@ export function EnhancedStudentForm({ initialData, isEditing = false }: Enhanced
       void utils.student.getStats.invalidate();
       void utils.class.getAll.invalidate();
 
-      // Show success toast and redirect
+      // Show success toast
       toast({
         title: "Student created",
         description: "Student has been successfully created.",
       });
-      router.push("/students");
+
+      // Use provided onSuccess callback or default redirect
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/students");
+      }
     },
     onError: (error) => {
       // Enhanced error logging
