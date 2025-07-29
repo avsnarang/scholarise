@@ -565,6 +565,7 @@ export function EnhancedStudentForm({ initialData, isEditing = false, onSuccess 
             dateOfAdmission: data.dateOfAdmission ? new Date(data.dateOfAdmission) : new Date(),
             branchId: branch?.id || "",
             sectionId: data.classId,
+            sessionId: currentSessionId || "",
             email: data.schoolEmail ? data.schoolEmail.trim() || null : null,
             personalEmail: data.personalEmail ? data.personalEmail.trim() || null : null,
             phone: data.phone || "",

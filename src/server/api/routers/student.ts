@@ -392,6 +392,7 @@ export const studentRouter = createTRPCRouter({
         phone: z.string().nullish(),
         branchId: z.string(),
         sectionId: z.string(),
+        sessionId: z.string(), // Add sessionId to track first joined session
         siblings: z.array(z.string()).optional(),
         isActive: z.boolean().default(true),
         address: z.string().optional(),
@@ -688,6 +689,7 @@ export const studentRouter = createTRPCRouter({
           username: finalStudentUsername,
           password: finalStudentPassword,
           clerkId: clerkStudentId,
+          firstJoinedSessionId: input.sessionId, // Set the session they first joined
           ...(siblings?.length
             ? {
                 siblings: {
@@ -1911,6 +1913,7 @@ export const studentRouter = createTRPCRouter({
                       username: item.studentUsername,
                       password: item.studentPassword,
                       clerkId: clerkStudentId,
+                      firstJoinedSessionId: sessionId, // Set the session they first joined
                       isActive: true,
                       religion: item.studentData.religion || null,
                       nationality: item.studentData.nationality || null,

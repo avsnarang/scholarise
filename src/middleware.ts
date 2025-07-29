@@ -6,7 +6,6 @@ import { env } from '@/env';
 const isPublicRoute = (pathname: string): boolean => {
   const publicRoutes = [
     '/',
-    '/login',
     '/sign-in',
     '/auth/callback',
     '/register',

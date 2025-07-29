@@ -126,6 +126,7 @@ model Student {
   udiseId                 String?
   joinDate                DateTime                 @default(now())
   dateOfAdmission         DateTime?
+  firstJoinedSessionId    String?
   rollNumber              Int?                     @db.SmallInt
   isActive                Boolean                  @default(true)
   createdAt               DateTime                 @default(now())
@@ -174,6 +175,7 @@ model Student {
   parent                  Parent?                  @relation(fields: [parentId], references: [id])
   section                 Section?                 @relation(fields: [sectionId], references: [id])
   user                    User?                    @relation(fields: [userId], references: [id])
+  firstJoinedSession      AcademicSession?         @relation("StudentFirstJoinedSession", fields: [firstJoinedSessionId], references: [id])
   
   // Required relationship fields for existing models
   academicRecords         AcademicRecord[]
@@ -199,6 +201,7 @@ model Student {
   @@index([userId])
   @@index([rollNumber, branchId])
   @@index([isActive])
+  @@index([firstJoinedSessionId])
 }
 
 model Parent {
@@ -521,6 +524,7 @@ model AcademicSession {
   transportConfigurations TransportConfiguration[] @relation("TransportConfigSession")
   transportFeeStructures  TransportFeeStructure[]  @relation("TransportFeeSession")
   admissionInquiries      AdmissionInquiry[]
+  firstJoinedStudents     Student[]                @relation("StudentFirstJoinedSession")
 }
 
 model Term {

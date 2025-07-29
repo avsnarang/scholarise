@@ -305,6 +305,14 @@ export async function createEmployeeUser({
     });
 
     const supabase = createServerSupabaseClient();
+    
+    // Debug: Check if we have the service role key
+    console.log('Supabase config check:', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      serviceKeyPrefix: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 10) + '...',
+      nodeEnv: process.env.NODE_ENV
+    });
 
     // Create user in Supabase Auth
     const { data, error } = await supabase.auth.admin.createUser({
@@ -324,13 +332,19 @@ export async function createEmployeeUser({
 
     if (error) {
       console.error('Supabase API error creating employee user:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code || 'unknown'
+      });
       
       // Handle specific Supabase errors more gracefully
       if (error.message?.includes('already registered')) {
         throw new Error('A user with this email already exists. Please use a different email address.');
       }
       
-      throw new Error(`Failed to create employee user: ${error.message}`);
+      // Enhanced error message for debugging
+      throw new Error(`Failed to create employee user: ${error.message}. Check that SUPABASE_SERVICE_ROLE_KEY is correctly configured in production.`);
     }
 
     if (!data.user) {

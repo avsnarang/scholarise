@@ -58,6 +58,7 @@ export const parentRouter = createTRPCRouter({
         studentSectionId: z.string().optional(),
         studentAddress: z.string().optional(),
         createStudentUser: z.boolean().default(false),
+        sessionId: z.string().optional(), // Add sessionId for student first joined session
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -186,7 +187,8 @@ export const parentRouter = createTRPCRouter({
       // Create student record if requested
       if (input.createStudentUser && input.studentFirstName && input.studentLastName && input.studentAdmissionNumber && input.studentDateOfBirth && input.studentGender && input.branchId) {
         try {
-          const studentData = {
+          // Convert to proper Prisma format directly
+          const studentCreateInput: Prisma.StudentCreateInput = {
             admissionNumber: input.studentAdmissionNumber,
             firstName: input.studentFirstName,
             lastName: input.studentLastName,
@@ -195,36 +197,16 @@ export const parentRouter = createTRPCRouter({
             email: input.studentEmail,
             phone: input.studentPhone,
             address: input.studentAddress,
-            branchId: input.branchId,
-            parentId: parent.id,
             username: input.studentUsername,
             password: input.studentPassword,
             clerkId: clerkStudentId,
-            sectionId: input.studentSectionId,
             isActive: true,
             joinDate: new Date(),
             dateOfAdmission: new Date(),
-          } as Prisma.StudentCreateInput & { branchId: string; parentId: string; sectionId?: string };
-
-          // Convert to proper Prisma format
-          const studentCreateInput: Prisma.StudentCreateInput = {
-            admissionNumber: studentData.admissionNumber,
-            firstName: studentData.firstName,
-            lastName: studentData.lastName,
-            dateOfBirth: studentData.dateOfBirth,
-            gender: studentData.gender,
-            email: studentData.email,
-            phone: studentData.phone,
-            address: studentData.address,
-            username: studentData.username,
-            password: studentData.password,
-            clerkId: studentData.clerkId,
-            isActive: studentData.isActive,
-            joinDate: studentData.joinDate,
-            dateOfAdmission: studentData.dateOfAdmission,
-            branch: { connect: { id: studentData.branchId } },
-            parent: { connect: { id: studentData.parentId } },
-            ...(studentData.sectionId ? { section: { connect: { id: studentData.sectionId } } } : {}),
+            firstJoinedSession: { connect: { id: input.sessionId } },
+            branch: { connect: { id: input.branchId } },
+            parent: { connect: { id: parent.id } },
+            ...(input.studentSectionId ? { section: { connect: { id: input.studentSectionId } } } : {}),
           };
 
           const student = await ctx.db.student.create({
@@ -363,6 +345,7 @@ export const parentRouter = createTRPCRouter({
         parentPassword: z.string().optional(),
         studentUsername: z.string().optional(),
         studentPassword: z.string().optional(),
+        sessionId: z.string().optional(), // Add sessionId for student first joined session
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -540,6 +523,7 @@ export const parentRouter = createTRPCRouter({
         branch: { connect: { id: input.branchId } },
         parent: { connect: { id: parent.id } },
         section: { connect: { id: input.studentSectionId } },
+        ...(input.sessionId ? { firstJoinedSession: { connect: { id: input.sessionId } } } : {}),
       };
 
       const student = await ctx.db.student.create({

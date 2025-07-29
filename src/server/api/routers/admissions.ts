@@ -55,7 +55,7 @@ export const admissionsRouter = createTRPCRouter({
         });
       }
 
-      // Generate registration number in format: TSH{Branch Code}-{Session Name}-0001
+      // Generate registration number in format: TSH{Branch Code}/{Session Name}/0001
       const branchCode = branch.code;
       const sessionName = session?.name || new Date().getFullYear().toString();
       
@@ -68,7 +68,7 @@ export const admissionsRouter = createTRPCRouter({
             status: "ARCHIVED" as any, // Exclude archived inquiries
           },
           registrationNumber: {
-            startsWith: `TSH${branchCode}-${sessionName}-`,
+            startsWith: `TSH${branchCode}/${sessionName}/`,
             not: {
               contains: "(Archived)",
             },
@@ -77,7 +77,7 @@ export const admissionsRouter = createTRPCRouter({
       });
 
       const nextNumber = (existingCount + 1).toString().padStart(4, '0');
-      const registrationNumber = `TSH${branchCode}-${sessionName}-${nextNumber}`;
+      const registrationNumber = `TSH${branchCode}/${sessionName}/${nextNumber}`;
 
       // Extract isInternalRegistration from input (it's not a database field)
       const { isInternalRegistration, ...dbInput } = input;
@@ -520,6 +520,7 @@ export const admissionsRouter = createTRPCRouter({
     .input(
       z.object({
         inquiryId: z.string(),
+        sessionId: z.string(), // Add sessionId to input
         studentData: z.object({
           firstName: z.string(),
           lastName: z.string(),
@@ -562,6 +563,7 @@ export const admissionsRouter = createTRPCRouter({
           branchId: inquiry.branchId,
           joinDate: new Date(),
           dateOfAdmission: new Date(),
+          firstJoinedSessionId: input.sessionId, // Set the session they first joined
         },
       });
 
@@ -617,7 +619,7 @@ export const admissionsRouter = createTRPCRouter({
             status: "ARCHIVED" as any, // Exclude archived inquiries
           },
           registrationNumber: {
-            startsWith: `TSH${branchCode}-${sessionName}-`,
+            startsWith: `TSH${branchCode}/${sessionName}/`,
             not: {
               contains: "(Archived)",
             },
@@ -627,7 +629,7 @@ export const admissionsRouter = createTRPCRouter({
 
       // This will now be available for new inquiries
       const availableNumber = existingCount.toString().padStart(4, '0');
-      const archivedRegistrationNumber = `TSH${branchCode}-${sessionName}-${availableNumber} (Archived)`;
+      const archivedRegistrationNumber = `TSH${branchCode}/${sessionName}/${availableNumber} (Archived)`;
 
       // Archive the inquiry instead of deleting
       await ctx.db.admissionInquiry.update({

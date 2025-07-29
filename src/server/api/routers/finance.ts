@@ -1329,7 +1329,8 @@ export const financeRouter = createTRPCRouter({
             include: {
               class: true
             }
-          }
+          },
+          firstJoinedSession: true
         },
       });
 
@@ -1345,6 +1346,19 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
+      // Determine if student is new admission or old student
+      const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+      const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+
+      // Determine which student types should apply to this student
+      let applicableStudentTypes: string[] = ["BOTH"];
+      if (isNewAdmission) {
+        applicableStudentTypes.push("NEW_ADMISSION");
+      }
+      if (isOldStudent) {
+        applicableStudentTypes.push("OLD_STUDENT");
+      }
+
       // Get classwise fees for the student's section (now section-level fees)
       const classwiseFees = await ctx.db.classwiseFee.findMany({
         where: {
@@ -1352,6 +1366,12 @@ export const financeRouter = createTRPCRouter({
           branchId: input.branchId,
           sessionId: input.sessionId,
           ...(input.feeTermId && { feeTermId: input.feeTermId }),
+          // Only include fee heads that apply to this student type
+          feeHead: {
+            studentType: {
+              in: applicableStudentTypes,
+            },
+          },
         },
         include: {
           feeTerm: true,
@@ -1624,6 +1644,9 @@ export const financeRouter = createTRPCRouter({
                 where: {
                   branchId: input.branchId,
                   isActive: true,
+                },
+                include: {
+                  firstJoinedSession: true,
                 }
               }
             },
@@ -1709,21 +1732,67 @@ export const financeRouter = createTRPCRouter({
       });
       
       // Second pass: calculate totals, prioritizing section-level fees over class-level
+      // Apply student type filtering based on firstJoinedSessionId
       feeComboMap.forEach((combo, feeKey) => {
         const feeHeadId = feeKey.split('-')[1]; // Extract feeHeadId from feeKey
+        const feeHead = feeHeads.find(fh => fh.id === feeHeadId);
+        
+        if (!feeHead || !feeHeadId) return;
         
         if (combo.sectionLevel.length > 0) {
           // Use section-level fees (ignore any class-level fee for this combination)
           combo.sectionLevel.forEach(sectionFee => {
-            const totalDue = sectionFee.amount * sectionFee.students;
-            if (feeHeadId && feeHeadTotals[feeHeadId]) {
+            // Find the section to get student details
+            const sectionWithFee = classwiseFees.find(cf => cf.sectionId === sectionFee.sectionId && cf.feeHeadId === feeHeadId);
+            const students = sectionWithFee?.section?.students || [];
+            
+            // Count eligible students based on fee head student type
+            let eligibleStudentCount = 0;
+            students.forEach(student => {
+              const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+              const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+              
+              const isEligible = 
+                feeHead.studentType === "BOTH" ||
+                (feeHead.studentType === "NEW_ADMISSION" && isNewAdmission) ||
+                (feeHead.studentType === "OLD_STUDENT" && isOldStudent);
+              
+              if (isEligible) {
+                eligibleStudentCount++;
+              }
+            });
+            
+            const totalDue = sectionFee.amount * eligibleStudentCount;
+            if (feeHeadTotals[feeHeadId]) {
               feeHeadTotals[feeHeadId]!.due += totalDue;
             }
           });
         } else if (combo.classLevel) {
           // Use class-level fee only if no section-level fees exist
-          const totalDue = combo.classLevel.amount * combo.classLevel.totalStudents;
-          if (feeHeadId && feeHeadTotals[feeHeadId]) {
+          // Get all students for this class across all sections
+          const classStudents = classwiseFees
+            .filter(cf => cf.classId === combo.classLevel!.classId)
+            .flatMap(cf => cf.section?.students || [])
+            .filter((student, index, self) => self.findIndex(s => s.id === student.id) === index); // Remove duplicates
+          
+          // Count eligible students based on fee head student type
+          let eligibleStudentCount = 0;
+          classStudents.forEach(student => {
+            const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+            const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+            
+            const isEligible = 
+              feeHead.studentType === "BOTH" ||
+              (feeHead.studentType === "NEW_ADMISSION" && isNewAdmission) ||
+              (feeHead.studentType === "OLD_STUDENT" && isOldStudent);
+            
+            if (isEligible) {
+              eligibleStudentCount++;
+            }
+          });
+          
+          const totalDue = combo.classLevel.amount * eligibleStudentCount;
+          if (feeHeadTotals[feeHeadId]) {
             feeHeadTotals[feeHeadId]!.due += totalDue;
           }
         }
@@ -3139,6 +3208,7 @@ export const financeRouter = createTRPCRouter({
             },
           },
           parent: true,
+          firstJoinedSession: true,
         },
         orderBy: [
           { section: { class: { displayOrder: "asc" } } },
@@ -3274,6 +3344,20 @@ export const financeRouter = createTRPCRouter({
         let studentTotalDue = 0;
 
         for (const classwiseFee of studentClasswiseFees) {
+          // Check if student is eligible for this fee head based on student type
+          const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+          const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+          
+          const isEligibleForFee = 
+            classwiseFee.feeHead.studentType === "BOTH" ||
+            (classwiseFee.feeHead.studentType === "NEW_ADMISSION" && isNewAdmission) ||
+            (classwiseFee.feeHead.studentType === "OLD_STUDENT" && isOldStudent);
+          
+          // Skip this fee if student is not eligible
+          if (!isEligibleForFee) {
+            continue;
+          }
+          
           // Calculate concession for this fee
           let concessionAmount = 0;
           for (const concession of studentConcessionsList) {
@@ -3444,7 +3528,8 @@ export const financeRouter = createTRPCRouter({
                 include: {
                   class: true,
                 }
-              }
+              },
+              firstJoinedSession: true,
             }
           },
           feeTerm: true,
@@ -3723,6 +3808,9 @@ export const financeRouter = createTRPCRouter({
                 where: {
                   branchId: input.branchId,
                   isActive: true,
+                },
+                include: {
+                  firstJoinedSession: true,
                 }
               }
             }
@@ -3788,6 +3876,9 @@ export const financeRouter = createTRPCRouter({
           ...(input.feeHeadIds && input.feeHeadIds.length > 0 && {
             feeHeadId: { in: input.feeHeadIds }
           }),
+        },
+        include: {
+          feeHead: true,
         },
       });
 
@@ -3877,15 +3968,60 @@ export const financeRouter = createTRPCRouter({
         });
         
         // Second pass: calculate totals, prioritizing section-level fees over class-level
+        // Apply student type filtering based on firstJoinedSessionId
         feeComboMap.forEach((combo, feeKey) => {
+          const feeHeadId = feeKey.split('-')[1];
+          const feeHead = classExpectedFees.find(cf => cf.feeHeadId === feeHeadId)?.feeHead;
+          
+          if (!feeHead) return;
+          
           if (combo.sectionLevel.length > 0) {
             // Use section-level fees (ignore any class-level fee for this combination)
             combo.sectionLevel.forEach(sectionFee => {
-              totalExpected += sectionFee.amount * sectionFee.students;
+              // Find the section to get student details
+              const section = classItem.sections.find(s => s.id === sectionFee.sectionId);
+              const students = section?.students || [];
+              
+              // Count eligible students based on fee head student type
+              let eligibleStudentCount = 0;
+              students.forEach(student => {
+                const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+                const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+                
+                const isEligible = 
+                  feeHead.studentType === "BOTH" ||
+                  (feeHead.studentType === "NEW_ADMISSION" && isNewAdmission) ||
+                  (feeHead.studentType === "OLD_STUDENT" && isOldStudent);
+                
+                if (isEligible) {
+                  eligibleStudentCount++;
+                }
+              });
+              
+              totalExpected += sectionFee.amount * eligibleStudentCount;
             });
           } else if (combo.classLevel) {
             // Use class-level fee only if no section-level fees exist
-            totalExpected += combo.classLevel.amount * totalStudents;
+            // Get all students for this class
+            const classStudents = classItem.sections.flatMap(section => section.students);
+            
+            // Count eligible students based on fee head student type
+            let eligibleStudentCount = 0;
+            classStudents.forEach(student => {
+              const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
+              const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
+              
+              const isEligible = 
+                feeHead.studentType === "BOTH" ||
+                (feeHead.studentType === "NEW_ADMISSION" && isNewAdmission) ||
+                (feeHead.studentType === "OLD_STUDENT" && isOldStudent);
+              
+              if (isEligible) {
+                eligibleStudentCount++;
+              }
+            });
+            
+            totalExpected += combo.classLevel.amount * eligibleStudentCount;
           }
         });
         
@@ -4112,21 +4248,15 @@ export const financeRouter = createTRPCRouter({
       };
     }),
 
-  // New Admission Student Identification and Fee Assignment
+  // New Admission Student Identification and Fee Assignment (Session-Based)
   identifyNewAdmissionStudents: publicProcedure
     .input(z.object({
       branchId: z.string(),
       sessionId: z.string(),
-      newAdmissionCriteria: z.object({
-        method: z.enum(["CURRENT_SESSION", "DATE_RANGE", "DAYS_FROM_ADMISSION"]),
-        daysFromAdmission: z.number().min(1).max(365).optional(), // e.g., first 30 days
-        dateRangeStart: z.date().optional(),
-        dateRangeEnd: z.date().optional(),
-      }),
       includeInactiveStudents: z.boolean().default(false),
     }))
     .query(async ({ ctx, input }) => {
-      // Build the base student query
+      // Build the base student query for current session students
       let studentWhere: any = {
         branchId: input.branchId,
         section: {
@@ -4134,78 +4264,13 @@ export const financeRouter = createTRPCRouter({
             sessionId: input.sessionId,
           },
         },
+        // New admission: students whose firstJoinedSessionId matches current session
+        // OR students with NULL firstJoinedSessionId are considered old students
+        firstJoinedSessionId: input.sessionId,
       };
 
       if (!input.includeInactiveStudents) {
         studentWhere.isActive = true;
-      }
-
-      // Add new admission criteria based on the method
-      switch (input.newAdmissionCriteria.method) {
-        case "CURRENT_SESSION":
-          // Students who joined in the current academic session
-          const currentSession = await ctx.db.academicSession.findUnique({
-            where: { id: input.sessionId },
-          });
-          
-          if (currentSession) {
-            studentWhere.OR = [
-              {
-                joinDate: {
-                  gte: currentSession.startDate,
-                  lte: currentSession.endDate,
-                },
-              },
-              {
-                dateOfAdmission: {
-                  gte: currentSession.startDate,
-                  lte: currentSession.endDate,
-                },
-              },
-            ];
-          }
-          break;
-
-        case "DATE_RANGE":
-          // Students admitted within a specific date range
-          if (input.newAdmissionCriteria.dateRangeStart && input.newAdmissionCriteria.dateRangeEnd) {
-            studentWhere.OR = [
-              {
-                joinDate: {
-                  gte: input.newAdmissionCriteria.dateRangeStart,
-                  lte: input.newAdmissionCriteria.dateRangeEnd,
-                },
-              },
-              {
-                dateOfAdmission: {
-                  gte: input.newAdmissionCriteria.dateRangeStart,
-                  lte: input.newAdmissionCriteria.dateRangeEnd,
-                },
-              },
-            ];
-          }
-          break;
-
-        case "DAYS_FROM_ADMISSION":
-          // Students admitted within the last X days
-          if (input.newAdmissionCriteria.daysFromAdmission) {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - input.newAdmissionCriteria.daysFromAdmission);
-            
-            studentWhere.OR = [
-              {
-                joinDate: {
-                  gte: cutoffDate,
-                },
-              },
-              {
-                dateOfAdmission: {
-                  gte: cutoffDate,
-                },
-              },
-            ];
-          }
-          break;
       }
 
       // Get new admission students
@@ -4217,6 +4282,7 @@ export const financeRouter = createTRPCRouter({
               class: true,
             },
           },
+          firstJoinedSession: true,
           feeCollections: {
             include: {
               items: {
@@ -4281,6 +4347,7 @@ export const financeRouter = createTRPCRouter({
           name: `${student.firstName} ${student.lastName}`,
           dateOfAdmission: student.dateOfAdmission,
           joinDate: student.joinDate,
+          firstJoinedSession: student.firstJoinedSession?.name || 'Unknown',
           sectionName: student.section?.name || 'N/A',
           hasNewAdmissionFees: student.feeCollections.flatMap(fc => fc.items.map(item => item.feeHead.id))
             .some(feeHeadId => newAdmissionOnlyFeeHeads.map(fh => fh.id).includes(feeHeadId)),
@@ -4289,7 +4356,8 @@ export const financeRouter = createTRPCRouter({
       }, {} as Record<string, any[]>);
 
       return {
-        criteria: input.newAdmissionCriteria,
+        method: "SESSION_BASED",
+        sessionId: input.sessionId,
         summary: {
           totalNewAdmissions,
           studentsWithNewAdmissionFees,
@@ -4312,6 +4380,8 @@ export const financeRouter = createTRPCRouter({
           sectionName: student.section?.name || 'N/A',
           dateOfAdmission: student.dateOfAdmission,
           joinDate: student.joinDate,
+          firstJoinedSession: student.firstJoinedSession?.name || 'Unknown',
+          firstJoinedSessionId: student.firstJoinedSessionId,
           createdAt: student.createdAt,
           isActive: student.isActive,
         })),

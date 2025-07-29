@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -29,8 +29,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PageWrapper } from "@/components/layout/page-wrapper";
 import { 
   PlusCircle, 
   Search, 
@@ -47,15 +57,26 @@ import {
   CheckCircle,
   GraduationCap,
   BookOpen,
-  Trash2
+  Trash2,
+  MoreHorizontal,
+  ArrowUpDown,
+  UserCheck,
+  UserX,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, intervalToDuration, differenceInYears } from "date-fns";
 import { RegistrationForm } from "@/components/admissions/registration-form";
 import { useToast } from "@/components/ui/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { EnhancedStudentForm } from "@/components/students/enhanced-student-form";
 import { AdmissionsPageGuard } from "@/components/auth/page-guard";
+import { cn } from "@/lib/utils";
+import { useDeleteConfirm, useStatusChangeConfirm } from "@/utils/popup-utils";
 
 const statusColors = {
   NEW: "bg-blue-500",
@@ -83,15 +104,89 @@ const statusOptions = [
   { value: "CLOSED", label: "Closed" },
 ];
 
+// Define the Inquiry type
+export type Inquiry = {
+  id: string
+  registrationNumber: string
+  firstName: string
+  lastName: string
+  parentName: string
+  parentPhone: string
+  parentEmail?: string
+  classApplying: string
+  status: keyof typeof statusColors
+  dateOfBirth?: Date
+  gender?: string
+  address?: string
+  createdAt: Date
+  updatedAt: Date
+  contactMethod?: string
+  visitScheduledDate?: Date
+  interviewScheduledDate?: Date
+  interviewMarks?: number
+  notes?: string
+  registrationSource?: string
+  source?: string
+  // New fields for age and admission number
+  age?: string
+  sessionYear?: number
+  admissionNumber?: string
+  session?: {
+    name: string
+  }
+  student?: {
+    admissionNumber: string
+    firstName: string
+    lastName: string
+  }
+}
+
+// Skeleton loader component
+const InquirySkeleton = () => (
+  <div className="animate-pulse">
+    <div className="flex items-center space-x-4 p-4 border-b">
+      <div className="w-4 h-4 bg-muted rounded"></div>
+      <div className="flex-1 grid grid-cols-7 gap-4 items-center">
+        <div className="h-4 bg-muted rounded w-20"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-24"></div>
+          <div className="h-3 bg-muted rounded w-20"></div>
+        </div>
+        <div className="h-4 bg-muted rounded w-20"></div>
+        <div className="h-4 bg-muted rounded w-20"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-24"></div>
+          <div className="h-3 bg-muted rounded w-20"></div>
+        </div>
+        <div className="h-5 bg-muted rounded w-16"></div>
+        <div className="h-4 bg-muted rounded w-16"></div>
+      </div>
+      <div className="w-8 h-8 bg-muted rounded"></div>
+    </div>
+  </div>
+);
+
 function InquiriesPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
+  
+  // State management
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | undefined>("registrationNumber");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | undefined>("desc");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<keyof typeof statusColors | "ALL">("ALL");
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [allInquiriesSelected, setAllInquiriesSelected] = useState(false);
+  
+  // Modal states
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Edit form states
   const [editStatus, setEditStatus] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editSource, setEditSource] = useState("");
@@ -151,6 +246,8 @@ function InquiriesPageContent() {
   
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const deleteConfirm = useDeleteConfirm();
+  const statusChangeConfirm = useStatusChangeConfirm();
 
   // Check for openModal query parameter and open modal automatically
   useEffect(() => {
@@ -160,19 +257,169 @@ function InquiriesPageContent() {
     }
   }, [searchParams]);
 
-  const { data: inquiriesData, isLoading, refetch } = api.admissions.getInquiries.useQuery({
+  // Debounce search to prevent excessive resets
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setRowSelection({});
+    setAllInquiriesSelected(false);
+  }, [statusFilter, debouncedSearchTerm]);
+
+  // State for all inquiries (fetched across multiple pages)
+  const [allInquiries, setAllInquiries] = useState<any[]>([]);
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
+
+  // API query parameters
+  const apiParams = useMemo(() => ({
     branchId: currentBranchId || undefined,
     sessionId: currentSessionId || undefined,
     status: statusFilter === "ALL" ? undefined : statusFilter,
-  });
+    limit: 100, // Maximum allowed by API
+  }), [currentBranchId, currentSessionId, statusFilter]);
+
+  const utils = api.useUtils();
+
+  // Function to fetch all inquiries using cursor pagination
+  const fetchAllInquiries = useCallback(async () => {
+    setIsFetchingAll(true);
+    setAllInquiries([]);
+    
+    try {
+      let allItems: any[] = [];
+      let cursor: string | undefined = undefined;
+      
+      // Keep fetching until we get all data
+      do {
+        const params = { ...apiParams, cursor };
+        console.log('Fetching with cursor:', cursor);
+        
+        const result = await utils.admissions.getInquiries.fetch(params);
+        
+        if (result?.items) {
+          allItems = [...allItems, ...result.items];
+          cursor = result.nextCursor;
+          console.log('Fetched batch:', result.items.length, 'items. Next cursor:', cursor);
+        } else {
+          break;
+        }
+      } while (cursor);
+      
+      console.log('Total inquiries fetched:', allItems.length);
+      setAllInquiries(allItems);
+    } catch (error) {
+      console.error('Error fetching all inquiries:', error);
+    } finally {
+      setIsFetchingAll(false);
+    }
+  }, [apiParams, utils.admissions.getInquiries]);
+
+  // Fetch all data when params change
+  useEffect(() => {
+    fetchAllInquiries();
+  }, [fetchAllInquiries]);
+
+  // For backward compatibility, create a mock inquiriesData object
+  const inquiriesData = useMemo(() => {
+    console.log('🔄 inquiriesData updated, allInquiries count:', allInquiries.length);
+    return {
+      items: allInquiries,
+      nextCursor: null
+    };
+  }, [allInquiries]);
+
+  const isLoading = isFetchingAll;
+  const refetch = fetchAllInquiries;
 
   const updateInquiry = api.admissions.updateInquiry.useMutation({
+    onMutate: async (updatedData) => {
+      console.log('🔄 Optimistic update triggered for edit:', updatedData);
+      
+      // Cancel any outgoing refetches
+      await utils.admissions.getInquiries.cancel();
+      
+      // Snapshot the previous value
+      const previousInquiries = allInquiries;
+      console.log('📊 Previous inquiries count:', previousInquiries.length);
+      
+      // Optimistically update the local state (raw API data)
+      setAllInquiries(current => {
+        console.log('🔍 Current inquiries before update:', current.length);
+        const updated = current.map(inquiry => {
+          if (inquiry.id === updatedData.id) {
+            console.log('✏️ Updating raw inquiry:', inquiry.id, 'with data:', updatedData);
+            // Update the raw API data structure, not the transformed structure
+            const updatedInquiry = { ...inquiry };
+            
+            // Update raw fields (these match the API response structure)
+            if (updatedData.firstName !== undefined) {
+              console.log('📝 Updating firstName:', inquiry.firstName, '→', updatedData.firstName);
+              updatedInquiry.firstName = updatedData.firstName;
+            }
+            if (updatedData.lastName !== undefined) {
+              console.log('📝 Updating lastName:', inquiry.lastName, '→', updatedData.lastName);
+              updatedInquiry.lastName = updatedData.lastName;
+            }
+            if (updatedData.parentName !== undefined) updatedInquiry.parentName = updatedData.parentName;
+            if (updatedData.parentPhone !== undefined) updatedInquiry.parentPhone = updatedData.parentPhone;
+            if (updatedData.parentEmail !== undefined) updatedInquiry.parentEmail = updatedData.parentEmail;
+            if (updatedData.classApplying !== undefined) updatedInquiry.classApplying = updatedData.classApplying;
+            if (updatedData.gender !== undefined) updatedInquiry.gender = updatedData.gender;
+            if (updatedData.address !== undefined) updatedInquiry.address = updatedData.address;
+            if (updatedData.dateOfBirth !== undefined) {
+              // Store as ISO string to match API format
+              updatedInquiry.dateOfBirth = updatedData.dateOfBirth?.toISOString ? updatedData.dateOfBirth.toISOString() : updatedData.dateOfBirth;
+            }
+            
+            // Update additional fields if they exist in the update data
+            if (updatedData.motherName !== undefined) updatedInquiry.motherName = updatedData.motherName;
+            if (updatedData.motherMobile !== undefined) updatedInquiry.motherMobile = updatedData.motherMobile;
+            if (updatedData.motherEmail !== undefined) updatedInquiry.motherEmail = updatedData.motherEmail;
+            if (updatedData.city !== undefined) updatedInquiry.city = updatedData.city;
+            if (updatedData.state !== undefined) updatedInquiry.state = updatedData.state;
+            if (updatedData.country !== undefined) updatedInquiry.country = updatedData.country;
+            if (updatedData.classLastAttended !== undefined) updatedInquiry.classLastAttended = updatedData.classLastAttended;
+            if (updatedData.schoolLastAttended !== undefined) updatedInquiry.schoolLastAttended = updatedData.schoolLastAttended;
+            if (updatedData.percentageObtained !== undefined) updatedInquiry.percentageObtained = updatedData.percentageObtained;
+            
+            // Update timestamps to indicate recent change
+            updatedInquiry.updatedAt = new Date().toISOString();
+            
+            console.log('✅ Updated raw inquiry result:', updatedInquiry);
+            return updatedInquiry;
+          }
+          return inquiry;
+        });
+        console.log('🎯 Final updated inquiries count:', updated.length);
+        return updated;
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error", 
+        description: err.message || "Failed to update registration details",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Registration details updated successfully",
       });
-      refetch();
       setIsEditModalOpen(false);
       // Reset edit form
       setEditFirstName("");
@@ -194,148 +441,447 @@ function InquiriesPageContent() {
       setEditSchoolLastAttended("");
       setEditPercentageObtained("");
     },
-    onError: (error) => {
-      toast({
-        title: "Error", 
-        description: error.message || "Failed to update registration details",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      // Always refetch after error or success to sync with server
+      fetchAllInquiries();
     },
   });
 
   // Workflow mutations
   const markAsContacted = api.admissions.markAsContacted.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically update status to CONTACTED
+      setAllInquiries(current => 
+        current.map(inquiry => 
+          inquiry.id === data.id 
+            ? { ...inquiry, status: 'CONTACTED', contactMethod: data.contactMethod, contactNotes: data.contactNotes }
+            : inquiry
+        )
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to mark as contacted",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Marked as contacted successfully",
       });
-      refetch();
       setIsContactModalOpen(false);
       resetContactForm();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark as contacted",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const scheduleVisit = api.admissions.scheduleVisit.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically update status to VISIT_SCHEDULED
+      setAllInquiries(current => 
+        current.map(inquiry => 
+          inquiry.id === data.id 
+            ? { ...inquiry, status: 'VISIT_SCHEDULED', visitScheduledDate: data.visitScheduledDate }
+            : inquiry
+        )
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to schedule visit",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Visit scheduled successfully",
       });
-      refetch();
       setIsVisitModalOpen(false);
       resetVisitForm();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to schedule visit",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const scheduleInterview = api.admissions.scheduleInterview.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically update status to INTERVIEW_SCHEDULED
+      setAllInquiries(current => 
+        current.map(inquiry => 
+          inquiry.id === data.id 
+            ? { 
+                ...inquiry, 
+                status: 'INTERVIEW_SCHEDULED', 
+                interviewScheduledDate: data.interviewScheduledDate,
+                interviewMode: data.interviewMode 
+              }
+            : inquiry
+        )
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to schedule interview/test",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Interview/Test scheduled successfully",
       });
-      refetch();
       setIsInterviewScheduleModalOpen(false);
       resetInterviewScheduleForm();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to schedule interview/test",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const concludeInterview = api.admissions.concludeInterview.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically update status to INTERVIEW_CONCLUDED
+      setAllInquiries(current => 
+        current.map(inquiry => 
+          inquiry.id === data.id 
+            ? { 
+                ...inquiry, 
+                status: 'INTERVIEW_CONCLUDED',
+                interviewNotes: data.interviewNotes,
+                interviewRemarks: data.interviewRemarks,
+                interviewMarks: data.interviewMarks
+              }
+            : inquiry
+        )
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to conclude interview/test",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Interview/Test concluded successfully",
       });
-      refetch();
       setIsInterviewConcludeModalOpen(false);
       resetInterviewConcludeForm();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to conclude interview/test",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const confirmAdmission = api.admissions.confirmAdmission.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically update status to ADMITTED and potentially add admission info
+      setAllInquiries(current => 
+        current.map(inquiry => 
+          inquiry.id === data.id 
+            ? { 
+                ...inquiry, 
+                status: 'ADMITTED',
+                // The student data will be added when the mutation succeeds
+              }
+            : inquiry
+        )
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to confirm admission",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Admission confirmed successfully",
       });
-      refetch();
       setIsAdmissionModalOpen(false);
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to confirm admission",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const deleteInquiry = api.admissions.deleteInquiry.useMutation({
+    onMutate: async (data) => {
+      await utils.admissions.getInquiries.cancel();
+      const previousInquiries = allInquiries;
+      
+      // Optimistically remove the inquiry from the list (since archived inquiries don't show)
+      setAllInquiries(current => 
+        current.filter(inquiry => inquiry.id !== data.id)
+      );
+      
+      return { previousInquiries };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousInquiries) {
+        setAllInquiries(context.previousInquiries);
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to archive inquiry",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Inquiry archived successfully",
       });
-      refetch();
       setIsDeleteModalOpen(false);
       setSelectedInquiry(null);
       setIsViewModalOpen(false);
       setIsEditModalOpen(false);
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to archive inquiry",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      fetchAllInquiries();
     },
   });
 
   const inquiries = inquiriesData?.items || [];
+  
 
-  const filteredInquiries = inquiries.filter((inquiry: any) =>
-    inquiry.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inquiry.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inquiry.parentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inquiry.parentPhone.includes(searchTerm) ||
-    inquiry.classApplying.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  const handleRegistrationSuccess = () => {
+  // Function to calculate age as of April 1st of session year
+  const calculateAge = useCallback((dateOfBirth: Date, sessionName: string): { ageText: string; sessionYear: number; ageInYears: number } | null => {
+    if (!dateOfBirth || !sessionName) {
+      return null;
+    }
+    
+    // Extract year from session name (e.g., "2025-26" -> 2025)
+    const sessionNameMatch = sessionName.match(/(\d{4})/);
+    
+    if (!sessionNameMatch || !sessionNameMatch[1]) {
+      return null;
+    }
+    
+    const sessionYear = parseInt(sessionNameMatch[1]);
+    const april1st = new Date(sessionYear, 3, 1); // April 1st of session year (month is 0-indexed)
+    
+    // Calculate detailed age breakdown
+    const duration = intervalToDuration({
+      start: dateOfBirth,
+      end: april1st
+    });
+    
+    // Build age text - simplified for minimal design
+    const ageInYears = differenceInYears(april1st, dateOfBirth);
+    const ageText = `${ageInYears} years`;
+    if (duration.months && duration.months > 0) {
+      return { ageText: `${ageInYears} years, ${duration.months} months`, sessionYear, ageInYears };
+    }
+    
+    return { ageText, sessionYear, ageInYears };
+  }, []);
+
+  const filteredAndSortedInquiries = useMemo(() => {
+    if (!inquiries || inquiries.length === 0) return [];
+    
+    // Filter inquiries - exclude archived inquiries and apply search filter
+    let filtered = inquiries.filter((inquiry: any) => {
+      // Never show archived inquiries
+      if (inquiry.status === 'ARCHIVED') return false;
+      
+      // Apply search filter
+      return inquiry.firstName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        inquiry.lastName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        inquiry.parentName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        inquiry.parentPhone?.includes(debouncedSearchTerm) ||
+        inquiry.classApplying?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+    });
+
+    // Sort inquiries
+    if (sortBy && sortOrder) {
+      filtered = [...filtered].sort((a: any, b: any) => {
+        let aValue = a[sortBy];
+        let bValue = b[sortBy];
+
+        // Handle date sorting
+        if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+          aValue = new Date(aValue);
+          bValue = new Date(bValue);
+        }
+        // Handle age sorting - extract numeric value from age text
+        else if (sortBy === 'age') {
+          // Extract the year value from age text like "5 years" or "5 years, 3 months"
+          const aMatch = aValue?.match(/(\d+)\s*years?/);
+          const bMatch = bValue?.match(/(\d+)\s*years?/);
+          aValue = aMatch ? parseInt(aMatch[1]) : 0;
+          bValue = bMatch ? parseInt(bMatch[1]) : 0;
+        }
+        // Handle string sorting
+        else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+        }
+        
+        if (typeof bValue === 'string' && sortBy !== 'age') {
+          bValue = bValue.toLowerCase();
+        }
+
+        if (aValue < bValue) {
+          return sortOrder === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortOrder === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [debouncedSearchTerm, inquiries, sortBy, sortOrder]);
+
+  // Transform inquiry data
+  const transformInquiryData = useCallback((inquiry: any): Inquiry => {
+    try {
+      const dateOfBirth = inquiry.dateOfBirth ? new Date(inquiry.dateOfBirth) : undefined;
+      const sessionName = inquiry.session?.name;
+      
+      // Calculate age if we have date of birth and session
+      let ageInfo = null;
+      if (dateOfBirth && sessionName) {
+        ageInfo = calculateAge(dateOfBirth, sessionName);
+      }
+      
+      return {
+        id: inquiry.id,
+        registrationNumber: inquiry.registrationNumber || '',
+        firstName: inquiry.firstName || 'Unknown',
+        lastName: inquiry.lastName || 'Unknown',
+        parentName: inquiry.parentName || 'Unknown',
+        parentPhone: inquiry.parentPhone || '',
+        parentEmail: inquiry.parentEmail || undefined,
+        classApplying: inquiry.classApplying || '',
+        status: inquiry.status || 'NEW',
+        dateOfBirth: dateOfBirth,
+        gender: inquiry.gender || undefined,
+        address: inquiry.address || undefined,
+        createdAt: new Date(inquiry.createdAt),
+        updatedAt: new Date(inquiry.updatedAt),
+        contactMethod: inquiry.contactMethod || undefined,
+        visitScheduledDate: inquiry.visitScheduledDate ? new Date(inquiry.visitScheduledDate) : undefined,
+        interviewScheduledDate: inquiry.interviewScheduledDate ? new Date(inquiry.interviewScheduledDate) : undefined,
+        interviewMarks: inquiry.interviewMarks || undefined,
+        notes: inquiry.notes || undefined,
+        registrationSource: inquiry.registrationSource || undefined,
+        source: inquiry.source || undefined,
+        // New fields
+        age: ageInfo?.ageText || undefined,
+        sessionYear: ageInfo?.sessionYear || undefined,
+        admissionNumber: inquiry.student?.admissionNumber || undefined,
+        session: inquiry.session || undefined,
+        student: inquiry.student || undefined,
+      };
+    } catch (error) {
+      console.error('Error transforming inquiry data:', error, inquiry);
+      return {
+        id: inquiry?.id || `error-${Math.random().toString(36).substr(2, 9)}`,
+        registrationNumber: 'ERROR',
+        firstName: 'Data',
+        lastName: 'Error',
+        parentName: 'Error',
+        parentPhone: '',
+        classApplying: '',
+        status: 'NEW',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+  }, [calculateAge]);
+
+  // Transform and memoize inquiry data
+  const transformedInquiries = useMemo(() => {
+    console.log('🔄 transformedInquiries updating, filteredAndSortedInquiries count:', filteredAndSortedInquiries.length);
+    if (filteredAndSortedInquiries.length > 0) {
+      const result = filteredAndSortedInquiries.map(transformInquiryData);
+      console.log('✅ transformedInquiries result count:', result.length);
+      return result;
+    }
+    console.log('⚠️ No filteredAndSortedInquiries, returning empty array');
+    return [];
+  }, [filteredAndSortedInquiries, transformInquiryData]);
+
+  // Memoize all inquiries and inquiry IDs
+  const memoizedAllInquiries = useMemo(() => transformedInquiries, [transformedInquiries]);
+  const memoizedAllInquiryIds = useMemo(() => transformedInquiries.map(inquiry => inquiry.id), [transformedInquiries]);
+  
+  // Apply pagination to get current page inquiries
+  const memoizedCurrentInquiries = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return memoizedAllInquiries.slice(startIndex, endIndex);
+  }, [memoizedAllInquiries, currentPage, pageSize]);
+  
+  // Calculate total pages
+  const totalPages = useMemo(() => Math.ceil(memoizedAllInquiries.length / pageSize), [memoizedAllInquiries.length, pageSize]);
+
+  const handleRegistrationSuccess = useCallback(() => {
     setIsRegistrationModalOpen(false);
-    refetch(); // Refresh the inquiries list
-  };
+    fetchAllInquiries(); // Refresh the inquiries list with new data
+    toast({
+      title: "Success",
+      description: "New inquiry registered successfully",
+    });
+  }, [fetchAllInquiries, toast]);
 
   // Transform inquiry data to student form format
-  const transformInquiryToStudentData = (inquiry: any) => {
+  const transformInquiryToStudentData = useCallback((inquiry: any) => {
     return {
       firstName: inquiry.firstName || "",
       lastName: inquiry.lastName || "",
@@ -366,14 +912,14 @@ function InquiriesPageContent() {
       correspondenceCountry: inquiry.country || "India",
       sameAsPermAddress: true, // Default to same as permanent address
     };
-  };
+  }, []);
 
-  const handleViewInquiry = (inquiry: any) => {
+  const handleViewInquiry = useCallback((inquiry: any) => {
     setSelectedInquiry(inquiry);
     setIsViewModalOpen(true);
-  };
+  }, []);
 
-  const handleEditInquiry = (inquiry: any) => {
+  const handleEditInquiry = useCallback((inquiry: any) => {
     setSelectedInquiry(inquiry);
     
     // Populate student information fields
@@ -399,10 +945,16 @@ function InquiriesPageContent() {
     setEditPercentageObtained(inquiry.percentageObtained || "");
     
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleUpdateInquiry = () => {
-    if (!selectedInquiry) return;
+  const handleUpdateInquiry = useCallback(() => {
+    console.log('🚀 handleUpdateInquiry called');
+    if (!selectedInquiry) {
+      console.log('❌ No selectedInquiry');
+      return;
+    }
+    
+    console.log('📋 Selected inquiry:', selectedInquiry.id, selectedInquiry.firstName, selectedInquiry.lastName);
     
     // Prepare the update data with registration information
     const updateData: any = {
@@ -432,34 +984,150 @@ function InquiriesPageContent() {
       percentageObtained: editPercentageObtained || undefined,
     };
     
+    console.log('📤 Sending update data:', updateData);
     updateInquiry.mutate(updateData);
-  };
+  }, [selectedInquiry, editFirstName, editLastName, editDateOfBirth, editGender, editClassApplying, editAddress, editParentName, editParentPhone, editParentEmail, editMotherName, editMotherMobile, editMotherEmail, editCity, editState, editCountry, editClassLastAttended, editSchoolLastAttended, editPercentageObtained, updateInquiry]);
 
   // Form reset functions
-  const resetContactForm = () => {
+  const resetContactForm = useCallback(() => {
     setContactMethod("");
     setContactNotes("");
-  };
+  }, []);
 
-  const resetVisitForm = () => {
+  const resetVisitForm = useCallback(() => {
     setVisitDate(undefined);
     setVisitTime("");
-  };
+  }, []);
 
-  const resetInterviewScheduleForm = () => {
+  const resetInterviewScheduleForm = useCallback(() => {
     setInterviewDate(undefined);
     setInterviewTime("");
     setInterviewMode("");
-  };
+  }, []);
 
-  const resetInterviewConcludeForm = () => {
+  const resetInterviewConcludeForm = useCallback(() => {
     setInterviewNotes("");
     setInterviewRemarks("");
     setInterviewMarks("");
-  };
+  }, []);
+
+  // Helper functions
+  const formatDate = useCallback((date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(new Date(date));
+  }, []);
+
+  // Handle sorting changes
+  const handleSortChange = useCallback((field: string, order: "asc" | "desc") => {
+    setSortBy(field);
+    setSortOrder(order);
+  }, []);
+
+  // Helper function to get the correct sort order for a field
+  const getDefaultSortOrder = useCallback((field: string) => {
+    if (field === "createdAt") {
+      return "desc"; // Use desc for dates to show newest first
+    }
+    return "asc"; // Use asc for all other fields
+  }, []);
+
+  // Handle search
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
+
+  // Handle sort field change
+  const handleSortFieldChange = useCallback((value: string) => {
+    setSortBy(value);
+    setSortOrder(getDefaultSortOrder(value));
+  }, [getDefaultSortOrder]);
+
+  // Handle sort order toggle
+  const handleSortOrderToggle = useCallback(() => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  }, [sortOrder]);
+
+  // Handle status filter change
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value as keyof typeof statusColors | "ALL");
+  }, []);
+
+  // Handle select all inquiries (entire dataset)
+  const handleSelectAllInquiries = useCallback(() => {
+    setAllInquiriesSelected(true);
+    setRowSelection({});
+  }, []);
+
+  // Handle deselect all inquiries
+  const handleDeselectAllInquiries = useCallback(() => {
+    setAllInquiriesSelected(false);
+    setRowSelection({});
+  }, []);
+
+  // Get selected inquiry IDs
+  const getSelectedInquiryIds = useCallback(() => {
+    if (allInquiriesSelected) {
+      return memoizedAllInquiryIds;
+    }
+    return Object.keys(rowSelection).filter(id => rowSelection[id]);
+  }, [allInquiriesSelected, memoizedAllInquiryIds, rowSelection]);
+
+  // Get selected count
+  const getSelectedCount = useCallback(() => {
+    if (allInquiriesSelected) {
+      return memoizedAllInquiryIds.length;
+    }
+    return Object.keys(rowSelection).filter(id => rowSelection[id]).length;
+  }, [allInquiriesSelected, memoizedAllInquiryIds, rowSelection]);
+
+  // Handle individual row selection
+  const handleRowSelection = useCallback((inquiryId: string, checked: boolean) => {
+    if (allInquiriesSelected) {
+      // If all inquiries were selected, uncheck this specific inquiry
+      // This will deselect all inquiries
+      setAllInquiriesSelected(false);
+      setRowSelection({});
+    } else {
+      setRowSelection(prev => ({
+        ...prev,
+        [inquiryId]: checked
+      }));
+    }
+     }, [allInquiriesSelected]);
+
+  // Handle header checkbox (select all visible)
+  const handleHeaderCheckboxChange = useCallback((checked: boolean) => {
+    if (checked) {
+      const newSelection: Record<string, boolean> = {};
+      memoizedCurrentInquiries.forEach(inquiry => {
+        newSelection[inquiry.id] = true;
+      });
+      setRowSelection(newSelection);
+      setAllInquiriesSelected(false);
+    } else {
+      handleDeselectAllInquiries();
+    }
+  }, [memoizedCurrentInquiries, handleDeselectAllInquiries]);
+
+  // Pagination handlers
+  const handlePageChange = useCallback((newPage: number) => {
+    setCurrentPage(newPage);
+    setRowSelection({}); // Clear selection when changing pages
+    setAllInquiriesSelected(false);
+  }, []);
+
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+    setRowSelection({});
+    setAllInquiriesSelected(false);
+  }, []);
 
   // Workflow action handlers
-  const handleMarkAsContacted = () => {
+  const handleMarkAsContacted = useCallback(() => {
     if (!selectedInquiry || !contactMethod) return;
     
     markAsContacted.mutate({
@@ -467,9 +1135,9 @@ function InquiriesPageContent() {
       contactMethod: contactMethod as "CALL" | "EMAIL" | "WHATSAPP",
       contactNotes: contactNotes || undefined,
     });
-  };
+  }, [selectedInquiry, contactMethod, contactNotes, markAsContacted]);
 
-  const handleScheduleVisit = () => {
+  const handleScheduleVisit = useCallback(() => {
     if (!selectedInquiry || !visitDate || !visitTime) return;
     
     // Combine the date with the time
@@ -485,9 +1153,9 @@ function InquiriesPageContent() {
       id: selectedInquiry.id,
       visitScheduledDate: visitDateTime,
     });
-  };
+  }, [selectedInquiry, visitDate, visitTime, scheduleVisit]);
 
-  const handleScheduleInterview = () => {
+  const handleScheduleInterview = useCallback(() => {
     if (!selectedInquiry || !interviewDate || !interviewTime || !interviewMode) return;
     
     // Combine the date with the time
@@ -504,9 +1172,9 @@ function InquiriesPageContent() {
       interviewScheduledDate: interviewDateTime,
       interviewMode: interviewMode as "ONLINE" | "OFFLINE",
     });
-  };
+  }, [selectedInquiry, interviewDate, interviewTime, interviewMode, scheduleInterview]);
 
-  const handleConcludeInterview = () => {
+  const handleConcludeInterview = useCallback(() => {
     if (!selectedInquiry) return;
     
     concludeInterview.mutate({
@@ -515,17 +1183,17 @@ function InquiriesPageContent() {
       interviewRemarks: interviewRemarks || undefined,
       interviewMarks: interviewMarks ? parseInt(interviewMarks) : undefined,
     });
-  };
+  }, [selectedInquiry, interviewNotes, interviewRemarks, interviewMarks, concludeInterview]);
 
-  const handleConfirmAdmission = () => {
+  const handleConfirmAdmission = useCallback(() => {
     if (!selectedInquiry) return;
     
     // Close admission modal and open student form modal
     setIsAdmissionModalOpen(false);
     setIsStudentFormModalOpen(true);
-  };
+  }, [selectedInquiry]);
 
-  const handleStudentFormSuccess = () => {
+  const handleStudentFormSuccess = useCallback(() => {
     // After student is created successfully, update inquiry status to admitted
     if (selectedInquiry) {
       confirmAdmission.mutate({
@@ -534,17 +1202,68 @@ function InquiriesPageContent() {
     }
     setIsStudentFormModalOpen(false);
     setSelectedInquiry(null);
-  };
+  }, [selectedInquiry, confirmAdmission]);
 
-  const handleDeleteInquiry = () => {
+  const handleDeleteInquiry = useCallback(() => {
     if (!selectedInquiry) return;
     
     deleteInquiry.mutate({
       id: selectedInquiry.id,
     });
-  };
+  }, [selectedInquiry, deleteInquiry]);
 
-  // Function to get status change dropdown
+  // Handle inquiry actions
+  const handleInquiryAction = useCallback((action: string, inquiry: Inquiry) => {
+    setSelectedInquiry(inquiry);
+    
+    switch (action) {
+      case 'view':
+        handleViewInquiry(inquiry);
+        break;
+      case 'edit':
+        handleEditInquiry(inquiry);
+        break;
+      case 'delete':
+        deleteConfirm(
+          "inquiry",
+          () => {
+            handleDeleteInquiry();
+          }
+        );
+        break;
+      case 'contact':
+        setIsContactModalOpen(true);
+        break;
+      case 'visit':
+        setIsVisitModalOpen(true);
+        break;
+      case 'interview':
+        setIsInterviewScheduleModalOpen(true);
+        break;
+      case 'conclude':
+        setIsInterviewConcludeModalOpen(true);
+        break;
+      case 'admit':
+        setIsAdmissionModalOpen(true);
+        break;
+      case 'reject':
+        updateInquiry.mutate({
+          id: inquiry.id,
+          status: 'REJECTED' as any,
+        });
+        break;
+      case 'close':
+        updateInquiry.mutate({
+          id: inquiry.id,
+          status: 'CLOSED' as any,
+        });
+        break;
+    }
+  }, [deleteConfirm, updateInquiry, handleEditInquiry, handleDeleteInquiry, handleViewInquiry]);
+
+
+
+  // Function to get status change dropdown - simplified to avoid circular dependencies
   const getStatusChangeDropdown = (inquiry: any) => {
     // Don't show dropdown for final states
     if (inquiry.status === "ADMITTED" || inquiry.status === "REJECTED" || inquiry.status === "CLOSED") {
@@ -553,7 +1272,37 @@ function InquiriesPageContent() {
 
     return (
       <Select
-        onValueChange={(newStatus) => handleStatusChange(inquiry, newStatus)}
+        onValueChange={(newStatus) => {
+          setSelectedInquiry(inquiry);
+          
+          switch (newStatus) {
+            case "CONTACTED":
+              setIsContactModalOpen(true);
+              break;
+            case "VISIT_SCHEDULED":
+              setIsVisitModalOpen(true);
+              break;
+            case "INTERVIEW_SCHEDULED":
+              setIsInterviewScheduleModalOpen(true);
+              break;
+            case "INTERVIEW_CONCLUDED":
+              setIsInterviewConcludeModalOpen(true);
+              break;
+            case "ADMITTED":
+              setIsAdmissionModalOpen(true);
+              break;
+            case "REJECTED":
+            case "CLOSED":
+              // For simple status changes, update directly
+              updateInquiry.mutate({
+                id: inquiry.id,
+                status: newStatus as any,
+              });
+              break;
+            default:
+              break;
+          }
+        }}
         defaultValue=""
       >
         <SelectTrigger className="w-[180px] border-[0.5px] border-gray-200 dark:border-[#807cc5] dark:text-[#807cc5] dark:hover:border-[#807cc5] dark:hover:bg-[#807cc5]/15 cursor-pointer">
@@ -576,125 +1325,470 @@ function InquiriesPageContent() {
     );
   };
 
-  // Handle status change from dropdown
-  const handleStatusChange = (inquiry: any, newStatus: string) => {
-    setSelectedInquiry(inquiry);
-    
-    switch (newStatus) {
-      case "CONTACTED":
-        setIsContactModalOpen(true);
-        break;
-      case "VISIT_SCHEDULED":
-        setIsVisitModalOpen(true);
-        break;
-      case "INTERVIEW_SCHEDULED":
-        setIsInterviewScheduleModalOpen(true);
-        break;
-      case "INTERVIEW_CONCLUDED":
-        setIsInterviewConcludeModalOpen(true);
-        break;
-      case "ADMITTED":
-        setIsAdmissionModalOpen(true);
-        break;
-      case "REJECTED":
-      case "CLOSED":
-        // For simple status changes, update directly
-        updateInquiry.mutate({
-          id: inquiry.id,
-          status: newStatus as any,
-        });
-        break;
-      default:
-        break;
-    }
-  };
+  // Inquiry row actions component
+  const InquiryRowActions = memo(({ inquiry, onAction }: { inquiry: Inquiry; onAction: (action: string, inquiry: Inquiry) => void }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onAction('view', inquiry)}>
+          <Eye className="mr-2 h-4 w-4" />
+          View Details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onAction('edit', inquiry)}>
+          <Edit className="mr-2 h-4 w-4" />
+          Edit Inquiry
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {inquiry.status !== "ADMITTED" && inquiry.status !== "REJECTED" && inquiry.status !== "CLOSED" && (
+          <>
+            <DropdownMenuItem onClick={() => onAction('contact', inquiry)}>
+              <Phone className="mr-2 h-4 w-4" />
+              Mark as Contacted
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAction('visit', inquiry)}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Visit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAction('interview', inquiry)}>
+              <User className="mr-2 h-4 w-4" />
+              Schedule Interview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAction('conclude', inquiry)}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Conclude Interview
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAction('admit', inquiry)}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Confirm Admission
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onAction('reject', inquiry)}>
+              <UserX className="mr-2 h-4 w-4" />
+              Mark as Rejected
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAction('close', inquiry)}>
+              <UserX className="mr-2 h-4 w-4" />
+              Mark as Closed
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem
+          onClick={() => onAction('delete', inquiry)}
+          className="text-red-600 dark:text-red-400"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Archive
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ));
+  
+  InquiryRowActions.displayName = 'InquiryRowActions';
+
+  // Inquiry row component with animation
+  const InquiryRow = memo(({ 
+    inquiry, 
+    index, 
+    isSelected, 
+    onSelectionChange, 
+    onAction, 
+    formatDate 
+  }: { 
+    inquiry: Inquiry; 
+    index: number; 
+    isSelected: boolean; 
+    onSelectionChange: (inquiryId: string, checked: boolean) => void; 
+    onAction: (action: string, inquiry: Inquiry) => void;
+    formatDate: (date: Date) => string;
+  }) => (
+    <div 
+      className={cn(
+        "flex items-center space-x-4 p-4 border-b transition-all duration-300 ease-in-out",
+        "animate-in fade-in slide-in-from-bottom-2"
+      )}
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      <Checkbox
+        checked={isSelected}
+        onCheckedChange={(checked) => onSelectionChange(inquiry.id, checked as boolean)}
+        aria-label={`Select ${inquiry.firstName} ${inquiry.lastName}`}
+      />
+      
+      <div className="flex-1 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-3 lg:gap-4 items-center">
+        {/* Registration Number - Hidden on mobile, visible on md+ */}
+        <div className="hidden md:block font-medium text-sm">
+          {inquiry.registrationNumber}
+        </div>
+        
+        {/* Student Name - Always visible */}
+        <div className="min-w-0">
+          <div className="font-medium text-sm truncate">
+            {inquiry.firstName} {inquiry.lastName}
+          </div>
+          {inquiry.dateOfBirth && (
+            <div className="text-xs text-muted-foreground truncate">
+              Born: {formatDate(inquiry.dateOfBirth)}
+            </div>
+          )}
+          {/* Show registration number on mobile */}
+          <div className="md:hidden text-xs text-muted-foreground truncate">
+            {inquiry.registrationNumber}
+          </div>
+        </div>
+        
+        {/* Age - Hidden on small screens, visible on lg+ */}
+        <div className="hidden lg:block text-sm">
+          {inquiry.age ? (
+            <div className="font-medium text-sm">
+              {inquiry.age}
+            </div>
+          ) : inquiry.dateOfBirth ? (
+            <div className="text-xs text-muted-foreground">
+              Age not available
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              No DOB
+            </div>
+          )}
+          {inquiry.sessionYear && (
+            <div className="text-xs text-muted-foreground">
+              As of Apr 1, {inquiry.sessionYear}
+            </div>
+          )}
+        </div>
+        
+        {/* Class - Always visible */}
+        <div className="text-sm min-w-0">
+          <div className="font-medium truncate">
+            {inquiry.classApplying}
+          </div>
+          {inquiry.gender && (
+            <div className="text-xs text-muted-foreground">
+              {inquiry.gender}
+            </div>
+          )}
+          {/* Show age on mobile/tablet when lg is hidden */}
+          {inquiry.age && (
+            <div className="lg:hidden text-xs text-muted-foreground">
+              {inquiry.age?.split(' ')[0]} {inquiry.age?.split(' ')[1]}
+            </div>
+          )}
+        </div>
+        
+        {/* Parent - Hidden on mobile, visible on md+ */}
+        <div className="hidden md:block text-sm min-w-0">
+          <div className="font-medium truncate">
+            {inquiry.parentName}
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            {inquiry.parentPhone}
+          </div>
+        </div>
+        
+        {/* Date - Hidden on small screens, visible on lg+ */}
+        <div className="hidden lg:block text-sm">
+          <div className="font-medium">
+            {formatDate(inquiry.createdAt)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {format(inquiry.createdAt, "HH:mm")}
+          </div>
+        </div>
+        
+        {/* Status with Admission Number below - Always visible */}
+        <div className="min-w-0">
+          <Badge 
+            variant="secondary"
+            className={`${statusColors[inquiry.status as keyof typeof statusColors] || "bg-gray-500"} px-2 py-1 text-white text-xs mb-1 truncate`}
+          >
+            {statusOptions.find(
+              (opt) => opt.value === inquiry.status,
+            )?.label || inquiry.status.replace("_", " ")}
+          </Badge>
+          
+          {/* Admission Number below status */}
+          <div className="text-sm">
+            {inquiry.admissionNumber ? (
+              <div className="font-medium text-xs text-green-600 dark:text-green-400 truncate">
+                {inquiry.admissionNumber}
+              </div>
+            ) : inquiry.status === "ADMITTED" ? (
+              <div className="text-xs text-muted-foreground">
+                Processing...
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                -
+              </div>
+            )}
+          </div>
+          
+          {/* Show parent info on mobile when hidden */}
+          <div className="md:hidden text-xs text-muted-foreground truncate mt-1">
+            {inquiry.parentName}
+          </div>
+        </div>
+        
+        {/* Source - Hidden on small screens, visible on lg+ */}
+        <div className="hidden lg:block text-sm">
+          {inquiry.source && (
+            <div className="text-xs text-muted-foreground">
+              {inquiry.source}
+            </div>
+          )}
+          {inquiry.registrationSource && (
+            <div className="text-xs text-muted-foreground">
+              {inquiry.registrationSource === "ONLINE" ? "Online" : "Offline"}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <InquiryRowActions inquiry={inquiry} onAction={onAction} />
+    </div>
+  ));
+  
+  InquiryRow.displayName = 'InquiryRow';
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Admission Inquiries</h1>
-          <p className="text-muted-foreground">
-            Manage and track admission inquiries and applications
-          </p>
-        </div>
+    <PageWrapper
+      title="Admission Inquiries"
+      subtitle="Manage and track admission inquiries and applications"
+      action={
         <Button onClick={() => setIsRegistrationModalOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           New Registration
         </Button>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Filter inquiries by status, search terms, etc.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-                <Input
-                  placeholder="Search by name, phone, class..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as keyof typeof statusColors | "ALL")
+      }
+    >
+      <div className="mt-6 space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">All Inquiries</h2>
+            <p className="text-muted-foreground">
+              {isLoading 
+                ? 'Loading...' 
+                : `Showing ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, memoizedAllInquiries.length)} of ${memoizedAllInquiries.length} inquiries`
               }
-            >
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="NEW">New Registration</SelectItem>
-                <SelectItem value="CONTACTED">Parent Contacted</SelectItem>
-                <SelectItem value="VISIT_SCHEDULED">
-                  School Visit Scheduled
-                </SelectItem>
-                <SelectItem value="VISITED">Visited</SelectItem>
-                <SelectItem value="FORM_SUBMITTED">Form Submitted</SelectItem>
-                <SelectItem value="INTERVIEW_SCHEDULED">
-                  Interview/Test Scheduled
-                </SelectItem>
-                <SelectItem value="INTERVIEW_CONCLUDED">
-                  Interview/Test Concluded
-                </SelectItem>
-                <SelectItem value="ADMITTED">Admission Confirmed</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+            </p>
 
-      {/* Inquiries Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Inquiries ({filteredInquiries.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-[#00501B]"></div>
-                <p className="text-muted-foreground mt-4 text-sm">
-                  Loading inquiries...
-                </p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+            <CardDescription>
+              Filter inquiries by status, search terms, etc.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                  <Input
+                    placeholder="Search by name, phone, class..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
               </div>
+              <Select
+                value={statusFilter}
+                onValueChange={handleStatusFilterChange}
+              >
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL" className="cursor-pointer">All Status</SelectItem>
+                  <SelectItem value="NEW" className="cursor-pointer">New Registration</SelectItem>
+                  <SelectItem value="CONTACTED" className="cursor-pointer">Parent Contacted</SelectItem>
+                  <SelectItem value="VISIT_SCHEDULED" className="cursor-pointer">
+                    School Visit Scheduled
+                  </SelectItem>
+                  <SelectItem value="VISITED" className="cursor-pointer">Visited</SelectItem>
+                  <SelectItem value="FORM_SUBMITTED" className="cursor-pointer">Form Submitted</SelectItem>
+                  <SelectItem value="INTERVIEW_SCHEDULED" className="cursor-pointer">
+                    Interview/Test Scheduled
+                  </SelectItem>
+                  <SelectItem value="INTERVIEW_CONCLUDED" className="cursor-pointer">
+                    Interview/Test Concluded
+                  </SelectItem>
+                  <SelectItem value="ADMITTED" className="cursor-pointer">Admission Confirmed</SelectItem>
+                  <SelectItem value="REJECTED" className="cursor-pointer">Rejected</SelectItem>
+                  <SelectItem value="CLOSED" className="cursor-pointer">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : filteredInquiries.length === 0 ? (
-            <div className="py-12 text-center">
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex items-center gap-2">
+              <Select
+                value={sortBy}
+                onValueChange={handleSortFieldChange}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="firstName" className="cursor-pointer">Name</SelectItem>
+                  <SelectItem value="registrationNumber" className="cursor-pointer">Registration No.</SelectItem>
+                  <SelectItem value="createdAt" className="cursor-pointer">Date</SelectItem>
+                  <SelectItem value="status" className="cursor-pointer">Status</SelectItem>
+                  <SelectItem value="classApplying" className="cursor-pointer">Class</SelectItem>
+                  <SelectItem value="age" className="cursor-pointer">Age</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSortOrderToggle}
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                {sortBy === 'createdAt' 
+                  ? (sortOrder === 'asc' ? 'Old-New' : 'New-Old')
+                  : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')
+                }
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        {(getSelectedCount() > 0 || allInquiriesSelected) && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  {allInquiriesSelected ? (
+                    <>All {memoizedAllInquiries.length} inquiries selected</>
+                  ) : (
+                    <>{getSelectedCount()} inquiry(ies) selected</>
+                  )}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Bulk archive selected inquiries
+                      const selectedIds = getSelectedInquiryIds();
+                      // Add bulk archive logic here
+                      handleDeselectAllInquiries();
+                    }}
+                    className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-950/20"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Archive Selected
+                  </Button>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeselectAllInquiries}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Clear Selection
+              </Button>
+            </div>
+            
+            {/* Select All Option */}
+            {!allInquiriesSelected && getSelectedCount() > 0 && getSelectedCount() < memoizedAllInquiries.length && (
+              <div className="flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-950/10 rounded-lg border border-blue-100 dark:border-blue-900">
+                <span className="text-sm text-blue-600 dark:text-blue-400">
+                  {getSelectedCount()} inquiry(ies) selected on this page. 
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={handleSelectAllInquiries}
+                    className="p-0 h-auto text-blue-600 dark:text-blue-400 underline ml-1"
+                  >
+                    Select all {memoizedAllInquiries.length} inquiries
+                  </Button>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Inquiries List */}
+        <div className="space-y-2 overflow-x-auto">
+          {/* Header Row */}
+          <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg font-medium text-sm">
+            <div className="w-4">
+              <Checkbox
+                checked={allInquiriesSelected || (memoizedCurrentInquiries.length > 0 && memoizedCurrentInquiries.every(inquiry => rowSelection[inquiry.id]))}
+                onCheckedChange={handleHeaderCheckboxChange}
+                aria-label="Select all inquiries on this page"
+              />
+            </div>
+            <div className="flex-1 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-3 lg:gap-4">
+              <div className="hidden md:block">Reg. No.</div>
+              <div>Student</div>
+              <div className="hidden lg:block">Age</div>
+              <div>Class</div>
+              <div className="hidden md:block">Parent</div>
+              <div className="hidden lg:block">Date</div>
+              <div>Status</div>
+              <div className="hidden lg:block">Source</div>
+            </div>
+            <div className="w-8"></div>
+          </div>
+
+          {/* Inquiry Rows */}
+          {isLoading && memoizedCurrentInquiries.length === 0 ? (
+            <div className="border rounded-lg overflow-hidden">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <InquirySkeleton key={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-0 border rounded-lg overflow-hidden">
+              {memoizedCurrentInquiries.map((inquiry, index) => (
+                <InquiryRow 
+                  key={inquiry.id} 
+                  inquiry={inquiry} 
+                  index={index} 
+                  isSelected={allInquiriesSelected || rowSelection[inquiry.id] || false}
+                  onSelectionChange={handleRowSelection}
+                  onAction={handleInquiryAction}
+                  formatDate={formatDate}
+                />
+              ))}
+              
+              {/* Loading More Skeletons */}
+              {isLoading && (
+                <div className="space-y-0">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <InquirySkeleton key={`loading-${index}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No Inquiries Found */}
+          {!isLoading && memoizedCurrentInquiries.length === 0 && memoizedAllInquiries.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
               <div className="bg-muted mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full">
                 <User className="text-muted-foreground h-8 w-8" />
               </div>
@@ -710,239 +1804,79 @@ function InquiriesPageContent() {
                 New Registration
               </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredInquiries.map((inquiry: any) => (
-                <div
-                  key={inquiry.id}
-                  className="rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-[#606060] dark:bg-[#303030] dark:text-white"
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between">
-                      {/* Left Section - Student & Parent Info */}
-                      <div className="flex flex-1 items-start space-x-4">
-                        <Avatar className="h-12 w-12 border-2 border-[#00501B]/10">
-                          <AvatarImage
-                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${inquiry.firstName} ${inquiry.lastName}`}
-                          />
-                          <AvatarFallback className="bg-[#00501B]/5 font-medium text-[#00501B]">
-                            {inquiry.firstName.charAt(0)}
-                            {inquiry.lastName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+          )}
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">
-                                {inquiry.firstName} {inquiry.lastName}
-                              </h3>
-                              <div className="text-muted-foreground mb-2 flex items-center gap-4 text-sm">
-                                <span className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  {inquiry.registrationNumber}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(
-                                    new Date(inquiry.createdAt),
-                                    "dd/MM/yyyy",
-                                  )}
-                                </span>
-                                <span className="flex items-center gap-1 rounded-md border-[0.5px] border-gray-200 bg-[#00501B]/5 px-2 py-1 font-medium text-[#00501B] dark:border-[#7AAD8B] dark:bg-[#202020] dark:text-[#7AAD8B]">
-                                  <GraduationCap className="h-3 w-3 text-[#00501B] dark:text-[#7AAD8B]" />
-                                  {inquiry.classApplying}
-                                </span>
-                              </div>
-
-                              {/* Parent Information */}
-                              <div className="mb-3 rounded-md bg-gray-50 p-3 dark:bg-[#252525] dark:text-white">
-                                <p className="mb-1 text-sm font-medium text-gray-700 dark:text-white">
-                                  Parent Details
-                                </p>
-                                <div className="space-y-1">
-                                  <p className="text-sm font-medium text-gray-600 dark:text-white">
-                                    {inquiry.parentName}
-                                  </p>
-                                  <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                                    <span className="flex items-center gap-1">
-                                      <Phone className="h-3 w-3" />
-                                      {inquiry.parentPhone}
-                                    </span>
-                                    {inquiry.parentEmail && (
-                                      <span className="flex items-center gap-1">
-                                        <Mail className="h-3 w-3" />
-                                        {inquiry.parentEmail}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Additional Info Row */}
-                              <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                                {inquiry.dateOfBirth && (
-                                  <span>
-                                    DOB:{" "}
-                                    {format(
-                                      new Date(inquiry.dateOfBirth),
-                                      "dd/MM/yyyy",
-                                    )}
-                                  </span>
-                                )}
-                                {inquiry.gender && (
-                                  <span>Gender: {inquiry.gender}</span>
-                                )}
-                                {inquiry.registrationSource && (
-                                  <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                                    {inquiry.registrationSource === "ONLINE"
-                                      ? "Online Registration"
-                                      : `Offline Registration${inquiry.registeredByName ? ` (${inquiry.registeredByName})` : ""}`}
-                                  </span>
-                                )}
-                                {inquiry.source && (
-                                  <span>Source: {inquiry.source}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Section - Status & Actions */}
-                      <div className="ml-6 flex flex-col items-end space-y-3">
-                        <Badge
-                          variant="secondary"
-                          className={`${statusColors[inquiry.status as keyof typeof statusColors] || "bg-gray-500"} px-3 py-1 text-white`}
-                        >
-                          {statusOptions.find(
-                            (opt) => opt.value === inquiry.status,
-                          )?.label || inquiry.status.replace("_", " ")}
-                        </Badge>
-
-                        <div className="text-muted-foreground text-right text-sm">
-                          <p>
-                            Created:{" "}
-                            {format(new Date(inquiry.createdAt), "dd/MM/yyyy")}
-                          </p>
-                          <p className="text-xs">
-                            at {format(new Date(inquiry.createdAt), "HH:mm")}
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex min-w-[180px] flex-col gap-2">
-                          {getStatusChangeDropdown(inquiry)}
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 border-[0.5px] border-gray-200 dark:border-[#7AAD8B] dark:text-[#7AAD8B] dark:hover:border-[#7AAD8B] dark:hover:bg-[#7AAD8B]/15"
-                              onClick={() => handleViewInquiry(inquiry)}
-                            >
-                              <Eye className="mr-1 h-3 w-3" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 border-[0.5px] border-gray-200 dark:border-[#C27C54] dark:text-[#C27C54] dark:hover:border-[#C27C54] dark:hover:bg-[#C27C54]/15"
-                              onClick={() => handleEditInquiry(inquiry)}
-                            >
-                              <Edit className="mr-1 h-3 w-3" />
-                              Edit
-                            </Button>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-[0.5px] border-gray-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-[#F87171] dark:text-[#F87171] dark:hover:border-[#F87171] dark:hover:bg-[#F87171]/15"
-                            onClick={() => {
-                              setSelectedInquiry(inquiry);
-                              setIsDeleteModalOpen(true);
-                            }}
-                          >
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            Archive
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Workflow Information */}
-                    {(inquiry.contactMethod ||
-                      inquiry.visitScheduledDate ||
-                      inquiry.interviewScheduledDate ||
-                      inquiry.interviewNotes) && (
-                      <div className="mt-4 border-t border-gray-100 pt-4">
-                        <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2 lg:grid-cols-4">
-                          {inquiry.contactMethod && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-[#00501B]" />
-                              <span className="text-muted-foreground">
-                                Contact:
-                              </span>
-                              <span className="font-medium">
-                                {inquiry.contactMethod}
-                              </span>
-                            </div>
-                          )}
-                          {inquiry.visitScheduledDate && (
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-[#00501B]" />
-                              <span className="text-muted-foreground">
-                                Visit:
-                              </span>
-                              <span className="font-medium">
-                                {format(
-                                  new Date(inquiry.visitScheduledDate),
-                                  "dd/MM/yyyy HH:mm",
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          {inquiry.interviewScheduledDate && (
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-[#00501B]" />
-                              <span className="text-muted-foreground">
-                                Interview:
-                              </span>
-                              <span className="font-medium">
-                                {format(
-                                  new Date(inquiry.interviewScheduledDate),
-                                  "dd/MM/yyyy HH:mm",
-                                )}
-                              </span>
-                            </div>
-                          )}
-                          {inquiry.interviewMarks && (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-[#00501B]" />
-                              <span className="text-muted-foreground">
-                                Score:
-                              </span>
-                              <span className="font-medium">
-                                {inquiry.interviewMarks}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        {inquiry.notes && (
-                          <div className="mt-3 rounded-md bg-blue-50 p-3">
-                            <p className="text-sm text-blue-800">
-                              <strong>Notes:</strong> {inquiry.notes}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+          {/* Pagination Controls */}
+          {!isLoading && memoizedAllInquiries.length > 0 && (
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 px-2 sm:px-4 py-3 border-t bg-muted/30">
+              {/* Left side - Row count info and page size selector */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, memoizedAllInquiries.length)} of {memoizedAllInquiries.length} entries
                 </div>
-              ))}
+                
+                {/* Page Size Controls */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:inline">Show:</label>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(value) => handlePageSizeChange(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-16 sm:w-20 bg-background text-xs sm:text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border">
+                      <SelectItem value="10" className="cursor-pointer">10</SelectItem>
+                      <SelectItem value="25" className="cursor-pointer">25</SelectItem>
+                      <SelectItem value="50" className="cursor-pointer">50</SelectItem>
+                      <SelectItem value="100" className="cursor-pointer">100</SelectItem>
+                      <SelectItem value="200" className="cursor-pointer">200</SelectItem>
+                      <SelectItem value="500" className="cursor-pointer">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap hidden sm:inline">per page</span>
+                </div>
+              </div>
+              
+              {/* Right side - Page navigation (only show if multiple pages) */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Previous Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-3 text-xs sm:text-sm"
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  {/* Page X of X */}
+                  <div className="text-xs sm:text-sm text-muted-foreground font-medium px-2">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  
+                  {/* Next Page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-3 text-xs sm:text-sm"
+                    title="Next page"
+                  >
+                    Next
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Registration Modal */}
       <Dialog
@@ -1642,9 +2576,9 @@ function InquiriesPageContent() {
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent className="dark:bg-[#252525] dark:text-white">
-                          <SelectItem value="MALE">Male</SelectItem>
-                          <SelectItem value="FEMALE">Female</SelectItem>
-                          <SelectItem value="OTHER">Other</SelectItem>
+                          <SelectItem value="MALE" className="cursor-pointer">Male</SelectItem>
+                          <SelectItem value="FEMALE" className="cursor-pointer">Female</SelectItem>
+                          <SelectItem value="OTHER" className="cursor-pointer">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1918,9 +2852,9 @@ function InquiriesPageContent() {
                     <SelectValue placeholder="Select contact method" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CALL">Phone Call</SelectItem>
-                    <SelectItem value="EMAIL">Email</SelectItem>
-                    <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
+                    <SelectItem value="CALL" className="cursor-pointer">Phone Call</SelectItem>
+                    <SelectItem value="EMAIL" className="cursor-pointer">Email</SelectItem>
+                    <SelectItem value="WHATSAPP" className="cursor-pointer">WhatsApp</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2108,8 +3042,8 @@ function InquiriesPageContent() {
                     <SelectValue placeholder="Select interview mode" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="OFFLINE">In-Person</SelectItem>
-                    <SelectItem value="ONLINE">Online</SelectItem>
+                    <SelectItem value="OFFLINE" className="cursor-pointer">In-Person</SelectItem>
+                    <SelectItem value="ONLINE" className="cursor-pointer">Online</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2286,7 +3220,7 @@ function InquiriesPageContent() {
                 <div className="flex items-center">
                   <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm font-medium text-green-800">
+                    <p className="font-medium text-green-800">
                       Ready for Admission
                     </p>
                     <p className="text-sm text-green-600">
@@ -2429,7 +3363,7 @@ function InquiriesPageContent() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageWrapper>
   );
 }
 
