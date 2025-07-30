@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatIndianNumber } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { useAuth } from "@/hooks/useAuth";
 
 function LoadingSkeleton() {
@@ -562,9 +562,11 @@ function TeacherDashboardContent() {
                   <div className="space-y-4">
                     <VerticalBarChart
                       data={attendanceChartData}
-                      title="Student Attendance"
-                      metricLabel="Total Students"
-                      valueFormatter={(value) => `${formatIndianNumber(value)}`}
+                      index="name"
+                      categories={["value"]}
+                      colors={["green"]}
+                      valueFormatter={(value: number) => `${formatIndianNumber(value)}`}
+                      className="h-64"
                     />
                     <div className="grid grid-cols-2 gap-4">
                       {attendanceChartData.map((item, index) => (

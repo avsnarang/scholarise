@@ -61,7 +61,7 @@ import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { formatIndianCurrency } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 interface MaintenanceLogFormData {
   busId: string;
@@ -626,8 +626,11 @@ export default function MaintenanceLogsPage() {
             <CardContent>
               <VerticalBarChart
                 data={costByTypeData.slice(0, 10)} // Top 10 types
-                title="Maintenance Costs (₹)"
-
+                index="name"
+                categories={["value"]}
+                colors={["red"]}
+                valueFormatter={(value: number) => `₹${value.toLocaleString()}`}
+                className="h-64"
               />
             </CardContent>
           </Card>

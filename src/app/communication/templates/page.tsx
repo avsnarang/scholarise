@@ -256,40 +256,29 @@ export default function TemplatesPage() {
   const { session, user } = useAuth();
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
-  // Test database access before setting up subscriptions
-  const testDatabaseAccess = React.useCallback(async () => {
+  // Test authentication state before setting up subscriptions
+  const testAuthenticationState = React.useCallback(async () => {
     if (!session?.user) {
+      console.warn('⚠️ User not signed in - skipping template real-time subscription');
       return false;
     }
 
     try {
-      // Ensure we have the latest session token for RLS
+      // Ensure we have the latest session token
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) {
-        console.error('❌ No current session for database access');
+        console.error('❌ No current session for real-time subscription');
         setConnectionError('No authenticated session');
         return false;
       }
 
-      // Test access to WhatsAppTemplate table (simplified approach)
-      const { data: templates, error: templateError } = await supabase
-        .from('WhatsAppTemplate')
-        .select('id, name')
-        .limit(5);
-
-      if (templateError) {
-        console.error('❌ Template access failed:', templateError);
-        setConnectionError(`Database access denied: ${templateError.message || 'Unknown error'}`);
-        return false;
-      }
-
-      console.log('✅ Template database access successful, found templates:', templates?.length || 0);
+      console.log('✅ Authentication state verified for real-time subscription');
       setConnectionError(null);
       return true;
     } catch (error) {
-      console.error('❌ Template database access test error:', error);
+      console.error('❌ Authentication verification failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setConnectionError(`Database connection failed: ${errorMessage}`);
+      setConnectionError(`Authentication failed: ${errorMessage}`);
       return false;
     }
   }, [session]);
@@ -303,10 +292,10 @@ export default function TemplatesPage() {
     const setupSubscription = async () => {
       console.log('🔗 Setting up Supabase real-time subscription for template status updates...');
       
-      // Test database access first
-      const hasAccess = await testDatabaseAccess();
-      if (!hasAccess) {
-        console.error('❌ Database access failed, skipping real-time subscription');
+      // Test authentication first
+      const hasAuth = await testAuthenticationState();
+      if (!hasAuth) {
+        console.error('❌ Authentication failed, skipping real-time subscription');
         return;
       }
 
@@ -381,15 +370,23 @@ export default function TemplatesPage() {
           
           if (error) {
             console.error('❌ Template subscription error:', error);
+            console.error('📋 Subscription error details:', {
+              message: error?.message || 'Unknown message',
+              type: (error as any)?.type || 'Unknown type',
+              details: (error as any)?.details || 'No details'
+            });
           }
           
           if (status === 'SUBSCRIBED') {
             console.log('✅ Template real-time subscription successful!');
             setConnectionError(null);
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            const errorMsg = `Template subscription error: ${error?.message || 'Unknown error'}`;
+            const errorMsg = `Template subscription ${status}: ${error?.message || 'Unknown error'}`;
             console.error('❌ Template subscription failed:', status, error);
             setConnectionError(errorMsg);
+          } else if (status === 'CLOSED') {
+            console.warn('⚠️ Template subscription closed');
+            setConnectionError('Real-time subscription closed');
           }
         });
 
@@ -401,7 +398,7 @@ export default function TemplatesPage() {
     };
     
     setupSubscription();
-  }, [session, user, refetch, toast, testDatabaseAccess]);
+  }, [session, user, refetch, toast, testAuthenticationState]);
 
   // Fallback polling: only when page is visible and has pending templates (reduced frequency)
   React.useEffect(() => {
@@ -671,6 +668,19 @@ export default function TemplatesPage() {
         </div>
       </div>
 
+      {/* Connection Status */}
+      {connectionError && (
+        <Card className="border-2 border-destructive/20 bg-destructive/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span>Real-time updates unavailable: {connectionError}</span>
+              <Badge variant="outline" className="ml-auto">Using polling fallback</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <TemplateStatsCards templates={templates} />
 
@@ -927,12 +937,175 @@ export default function TemplatesPage() {
 
                   <Separator />
 
-                  <div>
-                    <h5 className="mb-3 text-sm font-medium text-muted-foreground">Template Body</h5>
-                    <div className="rounded-lg border bg-muted/50 p-4">
+                  {/* Template Structure Preview */}
+                  <div className="space-y-4">
+                    <h5 className="text-sm font-medium text-muted-foreground">Template Structure</h5>
+                    
+                                         {/* Header Section */}
+                     {(selectedTemplate as any).headerType && (
+                       <div className="rounded-lg border p-4 bg-blue-50 dark:bg-blue-950/20">
+                         <div className="flex items-center gap-2 mb-2">
+                           <Badge variant="secondary" className="text-xs">Header</Badge>
+                           <Badge variant="outline" className="text-xs capitalize">{(selectedTemplate as any).headerType}</Badge>
+                         </div>
+                         {(selectedTemplate as any).headerType === 'TEXT' && (selectedTemplate as any).headerContent && (
+                           <p className="text-sm font-medium">{(selectedTemplate as any).headerContent}</p>
+                         )}
+                         {['IMAGE', 'VIDEO', 'DOCUMENT'].includes((selectedTemplate as any).headerType || '') && (selectedTemplate as any).headerMediaUrl && (
+                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                             <span>Media URL:</span>
+                             <span className="font-mono truncate">{(selectedTemplate as any).headerMediaUrl}</span>
+                           </div>
+                         )}
+                       </div>
+                     )}
+
+                    {/* Body Section */}
+                    <div className="rounded-lg border p-4 bg-muted/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="text-xs">Body</Badge>
+                      </div>
                       <p className="text-sm whitespace-pre-wrap font-mono">
                         {selectedTemplate.templateBody}
                       </p>
+                    </div>
+
+                                         {/* Footer Section */}
+                     {(selectedTemplate as any).footerText && (
+                       <div className="rounded-lg border p-4 bg-gray-50 dark:bg-gray-950/20">
+                         <div className="flex items-center gap-2 mb-2">
+                           <Badge variant="secondary" className="text-xs">Footer</Badge>
+                         </div>
+                         <p className="text-sm text-muted-foreground">{(selectedTemplate as any).footerText}</p>
+                       </div>
+                     )}
+
+                                         {/* Buttons Section */}
+                     {((selectedTemplate as any).templateButtons?.length > 0 || (selectedTemplate as any).buttons) && (
+                       <div className="rounded-lg border p-4 bg-green-50 dark:bg-green-950/20">
+                         <div className="flex items-center gap-2 mb-2">
+                           <Badge variant="secondary" className="text-xs">Buttons</Badge>
+                         </div>
+                         <div className="space-y-2">
+                           {(selectedTemplate as any).templateButtons?.map((button: any, index: number) => (
+                             <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded text-xs">
+                               <Badge variant="outline" className="text-xs">{button.type}</Badge>
+                               <span className="font-medium">{button.text}</span>
+                               {button.url && <span className="text-muted-foreground truncate">→ {button.url}</span>}
+                               {button.phoneNumber && <span className="text-muted-foreground">📞 {button.phoneNumber}</span>}
+                             </div>
+                           )) || (
+                             (selectedTemplate as any).buttons && typeof (selectedTemplate as any).buttons === 'object' && 
+                             Object.keys((selectedTemplate as any).buttons).length > 0 && (
+                               <div className="text-xs text-muted-foreground">
+                                 {Object.keys((selectedTemplate as any).buttons).length} button(s) configured
+                               </div>
+                             )
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Media Attachments Section */}
+                     {((selectedTemplate as any).templateMedia?.length > 0 || (selectedTemplate as any).mediaAttachments) && (
+                       <div className="rounded-lg border p-4 bg-purple-50 dark:bg-purple-950/20">
+                         <div className="flex items-center gap-2 mb-2">
+                           <Badge variant="secondary" className="text-xs">Media Attachments</Badge>
+                         </div>
+                         <div className="space-y-2">
+                           {(selectedTemplate as any).templateMedia?.map((media: any, index: number) => (
+                             <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded text-xs">
+                               <Badge variant="outline" className="text-xs">{media.type}</Badge>
+                               <span className="font-medium truncate">{media.filename || 'Media file'}</span>
+                               {media.mimeType && <span className="text-muted-foreground">({media.mimeType})</span>}
+                             </div>
+                           )) || (
+                             (selectedTemplate as any).mediaAttachments && typeof (selectedTemplate as any).mediaAttachments === 'object' && 
+                             Object.keys((selectedTemplate as any).mediaAttachments).length > 0 && (
+                               <div className="text-xs text-muted-foreground">
+                                 {Object.keys((selectedTemplate as any).mediaAttachments).length} media attachment(s)
+                               </div>
+                             )
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Interactive Components Section */}
+                     {(selectedTemplate as any).interactiveType && (
+                       <div className="rounded-lg border p-4 bg-orange-50 dark:bg-orange-950/20">
+                         <div className="flex items-center gap-2 mb-2">
+                           <Badge variant="secondary" className="text-xs">Interactive</Badge>
+                           <Badge variant="outline" className="text-xs capitalize">{(selectedTemplate as any).interactiveType}</Badge>
+                         </div>
+                         {(selectedTemplate as any).interactiveContent && (
+                           <div className="text-xs text-muted-foreground">
+                             Interactive content configured
+                           </div>
+                         )}
+                       </div>
+                     )}
+                  </div>
+
+                  {/* WhatsApp Message Mockup */}
+                  <div>
+                    <h5 className="mb-3 text-sm font-medium text-muted-foreground">WhatsApp Preview</h5>
+                    <div className="bg-[#e5ddd5] dark:bg-gray-800 p-4 rounded-lg">
+                                             <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm max-w-xs ml-auto p-3 space-y-2">
+                         {/* Header */}
+                         {(selectedTemplate as any).headerType && (
+                           <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
+                             {(selectedTemplate as any).headerType === 'TEXT' && (selectedTemplate as any).headerContent && (
+                               <p className="font-semibold text-sm">{(selectedTemplate as any).headerContent}</p>
+                             )}
+                             {['IMAGE', 'VIDEO', 'DOCUMENT'].includes((selectedTemplate as any).headerType || '') && (
+                               <div className="bg-gray-100 dark:bg-gray-800 rounded p-2 text-xs text-center text-muted-foreground">
+                                 📎 {(selectedTemplate as any).headerType} Media
+                               </div>
+                             )}
+                           </div>
+                         )}
+
+                         {/* Body */}
+                         <div className="text-sm">
+                           {selectedTemplate.templateBody.split(/(\{\{[^}]+\}\})/).map((part, index) => 
+                             part.match(/\{\{[^}]+\}\}/) ? (
+                               <span key={index} className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded text-xs">
+                                 {part}
+                               </span>
+                             ) : (
+                               <span key={index}>{part}</span>
+                             )
+                           )}
+                         </div>
+
+                         {/* Footer */}
+                         {(selectedTemplate as any).footerText && (
+                           <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                             <p className="text-xs text-muted-foreground">{(selectedTemplate as any).footerText}</p>
+                           </div>
+                         )}
+
+                         {/* Buttons */}
+                         {(selectedTemplate as any).templateButtons?.length > 0 && (
+                           <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-1">
+                             {(selectedTemplate as any).templateButtons.map((button: any, index: number) => (
+                               <div key={index} className="border border-blue-300 rounded text-center py-1 text-xs text-blue-600 hover:bg-blue-50 cursor-pointer">
+                                 {button.type === 'CALL_TO_ACTION' && '📞 '}
+                                 {button.type === 'URL' && '🔗 '}
+                                 {button.type === 'QUICK_REPLY' && '💬 '}
+                                 {button.text}
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         {/* Timestamp */}
+                         <div className="flex justify-end items-center gap-1 text-xs text-muted-foreground">
+                           <span>12:34</span>
+                           <span>✓✓</span>
+                         </div>
+                       </div>
                     </div>
                   </div>
 
@@ -941,13 +1114,11 @@ export default function TemplatesPage() {
                       <h5 className="mb-3 text-sm font-medium text-muted-foreground">
                         Variables ({selectedTemplate.templateVariables.length})
                       </h5>
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
                         {selectedTemplate.templateVariables.map((variable, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs font-mono">
-                              {`{{${variable}}}`}
-                            </Badge>
-                          </div>
+                          <Badge key={index} variant="secondary" className="text-xs font-mono">
+                            {`{{${variable}}}`}
+                          </Badge>
                         ))}
                       </div>
                     </div>

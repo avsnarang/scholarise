@@ -9,7 +9,7 @@ import { api } from "@/utils/api";
 import { LeaveBalanceCard } from "@/components/leaves/leave-balance-card";
 import { LeaveApplicationsList } from "@/components/leaves/leave-applications-list";
 import { LeavePoliciesList } from "@/components/leaves/leave-policies-list";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import {
   Calendar,
   Clock,
@@ -232,8 +232,10 @@ export default function LeaveDashboardPage() {
                           name: item.policyName,
                           value: item.count,
                         }))}
-                        title="Applications by Policy"
-                        metricLabel="Applications"
+                        index="name"
+                        categories={["value"]}
+                        colors={["green"]}
+                        className="h-64"
                       />
                     ) : (
                       <div className="text-center py-8 text-slate-500">
@@ -261,8 +263,11 @@ export default function LeaveDashboardPage() {
                           name: item.policyName,
                           value: Math.round(item.utilizationRate),
                         }))}
-                        title="Leave Utilization"
-                        metricLabel="Utilization %"
+                        index="name"
+                        categories={["value"]}
+                        colors={["blue"]}
+                        valueFormatter={(value: number) => `${value}%`}
+                        className="h-64"
                       />
                     ) : (
                       <div className="text-center py-8 text-slate-500">

@@ -42,7 +42,7 @@ import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { formatIndianCurrency } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 // Transportation module groups
 const transportationModules = [

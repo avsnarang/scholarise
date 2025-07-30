@@ -48,7 +48,7 @@ import {
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { formatIndianCurrency } from "@/lib/utils";
 
 const quickActions = [
@@ -756,9 +756,11 @@ export default function FinancePage() {
                         name: item.date,
                         value: Object.keys(item).filter(key => key !== 'date').reduce((sum, key) => sum + (item[key] || 0), 0)
                       }))}
-                      title="Daily Collections"
-                      metricLabel="Amount"
-                      valueFormatter={(value: number) => `₹${formatIndianCurrency(value)}`}
+                      index="name"
+                      categories={["value"]}
+                      colors={["green"]}
+                      valueFormatter={(value: number) => formatIndianCurrency(value)}
+                      className="h-full"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">

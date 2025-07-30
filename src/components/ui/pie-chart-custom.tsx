@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 
@@ -11,16 +11,16 @@ export interface TooltipProps {
   [key: string]: any
 }
 
-interface VerticalBarChartProps {
-  data: any[]
-  index: string
-  categories: string[]
-  colors: string[]
+interface PieChartProps {
+  data: Array<{ name: string; value: number }>
+  colors?: string[]
   valueFormatter?: (value: number) => string
-  yAxisWidth?: number
+  radius?: number
   showLegend?: boolean
+  showLabel?: boolean
   customTooltip?: any
   className?: string
+  centerContent?: React.ReactNode
 }
 
 const colorMap: Record<string, { light: string; dark: string }> = {
@@ -38,20 +38,17 @@ const colorMap: Record<string, { light: string; dark: string }> = {
   indigo: { light: "#6366f1", dark: "#818cf8" },
 }
 
-const DefaultTooltip = ({ payload, active, label, valueFormatter = (value: number) => value.toLocaleString() }: TooltipProps & { valueFormatter?: (value: number) => string }) => {
+const defaultColors = ['green', 'amber', 'red', 'blue', 'violet', 'indigo', 'cyan', 'pink']
+
+const DefaultTooltip = ({ active, payload, valueFormatter = (value: number) => value.toLocaleString() }: TooltipProps & { valueFormatter?: (value: number) => string }) => {
   if (!active || !payload || payload.length === 0) return null
 
   // Detect dark mode at render time
   const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
   const headerBg = isDarkMode ? '#7AAD8B' : '#00501B'
 
-  const data = payload.filter(item => item.value > 0).map((item) => ({
-    category: item.dataKey as string,
-    value: item.value,
-    color: item.color,
-  }))
-
-  const total = payload.reduce((sum, item) => sum + (item.value || 0), 0)
+  const item = payload[0]
+  if (!item) return null
 
   return (
     <>
@@ -65,55 +62,55 @@ const DefaultTooltip = ({ payload, active, label, valueFormatter = (value: numbe
         <p className="flex items-center justify-between">
           <span className="text-gray-50 dark:text-gray-50">Category</span>
           <span className="font-medium text-gray-50 dark:text-gray-50">
-            {label}
+            {item.name}
           </span>
         </p>
       </div>
       <div className="mt-1 w-60 space-y-1 rounded-md border border-gray-500/10 bg-white px-4 py-2 text-sm shadow-md dark:border-gray-400/20 dark:bg-gray-900">
-        <div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-600">
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            Total
-          </span>
-          <span className="font-semibold text-gray-900 dark:text-gray-50">
-            {valueFormatter(total)}
-          </span>
-        </div>
-        {data.map((item, index) => (
-          <div key={index} className="flex items-center space-x-2.5">
-            <div className="flex w-full justify-between">
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="h-2 w-2 rounded-full" 
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-gray-700 dark:text-gray-300">
-                  {item.category}
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="font-medium text-gray-900 dark:text-gray-50">
-                  {valueFormatter(item.value)}
-                </span>
-              </div>
+        <div className="flex items-center space-x-2.5">
+          <div className="flex w-full justify-between">
+            <div className="flex items-center space-x-2">
+              <div 
+                className="h-3 w-3 rounded-full" 
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-gray-700 dark:text-gray-300">
+                {item.name}
+              </span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="font-medium text-gray-900 dark:text-gray-50">
+                {valueFormatter(item.value)}
+              </span>
             </div>
           </div>
-        ))}
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Percentage
+            </span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+              {item.percent}%
+            </span>
+          </div>
+        </div>
       </div>
     </>
   )
 }
 
-export function VerticalBarChart({
+export function PieChart({
   data,
-  index,
-  categories,
-  colors,
+  colors = defaultColors,
   valueFormatter = (value: number) => value.toLocaleString(),
-  yAxisWidth = 80,
+  radius = 90,
   showLegend = true,
+  showLabel = false,
   customTooltip,
   className,
-}: VerticalBarChartProps) {
+  centerContent,
+}: PieChartProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
@@ -134,11 +131,14 @@ export function VerticalBarChart({
     return () => observer.disconnect()
   }, [])
 
-  // Get actual color for each category based on current theme
+  // Get actual color for each segment based on current theme
   const getColor = (colorKey: string) => {
     const colorConfig = colorMap[colorKey] ?? { light: "#6b7280", dark: "#9ca3af" }
     return isDarkMode ? colorConfig.dark : colorConfig.light
   }
+
+  // Calculate total for center content
+  const total = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
     <div className={cn("w-full", className)}>
@@ -169,19 +169,23 @@ export function VerticalBarChart({
         `
       }} />
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-          <XAxis 
-            dataKey={index} 
-            className="text-gray-600 dark:text-gray-300"
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis 
-            width={yAxisWidth}
-            className="text-gray-600 dark:text-gray-300"
-            tick={{ fontSize: 12 }}
-            tickFormatter={valueFormatter}
-          />
+        <RechartsPieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            outerRadius={radius}
+            dataKey="value"
+            nameKey="name"
+            label={showLabel}
+          >
+            {data.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={getColor(colors[index % colors.length] || 'gray')} 
+              />
+            ))}
+          </Pie>
           {customTooltip ? (
             <Tooltip 
               content={customTooltip}
@@ -191,7 +195,6 @@ export function VerticalBarChart({
                 boxShadow: 'none',
                 outline: 'none'
               }}
-              cursor={false}
             />
           ) : (
             <Tooltip 
@@ -202,24 +205,27 @@ export function VerticalBarChart({
                 boxShadow: 'none',
                 outline: 'none'
               }}
-              cursor={false}
             />
           )}
-          {categories.map((category, index) => {
-            const colorKey = colors[index] || 'gray'
-            const fillColor = getColor(colorKey)
-            
-            return (
-              <Bar
-                key={category}
-                dataKey={category}
-                fill={fillColor}
-                radius={[4, 4, 0, 0]}
-              />
-            )
-          })}
-        </BarChart>
+          {showLegend && (
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              wrapperStyle={{
+                fontSize: '14px',
+                color: isDarkMode ? '#e5e7eb' : '#374151'
+              }}
+            />
+          )}
+        </RechartsPieChart>
       </ResponsiveContainer>
+      
+      {/* Custom center content positioned absolutely */}
+      {centerContent && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {centerContent}
+        </div>
+      )}
     </div>
   )
 } 

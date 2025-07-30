@@ -41,7 +41,7 @@ import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/types/permissions";
 import { LineChart } from "@/components/LineChart";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { AreaChart } from "@/components/ui/area-chart";
 import { format, subDays } from "date-fns";
 import { type DateRange } from "react-day-picker";
@@ -402,9 +402,10 @@ export default function CourtesyCallsDashboardPage() {
                       <div className="h-80">
                         <VerticalBarChart
                           data={analyticsData?.charts?.feedbackByType || []}
-                          title=""
-                          metricLabel="Feedback Count"
-                          valueFormatter={(value) => value.toString()}
+                          index="name"
+                          categories={["value"]}
+                          colors={["green"]}
+                          valueFormatter={(value: number) => value.toString()}
                         />
                       </div>
                     </CardContent>
@@ -427,9 +428,10 @@ export default function CourtesyCallsDashboardPage() {
                             name: item.name,
                             value: item.count,
                           }))}
-                          title=""
-                          metricLabel="Feedback Count"
-                          valueFormatter={(value) => value.toString()}
+                          index="name"
+                          categories={["value"]}
+                          colors={["blue"]}
+                          valueFormatter={(value: number) => value.toString()}
                         />
                       </div>
                     </CardContent>

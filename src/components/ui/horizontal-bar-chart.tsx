@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 
@@ -11,13 +11,13 @@ export interface TooltipProps {
   [key: string]: any
 }
 
-interface VerticalBarChartProps {
+interface HorizontalBarChartProps {
   data: any[]
   index: string
   categories: string[]
   colors: string[]
   valueFormatter?: (value: number) => string
-  yAxisWidth?: number
+  xAxisWidth?: number
   showLegend?: boolean
   customTooltip?: any
   className?: string
@@ -103,17 +103,17 @@ const DefaultTooltip = ({ payload, active, label, valueFormatter = (value: numbe
   )
 }
 
-export function VerticalBarChart({
+export function HorizontalBarChart({
   data,
   index,
   categories,
   colors,
   valueFormatter = (value: number) => value.toLocaleString(),
-  yAxisWidth = 80,
+  xAxisWidth = 80,
   showLegend = true,
   customTooltip,
   className,
-}: VerticalBarChartProps) {
+}: HorizontalBarChartProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
@@ -169,18 +169,24 @@ export function VerticalBarChart({
         `
       }} />
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <BarChart 
+          data={data} 
+          layout="horizontal"
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
           <XAxis 
-            dataKey={index} 
-            className="text-gray-600 dark:text-gray-300"
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis 
-            width={yAxisWidth}
+            type="number"
             className="text-gray-600 dark:text-gray-300"
             tick={{ fontSize: 12 }}
             tickFormatter={valueFormatter}
+          />
+          <YAxis 
+            type="category"
+            dataKey={index} 
+            width={xAxisWidth}
+            className="text-gray-600 dark:text-gray-300"
+            tick={{ fontSize: 12 }}
           />
           {customTooltip ? (
             <Tooltip 
@@ -214,7 +220,7 @@ export function VerticalBarChart({
                 key={category}
                 dataKey={category}
                 fill={fillColor}
-                radius={[4, 4, 0, 0]}
+                radius={[0, 4, 4, 0]}
               />
             )
           })}

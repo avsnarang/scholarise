@@ -49,7 +49,7 @@ import { skipToken } from "@tanstack/react-query";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { formatIndianCurrency } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 interface ReportFilters {
   dateFrom: string;
@@ -192,7 +192,10 @@ function UsageAnalytics() {
                 color: route.utilization > 80 ? "#ef4444" : 
                        route.utilization > 60 ? "#f59e0b" : "#10b981"
               }))}
-              title="Students per Route"
+              index="name"
+              categories={["value"]}
+              colors={["blue"]}
+              className="h-64"
             />
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -362,7 +365,11 @@ function FinancialReports() {
                 value: item.value,
                 color: "#3b82f6"
               }))}
-              title="Fuel Expenses (₹)"
+              index="name"
+              categories={["value"]}
+              colors={["blue"]}
+              valueFormatter={(value: number) => `₹${value.toLocaleString()}`}
+              className="h-64"
             />
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -532,7 +539,11 @@ function OperationalReports() {
                 color: bus.utilization > 80 ? "#ef4444" : 
                        bus.utilization > 60 ? "#f59e0b" : "#10b981"
               }))}
-              title="Bus Utilization (%)"
+              index="name"
+              categories={["value"]}
+              colors={["green"]}
+              valueFormatter={(value: number) => `${value}%`}
+              className="h-64"
             />
           ) : (
             <div className="text-center py-8 text-muted-foreground">

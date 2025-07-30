@@ -8,31 +8,27 @@ export const admissionsRouter = createTRPCRouter({
   createInquiry: publicProcedure
     .input(
       z.object({
-        firstName: z.string().min(1),
-        lastName: z.string().min(1),
-        parentName: z.string().min(1),
-        parentPhone: z.string().min(10),
-        parentEmail: z.string().email().optional(),
-        classApplying: z.string().min(1),
-        dateOfBirth: z.date().optional(),
-        gender: z.string().optional(),
-        address: z.string().optional(),
-        source: z.string().optional(),
+        firstName: z.string(),
+        lastName: z.string(),
+        dateOfBirth: z.date(),
+        gender: z.string(),
+        classApplying: z.string(),
+        parentName: z.string(),
+        parentPhone: z.string(),
+        parentEmail: z.string(),
+        address: z.string(),
         branchId: z.string(),
         sessionId: z.string().optional(),
-        // Detailed parent information
+        // Additional optional fields
         motherName: z.string().optional(),
         motherMobile: z.string().optional(),
-        motherEmail: z.string().email().optional().or(z.literal("")),
-        // Detailed address information
+        motherEmail: z.string().optional(),
         city: z.string().optional(),
         state: z.string().optional(),
         country: z.string().optional(),
-        // Previous school information
         classLastAttended: z.string().optional(),
         schoolLastAttended: z.string().optional(),
         percentageObtained: z.string().optional(),
-        // Registration source tracking
         isInternalRegistration: z.boolean().optional().default(false),
       })
     )
@@ -40,7 +36,7 @@ export const admissionsRouter = createTRPCRouter({
       // Get branch and session information for registration number
       const branch = await ctx.db.branch.findUnique({
         where: { id: input.branchId },
-        select: { code: true },
+        select: { code: true, name: true },
       });
 
       const session = input.sessionId ? await ctx.db.academicSession.findUnique({
@@ -123,7 +119,8 @@ export const admissionsRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.admissionInquiry.create({
+      // Create the inquiry record
+      const inquiry = await ctx.db.admissionInquiry.create({
         data: {
           ...dbInput,
           registrationNumber,
@@ -132,6 +129,89 @@ export const admissionsRouter = createTRPCRouter({
           registeredByName,
         },
       });
+
+      // Send WhatsApp message for registration success
+      try {
+        // Look up the registration success template
+        const template = await ctx.db.whatsAppTemplate.findFirst({
+          where: {
+            OR: [
+              { metaTemplateName: 'registration_success' },
+              { name: { contains: 'registration_success', mode: 'insensitive' } }
+            ],
+            isActive: true,
+            metaTemplateStatus: 'APPROVED'
+          }
+        });
+
+        if (!template) {
+          console.error('Registration success template not found or not approved');
+          // Don't fail the registration, just log the error
+        } else if (!template.metaTemplateName) {
+          console.error('Registration success template missing metaTemplateName');
+          // Don't fail the registration, just log the error
+        } else {
+          // Format parent name with appropriate prefix
+          const parentName = input.parentName.trim();
+          const formattedParentName = !parentName.toLowerCase().startsWith('mr.') && 
+                                     !parentName.toLowerCase().startsWith('ms.') && 
+                                     !parentName.toLowerCase().startsWith('mrs.') && 
+                                     !parentName.toLowerCase().startsWith('dr.') ? 
+                                     `Mr. ${parentName}` : parentName;
+
+          // Prepare template variables
+          const templateVariables = {
+            '1': formattedParentName,                                    // Parent Name (with prefix)
+            '2': `${input.firstName} ${input.lastName}`,                 // Student Name
+            '3': input.classApplying,                                    // Class Applied for
+            '4': registrationNumber,                                     // Registration Number
+            '5': new Date().toLocaleDateString('en-IN'),                 // Date of Submission
+          };
+
+          // Get WhatsApp client and send message
+          const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
+          const whatsappClient = getDefaultWhatsAppClient();
+          
+          const whatsappResponse = await whatsappClient.sendTemplateMessage({
+            to: input.parentPhone,
+            templateName: template.metaTemplateName,
+            templateLanguage: template.metaTemplateLanguage || 'en',
+            templateVariables: templateVariables,
+            templateData: {
+              headerType: template.headerType || undefined,
+              headerContent: template.headerContent || undefined,
+              headerMediaUrl: template.headerMediaUrl || undefined,
+              footerText: template.footerText || undefined,
+              buttons: template.buttons as any[] || undefined,
+            },
+          });
+
+          if (!whatsappResponse.result) {
+            console.error('Failed to send registration success WhatsApp message:', {
+              registrationNumber,
+              parentPhone: input.parentPhone,
+              error: whatsappResponse.error
+            });
+            // Log error but don't fail the registration
+          } else {
+            console.log('Registration success WhatsApp message sent successfully:', {
+              registrationNumber,
+              parentPhone: input.parentPhone,
+              messageId: whatsappResponse.data?.messages?.[0]?.id,
+              templateName: template.metaTemplateName
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error sending registration success WhatsApp message:', {
+          registrationNumber,
+          parentPhone: input.parentPhone,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        // Don't fail the registration if WhatsApp sending fails
+      }
+
+      return inquiry;
     }),
 
   // Get all inquiries for admin dashboard

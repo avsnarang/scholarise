@@ -59,7 +59,7 @@ import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { formatIndianCurrency } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 interface FuelLogFormData {
   busId: string;
@@ -565,8 +565,11 @@ export default function FuelLogsPage() {
             <CardContent>
               <VerticalBarChart
                 data={chartData}
-                title="Fuel Expenses (₹)"
-
+                index="name"
+                categories={["value"]}
+                colors={["orange"]}
+                valueFormatter={(value: number) => `₹${value.toLocaleString()}`}
+                className="h-64"
               />
             </CardContent>
           </Card>

@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatIndianNumber } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { useAuth } from "@/hooks/useAuth";
 
 interface StatsCardProps {

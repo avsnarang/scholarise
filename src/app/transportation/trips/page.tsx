@@ -70,7 +70,7 @@ import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useToast } from "@/components/ui/use-toast";
 import { formatIndianCurrency } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 interface TripFormData {
   busId: string;

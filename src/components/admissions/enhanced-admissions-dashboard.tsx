@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
@@ -245,9 +245,11 @@ export function EnhancedAdmissionsDashboard() {
                 <div className="h-[300px]">
                   <VerticalBarChart
                     data={inquiryTrendsData}
-                    title="Monthly Inquiries"
-                    metricLabel="Count"
+                    index="name"
+                    categories={["value"]}
+                    colors={["blue"]}
                     valueFormatter={(value: number) => value.toString()}
+                    className="h-full"
                   />
                 </div>
               </CardContent>

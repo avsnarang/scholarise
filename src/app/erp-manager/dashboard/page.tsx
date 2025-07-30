@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatIndianNumber, formatIndianCurrency } from "@/lib/utils";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 
 interface StatsCardProps {
   title: string;
@@ -395,8 +395,10 @@ export default function ERPManagerDashboard() {
                         name: branch.name,
                         value: branch.Students + branch.Teachers + branch.Employees
                       }))}
-                      title="Total Staff by Branch"
-                      metricLabel="Total Staff"
+                      index="name"
+                      categories={["value"]}
+                      colors={["green"]}
+                      className="h-64"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-64 text-muted-foreground">

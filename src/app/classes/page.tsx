@@ -35,7 +35,7 @@ import {
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
-import VerticalBarChart from "@/components/ui/vertical-bar-chart";
+import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { ClassEnrollmentLineChart } from "@/components/ui/class-enrollment-line-chart";
 import { formatIndianNumber } from "@/lib/utils";
 
