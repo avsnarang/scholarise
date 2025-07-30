@@ -282,7 +282,7 @@ export function RegistrationForm({ onSuccess, className, isInternalRegistration 
                   Submit Another
                 </Button>
                 <Button 
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push("https://tsh.edu.in/")}
                   className="w-full sm:w-auto bg-[#00501B] hover:bg-[#00501B]/90"
                 >
                   Back to Home
