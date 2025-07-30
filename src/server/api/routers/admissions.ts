@@ -51,30 +51,6 @@ export const admissionsRouter = createTRPCRouter({
         });
       }
 
-      // Generate registration number in format: TSH{Branch Code}/{Session Name}/0001
-      const branchCode = branch.code;
-      const sessionName = session?.name || new Date().getFullYear().toString();
-      
-      // Get the count of existing inquiries for this branch and session (excluding archived)
-      const existingCount = await ctx.db.admissionInquiry.count({
-        where: {
-          branchId: input.branchId,
-          sessionId: input.sessionId,
-          NOT: {
-            status: "ARCHIVED" as any, // Exclude archived inquiries
-          },
-          registrationNumber: {
-            startsWith: `TSH${branchCode}/${sessionName}/`,
-            not: {
-              contains: "(Archived)",
-            },
-          },
-        },
-      });
-
-      const nextNumber = (existingCount + 1).toString().padStart(4, '0');
-      const registrationNumber = `TSH${branchCode}/${sessionName}/${nextNumber}`;
-
       // Extract isInternalRegistration from input (it's not a database field)
       const { isInternalRegistration, ...dbInput } = input;
 
@@ -119,16 +95,90 @@ export const admissionsRouter = createTRPCRouter({
         }
       }
 
-      // Create the inquiry record
-      const inquiry = await ctx.db.admissionInquiry.create({
-        data: {
-          ...dbInput,
-          registrationNumber,
-          status: InquiryStatus.NEW,
-          registrationSource,
-          registeredByName,
-        },
-      });
+      // Generate registration number with collision safety using retry on constraint failure
+      const branchCode = branch.code;
+      const sessionName = session?.name || new Date().getFullYear().toString();
+      
+      const createInquiryWithUniqueNumber = async (): Promise<any> => {
+        const maxRetries = 5;
+        
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            // Find the highest existing registration number for this branch/session
+            const lastInquiry = await ctx.db.admissionInquiry.findFirst({
+              where: {
+                branchId: input.branchId,
+                sessionId: input.sessionId,
+                registrationNumber: {
+                  startsWith: `TSH${branchCode}/${sessionName}/`,
+                  not: {
+                    contains: "(Archived)",
+                  },
+                },
+                NOT: {
+                  status: "ARCHIVED" as any,
+                },
+              },
+              orderBy: {
+                registrationNumber: 'desc'
+              },
+              select: {
+                registrationNumber: true
+              }
+            });
+
+            let nextNumber: number;
+            if (!lastInquiry) {
+              // This is the first inquiry for this branch/session
+              nextNumber = 1;
+            } else {
+              // Extract the number from the last registration number
+              const lastRegNumber = lastInquiry.registrationNumber;
+              const numberPart = lastRegNumber.split('/').pop(); // Get the last part after final '/'
+              const lastNumber = parseInt(numberPart || '0', 10);
+              nextNumber = lastNumber + 1;
+            }
+
+            // Add random offset on retries to avoid collision
+            if (attempt > 0) {
+              nextNumber += Math.floor(Math.random() * 10) + attempt;
+            }
+
+            const paddedNumber = nextNumber.toString().padStart(4, '0');
+            const registrationNumber = `TSH${branchCode}/${sessionName}/${paddedNumber}`;
+
+            // Try to create the inquiry
+            const inquiry = await ctx.db.admissionInquiry.create({
+              data: {
+                ...dbInput,
+                registrationNumber,
+                status: InquiryStatus.NEW,
+                registrationSource,
+                registeredByName,
+              },
+            });
+
+            return { inquiry, registrationNumber };
+
+          } catch (error: any) {
+            // Check if it's a unique constraint error on registrationNumber
+            if (error?.code === 'P2002' && error?.meta?.target?.includes('registrationNumber')) {
+              console.log(`Registration number collision detected, retrying... (attempt ${attempt + 1})`);
+              continue; // Retry with next number
+            } else {
+              // Different error, rethrow
+              throw error;
+            }
+          }
+        }
+        
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate unique registration number after multiple attempts",
+        });
+      };
+
+      const { inquiry, registrationNumber } = await createInquiryWithUniqueNumber();
 
       // Send WhatsApp message for registration success
       try {
