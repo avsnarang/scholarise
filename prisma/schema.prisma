@@ -77,6 +77,7 @@ model Branch {
   attendanceWindows            AttendanceWindow[]
   locationTypes                LocationType[]
   admissionInquiries           AdmissionInquiry[]
+  automationLogs               AutomationLog[]
 }
 
 model User {
@@ -2961,4 +2962,48 @@ enum InquiryStatus {
   REJECTED
   CLOSED
   ARCHIVED
+}
+
+model AutomationLog {
+  id                String    @id @default(cuid())
+  automationType    String    // ADMISSION_REGISTRATION, FEE_REMINDER, etc.
+  automationTrigger String    // admission_inquiry_created, fee_due_reminder, etc.
+  messageTitle      String
+  messageContent    String?
+  templateId        String?
+  templateName      String?
+  
+  // Recipient Information
+  recipientId       String
+  recipientName     String
+  recipientPhone    String
+  recipientType     String    // STUDENT, PARENT, TEACHER, EMPLOYEE
+  
+  // Delivery Status
+  status            String    @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  errorMessage      String?
+  
+  // External System References
+  externalMessageId String?   // WhatsApp message ID, SMS ID, etc.
+  platformUsed      String?   // WHATSAPP, SMS, EMAIL
+  
+  // Context and Metadata
+  automationContext Json?     // Additional context data
+  branchId          String
+  createdBy         String    @default("system")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  branch            Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId])
+  @@index([automationType])
+  @@index([status])
+  @@index([recipientType])
+  @@index([createdAt])
+  @@index([recipientPhone])
+  @@index([externalMessageId])
 }

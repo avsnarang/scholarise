@@ -180,7 +180,7 @@ export const admissionsRouter = createTRPCRouter({
 
       const { inquiry, registrationNumber } = await createInquiryWithUniqueNumber();
 
-      // Send WhatsApp message for registration success
+      // Send automated WhatsApp message for registration success
       try {
         // Look up the registration success template
         const template = await ctx.db.whatsAppTemplate.findFirst({
@@ -209,6 +209,33 @@ export const admissionsRouter = createTRPCRouter({
                                      !parentName.toLowerCase().startsWith('dr.') ? 
                                      `Mr. ${parentName}` : parentName;
 
+          // Use automation logger to create and track the message
+          const { createAutomationLogger } = await import("@/utils/automation-logger");
+          const automationLogger = createAutomationLogger(ctx.db);
+
+          // Create automation log entry
+          const logId = await automationLogger.createLog({
+            automationType: 'ADMISSION_REGISTRATION',
+            automationTrigger: 'admission_inquiry_created',
+            messageTitle: "Registration Success Notification",
+            messageContent: `Registration successful for ${input.firstName} ${input.lastName}`,
+            templateId: template.id,
+            templateName: template.metaTemplateName || 'registration_success',
+            recipientId: inquiry.id,
+            recipientName: formattedParentName,
+            recipientPhone: input.parentPhone,
+            recipientType: 'PARENT',
+            automationContext: {
+              registrationNumber,
+              studentName: `${input.firstName} ${input.lastName}`,
+              classApplying: input.classApplying,
+              submissionDate: new Date().toISOString(),
+            },
+            branchId: inquiry.branchId,
+            createdBy: 'system_automation',
+            platformUsed: 'WHATSAPP'
+          });
+
           // Prepare template variables
           const templateVariables = {
             '1': formattedParentName,                                    // Parent Name (with prefix)
@@ -218,7 +245,7 @@ export const admissionsRouter = createTRPCRouter({
             '5': new Date().toLocaleDateString('en-IN'),                 // Date of Submission
           };
 
-          // Get WhatsApp client and send message
+          // Send the actual WhatsApp message
           const { getDefaultWhatsAppClient } = await import("@/utils/whatsapp-api");
           const whatsappClient = getDefaultWhatsAppClient();
           
@@ -236,29 +263,48 @@ export const admissionsRouter = createTRPCRouter({
             },
           });
 
+          // Log delivery status using automation logger
           if (!whatsappResponse.result) {
+            await automationLogger.updateDeliveryStatus({
+              logId,
+              status: 'FAILED',
+              deliveryDetails: {
+                errorMessage: whatsappResponse.error || 'Unknown error occurred',
+                sentAt: new Date(),
+              }
+            });
+            
             console.error('Failed to send registration success WhatsApp message:', {
               registrationNumber,
               parentPhone: input.parentPhone,
               error: whatsappResponse.error
             });
-            // Log error but don't fail the registration
           } else {
+            await automationLogger.updateDeliveryStatus({
+              logId,
+              status: 'SENT',
+              deliveryDetails: {
+                sentAt: new Date(),
+                externalMessageId: whatsappResponse.data?.messages?.[0]?.id,
+              }
+            });
+            
             console.log('Registration success WhatsApp message sent successfully:', {
               registrationNumber,
               parentPhone: input.parentPhone,
               messageId: whatsappResponse.data?.messages?.[0]?.id,
-              templateName: template.metaTemplateName
+              templateName: template.metaTemplateName,
+              automationLogId: logId
             });
           }
         }
       } catch (error) {
-        console.error('Error sending registration success WhatsApp message:', {
+        console.error('Error sending automated registration success message:', {
           registrationNumber,
           parentPhone: input.parentPhone,
           error: error instanceof Error ? error.message : String(error)
         });
-        // Don't fail the registration if WhatsApp sending fails
+        // Don't fail the registration if automation message fails
       }
 
       return inquiry;

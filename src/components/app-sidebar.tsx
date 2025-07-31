@@ -32,6 +32,7 @@ import {
   UserPlus,
   FolderOpen,
   CheckSquare,
+  Activity,
 } from "lucide-react"
 import { type Prisma } from "@prisma/client"
 import { useBranchContext } from "@/hooks/useBranchContext"
@@ -211,7 +212,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const lmsPaths = ['/question-papers', '/examination'];
     
     // Reports section paths
-    const reportsPaths = ['/courtesy-calls', '/attendance/reports', '/examination/reports', '/finance/reports', '/reports'];
+    const reportsPaths = ['/reports/automation-logs', '/courtesy-calls', '/attendance/reports', '/examination/reports', '/finance/reports', '/reports'];
     
     const isInErp = erpPaths.some(path => currentPath.startsWith(path));
     const isInLms = lmsPaths.some(path => currentPath.startsWith(path));
@@ -901,6 +902,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Reports section items
   const reportsItems = [
+    {
+      title: "Automation Logs",
+      href: "/reports/automation-logs",
+      icon: Activity,
+      permissions: [Permission.VIEW_COMMUNICATION_LOGS],
+    },
     {
       title: "Courtesy Calls",
       href: "/courtesy-calls",

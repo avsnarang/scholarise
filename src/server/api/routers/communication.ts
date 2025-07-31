@@ -67,6 +67,15 @@ const sendMessageSchema = z.object({
   dryRun: z.boolean().optional().default(false), // Add dry-run mode
 });
 
+const getAutomationLogsSchema = z.object({
+  branchId: z.string().optional(),
+  status: z.enum(["PENDING", "SENT", "DELIVERED", "READ", "FAILED"]).optional(),
+  automationType: z.string().optional(),
+  searchTerm: z.string().optional(),
+  limit: z.number().min(1).max(100).default(20),
+  offset: z.number().min(0).default(0),
+});
+
 export const communicationRouter = createTRPCRouter({
 
   // Get all templates
@@ -2641,4 +2650,96 @@ export const communicationRouter = createTRPCRouter({
         });
       }
     }),
+
+  // Get automation logs - completely separate from regular communication messages
+  getAutomationLogs: protectedProcedure
+    .input(getAutomationLogsSchema)
+    .query(async ({ ctx, input }) => {
+      const { branchId, status, automationType, searchTerm, limit, offset } = input;
+
+      // Build where clause for filtering automation logs
+      const whereClause: any = {
+        branchId: branchId || ctx.user?.branchId,
+      };
+
+      // Filter by automation type if specified
+      if (automationType) {
+        whereClause.automationType = automationType;
+      }
+
+      // Filter by status if specified
+      if (status) {
+        whereClause.status = status;
+      }
+
+      // Build search filter
+      if (searchTerm) {
+        whereClause.OR = [
+          {
+            messageTitle: { contains: searchTerm, mode: 'insensitive' as const }
+          },
+          {
+            recipientName: { contains: searchTerm, mode: 'insensitive' as const }
+          },
+          {
+            recipientPhone: { contains: searchTerm }
+          }
+        ];
+      }
+
+      try {
+        // Get total count for pagination
+        const totalCount = await ctx.db.automationLog.count({
+          where: whereClause
+        });
+
+        // Get automation log entries
+        const automationLogs = await ctx.db.automationLog.findMany({
+          where: whereClause,
+          orderBy: {
+            createdAt: 'desc'
+          },
+          skip: offset,
+          take: limit
+        });
+
+        // Format the data for the frontend
+        const formattedLogs = automationLogs.map((log: any) => {
+          return {
+            id: log.id,
+            messageId: log.id, // Use the same ID for compatibility
+            messageTitle: log.messageTitle,
+            recipientName: log.recipientName,
+            recipientPhone: log.recipientPhone,
+            recipientType: log.recipientType,
+            status: log.status,
+            sentAt: log.sentAt,
+            deliveredAt: log.deliveredAt,
+            readAt: log.readAt,
+            errorMessage: log.errorMessage,
+            createdAt: log.createdAt,
+            automationType: log.automationType,
+            automationTrigger: log.automationTrigger,
+            automationContext: log.automationContext,
+            templateName: log.templateName,
+            platformUsed: log.platformUsed,
+            externalMessageId: log.externalMessageId,
+          };
+        });
+
+        return {
+          logs: formattedLogs,
+          total: totalCount,
+          hasMore: offset + limit < totalCount
+        };
+
+      } catch (error) {
+        console.error('Error fetching automation logs:', error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch automation logs"
+        });
+      }
+    }),
+
 }); 
