@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 
 export async function GET(req: NextRequest) {
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
       {
         id: template.id,
         name: template.name,
-        metaTemplateName: template.metaTemplateName!,
+        metaTemplateName: template.metaTemplateName,
         metaTemplateLanguage: template.metaTemplateLanguage,
         templateVariables: template.templateVariables,
         templateBody: template.templateBody

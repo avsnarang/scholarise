@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/auth';
 import { syncUserPermissions, syncPermissionsForRole, syncAllUserPermissions } from '@/utils/sync-user-permissions';
 import { cookies } from 'next/headers';

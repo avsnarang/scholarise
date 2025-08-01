@@ -134,9 +134,9 @@ export function RegistrationForm({ onSuccess, className, isInternalRegistration 
     }
     
     // Extract year from session name (e.g., "2025-26" -> 2025)
-    const sessionNameMatch = currentSession.name?.match(/(\d{4})/);
+    const sessionNameMatch = /(\d{4})/.exec(currentSession.name);
     
-    if (!sessionNameMatch || !sessionNameMatch[1]) {
+    if (!sessionNameMatch?.[1]) {
       return null;
     }
     

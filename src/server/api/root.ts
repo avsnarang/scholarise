@@ -40,6 +40,7 @@ import { chatRouter } from "./routers/chat";
 import { mediaRouter } from "./routers/media";
 import { transportationRouter } from "./routers/transportation";
 import { staffMoveRouter } from "@/server/api/routers/staffMove";
+import { paymentGatewayRouter } from "./routers/payment-gateway";
 
 /**
  * This is the primary router for your server.
@@ -88,6 +89,7 @@ export const appRouter = createTRPCRouter({
   media: mediaRouter,
   transportation: transportationRouter,
   staffMove: staffMoveRouter,
+  paymentGateway: paymentGatewayRouter,
 });
 
 // export type definition of API

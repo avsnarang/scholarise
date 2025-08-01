@@ -81,7 +81,7 @@ export const createTRPCContext = async (
       const authHeader = opts.req.headers.authorization;
       let userId: string | null = null;
       
-      if (authHeader && authHeader.startsWith('Bearer ')) {
+      if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         // Import createClient from @supabase/supabase-js to verify the token
         const { createClient } = await import('@supabase/supabase-js');

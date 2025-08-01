@@ -187,7 +187,7 @@ export default function ClassSubjectMappingPage() {
       header: "Description",
       cell: ({ row }) => {
         const description = row.getValue("description") as string;
-        return description ? (
+        return description && description.trim() ? (
           <span className="text-sm">{description}</span>
         ) : (
           <span className="text-gray-400 text-sm italic">No description</span>

@@ -1069,7 +1069,7 @@ export default function TemplatesPage() {
                          {/* Body */}
                          <div className="text-sm">
                            {selectedTemplate.templateBody.split(/(\{\{[^}]+\}\})/).map((part, index) => 
-                             part.match(/\{\{[^}]+\}\}/) ? (
+                             (/\{\{[^}]+\}\}/.exec(part)) ? (
                                <span key={index} className="bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded text-xs">
                                  {part}
                                </span>

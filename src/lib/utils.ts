@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param showDecimals - Whether to show decimal places (default: false)
  * @returns Formatted string with Indian numbering
  */
-export function formatIndianNumber(num: number, showDecimals: boolean = false): string {
+export function formatIndianNumber(num: number, showDecimals = false): string {
   if (num === 0) return "0";
   
   const isNegative = num < 0;
@@ -29,7 +29,7 @@ export function formatIndianNumber(num: number, showDecimals: boolean = false): 
     
     // Split into integer and decimal parts
     const parts = numStr.split('.');
-    let integerPart = parts[0]!;
+    const integerPart = parts[0]!;
     const decimalPart = parts[1];
     
     // Apply Indian numbering system
@@ -70,7 +70,7 @@ export function formatIndianNumber(num: number, showDecimals: boolean = false): 
  * @param showDecimals - Whether to show decimal places (default: false)
  * @returns Formatted currency string
  */
-export function formatIndianCurrency(amount: number, showDecimals: boolean = false): string {
+export function formatIndianCurrency(amount: number, showDecimals = false): string {
   return `₹${formatIndianNumber(amount, showDecimals)}`;
 }
 

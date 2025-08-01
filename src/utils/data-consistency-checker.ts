@@ -15,8 +15,8 @@ export class DataConsistencyChecker {
     assessmentSchemaId: string
   ): Promise<ConsistencyCheckResult> {
     const issues: string[] = [];
-    let orphanedScores = 0;
-    let fixedIssues = 0;
+    const orphanedScores = 0;
+    const fixedIssues = 0;
 
     try {
       console.log('🔍 Starting data consistency check for schema:', assessmentSchemaId);

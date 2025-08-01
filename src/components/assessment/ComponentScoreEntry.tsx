@@ -106,7 +106,7 @@ interface ScoreData {
   componentId?: string;
   marksObtained: number;
   comments?: string;
-  subCriteriaScores?: { [subCriteriaId: string]: number };
+  subCriteriaScores?: Record<string, number>;
   // Attendance tracking fields
   attendanceStatus?: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'LEAVE';
   attendanceReason?: string;
@@ -120,7 +120,7 @@ interface ExistingScore {
   componentId?: string;
   marksObtained: number;
   comments?: string;
-  subCriteriaScores?: { [subCriteriaId: string]: number };
+  subCriteriaScores?: Record<string, number>;
 }
 
 interface ComponentScoreEntryProps {
@@ -513,7 +513,7 @@ export function ComponentScoreEntry({
 
   // Manual save function
   const handleManualSave = async () => {
-    let scoresToSave: any[] = [];
+    const scoresToSave: any[] = [];
 
     if (hasSubCriteria) {
       // For sub-criteria assessments, check all students
@@ -648,7 +648,7 @@ export function ComponentScoreEntry({
       if (scoresToDelete.length > 0) {
         console.log('DEBUG: Deleting scores...', scoresToDelete);
         
-        let deletionResults = [];
+        const deletionResults = [];
         for (const deleteItem of scoresToDelete) {
           try {
             const result = await deleteScoreMutation.mutateAsync({

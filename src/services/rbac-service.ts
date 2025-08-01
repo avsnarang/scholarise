@@ -33,10 +33,10 @@ export interface UserRoleAssignment {
  */
 export class RBACService {
   private static instance: RBACService;
-  private roleCache: Map<string, RoleWithPermissions> = new Map();
-  private userRoleCache: Map<string, UserRoleAssignment[]> = new Map();
+  private roleCache = new Map<string, RoleWithPermissions>();
+  private userRoleCache = new Map<string, UserRoleAssignment[]>();
   private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes
-  private lastCacheUpdate: number = 0;
+  private lastCacheUpdate = 0;
 
   private constructor() {}
 

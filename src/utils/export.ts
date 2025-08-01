@@ -395,7 +395,7 @@ export function downloadStudentImportExcelTemplate(availableClasses?: Array<{ id
       for (let R = classRange.s.r; R <= classRange.e.r; ++R) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         const cell = classesWorksheet[cellAddress];
-        if (cell && cell.v) {
+        if (cell?.v) {
           const cellLength = String(cell.v).length;
           maxWidth = Math.max(maxWidth, cellLength + 2);
         }
@@ -502,7 +502,7 @@ export function downloadStudentImportExcelTemplate(availableClasses?: Array<{ id
     for (let R = range.s.r; R <= range.e.r; ++R) {
       const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
       const cell = worksheet[cellAddress];
-      if (cell && cell.v) {
+      if (cell?.v) {
         const cellLength = String(cell.v).length;
         maxWidth = Math.max(maxWidth, cellLength);
       }

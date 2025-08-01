@@ -211,7 +211,7 @@ export function WhatsAppSidebar({
   // Get enhanced contact type display text
   const getContactTypeDisplay = (conversation: any) => {
     if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       // Clean up the display text (remove "Phone" suffix for cleaner display)
       return contactType?.replace(' Phone', '') || 'Contact';
     }
@@ -224,7 +224,7 @@ export function WhatsAppSidebar({
   const getParticipantIcon = (conversation: any) => {
     // Check if we have enhanced contact details
     if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       
       switch (contactType) {
         case "Student Phone":
@@ -576,11 +576,11 @@ export function WhatsAppSidebar({
                               <span className="text-xs font-medium text-primary capitalize shrink-0">
                                 {getContactTypeDisplay(conversation)}
                               </span>
-                              {(conversation.metadata.contactDetails as any)?.studentName && (
+                              {(conversation.metadata.contactDetails)?.studentName && (
                                 <>
                                   <span className="text-muted-foreground text-[9px] shrink-0">•</span>
                                   <span className="text-[9px] text-muted-foreground truncate min-w-0">
-                                    {(conversation.metadata.contactDetails as any)?.studentName}
+                                    {(conversation.metadata.contactDetails)?.studentName}
                                   </span>
                                 </>
                               )}

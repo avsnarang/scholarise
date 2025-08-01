@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 
 export async function POST(req: NextRequest) {
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
     const whatsappClient = getDefaultWhatsAppClient();
 
     // Prepare variables based on whether template has variables
-    let templateVariables: Record<string, string> = {};
+    const templateVariables: Record<string, string> = {};
     if (templateHasVariables) {
       // For templates with variables, create test variables
-      template.templateVariables!.forEach((variable: string, index: number) => {
+      template.templateVariables.forEach((variable: string, index: number) => {
         templateVariables[`var${index + 1}`] = `Test ${variable}`;
       });
     }

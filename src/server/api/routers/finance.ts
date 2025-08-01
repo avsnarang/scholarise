@@ -1351,7 +1351,7 @@ export const financeRouter = createTRPCRouter({
       const isOldStudent = student.firstJoinedSessionId !== input.sessionId || student.firstJoinedSessionId === null;
 
       // Determine which student types should apply to this student
-      let applicableStudentTypes: string[] = ["BOTH"];
+      const applicableStudentTypes: string[] = ["BOTH"];
       if (isNewAdmission) {
         applicableStudentTypes.push("NEW_ADMISSION");
       }
@@ -1674,7 +1674,7 @@ export const financeRouter = createTRPCRouter({
             dailyCollections[date] = {};
           }
           
-          dailyCollections[date]![feeHeadName] = (dailyCollections[date]?.[feeHeadName] ?? 0) + item.amount;
+          dailyCollections[date][feeHeadName] = (dailyCollections[date]?.[feeHeadName] ?? 0) + item.amount;
           if (feeHeadTotals[item.feeHeadId]) {
             feeHeadTotals[item.feeHeadId]!.collected += item.amount;
           }
@@ -1764,7 +1764,7 @@ export const financeRouter = createTRPCRouter({
             
             const totalDue = sectionFee.amount * eligibleStudentCount;
             if (feeHeadTotals[feeHeadId]) {
-              feeHeadTotals[feeHeadId]!.due += totalDue;
+              feeHeadTotals[feeHeadId].due += totalDue;
             }
           });
         } else if (combo.classLevel) {
@@ -1793,7 +1793,7 @@ export const financeRouter = createTRPCRouter({
           
           const totalDue = combo.classLevel.amount * eligibleStudentCount;
           if (feeHeadTotals[feeHeadId]) {
-            feeHeadTotals[feeHeadId]!.due += totalDue;
+            feeHeadTotals[feeHeadId].due += totalDue;
           }
         }
       });
@@ -1828,7 +1828,7 @@ export const financeRouter = createTRPCRouter({
                 monthlyCollections[monthKey] = {};
               }
               
-              monthlyCollections[monthKey]![feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
+              monthlyCollections[monthKey][feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
             });
           });
           
@@ -1884,7 +1884,7 @@ export const financeRouter = createTRPCRouter({
                 monthlyCollections[monthKey] = {};
               }
               
-              monthlyCollections[monthKey]![feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
+              monthlyCollections[monthKey][feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
             });
           });
           
@@ -1939,7 +1939,7 @@ export const financeRouter = createTRPCRouter({
               monthlyCollections[monthKey] = {};
             }
             
-            monthlyCollections[monthKey]![feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
+            monthlyCollections[monthKey][feeHeadName] = (monthlyCollections[monthKey]?.[feeHeadName] ?? 0) + item.amount;
           });
         });
         
@@ -4257,7 +4257,7 @@ export const financeRouter = createTRPCRouter({
     }))
     .query(async ({ ctx, input }) => {
       // Build the base student query for current session students
-      let studentWhere: any = {
+      const studentWhere: any = {
         branchId: input.branchId,
         section: {
           class: {

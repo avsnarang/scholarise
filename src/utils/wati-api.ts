@@ -341,7 +341,7 @@ export function formatTemplateParameters(
 /**
  * Helper to create broadcast name with timestamp
  */
-export function createBroadcastName(prefix: string = 'ScholariseMsg'): string {
+export function createBroadcastName(prefix = 'ScholariseMsg'): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   return `${prefix}_${timestamp}`;
 } 

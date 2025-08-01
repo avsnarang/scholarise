@@ -292,14 +292,14 @@ export const dashboardRouter = createTRPCRouter({
                 displayOrder: section.class.displayOrder ?? 0 
               };
             }
-            acc[className]!.sections++;
-            acc[className]!.students += section._count.students;
+            acc[className].sections++;
+            acc[className].students += section._count.students;
             return acc;
           }, {} as GroupedClassesAccumulator);
 
           classDistribution = Object.entries(groupedClasses)
             .sort((a: [string, GroupedClassValue], b: [string, GroupedClassValue]) => {
-              return a[1]!.displayOrder - b[1]!.displayOrder;
+              return a[1].displayOrder - b[1].displayOrder;
             })
             .map(([className, counts]) => ({
               className,

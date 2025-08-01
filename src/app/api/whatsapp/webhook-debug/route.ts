@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env.js";
 import { db } from "@/server/db";
 
@@ -50,7 +50,7 @@ async function checkWebhookStatus() {
       webhookVerifyTokenLength: env.META_WHATSAPP_WEBHOOK_VERIFY_TOKEN?.length || 0,
       appSecretLength: env.META_WHATSAPP_APP_SECRET?.length || 0,
       accessTokenLength: env.META_WHATSAPP_ACCESS_TOKEN?.length || 0,
-      phoneNumberIdFormat: env.META_WHATSAPP_PHONE_NUMBER_ID?.match(/^\d+$/) ? 'valid' : 'invalid'
+      phoneNumberIdFormat: /^\d+$/.exec(env.META_WHATSAPP_PHONE_NUMBER_ID) ? 'valid' : 'invalid'
     },
     recommendations: [] as string[]
   };

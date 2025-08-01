@@ -73,7 +73,7 @@ export default function TeacherCourtesyCallsPage() {
         name: student.section.class.name
       } : undefined
     } : undefined
-  })) as any[];
+  }));
   const totalStudents = studentsData?.totalCount || 0;
 
   if (isLoadingTeacher) {

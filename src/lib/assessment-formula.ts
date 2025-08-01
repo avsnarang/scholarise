@@ -29,7 +29,7 @@ export class AssessmentFormulaEvaluator {
       return Math.min(...arr.filter(val => val !== null && val !== undefined));
     };
 
-    this.parser.functions.round = (num: number, decimals: number = 2) => {
+    this.parser.functions.round = (num: number, decimals = 2) => {
       return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
     };
 

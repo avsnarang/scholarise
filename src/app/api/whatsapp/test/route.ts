@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getDefaultWhatsAppClient } from "@/utils/whatsapp-api";
 import { getWhatsAppRateLimiter } from "@/utils/rate-limiter";
 import { validateTemplateForSubmission, generateTemplateName } from "@/utils/template-validator";
@@ -101,7 +101,7 @@ async function testEnvironment() {
     META_WHATSAPP_PHONE_NUMBER_ID: {
       present: !!env.META_WHATSAPP_PHONE_NUMBER_ID,
       value: env.META_WHATSAPP_PHONE_NUMBER_ID || 'missing',
-      valid: env.META_WHATSAPP_PHONE_NUMBER_ID?.match(/^\d+$/)
+      valid: /^\d+$/.exec(env.META_WHATSAPP_PHONE_NUMBER_ID)
     },
     META_WHATSAPP_BUSINESS_ACCOUNT_ID: {
       present: !!env.META_WHATSAPP_BUSINESS_ACCOUNT_ID,
@@ -389,7 +389,7 @@ async function submitTestTemplate(params: any) {
     const client = getDefaultWhatsAppClient();
     const result = await client.submitTemplateForApproval({
       name,
-      category: category as any,
+      category: category,
       language,
       components: validation.metaComponents,
       allowCategoryChange: true

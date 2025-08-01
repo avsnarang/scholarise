@@ -499,7 +499,7 @@ export const roleRouter = createTRPCRouter({
         where: { id: input.roleId },
       });
 
-      if (!role || !role.isActive) {
+      if (!role?.isActive) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Role not found or inactive",

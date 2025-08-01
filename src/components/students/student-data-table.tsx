@@ -151,7 +151,7 @@ export function StudentDataTable({
 
       // Assuming the backend returns { itemIds: string[], isIdList: true, ... } when fetchAllIds is true
       if (result && result.isIdList && Array.isArray(result.itemIds)) {
-        return result.itemIds as string[];
+        return result.itemIds;
       }
       console.warn("fetchAllStudentIds did not return the expected structure for IDs list.", result);
       return [];

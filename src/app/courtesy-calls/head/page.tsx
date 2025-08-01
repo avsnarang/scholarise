@@ -153,7 +153,7 @@ export default function HeadCourtesyCallsPage() {
         name: student.section.class.name
       } : undefined
     } : undefined
-  })) as any[];
+  }));
   const shouldShowStudents = showStudents && (searchQuery || selectedSectionId);
 
   return (

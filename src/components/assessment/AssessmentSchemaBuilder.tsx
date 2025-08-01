@@ -139,7 +139,7 @@ export function AssessmentSchemaBuilder({
 
       // Check sub-criteria totals within each component
       validComponents.forEach((component, index) => {
-        if (!component || !component.subCriteria || component.subCriteria.length === 0) return;
+        if (!component?.subCriteria || component.subCriteria.length === 0) return;
         
         const subCriteriaTotal = component.subCriteria.reduce((sum: number, subCriteria: any) => {
           return sum + (subCriteria?.maxScore || 0);

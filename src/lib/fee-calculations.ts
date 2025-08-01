@@ -336,7 +336,7 @@ export function calculateInstallments(
   installmentCount: number,
   paidAmount: number,
   startDate: Date,
-  intervalDays: number = 30
+  intervalDays = 30
 ): {
   installmentAmount: number;
   remainingInstallments: number;
@@ -414,7 +414,7 @@ export function calculateStudentFees(
   
   return feeStructures.map((feeStructure) => {
     // Calculate base amounts
-    let baseAmount = feeStructure.baseAmount;
+    const baseAmount = feeStructure.baseAmount;
     let discountAmount = 0;
     let concessionAmount = 0;
     let lateFeeAmount = 0;
@@ -539,7 +539,7 @@ export function allocatePayment(
   }> = [];
   
   // Sort fees based on allocation strategy
-  let sortedFees = [...outstandingFees];
+  const sortedFees = [...outstandingFees];
   switch (allocationStrategy) {
     case 'oldest_first':
       sortedFees.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());

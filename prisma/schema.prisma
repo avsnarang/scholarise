@@ -78,6 +78,8 @@ model Branch {
   locationTypes                LocationType[]
   admissionInquiries           AdmissionInquiry[]
   automationLogs               AutomationLog[]
+  paymentGatewayTransactions   PaymentGatewayTransaction[]
+  paymentRequests              PaymentRequest[]
 }
 
 model User {
@@ -194,6 +196,8 @@ model Student {
   studentSubjects         StudentSubject[]
   transferCertificates    TransferCertificate[]
   transportAssignments    TransportAssignment[]
+  paymentGatewayTransactions PaymentGatewayTransaction[]
+  paymentRequests         PaymentRequest[]
 
   @@index([admissionNumber])
   @@index([branchId])
@@ -526,6 +530,8 @@ model AcademicSession {
   transportFeeStructures  TransportFeeStructure[]  @relation("TransportFeeSession")
   admissionInquiries      AdmissionInquiry[]
   firstJoinedStudents     Student[]                @relation("StudentFirstJoinedSession")
+  paymentGatewayTransactions PaymentGatewayTransaction[] @relation("PaymentGatewayTransactionSession")
+  paymentRequests         PaymentRequest[]         @relation("PaymentRequestSession")
 }
 
 model Term {
@@ -1737,6 +1743,8 @@ model FeeTerm {
   branch         Branch           @relation(fields: [branchId], references: [id])
   session        AcademicSession  @relation("FeeTermSession", fields: [sessionId], references: [id])
   feeHeads       FeeTermFeeHead[]
+  paymentGatewayTransactions PaymentGatewayTransaction[]
+  paymentRequests PaymentRequest[]
 
   @@unique([name, branchId, sessionId])
   @@index([branchId, sessionId, order])
@@ -1877,28 +1885,152 @@ model ConcessionApprovalSettings {
   @@index([authorizationType])
 }
 
+enum PaymentGateway {
+  EASEBUZZ
+  RAZORPAY
+  PAYTM
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  INITIATED
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
 model FeeCollection {
-  id                   String              @id @default(cuid())
-  receiptNumber        String              @unique
+  id                     String                     @id @default(cuid())
+  receiptNumber          String                     @unique
+  studentId              String
+  feeTermId              String
+  totalAmount            Float
+  paidAmount             Float
+  paymentMode            String
+  transactionReference   String?
+  paymentDate            DateTime
+  notes                  String?
+  status                 String                     @default("COMPLETED")
+  branchId               String
+  sessionId              String
+  createdBy              String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  gatewayTransactionId   String?
+  paymentRequestId       String?
+  gateway                PaymentGateway?
+  branch                 Branch                     @relation(fields: [branchId], references: [id])
+  feeTerm                FeeTerm                    @relation(fields: [feeTermId], references: [id])
+  session                AcademicSession            @relation("FeeCollectionSession", fields: [sessionId], references: [id])
+  student                Student                    @relation(fields: [studentId], references: [id])
+  items                  FeeCollectionItem[]
+  gatewayTransaction     PaymentGatewayTransaction? @relation(fields: [gatewayTransactionId], references: [id])
+  paymentRequest         PaymentRequest?            @relation(fields: [paymentRequestId], references: [id])
+
+  @@index([gatewayTransactionId])
+  @@index([paymentRequestId])
+  @@index([gateway])
+}
+
+model PaymentGatewayTransaction {
+  id                   String         @id @default(cuid())
+  gatewayTransactionId String?
+  gateway              PaymentGateway @default(EASEBUZZ)
+  amount               Float
+  currency             String         @default("INR")
+  status               PaymentStatus  @default(PENDING)
   studentId            String
-  feeTermId            String
-  totalAmount          Float
-  paidAmount           Float
-  paymentMode          String
-  transactionReference String?
-  paymentDate          DateTime
-  notes                String?
-  status               String              @default("COMPLETED")
   branchId             String
   sessionId            String
-  createdBy            String?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  branch               Branch              @relation(fields: [branchId], references: [id])
-  feeTerm              FeeTerm             @relation(fields: [feeTermId], references: [id])
-  session              AcademicSession     @relation("FeeCollectionSession", fields: [sessionId], references: [id])
-  student              Student             @relation(fields: [studentId], references: [id])
-  items                FeeCollectionItem[]
+  feeTermId            String
+  paymentRequestId     String?
+  gatewayOrderId       String?
+  gatewayPaymentId     String?
+  failureReason        String?
+  gatewayResponse      Json?
+  webhookData          Json?
+  refundAmount         Float?         @default(0)
+  refundReason         String?
+  expiresAt            DateTime?
+  paidAt               DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  
+  student              Student         @relation(fields: [studentId], references: [id])
+  branch               Branch          @relation(fields: [branchId], references: [id])
+  session              AcademicSession @relation("PaymentGatewayTransactionSession", fields: [sessionId], references: [id])
+  feeTerm              FeeTerm         @relation(fields: [feeTermId], references: [id])
+  paymentRequest       PaymentRequest? @relation(fields: [paymentRequestId], references: [id])
+  feeCollections       FeeCollection[]
+
+  @@index([studentId])
+  @@index([branchId, sessionId])
+  @@index([status])
+  @@index([gateway])
+  @@index([gatewayTransactionId])
+  @@index([createdAt])
+}
+
+model PaymentRequest {
+  id                 String         @id @default(cuid())
+  gateway            PaymentGateway @default(EASEBUZZ)
+  amount             Float
+  currency           String         @default("INR")
+  status             PaymentStatus  @default(PENDING)
+  studentId          String
+  branchId           String
+  sessionId          String
+  feeTermId          String
+  purpose            String
+  description        String?
+  gatewayRequestId   String?
+  paymentUrl         String?
+  shortUrl           String?
+  fees               Json // Array of fee items {feeHeadId, amount, feeHeadName}
+  buyerName          String
+  buyerEmail         String?
+  buyerPhone         String
+  redirectUrl        String?
+  webhookUrl         String?
+  expiresAt          DateTime?
+  completedAt        DateTime?
+  createdBy          String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  
+  student            Student                     @relation(fields: [studentId], references: [id])
+  branch             Branch                      @relation(fields: [branchId], references: [id])
+  session            AcademicSession             @relation("PaymentRequestSession", fields: [sessionId], references: [id])
+  feeTerm            FeeTerm                     @relation(fields: [feeTermId], references: [id])
+  transactions       PaymentGatewayTransaction[]
+  feeCollections     FeeCollection[]
+
+  @@index([studentId])
+  @@index([branchId, sessionId])
+  @@index([status])
+  @@index([gateway])
+  @@index([createdAt])
+}
+
+model PaymentWebhookLog {
+  id               String         @id @default(cuid())
+  gateway          PaymentGateway @default(EASEBUZZ)
+  event            String
+  transactionId    String?
+  requestId        String?
+  headers          Json?
+  payload          Json
+  processed        Boolean        @default(false)
+  processingError  String?
+  createdAt        DateTime       @default(now())
+
+  @@index([gateway, event])
+  @@index([transactionId])
+  @@index([processed])
+  @@index([createdAt])
 }
 
 model FeeCollectionItem {

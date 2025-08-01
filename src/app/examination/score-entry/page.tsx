@@ -336,7 +336,7 @@ function ScoreEntryContent() {
           });
         } else {
           // For simple assessments
-          componentScoresMap["main"] = transformScoresForComponent(scores, "main");
+          componentScoresMap.main = transformScoresForComponent(scores, "main");
         }
         
         setComponentScores(componentScoresMap);
@@ -933,7 +933,7 @@ function ScoreEntryContent() {
                     rollNumber: student.rollNumber,
                     admissionNumber: student.admissionNumber,
                   }))}
-                  existingScores={componentScores["main"] || []}
+                  existingScores={componentScores.main || []}
                   onSave={(scores) => handleSaveScoresForComponent("main", scores)}
                   onRefresh={() => refreshComponentScores("main")}
                   branchId={currentBranchId || ""}

@@ -11,13 +11,11 @@ interface ImportDiagnostics {
   studentsWithoutCredentials: number;
   parentsWithClerkId: number;
   parentsWithoutClerkId: number;
-  byBranch: {
-    [branchCode: string]: {
+  byBranch: Record<string, {
       total: number;
       withClerk: number;
       withoutClerk: number;
-    };
-  };
+    }>;
   recentImports: Array<{
     id: string;
     firstName: string;
@@ -67,18 +65,18 @@ async function diagnoseBulkImportIssues(): Promise<ImportDiagnostics> {
   const parentsWithoutClerkId = allParents.length - parentsWithClerkId;
 
   // Statistics by branch
-  const byBranch: { [key: string]: { total: number; withClerk: number; withoutClerk: number } } = {};
+  const byBranch: Record<string, { total: number; withClerk: number; withoutClerk: number }> = {};
   
   allStudents.forEach(student => {
     const branchCode = student.branch?.code || 'Unknown';
     if (!byBranch[branchCode]) {
       byBranch[branchCode] = { total: 0, withClerk: 0, withoutClerk: 0 };
     }
-    byBranch[branchCode]!.total++;
+    byBranch[branchCode].total++;
     if (student.clerkId && student.clerkId.trim() !== "") {
-      byBranch[branchCode]!.withClerk++;
+      byBranch[branchCode].withClerk++;
     } else {
-      byBranch[branchCode]!.withoutClerk++;
+      byBranch[branchCode].withoutClerk++;
     }
   });
 
@@ -205,7 +203,7 @@ async function analyzeFailurePatterns(diagnostics: ImportDiagnostics) {
 
   // Timing analysis for recent imports
   if (diagnostics.recentImports.length > 0) {
-    const timeSlots: { [hour: string]: { total: number; failed: number } } = {};
+    const timeSlots: Record<string, { total: number; failed: number }> = {};
     
     diagnostics.recentImports.forEach(student => {
       const hour = student.createdAt.getHours();
@@ -213,9 +211,9 @@ async function analyzeFailurePatterns(diagnostics: ImportDiagnostics) {
       if (!timeSlots[key]) {
         timeSlots[key] = { total: 0, failed: 0 };
       }
-      timeSlots[key]!.total++;
+      timeSlots[key].total++;
       if (!student.hasClerkId) {
-        timeSlots[key]!.failed++;
+        timeSlots[key].failed++;
       }
     });
 

@@ -60,7 +60,7 @@ const getFeeHeadColors = (items: string[]): string[] => {
 }
 
 // Theme-aware color mapping for legends (matching Tremor's color values)
-const getActualColors = (items: string[], isDark: boolean = false): string[] => {
+const getActualColors = (items: string[], isDark = false): string[] => {
   const lightColors: Record<string, string> = {
     green: '#10b981',   // emerald-500
     amber: '#f59e0b',   // amber-500

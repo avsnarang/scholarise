@@ -328,7 +328,7 @@ export default function AssessmentSchemasPage() {
 
   // Check if schema has actual component scores (is protected)
   const hasStudentScores = (schema: any) => {
-    if (!schema || !schema._count) {
+    if (!schema?._count) {
       return false;
     }
     

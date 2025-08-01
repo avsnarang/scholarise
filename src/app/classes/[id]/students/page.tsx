@@ -37,7 +37,7 @@ import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 export default function ClassStudentsPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params!.id as string;
+  const id = params.id as string;
   const { toast } = useToast();
   const { currentSessionId } = useAcademicSessionContext();
   

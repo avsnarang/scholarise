@@ -70,7 +70,7 @@ const CustomTooltip = ({
   label?: string | number;
   valueFormatter: (value: number) => string;
 }) => {
-  if (active && payload && payload.length) {
+  if (active && payload?.length) {
     return (
       <div className="bg-white dark:bg-[#252525] rounded-lg border border-gray-200 dark:border-gray-600 shadow-lg p-4 min-w-[200px]">
         <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">{String(label)}</p>

@@ -653,7 +653,7 @@ export const communicationRouter = createTRPCRouter({
                   language: whatsappTemplate.language || 'en',
                   status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
                   branchId: input.originBranchId, // Optional - templates are now global
-                  createdBy: ctx.userId!,
+                  createdBy: ctx.userId,
                 }
               });
               syncedTemplates.push(created);
@@ -675,7 +675,7 @@ export const communicationRouter = createTRPCRouter({
               syncedCount: syncedTemplates.length,
               originBranchId: input.originBranchId
             })),
-            userId: ctx.userId!,
+            userId: ctx.userId,
           }
         });
         
@@ -1381,8 +1381,8 @@ export const communicationRouter = createTRPCRouter({
             templateParameters: parameters,
             templateDataMappings: input.templateDataMappings || {},
             whatsappConfig: {
-              accessToken: communicationSettings!.metaAccessToken!,
-              phoneNumberId: communicationSettings!.metaPhoneNumberId!,
+              accessToken: communicationSettings.metaAccessToken,
+              phoneNumberId: communicationSettings.metaPhoneNumberId,
               apiVersion: env.META_WHATSAPP_API_VERSION || 'v21.0'
             },
             dryRun: input.dryRun || false
@@ -1657,7 +1657,7 @@ export const communicationRouter = createTRPCRouter({
             action: "whatsapp_client_refresh",
             description: testResult.result ? "WhatsApp client refreshed and tested successfully" : `WhatsApp client refresh failed: ${testResult.error}`,
             metadata: JSON.parse(JSON.stringify({ testResult })),
-            userId: ctx.userId!,
+            userId: ctx.userId,
           }
         });
         
@@ -1680,7 +1680,7 @@ export const communicationRouter = createTRPCRouter({
               action: "whatsapp_client_refresh",
               description: `WhatsApp client refresh failed: ${errorMessage}`,
               metadata: { error: errorMessage },
-              userId: ctx.userId!,
+              userId: ctx.userId,
             }
           });
         } catch (logError) {
@@ -1751,7 +1751,7 @@ export const communicationRouter = createTRPCRouter({
               envCheck,
               issues: issues.length > 0 ? issues : null 
             },
-            userId: ctx.userId!,
+            userId: ctx.userId,
           }
         });
 
@@ -1798,7 +1798,7 @@ export const communicationRouter = createTRPCRouter({
                 isConfigurationIssue,
                 stack: error instanceof Error ? error.stack : undefined 
               },
-              userId: ctx.userId!,
+              userId: ctx.userId,
             }
           });
         } catch (logError) {
@@ -1905,13 +1905,13 @@ export const communicationRouter = createTRPCRouter({
         where: { branchId },
         update: {
           ...settingsData,
-          updatedBy: ctx.userId!,
+          updatedBy: ctx.userId,
         },
         create: {
           branchId,
           ...settingsData,
-          createdBy: ctx.userId!,
-          updatedBy: ctx.userId!,
+          createdBy: ctx.userId,
+          updatedBy: ctx.userId,
         },
       });
 
@@ -1921,7 +1921,7 @@ export const communicationRouter = createTRPCRouter({
           action: "settings_updated",
           description: `Communication settings updated for branch ${branchId}`,
           metadata: { settingsId: settings.id, updatedFields: Object.keys(settingsData) },
-          userId: ctx.userId!,
+          userId: ctx.userId,
         }
       });
 

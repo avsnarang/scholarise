@@ -295,7 +295,7 @@ export function ReportCardPDFGenerator({
     ];
 
     // Starting position for the scholastic table
-    let yPosition = 557; // First subject row Y position
+    const yPosition = 557; // First subject row Y position
     const rowHeight = 18; // Height between rows
 
     // Column X positions based on template

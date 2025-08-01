@@ -45,7 +45,7 @@ export class EmailService {
         ]
       });
 
-      if (!emailConfig || !emailConfig.smtpHost || !emailConfig.smtpUsername) {
+      if (!emailConfig?.smtpHost || !emailConfig.smtpUsername) {
         console.log('No email configuration found or incomplete configuration');
         return false;
       }

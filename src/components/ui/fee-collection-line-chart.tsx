@@ -402,7 +402,7 @@ export function FeeCollectionLineChart() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {summaryData && summaryData.map((item, index) => (
+                {summaryData?.map((item, index) => (
                   <TableRow key={item.feeHead} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <TableCell className="font-medium text-gray-900 dark:text-white py-3">
                       {item.feeHead}

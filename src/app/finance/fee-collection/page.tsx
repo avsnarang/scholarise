@@ -170,7 +170,7 @@ export default function FeeCollectionPage() {
       paidAmount: fee.paidAmount,
       outstandingAmount: fee.dueAmount,
       dueDate: fee.dueDate || new Date().toISOString(),
-      status: fee.status as 'Paid' | 'Partially Paid' | 'Pending' | 'Overdue',
+      status: fee.status,
       appliedConcessions: fee.appliedConcessions || [],
     }));
   }, [getStudentFeesQuery.data]);

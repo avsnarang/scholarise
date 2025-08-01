@@ -214,7 +214,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
   // Get enhanced contact type display text
   const getContactTypeDisplay = (conversation: any) => {
     if (conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       // Clean up the display text (remove "Phone" suffix for cleaner display)
       return contactType?.replace(' Phone', '') || 'Contact';
     }
@@ -227,7 +227,7 @@ export function WhatsAppChat({ conversationId, refreshTrigger }: WhatsAppChatPro
   const getParticipantIcon = (conversation: any) => {
     // Check if we have enhanced contact details
     if (conversation?.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       
       switch (contactType) {
         case "Student Phone":

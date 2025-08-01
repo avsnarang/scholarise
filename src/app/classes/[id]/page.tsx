@@ -25,7 +25,7 @@ import { StudentDataTable } from "@/components/classes/student-data-table";
 export default function ClassDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params!.id as string;
+  const id = params.id as string;
   const { currentSessionId } = useAcademicSessionContext();
   const [pageSize, setPageSize] = useState(10);
   

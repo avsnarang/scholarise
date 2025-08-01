@@ -324,7 +324,7 @@ export default function EnhancedClasswiseFeePage() {
       if (!updated[classId]) {
         updated[classId] = {};
       }
-      updated[classId]![`${feeHeadId}-${feeTermId}`] = amount;
+      updated[classId][`${feeHeadId}-${feeTermId}`] = amount;
       return updated;
     });
   }, []);
@@ -407,7 +407,7 @@ export default function EnhancedClasswiseFeePage() {
           ),
           enableSorting: false,
           cell: ({ row }) => {
-            const cellData = row.original[`class_${cs.classId}_term_${feeTerm.id}`] as any;
+            const cellData = row.original[`class_${cs.classId}_term_${feeTerm.id}`];
             
             if (!cellData?.isConfigured) {
               return (

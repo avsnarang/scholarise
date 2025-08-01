@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { headers } from "next/headers";
 import { env } from "@/env.js";
@@ -850,7 +850,7 @@ async function processIncomingMessage(
     // Determine message content and type
     let messageContent = '';
     let messageType = 'TEXT';
-    let mediaUrl = null;
+    const mediaUrl = null;
     let mediaType = null;
 
     switch (message.type) {
@@ -960,7 +960,7 @@ async function processMessageStatus(
     const statusTimestamp = new Date(parseInt(status.timestamp) * 1000);
     
     // Try to find the message in chat messages first
-    let chatMessage = await db.chatMessage.findFirst({
+    const chatMessage = await db.chatMessage.findFirst({
       where: { metaMessageId: status.id }
     });
 

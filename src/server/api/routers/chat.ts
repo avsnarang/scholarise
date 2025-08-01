@@ -255,7 +255,7 @@ export const chatRouter = createTRPCRouter({
             messageType: input.messageType,
             metaMessageId: whatsappResponse.data?.messages?.[0]?.id,
             status: 'SENT',
-            sentBy: ctx.userId!,
+            sentBy: ctx.userId,
           }
         });
 
@@ -774,7 +774,7 @@ export const chatRouter = createTRPCRouter({
             messageType: 'TEXT',
             metaMessageId: whatsappResponse.data?.messages?.[0]?.id,
             status: 'SENT',
-            sentBy: ctx.userId!,
+            sentBy: ctx.userId,
             metadata: {
               templateId: input.templateId,
               templateName: template.name,

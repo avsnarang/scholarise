@@ -87,13 +87,13 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchPlaceholder = "Search...",
   filters = [],
-  pageSize = 50,
+  pageSize = 100,
   onPageSizeChange,
   pageCount = -1, // Default to -1 if not provided, react-table can handle this
   sorting, // Added
   onSortingChange, // Added
-  rowSelection, // Controlled row selection state from parent
-  onRowSelectionChange, // Handler for selection changes from parent
+  rowSelection = {}, // Controlled row selection state from parent with default empty object
+  onRowSelectionChange = () => {}, // Handler for selection changes from parent with default no-op function
   pagination: externalPagination, // Server-side pagination state
   onPaginationChange, // Server-side pagination change handler
 }: DataTableProps<TData, TValue>) {
@@ -208,8 +208,8 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: onRowSelectionChange, // Directly use the prop
     onPaginationChange: setPagination, // Allows table to update its local pagination state
-    manualPagination: true, // Crucial for server-side pagination
-    pageCount: pageCount,   // Provide the total page count from server
+    manualPagination: !!externalPagination, // Only use manual pagination when external pagination is provided
+    pageCount: externalPagination ? pageCount : -1, // Only set pageCount for manual pagination
     state: {
       sorting: sorting, // Use the passed prop for sorting state
       columnFilters,
@@ -449,30 +449,53 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected on this page.
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <div>
+            {(() => {
+              const { pageIndex, pageSize } = table.getState().pagination;
+              const totalRows = table.getFilteredRowModel().rows.length;
+              const startRow = pageIndex * pageSize + 1;
+              const endRow = Math.min((pageIndex + 1) * pageSize, totalRows);
+              
+              if (totalRows === 0) {
+                return "No rows to display";
+              }
+              
+              if (pageSize >= totalRows) {
+                return `Showing all ${totalRows} row(s)`;
+              }
+              
+              return `Showing ${startRow}-${endRow} of ${totalRows} row(s)`;
+            })()}
+          </div>
+          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+            <div>
+              {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">Rows per page</p>
             <Select
-              value={table.getState().pagination.pageSize.toString()}
+              value={table.getState().pagination.pageSize >= filteredData.length ? "all" : table.getState().pagination.pageSize.toString()}
               onValueChange={(value) => {
                 if (onPageSizeChange) {
                   onPageSizeChange(value);
                 } else {
-                  const newPageSize = value === "all" ? data.length : Number(value);
-                  table.setPageSize(newPageSize); 
+                  const newPageSize = value === "all" ? filteredData.length : Number(value);
+                  table.setPageSize(newPageSize);
+                  // Reset to first page when changing page size
+                  table.setPageIndex(0);
                 }
               }}
             >
               <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent side="top">
-                {[10, 50, 100, 200, 500].map((size) => (
+                {[10, 25, 50, 100, 200, 500].map((size) => (
                   <SelectItem key={size} value={size.toString()}>
                     {size}
                   </SelectItem>
@@ -486,7 +509,7 @@ export function DataTable<TData, TValue>({
 
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {pageCount === -1 ? table.getPageCount() : pageCount}
+            {table.getPageCount()}
           </div>
           <div className="flex items-center space-x-2">
             <Button

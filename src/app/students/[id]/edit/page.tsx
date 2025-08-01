@@ -86,7 +86,7 @@ function EditStudentPageContent() {
     dateOfJoining: student.joinDate ? new Date(student.joinDate).toISOString().split('T')[0] : undefined,
     gender: (student.gender === "Male" || student.gender === "Female" || student.gender === "Other" 
       ? student.gender 
-      : undefined) as "Male" | "Female" | "Other" | undefined,
+      : "Male") as "Male" | "Female" | "Other",
     phone: student.phone || "",
     schoolEmail: student.email || "",
     personalEmail: student.personalEmail || "",

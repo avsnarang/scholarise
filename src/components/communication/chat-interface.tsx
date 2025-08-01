@@ -88,7 +88,7 @@ export function ChatInterface() {
   // Get enhanced contact type display text
   const getContactTypeDisplay = (conversation: Conversation) => {
     if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       // Clean up the display text (remove "Phone" suffix for cleaner display)
       return contactType?.replace(' Phone', '') || 'Contact';
     }
@@ -101,7 +101,7 @@ export function ChatInterface() {
   const getParticipantIcon = (conversation: Conversation) => {
     // Check if we have enhanced contact details
     if (conversation.metadata && typeof conversation.metadata === 'object' && 'contactDetails' in conversation.metadata) {
-      const contactType = (conversation.metadata.contactDetails as any)?.contactType;
+      const contactType = (conversation.metadata.contactDetails)?.contactType;
       
       switch (contactType) {
         case "Student Phone":

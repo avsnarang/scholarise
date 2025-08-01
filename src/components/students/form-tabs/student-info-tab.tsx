@@ -213,7 +213,7 @@ export function StudentInfoTab({ branch, sections, generateSchoolEmail }: Studen
                     // Also update the joining date if it's not set or is before admission date
                     const joiningDateStr = watch("dateOfJoining");
                     if (!joiningDateStr || joiningDateStr === "" || new Date(joiningDateStr) < date) {
-                      setValue("dateOfJoining", dateStr!);
+                      setValue("dateOfJoining", dateStr);
                     }
                   }}
                   placeholder="Select date of admission"

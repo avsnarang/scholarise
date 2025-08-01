@@ -705,9 +705,9 @@ function InquiriesPageContent() {
     }
     
     // Extract year from session name (e.g., "2025-26" -> 2025)
-    const sessionNameMatch = sessionName.match(/(\d{4})/);
+    const sessionNameMatch = /(\d{4})/.exec(sessionName);
     
-    if (!sessionNameMatch || !sessionNameMatch[1]) {
+    if (!sessionNameMatch?.[1]) {
       return null;
     }
     
@@ -1508,7 +1508,7 @@ function InquiriesPageContent() {
         <div className="min-w-0">
           <Badge 
             variant="secondary"
-            className={`${statusColors[inquiry.status as keyof typeof statusColors] || "bg-gray-500"} px-2 py-1 text-white text-xs mb-1 truncate`}
+            className={`${statusColors[inquiry.status] || "bg-gray-500"} px-2 py-1 text-white text-xs mb-1 truncate`}
           >
             {statusOptions.find(
               (opt) => opt.value === inquiry.status,

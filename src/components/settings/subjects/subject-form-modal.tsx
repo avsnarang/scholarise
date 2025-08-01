@@ -195,7 +195,7 @@ export function SubjectFormModal({
 
     if (isEditing) {
       updateSubject.mutate({
-        id: subjectId!,
+        id: subjectId,
         ...processedData,
       });
     } else {

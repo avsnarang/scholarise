@@ -231,29 +231,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     
     // ERP section parent items
     if (currentPath.startsWith('/admissions/')) {
-      expandedItems['Admissions'] = true;
+      expandedItems.Admissions = true;
     }
     if (currentPath.startsWith('/students/')) {
-      expandedItems['Students'] = true;
+      expandedItems.Students = true;
     }
     if (currentPath.startsWith('/staff/')) {
-      expandedItems['Staff'] = true;
+      expandedItems.Staff = true;
       // Check for nested items in Staff
       if (currentPath.startsWith('/staff/teachers/')) {
         expandedItems['Staff-Teachers'] = true;
       }
     }
     if (currentPath.startsWith('/classes/')) {
-      expandedItems['Classes'] = true;
+      expandedItems.Classes = true;
     }
     if (currentPath.startsWith('/attendance/')) {
-      expandedItems['Attendance'] = true;
+      expandedItems.Attendance = true;
     }
     if (currentPath.startsWith('/leaves/')) {
       expandedItems['Leave Management'] = true;
     }
     if (currentPath.startsWith('/finance/')) {
-      expandedItems['Finance'] = true;
+      expandedItems.Finance = true;
     }
     if (currentPath.startsWith('/money-collection/')) {
       expandedItems['Money Collection'] = true;
@@ -262,16 +262,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       expandedItems['Salary Management'] = true;
     }
     if (currentPath.startsWith('/communication/')) {
-      expandedItems['Communication'] = true;
+      expandedItems.Communication = true;
     }
     if (currentPath.startsWith('/subjects/')) {
-      expandedItems['Subjects'] = true;
+      expandedItems.Subjects = true;
     }
     if (currentPath.startsWith('/transportation/')) {
-      expandedItems['Transport'] = true;
+      expandedItems.Transport = true;
     }
     if (currentPath.startsWith('/settings/')) {
-      expandedItems['Settings'] = true;
+      expandedItems.Settings = true;
     }
     
     // LMS section parent items
@@ -279,7 +279,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       expandedItems['Question Papers'] = true;
     }
     if (currentPath.startsWith('/examination/')) {
-      expandedItems['Examination'] = true;
+      expandedItems.Examination = true;
       // Check for nested items in Examination
       if (currentPath.startsWith('/examination/config/')) {
         expandedItems['Examination-Configuration'] = true;

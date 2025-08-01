@@ -271,19 +271,17 @@ export interface AdvancedFilters {
   logicOperator: "and" | "or";
 }
 
-export interface FilterMapping {
-  [categoryName: string]: {
+export type FilterMapping = Record<string, {
     field: string;
     valueMapper?: (displayValue: string, options: any[]) => string;
     displayMapper?: (fieldValue: string, options: any[]) => string;
-  };
-}
+  }>;
 
 export function useAdvancedFilterAdapter(
   advancedFilters: AdvancedFilters,
   onAdvancedFiltersChange: (filters: AdvancedFilters) => void,
   filterMapping: FilterMapping,
-  dataOptions: { [categoryName: string]: any[] } = {}
+  dataOptions: Record<string, any[]> = {}
 ) {
   const [uiFilters, setUiFilters] = useState<UIFilter[]>([]);
   const isUpdatingFromAdvanced = React.useRef(false);

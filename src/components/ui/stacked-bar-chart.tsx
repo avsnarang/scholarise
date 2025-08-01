@@ -12,9 +12,7 @@ interface TabData {
   color: string;
 }
 
-interface ChartDataPoint {
-  [key: string]: string | number;
-}
+type ChartDataPoint = Record<string, string | number>;
 
 interface StackedBarChartProps {
   title?: string;

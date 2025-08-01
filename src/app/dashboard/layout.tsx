@@ -21,7 +21,7 @@ export default function DashboardLayout({
 
       try {
         const userRole = user.role as UserRole;
-        const assignedBranchId = user.branchId as string;
+        const assignedBranchId = user.branchId;
 
         // If user is SuperAdmin, default to Paonta Sahib branch
         if (userRole === "SuperAdmin") {

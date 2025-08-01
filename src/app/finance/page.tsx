@@ -56,16 +56,55 @@ const quickActions = [
   { title: "Manage Fee Terms", href: "/finance/fee-term", icon: <Calendar /> },
   { title: "Classwise Fees", href: "/finance/classwise-fee", icon: <Users /> },
   { title: "Fee Collection", href: "/finance/fee-collection", icon: <DollarSign /> },
+  { title: "Payment History", href: "/finance/payment-history", icon: <Activity /> },
   { title: "Concession Types", href: "/finance/concession-types", icon: <Star /> },
   { title: "Student Concessions", href: "/finance/student-concessions", icon: <Shield /> },
   { title: "Fee Reminders", href: "/finance/reminders", icon: <Bell /> },
   { title: "Finance Reports", href: "/finance/reports", icon: <BarChart2 /> },
+  { 
+    title: "Test Payment", 
+    href: "#", 
+    icon: <Zap />, 
+    isTestButton: true,
+    description: "Test ₹1 Payment Gateway"
+  },
 ];
 
 export default function FinancePage() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const [selectedDays, setSelectedDays] = React.useState<number | undefined>(undefined); // Default to "All time"
+  const [isCreatingTestPayment, setIsCreatingTestPayment] = React.useState(false);
+
+  // Test payment mutation
+  const createTestPayment = api.paymentGateway.createTestPaymentLink.useMutation({
+    onSuccess: (data) => {
+      // Redirect to the payment URL
+      if (data.success && data.data?.paymentUrl) {
+        window.open(data.data.paymentUrl, '_blank');
+      }
+      setIsCreatingTestPayment(false);
+    },
+    onError: (error) => {
+      console.error('Test payment creation failed:', error);
+      alert(`Test payment creation failed: ${error.message}`);
+      setIsCreatingTestPayment(false);
+    },
+  });
+
+  // Handle test payment creation
+  const handleTestPayment = () => {
+    if (!currentBranchId || !currentSessionId) {
+      alert('Please select a branch and academic session first');
+      return;
+    }
+    
+    setIsCreatingTestPayment(true);
+    createTestPayment.mutate({
+      branchId: currentBranchId,
+      sessionId: currentSessionId,
+    });
+  };
 
   // Fetch real financial analytics data
   const {
@@ -708,14 +747,42 @@ export default function FinancePage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {quickActions.map((action) => (
-            <Link href={action.href} key={action.title} className="block bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 dark:border-gray-700 text-center group">
-              <div className="flex justify-center mb-2">
-                {React.cloneElement(action.icon, { className: 'h-7 w-7 text-[#00501B] dark:text-green-400 group-hover:scale-110 transition-transform' })}
-              </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-[#00501B] dark:group-hover:text-green-300">{action.title}</span>
-            </Link>
-          ))}
+          {quickActions.map((action) => {
+            if (action.isTestButton) {
+              return (
+                <Button 
+                  key={action.title}
+                  onClick={handleTestPayment}
+                  disabled={isCreatingTestPayment || !currentBranchId || !currentSessionId}
+                  className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 dark:border-gray-700 text-center group h-auto flex flex-col gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  variant="ghost"
+                >
+                  <div className="flex justify-center">
+                    {React.cloneElement(action.icon, { 
+                      className: `h-7 w-7 ${isCreatingTestPayment ? 'animate-pulse text-yellow-500' : 'text-[#00501B] dark:text-green-400 group-hover:scale-110 transition-transform'}` 
+                    })}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-[#00501B] dark:group-hover:text-green-300">
+                      {isCreatingTestPayment ? 'Creating...' : action.title}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {action.description}
+                    </span>
+                  </div>
+                </Button>
+              );
+            }
+            
+            return (
+              <Link href={action.href} key={action.title} className="block bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 dark:border-gray-700 text-center group">
+                <div className="flex justify-center mb-2">
+                  {React.cloneElement(action.icon, { className: 'h-7 w-7 text-[#00501B] dark:text-green-400 group-hover:scale-110 transition-transform' })}
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-[#00501B] dark:group-hover:text-green-300">{action.title}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
@@ -750,7 +817,7 @@ export default function FinancePage() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  {analyticsData && analyticsData.chartData ? (
+                  {analyticsData?.chartData ? (
                     <VerticalBarChart
                       data={analyticsData.chartData.map((item: any) => ({
                         name: item.date,

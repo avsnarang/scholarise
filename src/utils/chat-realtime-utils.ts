@@ -223,7 +223,7 @@ export function getTimerStatusText(timeRemaining: string): string {
  */
 export function createDebouncedRefresh(
   refreshFn: () => void,
-  delay: number = 500
+  delay = 500
 ): () => void {
   let timeoutId: NodeJS.Timeout;
   

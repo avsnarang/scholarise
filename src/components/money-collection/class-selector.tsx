@@ -48,7 +48,7 @@ export function ClassSelector({
       if (allowedClassIds && allowedClassIds.length > 0) {
         filteredClasses = classesData.filter(cls => 
           allowedClassIds.includes(cls.id)
-        ) as typeof classesData;
+        );
       }
       
       setClasses(filteredClasses);

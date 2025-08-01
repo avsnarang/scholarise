@@ -179,8 +179,8 @@ export function StudentImportModal({
           throw new Error('Excel file is empty')
         }
 
-        headers = jsonData[0]?.map(h => String(h || '')) || []
-        rows = jsonData.slice(1).filter(row => row.some(cell => cell !== null && cell !== undefined && cell !== ''))
+        headers = jsonData[0]?.map((h: any) => String(h || '')) || []
+        rows = jsonData.slice(1).filter((row: any[]) => row.some((cell: any) => cell !== null && cell !== undefined && cell !== ''))
       }
 
       if (headers.length === 0) {

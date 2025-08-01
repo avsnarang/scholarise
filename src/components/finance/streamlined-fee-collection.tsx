@@ -33,6 +33,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { formatIndianCurrency } from "@/lib/utils";
 import { StudentConcessionFormModal } from "./student-concession-form-modal";
+import { PaymentGatewayButton } from './payment-gateway-button';
+import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
 
 interface FeeItem {
   id: string;
@@ -149,6 +151,9 @@ export function StreamlinedFeeCollection({
 }: StreamlinedFeeCollectionProps) {
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
+  
+  // Monitor real-time payment updates for this student
+  useStudentPaymentMonitor(student.id);
   
   const [selectedFeeIds, setSelectedFeeIds] = useState<Set<string>>(new Set());
   const [paymentMode, setPaymentMode] = useState<string>('');
@@ -815,13 +820,15 @@ export function StreamlinedFeeCollection({
                 />
               </div>
 
-              {/* Payment Button */}
-              <div className="pt-4">
+              {/* Payment Buttons */}
+              <div className="pt-4 space-y-3">
+                {/* Manual Payment Collection */}
                 <Button
                   onClick={handleProcessPayment}
                   disabled={isProcessing || selectedFeesCount === 0 || !paymentMode}
                   className="w-full"
                   size="lg"
+                  variant="default"
                 >
                   {isProcessing ? (
                     <>
@@ -831,11 +838,66 @@ export function StreamlinedFeeCollection({
                   ) : (
                     <>
                       <DollarSign className="h-4 w-4 mr-2" />
-                      Collect Payment
+                      Collect Manual Payment
                       {selectedFeesTotal > 0 && ` - ${formatIndianCurrency(selectedFeesTotal)}`}
                     </>
                   )}
                 </Button>
+
+                {/* Gateway Payment Option */}
+                {selectedFeesCount > 0 && (
+                  <div className="border-t pt-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Or pay online securely
+                      </span>
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        <CreditCard className="w-3 h-3 mr-1" />
+                        Secure
+                      </Badge>
+                    </div>
+                    <PaymentGatewayButton
+                      studentId={student.id}
+                      selectedFees={feeItems
+                        .filter(item => selectedFeeIds.has(item.id))
+                        .map(item => ({
+                          feeHeadId: item.feeHeadId,
+                          feeHeadName: item.feeHeadName,
+                          amount: adjustmentMode === 'manual' 
+                            ? Math.min(parseFloat(customAmounts[item.id] || '0'), item.outstandingAmount)
+                            : item.outstandingAmount,
+                        }))
+                      }
+                      feeTermId={feeItems[0]?.feeTermId || ''}
+                      feeTermName={feeItems[0]?.feeTermName || 'Fee Payment'}
+                      totalAmount={selectedFeesTotal}
+                      onPaymentInitiated={() => {
+                        toast({
+                          title: "Payment Link Created",
+                          description: "Student will receive payment link for online payment.",
+                        });
+                      }}
+                      onPaymentSuccess={() => {
+                        // Refresh fee data when payment is successful
+                        if (onRefreshFees) {
+                          onRefreshFees();
+                        }
+                        toast({
+                          title: "Payment Successful!",
+                          description: "Gateway payment completed successfully.",
+                        });
+                      }}
+                      onPaymentFailure={(error) => {
+                        toast({
+                          title: "Payment Failed",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* No Fees Selected Message */}

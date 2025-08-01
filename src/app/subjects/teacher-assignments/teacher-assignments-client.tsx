@@ -512,7 +512,7 @@ export function TeacherSubjectAssignments() {
       assignment.teacher.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assignment.subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assignment.class.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (assignment.section?.name && assignment.section.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (assignment.section?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesStatus = statusFilter === "all" || 
                          (statusFilter === "active" && assignment.isActive) ||
@@ -1067,7 +1067,7 @@ function AssignmentFormDialog({ open, onOpenChange, assignment, onSuccess, onCan
                   {
                     ...assignment,
                     isActive,
-                    branchId: currentBranchId!,
+                    branchId: currentBranchId,
                   },
                   {
                     onSuccess: () => {

@@ -602,7 +602,7 @@ export const studentRouter = createTRPCRouter({
         try {
           // Extract parent name with proper first/last name splitting
           let parentFirstName = "";
-          let parentLastName = input.lastName as string; // Default to student's last name
+          let parentLastName = input.lastName; // Default to student's last name
 
           if (fatherName) {
             // Split father's name into first and last parts
@@ -627,8 +627,8 @@ export const studentRouter = createTRPCRouter({
             }
           } else {
             // Fallback to student's name if no parent names provided
-            parentFirstName = input.firstName as string;
-            parentLastName = input.lastName as string;
+            parentFirstName = input.firstName;
+            parentLastName = input.lastName;
           }
 
           const parentEmail = fatherEmail || motherEmail || guardianEmail;

@@ -108,7 +108,7 @@ export default function UserProfilePage() {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
+    if (event.target.files?.[0]) {
       const file = event.target.files[0];
       setSelectedFile(file);
       setPreviewImage(URL.createObjectURL(file));

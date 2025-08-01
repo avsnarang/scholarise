@@ -221,7 +221,7 @@ export class FinanceValidationError extends Error {
   public readonly field: string;
   public readonly code: string;
 
-  constructor(message: string, field: string, code: string = "VALIDATION_ERROR") {
+  constructor(message: string, field: string, code = "VALIDATION_ERROR") {
     super(message);
     this.name = "FinanceValidationError";
     this.field = field;
@@ -233,7 +233,7 @@ export class FinanceBusinessRuleError extends Error {
   public readonly code: string;
   public readonly details: any;
 
-  constructor(message: string, code: string = "BUSINESS_RULE_ERROR", details?: any) {
+  constructor(message: string, code = "BUSINESS_RULE_ERROR", details?: any) {
     super(message);
     this.name = "FinanceBusinessRuleError";
     this.code = code;
@@ -242,7 +242,7 @@ export class FinanceBusinessRuleError extends Error {
 }
 
 // Validation helper functions
-export const validateFeeAmount = (amount: number, context: string = "amount"): number => {
+export const validateFeeAmount = (amount: number, context = "amount"): number => {
   const result = feeAmountSchema.safeParse(amount);
   if (!result.success) {
     throw new FinanceValidationError(

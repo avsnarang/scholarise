@@ -125,7 +125,7 @@ export function validateTemplateName(name: string): {
   const suggestions: string[] = [];
   
   // Meta naming requirements
-  if (!name.match(/^[a-z0-9_]+$/)) {
+  if (!(/^[a-z0-9_]+$/.exec(name))) {
     errors.push('Template name can only contain lowercase letters, numbers, and underscores');
     suggestions.push('Convert to lowercase and replace spaces/special characters with underscores');
   }

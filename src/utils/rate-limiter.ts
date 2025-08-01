@@ -27,7 +27,7 @@ export class WhatsAppRateLimiter {
   private lastMessageRefill: number;
   private lastRequestRefill: number;
   private config: RateLimitConfig;
-  private phoneNumberQueues: Map<string, number[]> = new Map();
+  private phoneNumberQueues = new Map<string, number[]>();
 
   constructor(config?: Partial<RateLimitConfig>) {
     this.config = {
@@ -213,7 +213,7 @@ export function getWhatsAppRateLimiter(): WhatsAppRateLimiter {
 export async function withRateLimit<T>(
   phoneNumberId: string,
   operation: () => Promise<T>,
-  maxRetries: number = 3
+  maxRetries = 3
 ): Promise<T> {
   const rateLimiter = getWhatsAppRateLimiter();
   

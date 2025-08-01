@@ -24,7 +24,7 @@ export function normalizePhoneNumber(phoneNumber: string): NormalizedPhone {
   }
 
   // Remove whatsapp: prefix and all non-digit characters
-  let cleaned = phoneNumber
+  const cleaned = phoneNumber
     .replace(/^whatsapp:/, '')
     .replace(/[^\d]/g, '');
 

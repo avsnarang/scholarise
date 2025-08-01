@@ -336,7 +336,7 @@ export function SubjectsDataTable() {
       header: "Code",
       cell: ({ row }) => {
         const code = row.getValue("code") as string;
-        return code ? (
+        return code && code.trim() ? (
           <Badge variant="outline" className="font-mono text-xs bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
             {code}
           </Badge>

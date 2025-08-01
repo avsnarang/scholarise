@@ -18,8 +18,8 @@ export default function MoneyCollectionLayout({
       if (!isAuthenticated || !user) return;
 
       try {
-        const userRole = user.role as string;
-        const assignedBranchId = user.branchId as string;
+        const userRole = user.role;
+        const assignedBranchId = user.branchId;
 
         console.log("MoneyCollectionLayout - Current user role:", userRole);
         console.log("MoneyCollectionLayout - Assigned branch ID:", assignedBranchId);

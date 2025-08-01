@@ -164,7 +164,7 @@ export class WhatsAppApiClient {
     }
     
     // Validate Phone Number ID format
-    if (!this.phoneNumberId.match(/^\d+$/)) {
+    if (!(/^\d+$/.exec(this.phoneNumberId))) {
       throw new Error(`Invalid Meta WhatsApp Phone Number ID format. Expected numeric string, got: ${this.phoneNumberId}`);
     }
     
@@ -248,7 +248,7 @@ export class WhatsAppApiClient {
     }
     
     // Format for Meta API (remove + and whatsapp: prefix)
-    let formatted = cleaned.replace(/^\+/, '').replace(/^whatsapp:/, '');
+    const formatted = cleaned.replace(/^\+/, '').replace(/^whatsapp:/, '');
     
     return {
       original: phoneNumber,
@@ -510,8 +510,8 @@ export class WhatsAppApiClient {
     recipients: Array<{ phone: string; name: string; variables?: Record<string, string> }>,
     templateName: string,
     defaultVariables: Record<string, string> = {},
-    templateLanguage: string = 'en',
-    normalizePhoneNumbers: boolean = true,
+    templateLanguage = 'en',
+    normalizePhoneNumbers = true,
     phoneConfig?: { defaultCountryCode?: string; organizationCountry?: string }
   ): Promise<WhatsAppApiResponse<BulkMessageResponse>> {
     // Import utilities dynamically to avoid circular dependencies
