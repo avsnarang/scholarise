@@ -1,0 +1,1276 @@
+﻿Invoice Id,Transaction,Payment,Admission No,Student Name,Father Name,Class,Roll Number,Fee Category,Father Mobile,Gender,Head,Term,Amount,Payment Mode,Collected By,Reference No.
+3491,01-08-2025,01-08-2025,10003368,ABHILASHA SHARMA  ,ANIL KUMAR SHARMA,L.K.G.-Pink,16,,9816501805,Female,Tuition Fees,September + October,5000,ONLINE,,E2508010K6DILY
+3490,01-08-2025,01-08-2025,10002558,Manika  Sharma,Mr. Tanuj Kumar,V-C,19,,9805426025,Female,Transport Fee,July + August,900,ONLINE,,E2508010K60JTC
+3490,01-08-2025,01-08-2025,10002558,Manika  Sharma,Mr. Tanuj Kumar,V-C,19,,9805426025,Female,Tuition Fees,July + August,7000,ONLINE,,E2508010K60JTC
+3489,01-08-2025,01-08-2025,10003451,ADVIK SINGH BHADAURIA  ,SAURABH SINGH BHADAURIA,VII-C,30,,9682628004,Male,Tuition Fees,July + August,7600,ONLINE,,E2508010K5WM94
+3488,01-08-2025,01-08-2025,10003244,Aahna  ,Mr. Ajay Kumar Gupta,XII-Non-Medical,1,,9816621785,Female,Transport Fee,September + October,1940,ONLINE,,E2508010K5OWX4
+3488,01-08-2025,01-08-2025,10003244,Aahna  ,Mr. Ajay Kumar Gupta,XII-Non-Medical,1,,9816621785,Female,Tuition Fees,September + October,9000,ONLINE,,E2508010K5OWX4
+3487,01-08-2025,01-08-2025,10002345,Anubhav  Rana,Mr. Jagdish Kumar,VII-A,18,,8219981905,Male,Transport Fee,July + August,900,ONLINE,,E2508010K5HYLD
+3487,01-08-2025,01-08-2025,10002345,Anubhav  Rana,Mr. Jagdish Kumar,VII-A,18,,8219981905,Male,Tuition Fees,July + August,7600,ONLINE,,E2508010K5HYLD
+3486,01-08-2025,01-08-2025,10003178,Saarth  Sharma,Mr. Ishan,III-D,9,,9805788605,Male,Transport Fee,September + October,1940,ONLINE,,E2508010K59DLY
+3486,01-08-2025,01-08-2025,10003178,Saarth  Sharma,Mr. Ishan,III-D,9,,9805788605,Male,Tuition Fees,September + October,7000,ONLINE,,E2508010K59DLY
+3485,01-08-2025,01-08-2025,10001260,Piyush  Sharma,Mr. Rama Kant Sharma,X-A,15,,9816667732,Male,Tuition Fees,September + October,8000,ONLINE,,E2508010K58RI0
+3484,01-08-2025,01-08-2025,10002380,Avraj  Saini,Mr. Devender Singh,IV-B,11,,9418661037,Male,Tuition Fees,September + October,5950,ONLINE,,E2508010K57AK1
+3483,01-08-2025,01-08-2025,10002693,Tananjay  Bhardwaj,Mr. Satish Kumar,V-D,16,,9816736398,Male,Tuition Fees,July + August,5950,Cash,Amit,
+3483,01-08-2025,01-08-2025,10002693,Tananjay  Bhardwaj,Mr. Satish Kumar,V-D,16,,9816736398,Male,Transport Fee,July + August,970,Cash,Amit,
+3482,01-08-2025,01-08-2025,10001544,Vibhuti  Bhardwaj,Mr. Satish Kumar,VIII-A,1,,9816736398,Female,Transport Fee,July + August,970,Cash,Amit,
+3482,01-08-2025,01-08-2025,10001544,Vibhuti  Bhardwaj,Mr. Satish Kumar,VIII-A,1,,9816736398,Female,Tuition Fees,July + August,7600,Cash,Amit,
+3481,01-08-2025,01-08-2025,10002091,Teghveer  Singh,Mr. Gajinder Singh,VI-C,27,,9910061896,Male,Tuition Fees,July + August,6550,ONLINE,,E2508010K4XGML
+3481,01-08-2025,01-08-2025,10002091,Teghveer  Singh,Mr. Gajinder Singh,VI-C,27,,9910061896,Male,Transport Fee,July + August,900,ONLINE,,E2508010K4XGML
+3481,01-08-2025,01-08-2025,10002091,Teghveer  Singh,Mr. Gajinder Singh,VI-C,27,,9910061896,Male,Transport Fee,September + October,1800,ONLINE,,E2508010K4XGML
+3481,01-08-2025,01-08-2025,10002091,Teghveer  Singh,Mr. Gajinder Singh,VI-C,27,,9910061896,Male,Tuition Fees,September + October,6550,ONLINE,,E2508010K4XGML
+3480,01-08-2025,01-08-2025,10002090,Myaa  Kaur,Mr. Gajinder Singh,VI-D,2,,8826046444,Female,Transport Fee,September + October,1800,ONLINE,,E2508010K4X84W
+3480,01-08-2025,01-08-2025,10002090,Myaa  Kaur,Mr. Gajinder Singh,VI-D,2,,8826046444,Female,Tuition Fees,September + October,7600,ONLINE,,E2508010K4X84W
+3480,01-08-2025,01-08-2025,10002090,Myaa  Kaur,Mr. Gajinder Singh,VI-D,2,,8826046444,Female,Tuition Fees,July + August,7600,ONLINE,,E2508010K4X84W
+3480,01-08-2025,01-08-2025,10002090,Myaa  Kaur,Mr. Gajinder Singh,VI-D,2,,8826046444,Female,Transport Fee,July + August,900,ONLINE,,E2508010K4X84W
+3479,01-08-2025,01-08-2025,10001896,Aaradhya  ,Mr. Amreek Singh,VI-B,29,,8219408432,Female,Tuition Fees,July + August,7600,ONLINE,,E2508010K4W0YR
+3478,01-08-2025,01-08-2025,10001121,Sakshi  Sharma,Mr. Vimal Kumar,XI-Non-Medical,25,,9882772000,Female,Tuition Fees,May + June,9000,Cash,Inderjeet,
+3478,01-08-2025,01-08-2025,10001121,Sakshi  Sharma,Mr. Vimal Kumar,XI-Non-Medical,25,,9882772000,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3478,01-08-2025,01-08-2025,10001121,Sakshi  Sharma,Mr. Vimal Kumar,XI-Non-Medical,25,,9882772000,Female,Tuition Fees,July + August,9000,Cash,Inderjeet,
+3478,01-08-2025,01-08-2025,10001121,Sakshi  Sharma,Mr. Vimal Kumar,XI-Non-Medical,25,,9882772000,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3477,01-08-2025,01-08-2025,10001149,Mihul  Saini,Mr. Rajesh Saini,XII-Commerce,20,,7876650291,Male,Tuition Fees,July + August,4300,Wallet/UPI/QR,Inderjeet,6464
+3476,01-08-2025,01-08-2025,10003374,JASLEEN KAUR  ,GURNAM SINGH,I-Koel,23,,8278726280,Female,Transport Fee,September + October,2260,Wallet/UPI/QR,Inderjeet,5675
+3476,01-08-2025,01-08-2025,10003374,JASLEEN KAUR  ,GURNAM SINGH,I-Koel,23,,8278726280,Female,Tuition Fees,September + October,7000,Wallet/UPI/QR,Inderjeet,5675
+3475,01-08-2025,01-08-2025,10003259,Arnav  Chaudhary,Mr. Anshul Kumar,U.K.G.-Lily,5,,9761305757,Male,Tuition Fees,July + August,4340,Wallet/UPI/QR,Inderjeet,43534
+3475,01-08-2025,01-08-2025,10003259,Arnav  Chaudhary,Mr. Anshul Kumar,U.K.G.-Lily,5,,9761305757,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,43534
+3474,01-08-2025,01-08-2025,10002656,Vivaan  Chaudhary,Mr. Anshul Kumar,III-B,17,,8630039832,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,34444
+3474,01-08-2025,01-08-2025,10002656,Vivaan  Chaudhary,Mr. Anshul Kumar,III-B,17,,8630039832,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,34444
+3473,01-08-2025,01-08-2025,10002860,Arav  Kumar,Mr. Abhishek Kumar,X-C,19,,9939101567,Male,Tuition Fees,September + October,8000,Credit/Debit Card,Amit,2222
+3473,01-08-2025,01-08-2025,10002860,Arav  Kumar,Mr. Abhishek Kumar,X-C,19,,9939101567,Male,Transport Fee,September + October,2600,Credit/Debit Card,Amit,2222
+3472,01-08-2025,01-08-2025,10002859,Adhya  Prasad,Mr. Abhishek Kumar,VII-D,29,,9939101567,Female,Tuition Fees,September + October,6460,Credit/Debit Card,Amit,222
+3472,01-08-2025,01-08-2025,10002859,Adhya  Prasad,Mr. Abhishek Kumar,VII-D,29,,9939101567,Female,Transport Fee,September + October,2600,Credit/Debit Card,Amit,222
+3471,01-08-2025,01-08-2025,10002958,Aditi  Chaudhary,Mr. Tilak Raj,U.K.G.-Rose,6,,9418104699,Female,Transport Fee,July + August,1020,Wallet/UPI/QR,Inderjeet,32423
+3471,01-08-2025,01-08-2025,10002958,Aditi  Chaudhary,Mr. Tilak Raj,U.K.G.-Rose,6,,9418104699,Female,Tuition Fees,July + August,1690,Wallet/UPI/QR,Inderjeet,32423
+3471,01-08-2025,01-08-2025,10002958,Aditi  Chaudhary,Mr. Tilak Raj,U.K.G.-Rose,6,,9418104699,Female,Transport Fee,September + October,600,Wallet/UPI/QR,Inderjeet,32423
+3470,01-08-2025,01-08-2025,10002958,Aditi  Chaudhary,Mr. Tilak Raj,U.K.G.-Rose,6,,9418104699,Female,Tuition Fees,July + August,3310,Cash,Inderjeet,
+3469,01-08-2025,01-08-2025,10003366,HETVIK   CHOUDHARY,TILAK RAJ ,Nursery-Bloom,14,,9418104699,Male,Transport Fee,July + August,1020,Cash,Inderjeet,
+3469,01-08-2025,01-08-2025,10003366,HETVIK   CHOUDHARY,TILAK RAJ ,Nursery-Bloom,14,,9418104699,Male,Tuition Fees,July + August,4250,Cash,Inderjeet,
+3468,01-08-2025,01-08-2025,10002030,Tanisha  Choudhary,Mr. Tilak Raj,V-C,7,,9418104699,Female,Transport Fee,July + August,1020,Cash,Inderjeet,
+3468,01-08-2025,01-08-2025,10002030,Tanisha  Choudhary,Mr. Tilak Raj,V-C,7,,9418104699,Female,Tuition Fees,July + August,7000,Cash,Inderjeet,
+3467,01-08-2025,01-08-2025,10001560,Divansh  Panwar,Mr. Sukhveer,VIII-B,1,,8278869206,Male,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,www
+3467,01-08-2025,01-08-2025,10001560,Divansh  Panwar,Mr. Sukhveer,VIII-B,1,,8278869206,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,www
+3466,01-08-2025,01-08-2025,10001622,Aryan  Bhardwaj,Mr. Joginder Sharma,VIII-B,2,,9805449199,Male,Tuition Fees,July + August,3230,Wallet/UPI/QR,Amit,32
+3466,01-08-2025,01-08-2025,10001622,Aryan  Bhardwaj,Mr. Joginder Sharma,VIII-B,2,,9805449199,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,32
+3465,01-08-2025,01-08-2025,10001546,Harshita  Bhardwaj,Mr. Jogander Singh Sharma,XII-Medical,4,,9805449199,Female,Tuition Fees,July + August,4500,Wallet/UPI/QR,Amit,222
+3465,01-08-2025,01-08-2025,10001546,Harshita  Bhardwaj,Mr. Jogander Singh Sharma,XII-Medical,4,,9805449199,Female,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,222
+3464,01-08-2025,01-08-2025,10003480,RIYANSH  ,MR DHEERENDRA KUMAR SINGH,I-Bulbul,,,9105194203,Male,Parent Orientation,,1000,ONLINE,,E2508010K4DK7V
+3464,01-08-2025,01-08-2025,10003480,RIYANSH  ,MR DHEERENDRA KUMAR SINGH,I-Bulbul,,,9105194203,Male,"I-Card, Art & Craft, etc.",April,900,ONLINE,,E2508010K4DK7V
+3464,01-08-2025,01-08-2025,10003480,RIYANSH  ,MR DHEERENDRA KUMAR SINGH,I-Bulbul,,,9105194203,Male,Admission Fee,,12000,ONLINE,,E2508010K4DK7V
+3464,01-08-2025,01-08-2025,10003480,RIYANSH  ,MR DHEERENDRA KUMAR SINGH,I-Bulbul,,,9105194203,Male,Tuition Fees,July + August,7000,ONLINE,,E2508010K4DK7V
+3463,01-08-2025,01-08-2025,10002840,Agam  Kumar,Mr. Sumit Kumar,IV-C,18,,8650399621,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,59
+3463,01-08-2025,01-08-2025,10002840,Agam  Kumar,Mr. Sumit Kumar,IV-C,18,,8650399621,Male,Tuition Fees,May + June,7000,Credit/Debit Card,Amit,59
+3463,01-08-2025,01-08-2025,10002840,Agam  Kumar,Mr. Sumit Kumar,IV-C,18,,8650399621,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,59
+3463,01-08-2025,01-08-2025,10002840,Agam  Kumar,Mr. Sumit Kumar,IV-C,18,,8650399621,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,59
+3462,01-08-2025,01-08-2025,10002327,Utkarsh  Yadav,Mr. Ram Nihor Yadav,X-B,17,,8894633001,Male,Tuition Fees,May + June,8000,Credit/Debit Card,Amit,21564
+3461,01-08-2025,01-08-2025,10003036,Ananya  Yadav,Mr. Ram Nihor Yadav,VIII-B,17,,9451510374,Female,Tuition Fees,May + June,6460,Credit/Debit Card,Amit,1245
+3460,01-08-2025,01-08-2025,10003222,Bhavya  Singh,Mr. Dinesh Singh,II-Diamond,20,,9903368275,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,43222
+3460,01-08-2025,01-08-2025,10003222,Bhavya  Singh,Mr. Dinesh Singh,II-Diamond,20,,9903368275,Female,Tuition Fees,July + August,5950,Wallet/UPI/QR,Inderjeet,43222
+3459,01-08-2025,01-08-2025,10002632,Bhumi  Singh,Mr. Dinesh Singh,VIII-D,17,,9903368275,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,3432
+3459,01-08-2025,01-08-2025,10002632,Bhumi  Singh,Mr. Dinesh Singh,VIII-D,17,,9903368275,Female,Tuition Fees,July + August,7600,Wallet/UPI/QR,Inderjeet,3432
+3458,01-08-2025,01-08-2025,10003159,Armaan  Sharma,Mr. Anil Kumar Sharma,VII-C,25,,9418446625,Male,Tuition Fees,July + August,3230,ONLINE,,E2508010K4CIXB
+3457,01-08-2025,01-08-2025,10002120,Riyansh  Gogna,Mr. Sanjeev Gogna,V-C,13,,9816147206,Male,Tuition Fees,July + August,3000,ONLINE,,E2508010K494AH
+3457,01-08-2025,01-08-2025,10002120,Riyansh  Gogna,Mr. Sanjeev Gogna,V-C,13,,9816147206,Male,Transport Fee,July + August,900,ONLINE,,E2508010K494AH
+3456,01-08-2025,01-08-2025,10002885,Jaskaran  Singh,Mr. Amrit Pal Singh,XI-Medical,3,,7983950139,Male,Tuition Fees,May + June,9000,Credit/Debit Card,Amit,41854
+3456,01-08-2025,01-08-2025,10002885,Jaskaran  Singh,Mr. Amrit Pal Singh,XI-Medical,3,,7983950139,Male,Transport Fee,May + June,1940,Credit/Debit Card,Amit,41854
+3455,01-08-2025,01-08-2025,10002512,Lakshya  Bhardwaj,Mr. Naresh Kumar,VI-D,22,,8894011005,Male,Tuition Fees,July + August,6460,Wallet/UPI/QR,Amit,154
+3455,01-08-2025,01-08-2025,10002512,Lakshya  Bhardwaj,Mr. Naresh Kumar,VI-D,22,,8894011005,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,154
+3454,01-08-2025,01-08-2025,10001489,Yamini  Bhardwaj,Mr. Naresh Kumar,IX-C,20,,7018660052,Female,Tuition Fees,July + August,8000,Wallet/UPI/QR,Amit,12354
+3454,01-08-2025,01-08-2025,10001489,Yamini  Bhardwaj,Mr. Naresh Kumar,IX-C,20,,7018660052,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,12354
+3453,31-07-2025,31-07-2025,10002193,Priyakshi  Saikia,Mr. Paramananda Saikia,VII-D,10,,6230064268,Female,Tuition Fees,July + August,7600,NEFT Payment,Amit,222
+3452,01-08-2025,01-08-2025,10002827,Raman  Kumar,Mr. Shyam Kumar Yadav,X-B,23,,9805775030,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Amit,1234
+3452,01-08-2025,01-08-2025,10002827,Raman  Kumar,Mr. Shyam Kumar Yadav,X-B,23,,9805775030,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Amit,1234
+3451,01-08-2025,01-08-2025,10003130,Arein  Singta,Mr. Vipan Singh,L.K.G.-Green,2,,6230029400,Male,Tuition Fees,November,2500,ONLINE,,E2508010K463EC
+3451,01-08-2025,01-08-2025,10003130,Arein  Singta,Mr. Vipan Singh,L.K.G.-Green,2,,6230029400,Male,Term Charges,November,1900,ONLINE,,E2508010K463EC
+3451,01-08-2025,01-08-2025,10003130,Arein  Singta,Mr. Vipan Singh,L.K.G.-Green,2,,6230029400,Male,Transport Fee,November,900,ONLINE,,E2508010K463EC
+3450,31-07-2025,31-07-2025,10002319,Yashasvi  Dhingra,Mr. Narender Dhingra,VII-D,28,,7831016552,Female,Tuition Fees,July + August,7600,ONLINE,,E2507310K3NRWR
+3450,31-07-2025,31-07-2025,10002319,Yashasvi  Dhingra,Mr. Narender Dhingra,VII-D,28,,7831016552,Female,Transport Fee,July + August,970,ONLINE,,E2507310K3NRWR
+3449,31-07-2025,31-07-2025,10002904,Ojas Rahul Thakare,Mr. Rahul Wasudev Rao Thakare,IV-B,20,,8329719875,Male,Tuition Fees,July + August,7000,ONLINE,,E2507310K3N0HR
+3449,31-07-2025,31-07-2025,10002904,Ojas Rahul Thakare,Mr. Rahul Wasudev Rao Thakare,IV-B,20,,8329719875,Male,Transport Fee,July + August,970,ONLINE,,E2507310K3N0HR
+3448,31-07-2025,31-07-2025,10003119,Granth Gautam Singh,Mr. Prateek Singh,II-Pearl,16,,8126605627,Male,Tuition Fees,September + October,5950,ONLINE,,E2507310K3FXBS
+3448,31-07-2025,31-07-2025,10003119,Granth Gautam Singh,Mr. Prateek Singh,II-Pearl,16,,8126605627,Male,Transport Fee,September + October,1800,ONLINE,,E2507310K3FXBS
+3447,31-07-2025,31-07-2025,10003076,Prasham  ,Mr. Hukam Chand,XII-Non-Medical,15,,6280631458,Male,Transport Fee,July + August,900,ONLINE,,E2507310K2RU6D
+3447,31-07-2025,31-07-2025,10003076,Prasham  ,Mr. Hukam Chand,XII-Non-Medical,15,,6280631458,Male,Tuition Fees,July + August,9000,ONLINE,,E2507310K2RU6D
+3446,31-07-2025,31-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Tuition Fees,September + October,260,Cash,Amit,
+3445,31-07-2025,31-07-2025,10002107,Krishna  Tomar,Mr. Dinesh Kumar,VII-D,7,,8116945510,Male,Tuition Fees,May + June,6460,ONLINE,,E2507310K2BDZH
+3444,31-07-2025,31-07-2025,10002952,Ruhaan  Malik,Mr. Julfan,U.K.G.-Rose,4,,8219150617,Male,Transport Fee,July + August,1110,ONLINE,,E2507310K29EBX
+3444,31-07-2025,31-07-2025,10002952,Ruhaan  Malik,Mr. Julfan,U.K.G.-Rose,4,,8219150617,Male,Tuition Fees,July + August,5600,ONLINE,,E2507310K29EBX
+3443,31-07-2025,31-07-2025,10002325,Kritika  Chaudhary,Mr. Sohan Singh,VII-B,20,,7018897956,Female,Tuition Fees,July + August,7600,ONLINE,,E2507310K23K4L
+3443,31-07-2025,31-07-2025,10002325,Kritika  Chaudhary,Mr. Sohan Singh,VII-B,20,,7018897956,Female,Transport Fee,July + August,970,ONLINE,,E2507310K23K4L
+3442,31-07-2025,31-07-2025,10002447,Aradhya  ,Mr. Surender Kumar,V-A,16,,7876538495,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,76556
+3442,31-07-2025,31-07-2025,10002447,Aradhya  ,Mr. Surender Kumar,V-A,16,,7876538495,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,76556
+3441,31-07-2025,31-07-2025,10003426,SHREYASH   MOHAPATRA,UMAKANT MOHAPATRA,L.K.G.-Pink,15,,8894888547,Male,Tuition Fees,July + August,4250,ONLINE,,E2507310K1S9ML
+3441,31-07-2025,31-07-2025,10003426,SHREYASH   MOHAPATRA,UMAKANT MOHAPATRA,L.K.G.-Pink,15,,8894888547,Male,Transport Fee,July + August,900,ONLINE,,E2507310K1S9ML
+3440,31-07-2025,31-07-2025,10003288,Shreya  Mohapatra,Mr. Umakanta Mohapatra,III-C,20,,8894888544,Female,Tuition Fees,July + August,7000,ONLINE,,E2507310K1S0JS
+3440,31-07-2025,31-07-2025,10003288,Shreya  Mohapatra,Mr. Umakanta Mohapatra,III-C,20,,8894888544,Female,Transport Fee,July + August,900,ONLINE,,E2507310K1S0JS
+3439,31-07-2025,31-07-2025,10001005,Ekta  Chaudhary,Mr. Sohan Chand,XI-Medical,13,,9816010083,Female,Tuition Fees,July + August,2610,Cash,Amit,
+3438,31-07-2025,31-07-2025,10001005,Ekta  Chaudhary,Mr. Sohan Chand,XI-Medical,13,,9816010083,Female,Tuition Fees,May + June,4500,Cash,Amit,
+3437,31-07-2025,31-07-2025,10001612,Aditya  Choudhary,Mr. Sohan Chand,VII-D,17,,9816010083,Male,Tuition Fees,May + June,6080,Cash,Amit,
+3436,31-07-2025,31-07-2025,10003412,KAVYA  ,JASVEER SINGH,L.K.G.-Pink,18,,6230353162,Female,Tuition Fees,September + October,5000,ONLINE,,E2507310K1P2ZQ
+3436,31-07-2025,31-07-2025,10003412,KAVYA  ,JASVEER SINGH,L.K.G.-Pink,18,,6230353162,Female,Transport Fee,September + October,2820,ONLINE,,E2507310K1P2ZQ
+3435,30-07-2025,30-07-2025,10002686,Ruder  Kashyap,Mr. Dheeraj Kashyap,V-D,12,,7018896300,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,1564
+3435,30-07-2025,30-07-2025,10002686,Ruder  Kashyap,Mr. Dheeraj Kashyap,V-D,12,,7018896300,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,1564
+3434,30-07-2025,30-07-2025,10002468,Aayan  Chhetri,Mr. Kamal Raj,V-B,15,,7876578767,Male,Tuition Fees,May + June,7000,NEFT Payment,Amit,SBI
+3433,30-07-2025,30-07-2025,10001536,Shree Nidhi Garg,Mr. Rahul Garg,IX-C,32,,9805396085,Female,Transport Fee,May + June,1800,NEFT Payment,Amit,sbi
+3433,30-07-2025,30-07-2025,10001536,Shree Nidhi Garg,Mr. Rahul Garg,IX-C,32,,9805396085,Female,Tuition Fees,May + June,5800,NEFT Payment,Amit,sbi
+3433,30-07-2025,30-07-2025,10001536,Shree Nidhi Garg,Mr. Rahul Garg,IX-C,32,,9805396085,Female,Transport Fee,July + August,900,NEFT Payment,Amit,sbi
+3433,30-07-2025,30-07-2025,10001536,Shree Nidhi Garg,Mr. Rahul Garg,IX-C,32,,9805396085,Female,Tuition Fees,July + August,6800,NEFT Payment,Amit,sbi
+3432,30-07-2025,30-07-2025,10001535,Soham Krishna Garg,Mr. Rahul Garg,X-C,17,,9805396085,Male,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+3432,30-07-2025,30-07-2025,10001535,Soham Krishna Garg,Mr. Rahul Garg,X-C,17,,9805396085,Male,Tuition Fees,May + June,8000,NEFT Payment,Amit,SBI
+3432,30-07-2025,30-07-2025,10001535,Soham Krishna Garg,Mr. Rahul Garg,X-C,17,,9805396085,Male,Transport Fee,July + August,900,NEFT Payment,Amit,SBI
+3432,30-07-2025,30-07-2025,10001535,Soham Krishna Garg,Mr. Rahul Garg,X-C,17,,9805396085,Male,Tuition Fees,July + August,8000,NEFT Payment,Amit,SBI
+3431,30-07-2025,30-07-2025,10002144,Sanath Keshav Garg,Mr. Rahul Garg,VI-D,24,,9805396085,Male,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+3431,30-07-2025,30-07-2025,10002144,Sanath Keshav Garg,Mr. Rahul Garg,VI-D,24,,9805396085,Male,Tuition Fees,May + June,5550,NEFT Payment,Amit,SBI
+3431,30-07-2025,30-07-2025,10002144,Sanath Keshav Garg,Mr. Rahul Garg,VI-D,24,,9805396085,Male,Transport Fee,July + August,900,NEFT Payment,Amit,SBI
+3431,30-07-2025,30-07-2025,10002144,Sanath Keshav Garg,Mr. Rahul Garg,VI-D,24,,9805396085,Male,Tuition Fees,July + August,6550,NEFT Payment,Amit,SBI
+3430,30-07-2025,30-07-2025,10002268,Daksh  Thakur,Mr. Hans Raj,VII-B,9,,7018001255,Male,Tuition Fees,July + August,7600,ONLINE,,E2507300JZWJ2W
+3429,30-07-2025,30-07-2025,10001331,Jatin  Kapoor,Mr. Mr. Sunil Datt,IX-C,22,,8219597384,Male,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,4353
+3428,30-07-2025,30-07-2025,10001623,Abhilaksh  Kapoor,Mr. Sunil Datt,VII-B,1,,9816949854,Male,Tuition Fees,July + August,6460,Credit/Debit Card,Inderjeet,3444
+3427,29-07-2025,29-07-2025,10001762,Amol  ,Mr. Yash Pal,VIII-B,25,,9805333385,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,f523
+3427,29-07-2025,29-07-2025,10001762,Amol  ,Mr. Yash Pal,VIII-B,25,,9805333385,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,f523
+3427,29-07-2025,29-07-2025,10001762,Amol  ,Mr. Yash Pal,VIII-B,25,,9805333385,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,f523
+3427,29-07-2025,29-07-2025,10001762,Amol  ,Mr. Yash Pal,VIII-B,25,,9805333385,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,f523
+3426,27-07-2025,27-07-2025,10002497,Arpita  Sharma,Mr. Gagan Sharma,VI-B,4,,9816025679,Female,Tuition Fees,July + August,7600,NEFT Payment,Amit,SBI
+3426,27-07-2025,27-07-2025,10002497,Arpita  Sharma,Mr. Gagan Sharma,VI-B,4,,9816025679,Female,Transport Fee,July + August,880,NEFT Payment,Amit,SBI
+3425,29-07-2025,29-07-2025,10003326,GURVEER   SINGH,PRITPAL SINGH,Nursery-Bloom,9,,8725839192,Male,Transport Fee,September + October,900,ONLINE,,E2507290JYC3GU
+3425,29-07-2025,29-07-2025,10003326,GURVEER   SINGH,PRITPAL SINGH,Nursery-Bloom,9,,8725839192,Male,Tuition Fees,September + October,4250,ONLINE,,E2507290JYC3GU
+3424,29-07-2025,29-07-2025,10002021,Agampreet  Kaur,Mr. Pritpal Singh,V-A,26,,8725839192,Female,Tuition Fees,September + October,7000,ONLINE,,E2507290JYBW7P
+3424,29-07-2025,29-07-2025,10002021,Agampreet  Kaur,Mr. Pritpal Singh,V-A,26,,8725839192,Female,Transport Fee,September + October,1800,ONLINE,,E2507290JYBW7P
+3423,28-07-2025,28-07-2025,10000924,Priyam  Tomar,Mr. Amit Kumar,XII-Commerce,22,,9736495353,Male,CAPS Workshop,,1,Wallet/UPI/QR,Amit,1212
+3422,29-07-2025,29-07-2025,10000963,Husna  ,Mr. Mohammad Nasim Ahmed,XII-Medical,12,,9418172984,Female,Tuition Fees,July + August,4500,Credit/Debit Card,Amit,41654
+3421,29-07-2025,29-07-2025,10000846,Muhammad Rehaan Rawat,Mr. Fareez Khan,XII-Medical,13,,9418172984,Male,Tuition Fees,July + August,4500,Credit/Debit Card,Amit,1212
+3420,29-07-2025,29-07-2025,10001453,Muhammad Faizan Rawat,Mr. Fareez Khan,IX-A,9,,9418172984,Male,Transport Fee,May + June,2120,Credit/Debit Card,Amit,121
+3420,29-07-2025,29-07-2025,10001453,Muhammad Faizan Rawat,Mr. Fareez Khan,IX-A,9,,9418172984,Male,Tuition Fees,May + June,6400,Credit/Debit Card,Amit,121
+3420,29-07-2025,29-07-2025,10001453,Muhammad Faizan Rawat,Mr. Fareez Khan,IX-A,9,,9418172984,Male,Tuition Fees,July + August,3200,Credit/Debit Card,Amit,121
+3419,29-07-2025,29-07-2025,10002787,Archit  Srivastava,Mr. Amit Srivastava,II-Pearl,15,,9816420094,Male,Tuition Fees,July + August,5950,Wallet/UPI/QR,Amit,22232
+3419,29-07-2025,29-07-2025,10002787,Archit  Srivastava,Mr. Amit Srivastava,II-Pearl,15,,9816420094,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,22232
+3418,29-07-2025,29-07-2025,10002278,Abhigyan  Srivastava,Mr. Amit Srivastava,VI-A,20,,9816420094,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,232
+3418,29-07-2025,29-07-2025,10002278,Abhigyan  Srivastava,Mr. Amit Srivastava,VI-A,20,,9816420094,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3417,29-07-2025,29-07-2025,10002786,Vaishnavi  Kumari,Mr. Kamlesh Sahu,I-Koel,10,,8627818338,Female,Tuition Fees,April,3500,Cash,Amit,
+3417,29-07-2025,29-07-2025,10002786,Vaishnavi  Kumari,Mr. Kamlesh Sahu,I-Koel,10,,8627818338,Female,Parent Orientation,,1000,Cash,Amit,
+3417,29-07-2025,29-07-2025,10002786,Vaishnavi  Kumari,Mr. Kamlesh Sahu,I-Koel,10,,8627818338,Female,"I-Card, Art & Craft, etc.",April,900,Cash,Amit,
+3417,29-07-2025,29-07-2025,10002786,Vaishnavi  Kumari,Mr. Kamlesh Sahu,I-Koel,10,,8627818338,Female,Transport Fee,April,200,Cash,Amit,
+3417,29-07-2025,29-07-2025,10002786,Vaishnavi  Kumari,Mr. Kamlesh Sahu,I-Koel,10,,8627818338,Female,Tuition Fees,May + June,6400,Cash,Amit,
+3416,29-07-2025,29-07-2025,10003347,AAVYA   SHARMA,DEEPAK SHARMA,L.K.G.-Pink,10,,8988474090,Female,Tuition Fees,July + August,2125,Wallet/UPI/QR,Amit,222
+3415,29-07-2025,29-07-2025,10002821,Viraj  Bhardwaj,Mr. Deepak Sharma,II-Ruby,5,,8988474090,Male,Tuition Fees,July + August,3500,Wallet/UPI/QR,Amit,22
+3414,29-07-2025,29-07-2025,10001371,Pranjal  Negi,Mr. Gyar Singh Negi,XII-Medical,6,,7018489015,Female,Tuition Fees,July + August,4500,Wallet/UPI/QR,Inderjeet,4544
+3413,28-07-2025,28-07-2025,10002801,Vansh  Goyal,Mr. Arun Goyal,VII-C,12,,9887880174,Male,Tuition Fees,May + June,6460,Credit/Debit Card,Amit,154
+3413,28-07-2025,28-07-2025,10002801,Vansh  Goyal,Mr. Arun Goyal,VII-C,12,,9887880174,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,154
+3412,28-07-2025,28-07-2025,10002800,Vanshika  Goyal,Mr. Arun Goyal,X-C,18,,9887880174,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Amit,1245
+3412,28-07-2025,28-07-2025,10002800,Vanshika  Goyal,Mr. Arun Goyal,X-C,18,,9887880174,Female,Transport Fee,May + June,1800,Credit/Debit Card,Amit,1245
+3411,28-07-2025,28-07-2025,10001127,Shivansh  Chaudhary,Mr. Sandeep Kumar,X-B,22,,9882111185,Male,Transport Fee,May + June,2120,Credit/Debit Card,Inderjeet,6579
+3411,28-07-2025,28-07-2025,10001127,Shivansh  Chaudhary,Mr. Sandeep Kumar,X-B,22,,9882111185,Male,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,6579
+3411,28-07-2025,28-07-2025,10001127,Shivansh  Chaudhary,Mr. Sandeep Kumar,X-B,22,,9882111185,Male,Transport Fee,July + August,1060,Credit/Debit Card,Inderjeet,6579
+3411,28-07-2025,28-07-2025,10001127,Shivansh  Chaudhary,Mr. Sandeep Kumar,X-B,22,,9882111185,Male,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,6579
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Term Charges,April,4600,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,CAPS Workshop,,2000,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Parent Orientation,,1000,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,"I-Card, Art & Craft, etc.",April,1240,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Admission Fee,,12000,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Security,,5000,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Annual Fund,,5000,Credit/Debit Card,Amit,157485
+3410,28-07-2025,28-07-2025,10003486,PARIKSHIT   CHOUKIKAR,RAJESH ,VIII-D,,,9001853366,Male,Tuition Fees,July + August,3800,Credit/Debit Card,Amit,157485
+3409,28-07-2025,28-07-2025,10002753,Aradhya  ,Mr. Satender Singh,II-Diamond,10,,9805341331,Female,Tuition Fees,September + October,7000,Cash,Amit,
+3409,28-07-2025,28-07-2025,10002753,Aradhya  ,Mr. Satender Singh,II-Diamond,10,,9805341331,Female,Transport Fee,September + October,1800,Cash,Amit,
+3408,28-07-2025,28-07-2025,10002753,Aradhya  ,Mr. Satender Singh,II-Diamond,10,,9805341331,Female,Tuition Fees,May + June,7000,Cash,Amit,
+3408,28-07-2025,28-07-2025,10002753,Aradhya  ,Mr. Satender Singh,II-Diamond,10,,9805341331,Female,Transport Fee,July + August,900,Cash,Amit,
+3408,28-07-2025,28-07-2025,10002753,Aradhya  ,Mr. Satender Singh,II-Diamond,10,,9805341331,Female,Tuition Fees,July + August,7000,Cash,Amit,
+3407,28-07-2025,28-07-2025,10001137,Bhavneet  Singh,Mr. Jasbir Singh,XI-Medical,1,,8278735603,Male,Transport Fee,April,1130,Cash,Inderjeet,
+3407,28-07-2025,28-07-2025,10001137,Bhavneet  Singh,Mr. Jasbir Singh,XI-Medical,1,,8278735603,Male,Transport Fee,May + June,2260,Cash,Inderjeet,
+3407,28-07-2025,28-07-2025,10001137,Bhavneet  Singh,Mr. Jasbir Singh,XI-Medical,1,,8278735603,Male,Tuition Fees,May + June,9000,Cash,Inderjeet,
+3407,28-07-2025,28-07-2025,10001137,Bhavneet  Singh,Mr. Jasbir Singh,XI-Medical,1,,8278735603,Male,Tuition Fees,July + August,4500,Cash,Inderjeet,
+3406,28-07-2025,28-07-2025,10002275,Japneet  Kaur,Mr. Jasbir Singh,IV-B,5,,8278735603,Female,Transport Fee,May + June,2260,Cash,Inderjeet,
+3406,28-07-2025,28-07-2025,10002275,Japneet  Kaur,Mr. Jasbir Singh,IV-B,5,,8278735603,Female,Tuition Fees,May + June,5950,Cash,Inderjeet,
+3406,28-07-2025,28-07-2025,10002275,Japneet  Kaur,Mr. Jasbir Singh,IV-B,5,,8278735603,Female,Tuition Fees,July + August,2975,Cash,Inderjeet,
+3405,28-07-2025,28-07-2025,10002219,Avni  Chaudhary,Mr. Narender Kumar,IV-D,30,,9736364686,Female,Transport Fee,July + August,200,Wallet/UPI/QR,Amit,222
+3405,28-07-2025,28-07-2025,10002219,Avni  Chaudhary,Mr. Narender Kumar,IV-D,30,,9736364686,Female,Tuition Fees,July + August,3500,Wallet/UPI/QR,Amit,222
+3404,28-07-2025,28-07-2025,10002736,Thakur Saurav Chauhan,Mr. Pravesh Kumar,II-Diamond,2,,7018601545,Male,Transport Fee,May + June,1800,Cash,Amit,
+3404,28-07-2025,28-07-2025,10002736,Thakur Saurav Chauhan,Mr. Pravesh Kumar,II-Diamond,2,,7018601545,Male,Tuition Fees,May + June,5950,Cash,Amit,
+3403,28-07-2025,28-07-2025,10002019,Kritagya  Chauhan,Mr. Pravesh Kumar,V-B,9,,9805929045,Female,Transport Fee,May + June,1800,Cash,Amit,
+3403,28-07-2025,28-07-2025,10002019,Kritagya  Chauhan,Mr. Pravesh Kumar,V-B,9,,9805929045,Female,Tuition Fees,May + June,7000,Cash,Amit,
+3402,25-07-2025,25-07-2025,10003355,GIRISHA  ,SHRISAT PRAKASH,V-C,30,,9816880008,Female,Tuition Fees,July + August,5950,Wallet/UPI/QR,Amit,747878
+3401,28-07-2025,28-07-2025,10001349,Divya  Shikha,Mr. Vishnu Pratap Singh,XI-Non-Medical,12,,9318988830,Female,Tuition Fees,July + August,9000,Wallet/UPI/QR,Amit,2343
+3401,28-07-2025,28-07-2025,10001349,Divya  Shikha,Mr. Vishnu Pratap Singh,XI-Non-Medical,12,,9318988830,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,2343
+3400,28-07-2025,28-07-2025,10003214,Aaron  Pal,Mr. Prem Pal,VIII-B,23,,9557623480,Male,Transport Fee,July + August,900,Cash,Amit,
+3400,28-07-2025,28-07-2025,10003214,Aaron  Pal,Mr. Prem Pal,VIII-B,23,,9557623480,Male,Tuition Fees,July + August,6460,Cash,Amit,
+3399,28-07-2025,28-07-2025,10003213,Gracy  Pal,Mr. Prem Pal,XII-Commerce,10,,9557623480,Female,Transport Fee,July + August,900,Cash,Amit,
+3399,28-07-2025,28-07-2025,10003213,Gracy  Pal,Mr. Prem Pal,XII-Commerce,10,,9557623480,Female,Tuition Fees,July + August,8600,Cash,Amit,
+3398,26-07-2025,26-07-2025,10001899,Aaliya  Maniktala,Mr. Vicky Maniktala,VI-C,29,,8219111189,Female,Tuition Fees,May + June,6460,Wallet/UPI/QR,Amit,222433
+3398,26-07-2025,26-07-2025,10001899,Aaliya  Maniktala,Mr. Vicky Maniktala,VI-C,29,,8219111189,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,222433
+3398,26-07-2025,26-07-2025,10001899,Aaliya  Maniktala,Mr. Vicky Maniktala,VI-C,29,,8219111189,Female,Tuition Fees,July + August,6460,Wallet/UPI/QR,Amit,222433
+3398,26-07-2025,26-07-2025,10001899,Aaliya  Maniktala,Mr. Vicky Maniktala,VI-C,29,,8219111189,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,222433
+3397,28-07-2025,28-07-2025,10003410,SHREEJA   GOSWAMI,MAHENDRA GOSWAMI,Nursery-Blossom,16,,8894017160,Female,Transport Fee,April,900,NEFT Payment,Amit,SBI
+3397,28-07-2025,28-07-2025,10003410,SHREEJA   GOSWAMI,MAHENDRA GOSWAMI,Nursery-Blossom,16,,8894017160,Female,Tuition Fees,May + June,4250,NEFT Payment,Amit,SBI
+3397,28-07-2025,28-07-2025,10003410,SHREEJA   GOSWAMI,MAHENDRA GOSWAMI,Nursery-Blossom,16,,8894017160,Female,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+3397,28-07-2025,28-07-2025,10003410,SHREEJA   GOSWAMI,MAHENDRA GOSWAMI,Nursery-Blossom,16,,8894017160,Female,Transport Fee,July + August,900,NEFT Payment,Amit,SBI
+3397,28-07-2025,28-07-2025,10003410,SHREEJA   GOSWAMI,MAHENDRA GOSWAMI,Nursery-Blossom,16,,8894017160,Female,Tuition Fees,July + August,4250,NEFT Payment,Amit,SBI
+3396,28-07-2025,28-07-2025,10002408,Nakshatra  Goswami,Mr. Mahendra Goswami,IV-B,14,,8894017160,Male,Tuition Fees,May + June,7000,NEFT Payment,Amit,SBI
+3396,28-07-2025,28-07-2025,10002408,Nakshatra  Goswami,Mr. Mahendra Goswami,IV-B,14,,8894017160,Male,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+3396,28-07-2025,28-07-2025,10002408,Nakshatra  Goswami,Mr. Mahendra Goswami,IV-B,14,,8894017160,Male,Transport Fee,July + August,900,NEFT Payment,Amit,SBI
+3396,28-07-2025,28-07-2025,10002408,Nakshatra  Goswami,Mr. Mahendra Goswami,IV-B,14,,8894017160,Male,Tuition Fees,July + August,7000,NEFT Payment,Amit,SBI
+3395,28-07-2025,28-07-2025,10003408,SIDDHI   TIWARI,SANDESH TIWARI,VIII-C,30,,9907177741,Female,Transport Fee,July + August,970,ONLINE,,E2507280JVGB6R
+3395,28-07-2025,28-07-2025,10003408,SIDDHI   TIWARI,SANDESH TIWARI,VIII-C,30,,9907177741,Female,Tuition Fees,July + August,7600,ONLINE,,E2507280JVGB6R
+3394,28-07-2025,28-07-2025,10003407,SANVI  TIWARI,SANDESH TIWARI,I-Koel,24,,9907177741,Female,Tuition Fees,July + August,5950,ONLINE,,E2507280JVFXYI
+3394,28-07-2025,28-07-2025,10003407,SANVI  TIWARI,SANDESH TIWARI,I-Koel,24,,9907177741,Female,Transport Fee,July + August,900,ONLINE,,E2507280JVFXYI
+3393,28-07-2025,28-07-2025,10003179,Abhi  Choudhary,Mr. Vikram Singh,III-D,1,,8894729626,Male,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,232
+3393,28-07-2025,28-07-2025,10003179,Abhi  Choudhary,Mr. Vikram Singh,III-D,1,,8894729626,Male,Tuition Fees,May + June,5600,Wallet/UPI/QR,Amit,232
+3393,28-07-2025,28-07-2025,10003179,Abhi  Choudhary,Mr. Vikram Singh,III-D,1,,8894729626,Male,Transport Fee,July + August,450,Wallet/UPI/QR,Amit,232
+3393,28-07-2025,28-07-2025,10003179,Abhi  Choudhary,Mr. Vikram Singh,III-D,1,,8894729626,Male,Tuition Fees,July + August,5600,Wallet/UPI/QR,Amit,232
+3392,28-07-2025,28-07-2025,10002024,Manas  Chaudhary,Mr. Vikram Chaudhary,V-B,10,,8894729626,Male,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,232
+3392,28-07-2025,28-07-2025,10002024,Manas  Chaudhary,Mr. Vikram Chaudhary,V-B,10,,8894729626,Male,Transport Fee,July + August,450,Wallet/UPI/QR,Amit,232
+3391,27-07-2025,27-07-2025,10002978,Harjas  Kaur,Mr. Amandeep Singh,U.K.G.-Lotus,7,,9149618736,Female,Transport Fee,April,900,ONLINE,,E2507270JTTK9R
+3391,27-07-2025,27-07-2025,10002978,Harjas  Kaur,Mr. Amandeep Singh,U.K.G.-Lotus,7,,9149618736,Female,Transport Fee,May + June,1800,ONLINE,,E2507270JTTK9R
+3391,27-07-2025,27-07-2025,10002978,Harjas  Kaur,Mr. Amandeep Singh,U.K.G.-Lotus,7,,9149618736,Female,Transport Fee,July + August,900,ONLINE,,E2507270JTTK9R
+3391,27-07-2025,27-07-2025,10002978,Harjas  Kaur,Mr. Amandeep Singh,U.K.G.-Lotus,7,,9149618736,Female,Tuition Fees,July + August,5600,ONLINE,,E2507270JTTK9R
+3390,27-07-2025,27-07-2025,10000818,Jashanpreet  Singh,Mr. Jasvinder Singh,XII-Commerce,16,,9318056096,Male,Tuition Fees,May + June,4300,ONLINE,,E2507270JTQPJU
+3389,26-07-2025,26-07-2025,10002585,Ishu  Chauhan,Mr. Anil Kumar,II-Pearl,26,,7018521613,Female,Tuition Fees,July + August,7000,ONLINE,,E2507260JSLONN
+3389,26-07-2025,26-07-2025,10002585,Ishu  Chauhan,Mr. Anil Kumar,II-Pearl,26,,7018521613,Female,Transport Fee,July + August,1060,ONLINE,,E2507260JSLONN
+3388,26-07-2025,26-07-2025,10002987,Viraj  Sharma,Mr. Sandeep Sharma,I-Mynah,18,,7018644492,Male,Tuition Fees,July + August,5600,ONLINE,,E2507260JS3IOU
+3387,26-07-2025,26-07-2025,10003226,Shaurya  Thakur,Mr. Kapil Dev,III-D,22,,8894173005,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,22278
+3387,26-07-2025,26-07-2025,10003226,Shaurya  Thakur,Mr. Kapil Dev,III-D,22,,8894173005,Male,Transport Fee,July + August,970,Credit/Debit Card,Inderjeet,22278
+3386,26-07-2025,26-07-2025,10001271,Ritika  ,Mr. Sampuran Chand,X-A,2,,8219023107,Female,Tuition Fees,July + August,4000,Cash,Inderjeet,
+3385,26-07-2025,26-07-2025,10003265,Sanshray  Goyal,Mr. Santosh Kumar,III-D,21,,7876386485,Male,Transport Fee,July + August,1380,Cash,Amit,
+3385,26-07-2025,26-07-2025,10003265,Sanshray  Goyal,Mr. Santosh Kumar,III-D,21,,7876386485,Male,Tuition Fees,July + August,7000,Cash,Amit,
+3384,26-07-2025,26-07-2025,10002102,Vanshika  ,Mr. Inder Singh,X-C,16,,8219881955,Female,IFM Software,April,700,Wallet/UPI/QR,Inderjeet,34534
+3383,26-07-2025,26-07-2025,10001016,Aarav  Verma,Mr. Parveen Kumar,XI-Non-Medical,1,,9816189559,Male,Transport Fee,July + August,1150,Cash,Amit,
+3383,26-07-2025,26-07-2025,10001016,Aarav  Verma,Mr. Parveen Kumar,XI-Non-Medical,1,,9816189559,Male,Tuition Fees,July + August,4000,Cash,Amit,
+3382,26-07-2025,26-07-2025,10002300,Satyam  ,Mr. Kanj Binayak Roy,VIII-D,19,,8894188943,Male,CAPS Workshop,,2000,ONLINE,,E2507260JRWFRQ
+3382,26-07-2025,26-07-2025,10002300,Satyam  ,Mr. Kanj Binayak Roy,VIII-D,19,,8894188943,Male,Transport Fee,May + June,900,ONLINE,,E2507260JRWFRQ
+3382,26-07-2025,26-07-2025,10002300,Satyam  ,Mr. Kanj Binayak Roy,VIII-D,19,,8894188943,Male,Tuition Fees,May + June,4600,ONLINE,,E2507260JRWFRQ
+3381,26-07-2025,26-07-2025,10002302,Shailja  ,Mr. Kanj Binayak,X-C,10,,8894188943,Female,Transport Fee,May + June,900,ONLINE,,E2507260JRW8TK
+3381,26-07-2025,26-07-2025,10002302,Shailja  ,Mr. Kanj Binayak,X-C,10,,8894188943,Female,Tuition Fees,May + June,5000,ONLINE,,E2507260JRW8TK
+3380,26-07-2025,26-07-2025,10002956,Tabjot  Singh,Mr. Tarandeep Singh,I-Mynah,16,,9736342400,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,556695
+3380,26-07-2025,26-07-2025,10002956,Tabjot  Singh,Mr. Tarandeep Singh,I-Mynah,16,,9736342400,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,556695
+3379,26-07-2025,26-07-2025,10003234,Kimaya  Parmar,Mr. Atul Parmar,V-C,24,,9418049333,Female,Transport Fee,July + August,970,Cash,Amit,
+3379,26-07-2025,26-07-2025,10003234,Kimaya  Parmar,Mr. Atul Parmar,V-C,24,,9418049333,Female,Tuition Fees,July + August,7000,Cash,Amit,
+3378,26-07-2025,26-07-2025,10001682,Sarthak  Sharma,Mr. Ajay Sharma,IX-C,9,,8219732362,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,9475
+3378,26-07-2025,26-07-2025,10001682,Sarthak  Sharma,Mr. Ajay Sharma,IX-C,9,,8219732362,Male,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,9475
+3377,26-07-2025,26-07-2025,10002714,Nishit  ,Mr. Rupesh Kant,V-C,10,,7018561299,Male,Transport Fee,July + August,1300,Credit/Debit Card,Amit,12354
+3377,26-07-2025,26-07-2025,10002714,Nishit  ,Mr. Rupesh Kant,V-C,10,,7018561299,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,12354
+3376,26-07-2025,26-07-2025,10001211,Jaipreet  Singh,Mr. Arvind Pal Singh,XII-Non-Medical,10,,9418062880,Male,Tuition Fees,May + June,9000,Wallet/UPI/QR,Amit,545
+3376,26-07-2025,26-07-2025,10001211,Jaipreet  Singh,Mr. Arvind Pal Singh,XII-Non-Medical,10,,9418062880,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,545
+3375,26-07-2025,26-07-2025,10001514,Ishika  Aggarwal,Mr. Anup kumar,IX-A,3,,9882520045,Female,Tuition Fees,July + August,7000,Cash,Inderjeet,
+3375,26-07-2025,26-07-2025,10001514,Ishika  Aggarwal,Mr. Anup kumar,IX-A,3,,9882520045,Female,Transport Fee,July + August,1150,Cash,Inderjeet,
+3374,26-07-2025,26-07-2025,10001982,Kavish  Aggarwal,Mr. Anup Aggarwal,VI-A,9,,9882520045,Male,Tuition Fees,July + August,6600,Cash,Inderjeet,
+3374,26-07-2025,26-07-2025,10001982,Kavish  Aggarwal,Mr. Anup Aggarwal,VI-A,9,,9882520045,Male,Transport Fee,July + August,1150,Cash,Inderjeet,
+3373,26-07-2025,26-07-2025,10000951,Devansh  Gupta,Mr. Ashish Gupta,XII-Non-Medical,7,,7454839777,Male,Tuition Fees,September + October,8500,ONLINE,,E2507260JRTZ8G
+3372,26-07-2025,26-07-2025,10001633,Manmeet  Kaur,Mr. Hardeep Singh,VII-D,2,,9805517616,Female,Tuition Fees,May + June,7600,NEFT Payment,Amit,SBI
+3372,26-07-2025,26-07-2025,10001633,Manmeet  Kaur,Mr. Hardeep Singh,VII-D,2,,9805517616,Female,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+3372,26-07-2025,26-07-2025,10001633,Manmeet  Kaur,Mr. Hardeep Singh,VII-D,2,,9805517616,Female,Tuition Fees,July + August,7600,NEFT Payment,Amit,SBI
+3372,26-07-2025,26-07-2025,10001633,Manmeet  Kaur,Mr. Hardeep Singh,VII-D,2,,9805517616,Female,Transport Fee,July + August,900,NEFT Payment,Amit,SBI
+3371,26-07-2025,26-07-2025,10001267,Ansh  Goyal,Mr. Ravi Kumar,X-A,21,,9816101750,Male,Tuition Fees,May + June,8000,Cash,Inderjeet,
+3370,26-07-2025,26-07-2025,10002329,Aarohi  Bansal,Mr. Manoj Bansal,V-A,2,,7833054608,Female,Tuition Fees,May + June,5950,Cash,Amit,
+3370,26-07-2025,26-07-2025,10002329,Aarohi  Bansal,Mr. Manoj Bansal,V-A,2,,7833054608,Female,Transport Fee,May + June,2300,Cash,Amit,
+3370,26-07-2025,26-07-2025,10002329,Aarohi  Bansal,Mr. Manoj Bansal,V-A,2,,7833054608,Female,Tuition Fees,July + August,5950,Cash,Amit,
+3370,26-07-2025,26-07-2025,10002329,Aarohi  Bansal,Mr. Manoj Bansal,V-A,2,,7833054608,Female,Transport Fee,July + August,1150,Cash,Amit,
+3369,26-07-2025,26-07-2025,10001482,Satvik  Bansal,Mr. Manoj Bansal,VIII-A,20,,7833054608,Male,Tuition Fees,May + June,7600,Cash,Amit,
+3369,26-07-2025,26-07-2025,10001482,Satvik  Bansal,Mr. Manoj Bansal,VIII-A,20,,7833054608,Male,Transport Fee,May + June,2300,Cash,Amit,
+3369,26-07-2025,26-07-2025,10001482,Satvik  Bansal,Mr. Manoj Bansal,VIII-A,20,,7833054608,Male,Tuition Fees,July + August,7600,Cash,Amit,
+3369,26-07-2025,26-07-2025,10001482,Satvik  Bansal,Mr. Manoj Bansal,VIII-A,20,,7833054608,Male,Transport Fee,July + August,1150,Cash,Amit,
+3368,26-07-2025,26-07-2025,10001186,Rudransh  Bansal,Mr. Ashu Bansal,XI-Commerce,25,,9318856878,Male,Tuition Fees,May + June,8600,Cash,Amit,
+3368,26-07-2025,26-07-2025,10001186,Rudransh  Bansal,Mr. Ashu Bansal,XI-Commerce,25,,9318856878,Male,Transport Fee,May + June,2300,Cash,Amit,
+3368,26-07-2025,26-07-2025,10001186,Rudransh  Bansal,Mr. Ashu Bansal,XI-Commerce,25,,9318856878,Male,Tuition Fees,July + August,8600,Cash,Amit,
+3368,26-07-2025,26-07-2025,10001186,Rudransh  Bansal,Mr. Ashu Bansal,XI-Commerce,25,,9318856878,Male,Transport Fee,July + August,1150,Cash,Amit,
+3367,26-07-2025,26-07-2025,10002328,Vedansh  Bansal,Mr. Ashu Bansal,V-A,7,,9318856878,Male,Tuition Fees,May + June,5950,Cash,Amit,
+3367,26-07-2025,26-07-2025,10002328,Vedansh  Bansal,Mr. Ashu Bansal,V-A,7,,9318856878,Male,Transport Fee,May + June,2300,Cash,Amit,
+3367,26-07-2025,26-07-2025,10002328,Vedansh  Bansal,Mr. Ashu Bansal,V-A,7,,9318856878,Male,Tuition Fees,July + August,5950,Cash,Amit,
+3367,26-07-2025,26-07-2025,10002328,Vedansh  Bansal,Mr. Ashu Bansal,V-A,7,,9318856878,Male,Transport Fee,July + August,1150,Cash,Amit,
+3366,26-07-2025,26-07-2025,10001703,Shristi  Goyal,Mr. Ravi Kumar,VII-A,24,,9816101750,Female,Tuition Fees,July + August,6080,Cash,Inderjeet,
+3365,26-07-2025,26-07-2025,10002229,Avantika  ,Mr. Ritesh Kumar Bansal,IV-D,8,,9418732921,Female,Tuition Fees,July + August,5950,Cash,Amit,
+3365,26-07-2025,26-07-2025,10002229,Avantika  ,Mr. Ritesh Kumar Bansal,IV-D,8,,9418732921,Female,Transport Fee,July + August,900,Cash,Amit,
+3364,26-07-2025,26-07-2025,10001885,Jahanvi  ,Mr. Ritesh Kumar Bansal,VIII-B,13,,9418732921,Female,Tuition Fees,July + August,7600,Cash,Amit,
+3364,26-07-2025,26-07-2025,10001885,Jahanvi  ,Mr. Ritesh Kumar Bansal,VIII-B,13,,9418732921,Female,Transport Fee,July + August,900,Cash,Amit,
+3363,26-07-2025,26-07-2025,10000860,Aarush  Sharma,Mr. Amit Kumar,XII-Non-Medical,2,,9418286008,Male,Tuition Fees,July + August,9000,ONLINE,,E2507260JRSY0W
+3363,26-07-2025,26-07-2025,10000860,Aarush  Sharma,Mr. Amit Kumar,XII-Non-Medical,2,,9418286008,Male,Transport Fee,July + August,1060,ONLINE,,E2507260JRSY0W
+3362,26-07-2025,26-07-2025,10002477,Ayan  Singh,Mr. Devender Kumar,VII-C,10,,8814093915,Male,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3362,26-07-2025,26-07-2025,10002477,Ayan  Singh,Mr. Devender Kumar,VII-C,10,,8814093915,Male,Transport Fee,July + August,900,Cash,Inderjeet,
+3361,26-07-2025,26-07-2025,10002704,Arav  Singh,Mr. Amit Kumar,II-Diamond,26,,9815734900,Male,Tuition Fees,July + August,5950,Cash,Inderjeet,
+3360,26-07-2025,26-07-2025,10002682,Ahana  ,Mr. Amit Kumar,VII-A,1,,9996250789,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3359,26-07-2025,26-07-2025,10002795,Hemanya  Dhiman,Mr. Rinku Dhiman,I-Koel,11,,8580956533,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,15454
+3359,26-07-2025,26-07-2025,10002795,Hemanya  Dhiman,Mr. Rinku Dhiman,I-Koel,11,,8580956533,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,15454
+3358,26-07-2025,26-07-2025,10002690,Aditya  Tomar,Mr. Sohan Singh,V-D,15,,7018755275,Male,Tuition Fees,July + August,7000,Cash,Amit,
+3358,26-07-2025,26-07-2025,10002690,Aditya  Tomar,Mr. Sohan Singh,V-D,15,,7018755275,Male,Transport Fee,July + August,970,Cash,Amit,
+3357,26-07-2025,26-07-2025,10001234,Nidhish  Bhardwaj,Mr. Sumit Kumar,X-C,22,,8352037031,Male,Tuition Fees,July + August,4000,Cash,Inderjeet,
+3356,26-07-2025,26-07-2025,10001209,Madhav  Mittal,Mr. Gaurav Mittal,XI-Non-Medical,15,,8219671717,Male,Transport Fee,May + June,1940,Cash,Inderjeet,
+3356,26-07-2025,26-07-2025,10001209,Madhav  Mittal,Mr. Gaurav Mittal,XI-Non-Medical,15,,8219671717,Male,Tuition Fees,May + June,9000,Cash,Inderjeet,
+3356,26-07-2025,26-07-2025,10001209,Madhav  Mittal,Mr. Gaurav Mittal,XI-Non-Medical,15,,8219671717,Male,Tuition Fees,July + August,9000,Cash,Inderjeet,
+3356,26-07-2025,26-07-2025,10001209,Madhav  Mittal,Mr. Gaurav Mittal,XI-Non-Medical,15,,8219671717,Male,Transport Fee,July + August,970,Cash,Inderjeet,
+3355,26-07-2025,26-07-2025,10002303,Raghav  Mittal,Mr. Gaurav Mittal,VII-B,18,,8219671717,Male,Transport Fee,May + June,1940,Cash,Inderjeet,
+3355,26-07-2025,26-07-2025,10002303,Raghav  Mittal,Mr. Gaurav Mittal,VII-B,18,,8219671717,Male,Tuition Fees,May + June,6460,Cash,Inderjeet,
+3355,26-07-2025,26-07-2025,10002303,Raghav  Mittal,Mr. Gaurav Mittal,VII-B,18,,8219671717,Male,Tuition Fees,July + August,6460,Cash,Inderjeet,
+3355,26-07-2025,26-07-2025,10002303,Raghav  Mittal,Mr. Gaurav Mittal,VII-B,18,,8219671717,Male,Transport Fee,July + August,970,Cash,Inderjeet,
+3354,26-07-2025,26-07-2025,10002644,Anirudh  Bansal,Mr. Sumish Bansal,II-Diamond,25,,9418068621,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,www
+3354,26-07-2025,26-07-2025,10002644,Anirudh  Bansal,Mr. Sumish Bansal,II-Diamond,25,,9418068621,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,www
+3353,26-07-2025,26-07-2025,10002465,Aarya  Tegwan,Mr. Narender Singh Tegwan,V-C,25,,9805634917,Female,Transport Fee,July + August,200,Wallet/UPI/QR,Amit,ww
+3353,26-07-2025,26-07-2025,10002465,Aarya  Tegwan,Mr. Narender Singh Tegwan,V-C,25,,9805634917,Female,Transport Fee,September + October,1800,Wallet/UPI/QR,Amit,ww
+3352,26-07-2025,26-07-2025,10003328,HARSIMRAT   KAUR,GURPREET SINGH,U.K.G.-Rose,16,,6006674538,Female,Tuition Fees,July + August,5600,Credit/Debit Card,Amit,154
+3352,26-07-2025,26-07-2025,10003328,HARSIMRAT   KAUR,GURPREET SINGH,U.K.G.-Rose,16,,6006674538,Female,Transport Fee,July + August,555,Credit/Debit Card,Amit,154
+3351,26-07-2025,26-07-2025,10003377,EHAAN HASSAN   ,SAUD HASSAN ,VII-B,30,,7018158282,Male,Tuition Fees,July + August,3800,Cash,Inderjeet,
+3350,26-07-2025,26-07-2025,10002400,Aarav  Jassal,Mr. Manu Jassal,III-A,3,,8219404459,Male,Tuition Fees,September + October,5600,Credit/Debit Card,Amit,w22
+3350,26-07-2025,26-07-2025,10002400,Aarav  Jassal,Mr. Manu Jassal,III-A,3,,8219404459,Male,Transport Fee,September + October,1800,Credit/Debit Card,Amit,w22
+3349,26-07-2025,26-07-2025,10001824,Aaditya  Jassal,Mr. Manu Jassal,VI-A,12,,8219404459,Male,Tuition Fees,September + October,7600,Credit/Debit Card,Amit,12354
+3349,26-07-2025,26-07-2025,10001824,Aaditya  Jassal,Mr. Manu Jassal,VI-A,12,,8219404459,Male,Transport Fee,September + October,1800,Credit/Debit Card,Amit,12354
+3348,26-07-2025,26-07-2025,10002372,Yashaswee  ,Mr. Jitendra Kumar,X-B,16,,9910112557,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,34534
+3348,26-07-2025,26-07-2025,10002372,Yashaswee  ,Mr. Jitendra Kumar,X-B,16,,9910112557,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,34534
+3347,26-07-2025,26-07-2025,10003188,Sanidhya  Jain,Mr. Saurabh Kothiya,III-D,10,,8319264508,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,43322
+3347,26-07-2025,26-07-2025,10003188,Sanidhya  Jain,Mr. Saurabh Kothiya,III-D,10,,8319264508,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,43322
+3346,26-07-2025,26-07-2025,10002687,Virat  Kashyap,Mr. Sunil Kashyap,V-D,13,,7018893208,Male,Tuition Fees,May + June,7000,Cash,Inderjeet,
+3346,26-07-2025,26-07-2025,10002687,Virat  Kashyap,Mr. Sunil Kashyap,V-D,13,,7018893208,Male,Tuition Fees,July + August,7000,Cash,Inderjeet,
+3345,26-07-2025,26-07-2025,10003313,AADRITI PURI  ,VISHAL DEEP PURI,Nursery-Bloom,2,,9541000041,Female,Tuition Fees,July + August,4250,Cash,Inderjeet,
+3345,26-07-2025,26-07-2025,10003313,AADRITI PURI  ,VISHAL DEEP PURI,Nursery-Bloom,2,,9541000041,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3344,26-07-2025,26-07-2025,10001704,Aaradhya  ,Mr. Vishaldeep,VIII-C,11,,9541000041,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3344,26-07-2025,26-07-2025,10001704,Aaradhya  ,Mr. Vishaldeep,VIII-C,11,,9541000041,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3343,26-07-2025,26-07-2025,10001367,Shaurya  Khapra,Mr. Rajneesh Kumar Khapra,XII-Non-Medical,17,,6230528596,Male,Tuition Fees,May + June,9000,Wallet/UPI/QR,Amit,111
+3343,26-07-2025,26-07-2025,10001367,Shaurya  Khapra,Mr. Rajneesh Kumar Khapra,XII-Non-Medical,17,,6230528596,Male,Tuition Fees,July + August,9000,Wallet/UPI/QR,Amit,111
+3342,26-07-2025,26-07-2025,10003399,PRATYUSH PAL  ,DINESH KUMAR,XI-Non-Medical,27,,7807759960,Female,Tuition Fees,July + August,9000,Wallet/UPI/QR,Amit,15
+3342,26-07-2025,26-07-2025,10003399,PRATYUSH PAL  ,DINESH KUMAR,XI-Non-Medical,27,,7807759960,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,15
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,"I-Card, Art & Craft, etc.",April,960,Cash,Amit,
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,Annual Fund,,5000,Cash,Amit,
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,Term Charges,April,4300,Cash,Amit,
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,Tuition Fees,April,3500,Cash,Amit,
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,Parent Orientation,,1000,Cash,Amit,
+3341,26-07-2025,26-07-2025,10002670,Alina  Bangerwal,Mr. Surender Bangerwal,V-D,8,,9837653980,Female,Tuition Fees,May + June,1740,Cash,Amit,
+3340,26-07-2025,26-07-2025,10003429,AADISH   UPADHYAY,YOGENDRANATH UPADHYAY,I-Bulbul,23,,9016269665,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,9154
+3340,26-07-2025,26-07-2025,10003429,AADISH   UPADHYAY,YOGENDRANATH UPADHYAY,I-Bulbul,23,,9016269665,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,9154
+3339,26-07-2025,26-07-2025,10002181,Md.  Arsh,Mr. Md. Saleem Pasha,VII-C,6,,9494730082,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,2311
+3338,26-07-2025,26-07-2025,10001537,Japman  Singh,Mr. Kamaljeet Singh,IX-A,30,,9816660008,Male,Transport Fee,May + June,1940,NEFT Payment,Amit,SBI ss
+3338,26-07-2025,26-07-2025,10001537,Japman  Singh,Mr. Kamaljeet Singh,IX-A,30,,9816660008,Male,Tuition Fees,May + June,6400,NEFT Payment,Amit,SBI ss
+3338,26-07-2025,26-07-2025,10001537,Japman  Singh,Mr. Kamaljeet Singh,IX-A,30,,9816660008,Male,Tuition Fees,July + August,5150,NEFT Payment,Amit,SBI ss
+3338,26-07-2025,26-07-2025,10001537,Japman  Singh,Mr. Kamaljeet Singh,IX-A,30,,9816660008,Male,Transport Fee,July + August,970,NEFT Payment,Amit,SBI ss
+3337,26-07-2025,26-07-2025,10001394,Avleen  Kaur,Mr. Kamaljeet Singh,XI-Commerce,10,,9816660008,Female,Transport Fee,May + June,1940,NEFT Payment,Amit,sbi
+3337,26-07-2025,26-07-2025,10001394,Avleen  Kaur,Mr. Kamaljeet Singh,XI-Commerce,10,,9816660008,Female,Tuition Fees,May + June,8600,NEFT Payment,Amit,sbi
+3336,26-07-2025,26-07-2025,10001628,Gurnoor  Singh,Mr. Charanjeet Singh,VII-A,13,,6395939197,Male,Tuition Fees,July + August,6080,Credit/Debit Card,Inderjeet,266
+3336,26-07-2025,26-07-2025,10001628,Gurnoor  Singh,Mr. Charanjeet Singh,VII-A,13,,6395939197,Male,Transport Fee,July + August,1020,Credit/Debit Card,Inderjeet,266
+3335,26-07-2025,26-07-2025,10001259,Arshdeep  Kaur,Mr. Charanjeet Singh,XI-Commerce,9,,8219093629,Female,Tuition Fees,July + August,8600,Credit/Debit Card,Inderjeet,8995
+3335,26-07-2025,26-07-2025,10001259,Arshdeep  Kaur,Mr. Charanjeet Singh,XI-Commerce,9,,8219093629,Female,Transport Fee,July + August,1020,Credit/Debit Card,Inderjeet,8995
+3334,26-07-2025,26-07-2025,10001437,Avishka  Mehta,Mr. Amit Mehta,XII-Commerce,5,,8219096009,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3334,26-07-2025,26-07-2025,10001437,Avishka  Mehta,Mr. Amit Mehta,XII-Commerce,5,,8219096009,Female,Tuition Fees,May + June,8600,Cash,Inderjeet,
+3333,26-07-2025,26-07-2025,10002105,Anushka  Mehta,Mr. Amit Mehta,VIII-C,15,,9418680834,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3333,26-07-2025,26-07-2025,10002105,Anushka  Mehta,Mr. Amit Mehta,VIII-C,15,,9418680834,Female,Tuition Fees,May + June,6460,Cash,Inderjeet,
+3332,26-07-2025,26-07-2025,10002861,Ayush  Gill,Mr. Sumit Kumar,IV-B,18,,9816384690,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,545656
+3332,26-07-2025,26-07-2025,10002861,Ayush  Gill,Mr. Sumit Kumar,IV-B,18,,9816384690,Male,Tuition Fees,September + October,7000,Credit/Debit Card,Inderjeet,545656
+3332,26-07-2025,26-07-2025,10002861,Ayush  Gill,Mr. Sumit Kumar,IV-B,18,,9816384690,Male,Term Charges,November,4300,Credit/Debit Card,Inderjeet,545656
+3332,26-07-2025,26-07-2025,10002861,Ayush  Gill,Mr. Sumit Kumar,IV-B,18,,9816384690,Male,Tuition Fees,November,3500,Credit/Debit Card,Inderjeet,545656
+3331,26-07-2025,26-07-2025,10001096,Archie  Bansal,Mr. Sanjeev Kumar Bansal,XI-Commerce,7,,9418086380,Female,Tuition Fees,May + June,7100,Cash,Inderjeet,
+3331,26-07-2025,26-07-2025,10001096,Archie  Bansal,Mr. Sanjeev Kumar Bansal,XI-Commerce,7,,9418086380,Female,Transport Fee,May + June,1300,Cash,Inderjeet,
+3331,26-07-2025,26-07-2025,10001096,Archie  Bansal,Mr. Sanjeev Kumar Bansal,XI-Commerce,7,,9418086380,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3331,26-07-2025,26-07-2025,10001096,Archie  Bansal,Mr. Sanjeev Kumar Bansal,XI-Commerce,7,,9418086380,Female,Transport Fee,July + August,1150,Cash,Inderjeet,
+3330,26-07-2025,26-07-2025,10000898,Bhawneet  Kaur,Mr. Jaswinder Singh,XII-Commerce,7,,9418265606,Female,Transport Fee,May + June,900,Credit/Debit Card,Inderjeet,8555
+3330,26-07-2025,26-07-2025,10000898,Bhawneet  Kaur,Mr. Jaswinder Singh,XII-Commerce,7,,9418265606,Female,Tuition Fees,May + June,4300,Credit/Debit Card,Inderjeet,8555
+3329,26-07-2025,26-07-2025,10002522,Parth  Pundir,Mr. Anil,VI-B,7,,8219418775,Male,Tuition Fees,July + August,7600,Cash,Amit,
+3329,26-07-2025,26-07-2025,10002522,Parth  Pundir,Mr. Anil,VI-B,7,,8219418775,Male,Transport Fee,July + August,970,Cash,Amit,
+3328,26-07-2025,26-07-2025,10002987,Viraj  Sharma,Mr. Sandeep Sharma,I-Mynah,18,,7018644492,Male,Tuition Fees,May + June,5600,Cash,Amit,
+3327,26-07-2025,26-07-2025,10001917,Nitika  Kukreti,Mr. Nitin Kukreti,VI-A,25,,9736471001,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,98975
+3327,26-07-2025,26-07-2025,10001917,Nitika  Kukreti,Mr. Nitin Kukreti,VI-A,25,,9736471001,Female,Transport Fee,July + August,1060,Credit/Debit Card,Amit,98975
+3326,26-07-2025,26-07-2025,10003032,Sakshaat  ,Mr. Nakul,U.K.G.-Rose,9,,9805913316,Male,Tuition Fees,July + August,5600,Credit/Debit Card,Inderjeet,5699
+3326,26-07-2025,26-07-2025,10003032,Sakshaat  ,Mr. Nakul,U.K.G.-Rose,9,,9805913316,Male,Transport Fee,July + August,1080,Credit/Debit Card,Inderjeet,5699
+3325,26-07-2025,26-07-2025,10002143,Anirudh Singh Rana,Mr. Bharat Singh Rana,VIII-C,16,,7018331535,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,1234
+3324,26-07-2025,26-07-2025,10002703,Sukhman Preet Kaur,Mr. Manjeet Singh,X-C,8,,8894700481,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,56565
+3324,26-07-2025,26-07-2025,10002703,Sukhman Preet Kaur,Mr. Manjeet Singh,X-C,8,,8894700481,Female,IFM Software,April,700,Credit/Debit Card,Inderjeet,56565
+3323,26-07-2025,26-07-2025,10002593,Vipul  ,Mr. Omveer Singh,III-B,15,,9459378340,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,45332
+3323,26-07-2025,26-07-2025,10002593,Vipul  ,Mr. Omveer Singh,III-B,15,,9459378340,Male,Transport Fee,July + August,1410,Credit/Debit Card,Inderjeet,45332
+3322,26-07-2025,26-07-2025,10002027,Anishka  ,Mr. Jaya Singh,VI-C,7,,8219430106,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,56664
+3322,26-07-2025,26-07-2025,10002027,Anishka  ,Mr. Jaya Singh,VI-C,7,,8219430106,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,56664
+3322,26-07-2025,26-07-2025,10002027,Anishka  ,Mr. Jaya Singh,VI-C,7,,8219430106,Female,Tuition Fees,September + October,7600,Credit/Debit Card,Inderjeet,56664
+3322,26-07-2025,26-07-2025,10002027,Anishka  ,Mr. Jaya Singh,VI-C,7,,8219430106,Female,Transport Fee,September + October,1800,Credit/Debit Card,Inderjeet,56664
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,"I-Card, Art & Craft, etc.",April,1070,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Transport Fee,April,900,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Admission Fee,,8000,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Tuition Fees,May + June,5890,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Tuition Fees,July + August,6460,Wallet/UPI/QR,Amit,232
+3321,26-07-2025,26-07-2025,10003376,SATYAM KUMAR  ,RANJU KUMAR,VII-B,29,,9729213585,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3320,26-07-2025,26-07-2025,10003392,MRIDUL YADAV  ,RANJU KUMAR,XI-Commerce,33,,9729213585,Male,Transport Fee,April,900,Wallet/UPI/QR,Amit,13213
+3320,26-07-2025,26-07-2025,10003392,MRIDUL YADAV  ,RANJU KUMAR,XI-Commerce,33,,9729213585,Male,Tuition Fees,May + June,8600,Wallet/UPI/QR,Amit,13213
+3320,26-07-2025,26-07-2025,10003392,MRIDUL YADAV  ,RANJU KUMAR,XI-Commerce,33,,9729213585,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,13213
+3320,26-07-2025,26-07-2025,10003392,MRIDUL YADAV  ,RANJU KUMAR,XI-Commerce,33,,9729213585,Male,Tuition Fees,July + August,8600,Wallet/UPI/QR,Amit,13213
+3320,26-07-2025,26-07-2025,10003392,MRIDUL YADAV  ,RANJU KUMAR,XI-Commerce,33,,9729213585,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,13213
+3319,26-07-2025,26-07-2025,10003174,Kavisha  Mohil,Mr. Rajender Singh,V-A,24,,9816229087,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,5596
+3319,26-07-2025,26-07-2025,10003174,Kavisha  Mohil,Mr. Rajender Singh,V-A,24,,9816229087,Female,Transport Fee,July + August,1110,Wallet/UPI/QR,Inderjeet,5596
+3318,26-07-2025,26-07-2025,10001770,Aksh  Chaudhary,Mr. Pradeep Kumar,VIII-A,11,,8219961844,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,2322
+3318,26-07-2025,26-07-2025,10001770,Aksh  Chaudhary,Mr. Pradeep Kumar,VIII-A,11,,8219961844,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,2322
+3317,26-07-2025,26-07-2025,10001593,Ansh  Chaudhary,Mr. Pradeep Kumar,XI-Non-Medical,7,,8219961844,Male,Tuition Fees,July + August,9000,Credit/Debit Card,Inderjeet,2332
+3317,26-07-2025,26-07-2025,10001593,Ansh  Chaudhary,Mr. Pradeep Kumar,XI-Non-Medical,7,,8219961844,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,2332
+3316,26-07-2025,26-07-2025,10002646,Kritika  Singh,Mr. Gajendra Kumar,VIII-D,18,,9536749224,Female,Tuition Fees,July + August,2600,Wallet/UPI/QR,Inderjeet,25553
+3316,26-07-2025,26-07-2025,10002646,Kritika  Singh,Mr. Gajendra Kumar,VIII-D,18,,9536749224,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,25553
+3315,26-07-2025,26-07-2025,10002646,Kritika  Singh,Mr. Gajendra Kumar,VIII-D,18,,9536749224,Female,Tuition Fees,July + August,5000,Cash,Inderjeet,
+3314,26-07-2025,26-07-2025,10003153,Aradhya  Negi,Mr. Daleep Singh,IV-C,22,,9882250725,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,3123
+3314,26-07-2025,26-07-2025,10003153,Aradhya  Negi,Mr. Daleep Singh,IV-C,22,,9882250725,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,3123
+3313,26-07-2025,26-07-2025,10003154,Aarvi  Negi,Mr. Daleep Singh,I-Bulbul,13,,9882250725,Female,Tuition Fees,July + August,6160,Wallet/UPI/QR,Amit,1321
+3313,26-07-2025,26-07-2025,10003154,Aarvi  Negi,Mr. Daleep Singh,I-Bulbul,13,,9882250725,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,1321
+3312,26-07-2025,26-07-2025,10003393,PRISHA  VASHISTHA,NIRMAL KUMAR VASHISHTHA,U.K.G.-Lily,17,,9837043113,Female,Tuition Fees,July + August,4760,Credit/Debit Card,Inderjeet,54645
+3312,26-07-2025,26-07-2025,10003393,PRISHA  VASHISTHA,NIRMAL KUMAR VASHISHTHA,U.K.G.-Lily,17,,9837043113,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,54645
+3311,26-07-2025,26-07-2025,10003397,AKSHAT  VASHISHTH,NIRMAL KUMAR VASHISHTH,VIII-D,30,,9837043113,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,4555
+3311,26-07-2025,26-07-2025,10003397,AKSHAT  VASHISHTH,NIRMAL KUMAR VASHISHTH,VIII-D,30,,9837043113,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,4555
+3310,26-07-2025,26-07-2025,10002230,Naitik  Chaudhary,Mr. Pradeep Kumar,V-C,16,,8219981717,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,56663
+3310,26-07-2025,26-07-2025,10002230,Naitik  Chaudhary,Mr. Pradeep Kumar,V-C,16,,8219981717,Male,Transport Fee,July + August,1150,Credit/Debit Card,Inderjeet,56663
+3309,26-07-2025,26-07-2025,10003052,Aarush  Saini,Mr. Sukesh Kumar,III-C,16,,9997281981,Male,Transport Fee,July + August,900,ONLINE,,E2507260JRJ9GD
+3309,26-07-2025,26-07-2025,10003052,Aarush  Saini,Mr. Sukesh Kumar,III-C,16,,9997281981,Male,Tuition Fees,July + August,7000,ONLINE,,E2507260JRJ9GD
+3308,26-07-2025,26-07-2025,10001511,Abhimanyu  Aggarwal,Mr. Rohit Aggarwal,VIII-D,4,,7018158851,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,5656
+3308,26-07-2025,26-07-2025,10001511,Abhimanyu  Aggarwal,Mr. Rohit Aggarwal,VIII-D,4,,7018158851,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,5656
+3307,26-07-2025,26-07-2025,10002819,Sanskriti  Aggarwal,Mr. Rohit Aggarwal,I-Mynah,2,,7018158851,Female,Tuition Fees,July + August,6160,Credit/Debit Card,Inderjeet,85556
+3307,26-07-2025,26-07-2025,10002819,Sanskriti  Aggarwal,Mr. Rohit Aggarwal,I-Mynah,2,,7018158851,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,85556
+3306,26-07-2025,26-07-2025,10001634,Akshat  Gupta,Mr. Pankaj Kumar Gupta,VIII-C,21,,9816082791,Male,Tuition Fees,May + June,7600,Cash,Inderjeet,
+3306,26-07-2025,26-07-2025,10001634,Akshat  Gupta,Mr. Pankaj Kumar Gupta,VIII-C,21,,9816082791,Male,Transport Fee,May + June,1940,Cash,Inderjeet,
+3306,26-07-2025,26-07-2025,10001634,Akshat  Gupta,Mr. Pankaj Kumar Gupta,VIII-C,21,,9816082791,Male,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3306,26-07-2025,26-07-2025,10001634,Akshat  Gupta,Mr. Pankaj Kumar Gupta,VIII-C,21,,9816082791,Male,Transport Fee,July + August,970,Cash,Inderjeet,
+3305,26-07-2025,26-07-2025,10002683,Aadya  Mamgain,Mr. Aneesh Mamgain,XI-Commerce,1,,8393887577,Female,Tuition Fees,July + August,8600,Wallet/UPI/QR,Amit,312
+3305,26-07-2025,26-07-2025,10002683,Aadya  Mamgain,Mr. Aneesh Mamgain,XI-Commerce,1,,8393887577,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,312
+3304,26-07-2025,26-07-2025,10002705,Kushagra  Mamgain,Mr. Aneesh Mamgain,VI-A,16,,8393887577,Male,Tuition Fees,July + August,6550,Wallet/UPI/QR,Amit,1231
+3304,26-07-2025,26-07-2025,10002705,Kushagra  Mamgain,Mr. Aneesh Mamgain,VI-A,16,,8393887577,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,1231
+3303,26-07-2025,26-07-2025,10003369,ANVI   CHAUHAN ,ANIL KUMAR ,Nursery-Blossom,14,,7018521613,Female,"I-Card, Art & Craft, etc.",April,860,ONLINE,,E2507260JRHUA6
+3303,26-07-2025,26-07-2025,10003369,ANVI   CHAUHAN ,ANIL KUMAR ,Nursery-Blossom,14,,7018521613,Female,Transport Fee,April,1060,ONLINE,,E2507260JRHUA6
+3303,26-07-2025,26-07-2025,10003369,ANVI   CHAUHAN ,ANIL KUMAR ,Nursery-Blossom,14,,7018521613,Female,Tuition Fees,April,375,ONLINE,,E2507260JRHUA6
+3303,26-07-2025,26-07-2025,10003369,ANVI   CHAUHAN ,ANIL KUMAR ,Nursery-Blossom,14,,7018521613,Female,Tuition Fees,May + June,5000,ONLINE,,E2507260JRHUA6
+3303,26-07-2025,26-07-2025,10003369,ANVI   CHAUHAN ,ANIL KUMAR ,Nursery-Blossom,14,,7018521613,Female,Transport Fee,May + June,2120,ONLINE,,E2507260JRHUA6
+3302,26-07-2025,26-07-2025,10001142,Harneet  Singh,Mr. Tejinder Singh,X-B,6,,9418060595,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Inderjeet,3453
+3302,26-07-2025,26-07-2025,10001142,Harneet  Singh,Mr. Tejinder Singh,X-B,6,,9418060595,Male,Transport Fee,July + August,1020,Wallet/UPI/QR,Inderjeet,3453
+3302,26-07-2025,26-07-2025,10001142,Harneet  Singh,Mr. Tejinder Singh,X-B,6,,9418060595,Male,IFM Software,April,700,Wallet/UPI/QR,Inderjeet,3453
+3301,26-07-2025,26-07-2025,10002585,Ishu  Chauhan,Mr. Anil Kumar,II-Pearl,26,,7018521613,Female,Tuition Fees,May + June,7000,ONLINE,,E2507260JRHN9K
+3301,26-07-2025,26-07-2025,10002585,Ishu  Chauhan,Mr. Anil Kumar,II-Pearl,26,,7018521613,Female,Transport Fee,May + June,2120,ONLINE,,E2507260JRHN9K
+3300,26-07-2025,26-07-2025,10001328,Agustaya  Gupta,Mr. Nitin Gupta,IX-A,13,,9816646499,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Inderjeet,59841
+3300,26-07-2025,26-07-2025,10001328,Agustaya  Gupta,Mr. Nitin Gupta,IX-A,13,,9816646499,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,59841
+3299,26-07-2025,26-07-2025,10001983,Pushti  Srivastava,Mr. Prakhar Srivastava,VIII-C,12,,8960604445,Female,Tuition Fees,May + June,7600,Credit/Debit Card,Inderjeet,8566
+3299,26-07-2025,26-07-2025,10001983,Pushti  Srivastava,Mr. Prakhar Srivastava,VIII-C,12,,8960604445,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,8566
+3299,26-07-2025,26-07-2025,10001983,Pushti  Srivastava,Mr. Prakhar Srivastava,VIII-C,12,,8960604445,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,8566
+3299,26-07-2025,26-07-2025,10001983,Pushti  Srivastava,Mr. Prakhar Srivastava,VIII-C,12,,8960604445,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,8566
+3298,26-07-2025,26-07-2025,10002498,Manreet  Kaur,Mr. Ranjit Singh,VI-B,5,,8351064336,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3298,26-07-2025,26-07-2025,10002498,Manreet  Kaur,Mr. Ranjit Singh,VI-B,5,,8351064336,Female,Transport Fee,July + August,970,Cash,Inderjeet,
+3297,26-07-2025,26-07-2025,10001813,Haunit  Singh,Mr. Atinder Pal Singh,VII-D,12,,9857047000,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,w12
+3297,26-07-2025,26-07-2025,10001813,Haunit  Singh,Mr. Atinder Pal Singh,VII-D,12,,9857047000,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,w12
+3296,26-07-2025,26-07-2025,10001800,Japjot Singh Dhillon,Mr. Bhupinder Singh Dhillon,VII-A,6,,6230725485,Male,Tuition Fees,May + June,7600,Credit/Debit Card,Inderjeet,3422
+3296,26-07-2025,26-07-2025,10001800,Japjot Singh Dhillon,Mr. Bhupinder Singh Dhillon,VII-A,6,,6230725485,Male,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,3422
+3296,26-07-2025,26-07-2025,10001800,Japjot Singh Dhillon,Mr. Bhupinder Singh Dhillon,VII-A,6,,6230725485,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,3422
+3296,26-07-2025,26-07-2025,10001800,Japjot Singh Dhillon,Mr. Bhupinder Singh Dhillon,VII-A,6,,6230725485,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,3422
+3295,26-07-2025,26-07-2025,10001455,Arnav  Sharma,Mr. Rajesh Sharma,IX-A,23,,8219581552,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Amit,122
+3295,26-07-2025,26-07-2025,10001455,Arnav  Sharma,Mr. Rajesh Sharma,IX-A,23,,8219581552,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,122
+3294,26-07-2025,26-07-2025,10003207,Gurleen  Kaur,Sh.Bhupinder Singh,III-A,21,,9816125485,Female,Tuition Fees,May + June,5950,Credit/Debit Card,Inderjeet,2543
+3294,26-07-2025,26-07-2025,10003207,Gurleen  Kaur,Sh.Bhupinder Singh,III-A,21,,9816125485,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,2543
+3294,26-07-2025,26-07-2025,10003207,Gurleen  Kaur,Sh.Bhupinder Singh,III-A,21,,9816125485,Female,Tuition Fees,July + August,5950,Credit/Debit Card,Inderjeet,2543
+3294,26-07-2025,26-07-2025,10003207,Gurleen  Kaur,Sh.Bhupinder Singh,III-A,21,,9816125485,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,2543
+3293,26-07-2025,26-07-2025,10001129,Aneesha  ,Mr. Suresh Sharma,X-C,25,,9736416291,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,543434
+3293,26-07-2025,26-07-2025,10001129,Aneesha  ,Mr. Suresh Sharma,X-C,25,,9736416291,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,543434
+3292,26-07-2025,26-07-2025,10002226,Uddeesha  ,Mr. Suresh Sharma,IV-D,7,,9736416291,Female,Tuition Fees,May + June,5950,Credit/Debit Card,Inderjeet,23232
+3292,26-07-2025,26-07-2025,10002226,Uddeesha  ,Mr. Suresh Sharma,IV-D,7,,9736416291,Female,Tuition Fees,July + August,5950,Credit/Debit Card,Inderjeet,23232
+3291,26-07-2025,26-07-2025,10000972,Aditya  Bali,Mr. Vivek Bali,XI-Commerce,4,,9318795165,Male,Tuition Fees,July + August,8600,Credit/Debit Card,Amit,7300
+3290,26-07-2025,26-07-2025,10003440,SHIVANSH GURJAR  ,SUNIL KUMAR,Nursery-Blossom,18,,8307301905,Male,Tuition Fees,July + August,5000,ONLINE,,E2507260JRFSYU
+3289,25-07-2025,25-07-2025,10001674,Amber  Tomar,Mr. Praveen Kumar,IX-A,14,,8580564498,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Amit,1321
+3289,25-07-2025,25-07-2025,10001674,Amber  Tomar,Mr. Praveen Kumar,IX-A,14,,8580564498,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,1321
+3289,25-07-2025,25-07-2025,10001674,Amber  Tomar,Mr. Praveen Kumar,IX-A,14,,8580564498,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,1321
+3289,25-07-2025,25-07-2025,10001674,Amber  Tomar,Mr. Praveen Kumar,IX-A,14,,8580564498,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Amit,1321
+3288,26-07-2025,26-07-2025,10001298,Chakshu  ,Mr. Ghanshyam Singh,IX-B,11,,9805636411,Female,Tuition Fees,July + August,8000,Cash,Inderjeet,
+3288,26-07-2025,26-07-2025,10001298,Chakshu  ,Mr. Ghanshyam Singh,IX-B,11,,9805636411,Female,Transport Fee,July + August,970,Cash,Inderjeet,
+3287,26-07-2025,26-07-2025,10002465,Aarya  Tegwan,Mr. Narender Singh Tegwan,V-C,25,,9805634917,Female,Tuition Fees,July + August,5950,Wallet/UPI/QR,Amit,2323
+3287,26-07-2025,26-07-2025,10002465,Aarya  Tegwan,Mr. Narender Singh Tegwan,V-C,25,,9805634917,Female,Transport Fee,July + August,700,Wallet/UPI/QR,Amit,2323
+3286,26-07-2025,26-07-2025,10001441,Ashwath  Tegwan,Mr. Narender Singh Tegwan,IX-B,26,,9805634917,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Amit,2131
+3286,26-07-2025,26-07-2025,10001441,Ashwath  Tegwan,Mr. Narender Singh Tegwan,IX-B,26,,9805634917,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,2131
+3285,26-07-2025,26-07-2025,10001686,Taranveer Singh Saini,Mr. Parminder Singh,X-B,13,,9720106817,Male,Tuition Fees,May + June,8000,Cash,Inderjeet,
+3285,26-07-2025,26-07-2025,10001686,Taranveer Singh Saini,Mr. Parminder Singh,X-B,13,,9720106817,Male,Transport Fee,May + June,1800,Cash,Inderjeet,
+3285,26-07-2025,26-07-2025,10001686,Taranveer Singh Saini,Mr. Parminder Singh,X-B,13,,9720106817,Male,Tuition Fees,July + August,8000,Cash,Inderjeet,
+3285,26-07-2025,26-07-2025,10001686,Taranveer Singh Saini,Mr. Parminder Singh,X-B,13,,9720106817,Male,Transport Fee,July + August,900,Cash,Inderjeet,
+3284,26-07-2025,26-07-2025,10001922,Varnika  Saini,Mr. Karamveer Singh,X-A,14,,9805914148,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,125
+3284,26-07-2025,26-07-2025,10001922,Varnika  Saini,Mr. Karamveer Singh,X-A,14,,9805914148,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,125
+3283,26-07-2025,26-07-2025,10003406,BHAVISH AGGARWAL  ,SURENDER AGGARWAL,XI-Commerce,11,,,Male,Tuition Fees,May + June,8600,Wallet/UPI/QR,Inderjeet,85667
+3283,26-07-2025,26-07-2025,10003406,BHAVISH AGGARWAL  ,SURENDER AGGARWAL,XI-Commerce,11,,,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Inderjeet,85667
+3282,26-07-2025,26-07-2025,10001343,Rashita  Thakur,Mr. Manoj Kumar,XI-Humanities,3,,8894613455,Female,Tuition Fees,November,4300,Credit/Debit Card,Inderjeet,5666
+3282,26-07-2025,26-07-2025,10001343,Rashita  Thakur,Mr. Manoj Kumar,XI-Humanities,3,,8894613455,Female,Term Charges,November,3300,Credit/Debit Card,Inderjeet,5666
+3281,26-07-2025,26-07-2025,10002037,Danbeer  Thakur,Mr. Manoj Kumar,VI-A,6,,8894613455,Male,Tuition Fees,November,3275,Credit/Debit Card,Inderjeet,5552
+3281,26-07-2025,26-07-2025,10002037,Danbeer  Thakur,Mr. Manoj Kumar,VI-A,6,,8894613455,Male,Term Charges,November,4600,Credit/Debit Card,Inderjeet,5552
+3280,26-07-2025,26-07-2025,10001661,Mehak  Baliyan,Mr. Vivek Kumar,VIII-B,5,,9805772994,Female,Transport Fee,May + June,1800,Credit/Debit Card,Amit,1545
+3280,26-07-2025,26-07-2025,10001661,Mehak  Baliyan,Mr. Vivek Kumar,VIII-B,5,,9805772994,Female,Tuition Fees,May + June,7600,Credit/Debit Card,Amit,1545
+3280,26-07-2025,26-07-2025,10001661,Mehak  Baliyan,Mr. Vivek Kumar,VIII-B,5,,9805772994,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,1545
+3280,26-07-2025,26-07-2025,10001661,Mehak  Baliyan,Mr. Vivek Kumar,VIII-B,5,,9805772994,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,1545
+3279,26-07-2025,26-07-2025,10003057,Shanaya  Baliyan,Mr. Vivek Kumar,I-Bulbul,7,,9805772994,Female,Transport Fee,May + June,1800,Credit/Debit Card,Amit,154
+3279,26-07-2025,26-07-2025,10003057,Shanaya  Baliyan,Mr. Vivek Kumar,I-Bulbul,7,,9805772994,Female,Tuition Fees,May + June,6160,Credit/Debit Card,Amit,154
+3279,26-07-2025,26-07-2025,10003057,Shanaya  Baliyan,Mr. Vivek Kumar,I-Bulbul,7,,9805772994,Female,Tuition Fees,July + August,6160,Credit/Debit Card,Amit,154
+3279,26-07-2025,26-07-2025,10003057,Shanaya  Baliyan,Mr. Vivek Kumar,I-Bulbul,7,,9805772994,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,154
+3278,26-07-2025,26-07-2025,10001953,Saanvi  Gupta,Mr. Yogendra Kumar Gupta,X-C,5,,9160060847,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,5222
+3278,26-07-2025,26-07-2025,10001953,Saanvi  Gupta,Mr. Yogendra Kumar Gupta,X-C,5,,9160060847,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,5222
+3277,26-07-2025,26-07-2025,10003046,Viraj  Dhiman,Mr. Sonu Dhiman,IV-B,21,,9012153117,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,233
+3277,26-07-2025,26-07-2025,10003046,Viraj  Dhiman,Mr. Sonu Dhiman,IV-B,21,,9012153117,Male,Tuition Fees,May + June,5950,Credit/Debit Card,Amit,233
+3277,26-07-2025,26-07-2025,10003046,Viraj  Dhiman,Mr. Sonu Dhiman,IV-B,21,,9012153117,Male,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,233
+3277,26-07-2025,26-07-2025,10003046,Viraj  Dhiman,Mr. Sonu Dhiman,IV-B,21,,9012153117,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,233
+3276,26-07-2025,26-07-2025,10003045,Samridhi  Dhiman,Mr. Sonu Dhiman,VIII-B,18,,9410313998,Female,Transport Fee,May + June,1800,Credit/Debit Card,Amit,2323
+3276,26-07-2025,26-07-2025,10003045,Samridhi  Dhiman,Mr. Sonu Dhiman,VIII-B,18,,9410313998,Female,Tuition Fees,May + June,7600,Credit/Debit Card,Amit,2323
+3276,26-07-2025,26-07-2025,10003045,Samridhi  Dhiman,Mr. Sonu Dhiman,VIII-B,18,,9410313998,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,2323
+3276,26-07-2025,26-07-2025,10003045,Samridhi  Dhiman,Mr. Sonu Dhiman,VIII-B,18,,9410313998,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,2323
+3275,26-07-2025,26-07-2025,10002602,Yuvaan Singh Kanwar,Mr. Vishal Kanwar,V-B,30,,9459506506,Male,Tuition Fees,September + October,7000,Credit/Debit Card,Inderjeet,55662
+3275,26-07-2025,26-07-2025,10002602,Yuvaan Singh Kanwar,Mr. Vishal Kanwar,V-B,30,,9459506506,Male,Transport Fee,September + October,1940,Credit/Debit Card,Inderjeet,55662
+3274,25-07-2025,25-07-2025,10002228,Gorvi  Singh,Mr. Mohit Singh,IV-D,1,,8894083621,Female,Transport Fee,July + August,900,ONLINE,,E2507250JR09E6
+3274,25-07-2025,25-07-2025,10002228,Gorvi  Singh,Mr. Mohit Singh,IV-D,1,,8894083621,Female,Tuition Fees,July + August,7000,ONLINE,,E2507250JR09E6
+3273,25-07-2025,25-07-2025,10002757,Darsh  Singh,Mr. Mohit Singh,I-Koel,9,,8894083621,Male,Tuition Fees,July + August,6160,ONLINE,,E2507250JQZ1QZ
+3273,25-07-2025,25-07-2025,10002757,Darsh  Singh,Mr. Mohit Singh,I-Koel,9,,8894083621,Male,Transport Fee,July + August,900,ONLINE,,E2507250JQZ1QZ
+3272,25-07-2025,25-07-2025,10001059,Priyanshu  Tomar,Mr. Dinesh Kumar,XII-Commerce,23,,8116945510,Female,Tuition Fees,May + June,8600,ONLINE,,E2507250JQYJH3
+3272,25-07-2025,25-07-2025,10001059,Priyanshu  Tomar,Mr. Dinesh Kumar,XII-Commerce,23,,8116945510,Female,Transport Fee,May + June,1800,ONLINE,,E2507250JQYJH3
+3271,25-07-2025,25-07-2025,10003452,YATHARTH   BHARDWAJ,VIRENDER SINGH,V-D,32,,7831061912,Male,Transport Fee,July + August,1060,ONLINE,,E2507250JQPPV0
+3271,25-07-2025,25-07-2025,10003452,YATHARTH   BHARDWAJ,VIRENDER SINGH,V-D,32,,7831061912,Male,Tuition Fees,July + August,7000,ONLINE,,E2507250JQPPV0
+3270,25-07-2025,25-07-2025,10002396,Vedika  Sharma,Mr. Sanjeev Kumar,IV-B,10,,8219518465,Female,Tuition Fees,May + June,5950,Credit/Debit Card,Inderjeet,34433
+3270,25-07-2025,25-07-2025,10002396,Vedika  Sharma,Mr. Sanjeev Kumar,IV-B,10,,8219518465,Female,Transport Fee,May + June,1940,Credit/Debit Card,Inderjeet,34433
+3269,25-07-2025,25-07-2025,10001239,Shaurya  Sharma,Mr. Sanjeev Kumar,X-A,24,,8219922812,Male,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,3433
+3269,25-07-2025,25-07-2025,10001239,Shaurya  Sharma,Mr. Sanjeev Kumar,X-A,24,,8219922812,Male,Transport Fee,May + June,1940,Credit/Debit Card,Inderjeet,3433
+3268,25-07-2025,25-07-2025,10002953,Ridhvika  Saini,Mr. Gurbachan Singh,U.K.G.-Rose,5,,8988800022,Female,Tuition Fees,July + August,5600,Wallet/UPI/QR,Amit,3433
+3268,25-07-2025,25-07-2025,10002953,Ridhvika  Saini,Mr. Gurbachan Singh,U.K.G.-Rose,5,,8988800022,Female,Transport Fee,July + August,1380,Wallet/UPI/QR,Amit,3433
+3267,25-07-2025,25-07-2025,10002351,Sehjpreet  Kaur,Mr. Nirmal Singh,IV-D,6,,9459219847,Female,Tuition Fees,May + June,7000,Cash,Inderjeet,
+3267,25-07-2025,25-07-2025,10002351,Sehjpreet  Kaur,Mr. Nirmal Singh,IV-D,6,,9459219847,Female,Tuition Fees,July + August,3000,Cash,Inderjeet,
+3266,25-07-2025,25-07-2025,10003235,Rudransh  Chaudhary,Mr. Rohit Chaudhary,L.K.G.-Green,10,,9817106470,Male,Tuition Fees,July + August,4400,Wallet/UPI/QR,Amit,669
+3265,25-07-2025,25-07-2025,10002068,Samanyu  Chaudhary,Mr. Rohit Chaudhary,VI-D,19,,9817106470,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,222
+3264,25-07-2025,25-07-2025,10003132,Swaroop  Singh,Mr. Gurvinder Singh,L.K.G.-Green,3,,9816377527,Male,Tuition Fees,July + August,5000,ONLINE,,E2507250JPYSHU
+3263,25-07-2025,25-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Tuition Fees,May + June,6460,ONLINE,,E2507250JPXR7G
+3263,25-07-2025,25-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Transport Fee,May + June,1940,ONLINE,,E2507250JPXR7G
+3262,25-07-2025,25-07-2025,10001652,Sukriti  Bareja,Mr. Deepak Bareja,VII-D,26,,9816700011,Female,Tuition Fees,July + August,3800,Cash,Amit,
+3261,25-07-2025,25-07-2025,10003043,Prabhasees Singh Chowdhary,Mr. Harsimran Singh,I-Bulbul,3,,9634274722,Male,Tuition Fees,July + August,7000,ONLINE,,E2507250JPWBOH
+3261,25-07-2025,25-07-2025,10003043,Prabhasees Singh Chowdhary,Mr. Harsimran Singh,I-Bulbul,3,,9634274722,Male,Transport Fee,July + August,900,ONLINE,,E2507250JPWBOH
+3260,25-07-2025,25-07-2025,10003126,Aayat  Kashmi,Mr. Navid Ali Kashmi,U.K.G.-Lotus,12,,7018806870,Female,Transport Fee,July + August,510,ONLINE,,E2507250JPU5J9
+3260,25-07-2025,25-07-2025,10003126,Aayat  Kashmi,Mr. Navid Ali Kashmi,U.K.G.-Lotus,12,,7018806870,Female,Tuition Fees,July + August,5600,ONLINE,,E2507250JPU5J9
+3259,25-07-2025,25-07-2025,10002006,Shiv Satyam Kumar,Mr. Gopal Kumar,VI-A,4,,9816189926,Male,Tuition Fees,May + June,6080,Credit/Debit Card,Amit,541
+3259,25-07-2025,25-07-2025,10002006,Shiv Satyam Kumar,Mr. Gopal Kumar,VI-A,4,,9816189926,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,541
+3259,25-07-2025,25-07-2025,10002006,Shiv Satyam Kumar,Mr. Gopal Kumar,VI-A,4,,9816189926,Male,Tuition Fees,July + August,6080,Credit/Debit Card,Amit,541
+3259,25-07-2025,25-07-2025,10002006,Shiv Satyam Kumar,Mr. Gopal Kumar,VI-A,4,,9816189926,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,541
+3258,25-07-2025,25-07-2025,10001479,Shivam  Kumar,Mr. Gopal Kumar,VIII-B,7,,9816189926,Male,Tuition Fees,May + June,7600,Credit/Debit Card,Amit,1245
+3258,25-07-2025,25-07-2025,10001479,Shivam  Kumar,Mr. Gopal Kumar,VIII-B,7,,9816189926,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,1245
+3258,25-07-2025,25-07-2025,10001479,Shivam  Kumar,Mr. Gopal Kumar,VIII-B,7,,9816189926,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,1245
+3258,25-07-2025,25-07-2025,10001479,Shivam  Kumar,Mr. Gopal Kumar,VIII-B,7,,9816189926,Male,Transport Fee,July + August,900,Credit/Debit Card,Amit,1245
+3257,25-07-2025,25-07-2025,10001490,Ishpreet  Kaur,Mr. Arvind Singh,IX-B,1,,8091727532,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Amit,15254
+3257,25-07-2025,25-07-2025,10001490,Ishpreet  Kaur,Mr. Arvind Singh,IX-B,1,,8091727532,Female,Transport Fee,May + June,2040,Credit/Debit Card,Amit,15254
+3257,25-07-2025,25-07-2025,10001490,Ishpreet  Kaur,Mr. Arvind Singh,IX-B,1,,8091727532,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,15254
+3257,25-07-2025,25-07-2025,10001490,Ishpreet  Kaur,Mr. Arvind Singh,IX-B,1,,8091727532,Female,Transport Fee,July + August,1020,Credit/Debit Card,Amit,15254
+3256,25-07-2025,25-07-2025,10001968,Parvdeep Singh Saini,Mr. Jasvir Singh Saini,VI-A,28,,8278725324,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,154
+3256,25-07-2025,25-07-2025,10001968,Parvdeep Singh Saini,Mr. Jasvir Singh Saini,VI-A,28,,8278725324,Male,Transport Fee,July + August,1130,Credit/Debit Card,Amit,154
+3255,25-07-2025,25-07-2025,10003384,Ahaana  Kaur,HARMINDER PAL SINGH,II-Ruby,12,,8894729630,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232267445
+3255,25-07-2025,25-07-2025,10003384,Ahaana  Kaur,HARMINDER PAL SINGH,II-Ruby,12,,8894729630,Female,Transport Fee,July + August,960,Wallet/UPI/QR,Amit,232267445
+3254,25-07-2025,25-07-2025,10002348,Aadvik  Tomar,Mr. Anil Tomar,IV-D,11,,7018655326,Male,Tuition Fees,July + August,5950,Wallet/UPI/QR,Amit,232222342
+3254,25-07-2025,25-07-2025,10002348,Aadvik  Tomar,Mr. Anil Tomar,IV-D,11,,7018655326,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,232222342
+3253,25-07-2025,25-07-2025,10001579,Karanveer  Singh,Mr. Harinder Singh,VIII-A,2,,9816326222,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,qewe
+3253,25-07-2025,25-07-2025,10001579,Karanveer  Singh,Mr. Harinder Singh,VIII-A,2,,9816326222,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,qewe
+3252,25-07-2025,25-07-2025,10003317,SAMRIDHI   OJHA,VIJAY PRAKASH OJHA,Nursery-Blossom,8,,9816014298,Female,Transport Fee,July + August,900,ONLINE,,E2507250JPJGT3
+3252,25-07-2025,25-07-2025,10003317,SAMRIDHI   OJHA,VIJAY PRAKASH OJHA,Nursery-Blossom,8,,9816014298,Female,Tuition Fees,July + August,5000,ONLINE,,E2507250JPJGT3
+3251,25-07-2025,25-07-2025,10002927,Ryan  Sood,Mr. Ankush Sood,II-Pearl,11,,9816841043,Male,Tuition Fees,May + June,7000,Cash,Inderjeet,
+3251,25-07-2025,25-07-2025,10002927,Ryan  Sood,Mr. Ankush Sood,II-Pearl,11,,9816841043,Male,Tuition Fees,July + August,7000,Cash,Inderjeet,
+3250,25-07-2025,25-07-2025,10003462,VAISHALI   ,RAM PAL,VII-B,31,,8219982146,Female,Transport Fee,July + August,1380,ONLINE,,E2507250JPE64E
+3250,25-07-2025,25-07-2025,10003462,VAISHALI   ,RAM PAL,VII-B,31,,8219982146,Female,Tuition Fees,July + August,7600,ONLINE,,E2507250JPE64E
+3249,23-07-2025,23-07-2025,10001893,Hardik  ,Mr. Sharwan Singh,VII-C,28,,8219731384,Male,Tuition Fees,July + August,7600,ONLINE,,E2507230JMG5V7
+3248,25-07-2025,25-07-2025,10003197,Divija  ,Mr. Deepak Pal,III-D,16,,7018614003,Female,Tuition Fees,July + August,7000,ONLINE,,E2507250JPB7AO
+3248,25-07-2025,25-07-2025,10003197,Divija  ,Mr. Deepak Pal,III-D,16,,7018614003,Female,Transport Fee,July + August,1020,ONLINE,,E2507250JPB7AO
+3247,24-07-2025,24-07-2025,10001845,Prabhsimar  Singh,Mr. Amandeep Singh,VI-C,32,,9816194000,Male,Tuition Fees,July + August,7600,ONLINE,,E2507240JOX1TB
+3247,24-07-2025,24-07-2025,10001845,Prabhsimar  Singh,Mr. Amandeep Singh,VI-C,32,,9816194000,Male,Transport Fee,July + August,900,ONLINE,,E2507240JOX1TB
+3246,24-07-2025,24-07-2025,10001844,Jasmine  Kaur,Mr. Amandeep Singh,X-C,4,,9805010095,Female,Tuition Fees,July + August,8000,ONLINE,,E2507240JOWU8K
+3246,24-07-2025,24-07-2025,10001844,Jasmine  Kaur,Mr. Amandeep Singh,X-C,4,,9805010095,Female,Transport Fee,July + August,900,ONLINE,,E2507240JOWU8K
+3245,24-07-2025,24-07-2025,10001831,Kanishka  Chappa,Mr. Naveen Kumar,VI-C,13,,9736723289,Female,Transport Fee,September + October,2300,ONLINE,,E2507240JOUY3B
+3245,24-07-2025,24-07-2025,10001831,Kanishka  Chappa,Mr. Naveen Kumar,VI-C,13,,9736723289,Female,Tuition Fees,September + October,7600,ONLINE,,E2507240JOUY3B
+3244,24-07-2025,24-07-2025,10002983,Ojasvi  Kumawat,Mr. Omprakash Kumawat,III-A,18,,7600919434,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,222
+3244,24-07-2025,24-07-2025,10002983,Ojasvi  Kumawat,Mr. Omprakash Kumawat,III-A,18,,7600919434,Female,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,222
+3244,24-07-2025,24-07-2025,10002983,Ojasvi  Kumawat,Mr. Omprakash Kumawat,III-A,18,,7600919434,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,222
+3244,24-07-2025,24-07-2025,10002983,Ojasvi  Kumawat,Mr. Omprakash Kumawat,III-A,18,,7600919434,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,222
+3243,24-07-2025,24-07-2025,10003409,RIYANSHI   BANSAL,VISHAL BANSAL,Nursery-Blossom,17,,7082083584,Female,Transport Fee,May + June,2300,NEFT Payment,Amit,23
+3243,24-07-2025,24-07-2025,10003409,RIYANSHI   BANSAL,VISHAL BANSAL,Nursery-Blossom,17,,7082083584,Female,Tuition Fees,May + June,4250,NEFT Payment,Amit,23
+3243,24-07-2025,24-07-2025,10003409,RIYANSHI   BANSAL,VISHAL BANSAL,Nursery-Blossom,17,,7082083584,Female,Transport Fee,July + August,1150,NEFT Payment,Amit,23
+3243,24-07-2025,24-07-2025,10003409,RIYANSHI   BANSAL,VISHAL BANSAL,Nursery-Blossom,17,,7082083584,Female,Tuition Fees,July + August,4250,NEFT Payment,Amit,23
+3242,24-07-2025,24-07-2025,10002899,Advik  Bansal,Mr. Vishal Bansal,II-Pearl,4,,7082083584,Male,Transport Fee,May + June,2300,NEFT Payment,Amit,SBI
+3242,24-07-2025,24-07-2025,10002899,Advik  Bansal,Mr. Vishal Bansal,II-Pearl,4,,7082083584,Male,Tuition Fees,May + June,7000,NEFT Payment,Amit,SBI
+3242,24-07-2025,24-07-2025,10002899,Advik  Bansal,Mr. Vishal Bansal,II-Pearl,4,,7082083584,Male,Transport Fee,July + August,1150,NEFT Payment,Amit,SBI
+3242,24-07-2025,24-07-2025,10002899,Advik  Bansal,Mr. Vishal Bansal,II-Pearl,4,,7082083584,Male,Tuition Fees,July + August,7000,NEFT Payment,Amit,SBI
+3241,24-07-2025,24-07-2025,10002473,Darsheel  Chaudhary,Mr. Ajay Kumar Chaudhary,III-B,10,,9318873211,Male,Transport Fee,July + August,1080,Wallet/UPI/QR,Amit,233
+3241,24-07-2025,24-07-2025,10002473,Darsheel  Chaudhary,Mr. Ajay Kumar Chaudhary,III-B,10,,9318873211,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,233
+3240,24-07-2025,24-07-2025,10003287,Ekampreet  Singh,Mr. Kuldeep Singh,XII-Commerce,32,,7018013302,Male,Tuition Fees,July + August,4300,Cash,Amit,
+3239,24-07-2025,24-07-2025,10001381,Diya  Aggarwal,Mr. Vipin Aggarwal,IX-C,3,,9816081803,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,232
+3238,24-07-2025,24-07-2025,10001268,Dhruv  Agarwal,Mr. Praveen Agarwal,XII-Commerce,8,,8219085700,Male,Tuition Fees,July + August,8600,Credit/Debit Card,Amit,2323
+3237,24-07-2025,24-07-2025,10002310,Tejas  Aggarwal,Mr. Vipin Aggarwal,IV-C,5,,9816081803,Male,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,232
+3236,24-07-2025,24-07-2025,10001152,Riyansh  Aggarwal,Mr. Nitin Aggarwal,XII-Commerce,26,,9418138934,Male,Tuition Fees,July + August,8600,Credit/Debit Card,Amit,124
+3235,24-07-2025,24-07-2025,10001152,Riyansh  Aggarwal,Mr. Nitin Aggarwal,XII-Commerce,26,,9418138934,Male,Tuition Fees,May + June,8600,Credit/Debit Card,Amit,232
+3234,24-07-2025,24-07-2025,10002310,Tejas  Aggarwal,Mr. Vipin Aggarwal,IV-C,5,,9816081803,Male,Tuition Fees,May + June,5950,Credit/Debit Card,Amit,322
+3233,24-07-2025,24-07-2025,10001381,Diya  Aggarwal,Mr. Vipin Aggarwal,IX-C,3,,9816081803,Female,Tuition Fees,May + June,8000,Credit/Debit Card,Amit,232
+3232,24-07-2025,24-07-2025,10001268,Dhruv  Agarwal,Mr. Praveen Agarwal,XII-Commerce,8,,8219085700,Male,Tuition Fees,May + June,2600,Credit/Debit Card,Amit,2w23
+3231,24-07-2025,24-07-2025,10002844,Viraat  Thakur,Mr. Neeraj Kumar Thakur,III-C,8,,7876108642,Male,Transport Fee,July + August,1150,ONLINE,,E2507240JO0X4F
+3231,24-07-2025,24-07-2025,10002844,Viraat  Thakur,Mr. Neeraj Kumar Thakur,III-C,8,,7876108642,Male,Tuition Fees,July + August,4000,ONLINE,,E2507240JO0X4F
+3230,24-07-2025,24-07-2025,10001184,Manveer  Singh,Mr. Pritpal Singh,XI-Commerce,19,,9318773475,Male,Tuition Fees,May + June,8600,NEFT Payment,Amit,SBI
+3230,24-07-2025,24-07-2025,10001184,Manveer  Singh,Mr. Pritpal Singh,XI-Commerce,19,,9318773475,Male,Transport Fee,May + June,1940,NEFT Payment,Amit,SBI
+3230,24-07-2025,24-07-2025,10001184,Manveer  Singh,Mr. Pritpal Singh,XI-Commerce,19,,9318773475,Male,Tuition Fees,July + August,4300,NEFT Payment,Amit,SBI
+3229,24-07-2025,24-07-2025,10002416,Japneet  Kaur,Mr. Salender Singh,III-B,1,,9459091313,Female,Tuition Fees,May + June,5950,NEFT Payment,Amit,SBI
+3229,24-07-2025,24-07-2025,10002416,Japneet  Kaur,Mr. Salender Singh,III-B,1,,9459091313,Female,Tuition Fees,July + August,5850,NEFT Payment,Amit,SBI
+3228,24-07-2025,24-07-2025,10001442,Avneet  Singh,Mr. Salender Singh,VIII-A,23,,9459091313,Male,Tuition Fees,May + June,7600,NEFT Payment,Amit,SBI
+3228,24-07-2025,24-07-2025,10001442,Avneet  Singh,Mr. Salender Singh,VIII-A,23,,9459091313,Male,Tuition Fees,July + August,7600,NEFT Payment,Amit,SBI
+3227,24-07-2025,24-07-2025,10001627,Yash  Chaudhary,Mr. Sanjeev Kumar,VII-B,28,,8091477965,Male,Transport Fee,July + August,1300,Wallet/UPI/QR,Amit,232
+3227,24-07-2025,24-07-2025,10001627,Yash  Chaudhary,Mr. Sanjeev Kumar,VII-B,28,,8091477965,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,232
+3226,24-07-2025,24-07-2025,10003322,DIVYANSH   CHAUDHARY,RAJESH KUMAR,U.K.G.-Lily,14,,7018050831,Male,Tuition Fees,July + August,5600,Wallet/UPI/QR,Amit,ae1
+3226,24-07-2025,24-07-2025,10003322,DIVYANSH   CHAUDHARY,RAJESH KUMAR,U.K.G.-Lily,14,,7018050831,Male,Transport Fee,July + August,1110,Wallet/UPI/QR,Amit,ae1
+3225,24-07-2025,24-07-2025,10001335,Guransh Singh Saini,Mr. Iqbal Singh Saini,IX-A,24,,9816127707,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Amit,232
+3225,24-07-2025,24-07-2025,10001335,Guransh Singh Saini,Mr. Iqbal Singh Saini,IX-A,24,,9816127707,Male,Transport Fee,May + June,2040,Wallet/UPI/QR,Amit,232
+3225,24-07-2025,24-07-2025,10001335,Guransh Singh Saini,Mr. Iqbal Singh Saini,IX-A,24,,9816127707,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Amit,232
+3225,24-07-2025,24-07-2025,10001335,Guransh Singh Saini,Mr. Iqbal Singh Saini,IX-A,24,,9816127707,Male,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,232
+3224,24-07-2025,24-07-2025,10002507,Hardik  Bhalla,Mr. Yashpal Bhalla,VI-C,16,,9736116000,Male,Tuition Fees,July + August,6550,Wallet/UPI/QR,Inderjeet,455646
+3224,24-07-2025,24-07-2025,10002507,Hardik  Bhalla,Mr. Yashpal Bhalla,VI-C,16,,9736116000,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,455646
+3223,24-07-2025,24-07-2025,10001308,Angel  Bhalla,Mr. Yashpal Bhalla,IX-C,2,,9736116000,Female,Tuition Fees,July + August,8000,Wallet/UPI/QR,Inderjeet,7556
+3223,24-07-2025,24-07-2025,10001308,Angel  Bhalla,Mr. Yashpal Bhalla,IX-C,2,,9736116000,Female,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,7556
+3222,24-07-2025,24-07-2025,10002418,Aishvi  Tegta,Mr. Narender Singh,IV-C,11,,7018256670,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,322
+3222,24-07-2025,24-07-2025,10002418,Aishvi  Tegta,Mr. Narender Singh,IV-C,11,,7018256670,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,322
+3221,24-07-2025,24-07-2025,10003346,RUSHIKA   NEGI,RAJNISH NEGI,Nursery-Blossom,7,,7876638391,Female,Tuition Fees,July + August,5000,Cash,Inderjeet,
+3220,24-07-2025,24-07-2025,10001471,Aashvi  ,Mr. Sanjay Kumar,IX-B,3,,7876433148,Female,Tuition Fees,May + June,4000,Credit/Debit Card,Inderjeet,4544
+3220,24-07-2025,24-07-2025,10001471,Aashvi  ,Mr. Sanjay Kumar,IX-B,3,,7876433148,Female,Transport Fee,May + June,900,Credit/Debit Card,Inderjeet,4544
+3220,24-07-2025,24-07-2025,10001471,Aashvi  ,Mr. Sanjay Kumar,IX-B,3,,7876433148,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,4544
+3220,24-07-2025,24-07-2025,10001471,Aashvi  ,Mr. Sanjay Kumar,IX-B,3,,7876433148,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,4544
+3219,24-07-2025,24-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Transport Fee,May + June,1940,ONLINE,,E2507240JNVDOM
+3219,24-07-2025,24-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Tuition Fees,May + June,7600,ONLINE,,E2507240JNVDOM
+3218,24-07-2025,24-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Transport Fee,May + June,1940,ONLINE,,E2507240JNVAXP
+3218,24-07-2025,24-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Tuition Fees,May + June,8000,ONLINE,,E2507240JNVAXP
+3217,24-07-2025,24-07-2025,10001825,Sanvi  Chaudhary,Mr. Mahesh Kumar,VI-C,4,,9805690390,Female,Tuition Fees,May + June,7600,Cash,Inderjeet,
+3217,24-07-2025,24-07-2025,10001825,Sanvi  Chaudhary,Mr. Mahesh Kumar,VI-C,4,,9805690390,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3217,24-07-2025,24-07-2025,10001825,Sanvi  Chaudhary,Mr. Mahesh Kumar,VI-C,4,,9805690390,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3217,24-07-2025,24-07-2025,10001825,Sanvi  Chaudhary,Mr. Mahesh Kumar,VI-C,4,,9805690390,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3216,24-07-2025,24-07-2025,10001604,Arnav  Sharma,Mr. Subodh Sharma,VIII-D,3,,9736227100,Male,Tuition Fees,May + June,7600,Cash,Inderjeet,
+3216,24-07-2025,24-07-2025,10001604,Arnav  Sharma,Mr. Subodh Sharma,VIII-D,3,,9736227100,Male,Transport Fee,May + June,1800,Cash,Inderjeet,
+3216,24-07-2025,24-07-2025,10001604,Arnav  Sharma,Mr. Subodh Sharma,VIII-D,3,,9736227100,Male,Transport Fee,July + August,900,Cash,Inderjeet,
+3216,24-07-2025,24-07-2025,10001604,Arnav  Sharma,Mr. Subodh Sharma,VIII-D,3,,9736227100,Male,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3215,24-07-2025,24-07-2025,10001003,Ananya  Sharma,Mr. Subodh Sharma,XI-Non-Medical,6,,9736227100,Female,Tuition Fees,May + June,9000,Cash,Inderjeet,
+3215,24-07-2025,24-07-2025,10001003,Ananya  Sharma,Mr. Subodh Sharma,XI-Non-Medical,6,,9736227100,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3215,24-07-2025,24-07-2025,10001003,Ananya  Sharma,Mr. Subodh Sharma,XI-Non-Medical,6,,9736227100,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3215,24-07-2025,24-07-2025,10001003,Ananya  Sharma,Mr. Subodh Sharma,XI-Non-Medical,6,,9736227100,Female,Tuition Fees,July + August,9000,Cash,Inderjeet,
+3214,24-07-2025,24-07-2025,10003088,Avik  Aggarwal,Mr. Ankit Kumar,L.K.G.-Pink,6,,7011730629,Male,Tuition Fees,May + June,5000,Wallet/UPI/QR,Amit,132
+3214,24-07-2025,24-07-2025,10003088,Avik  Aggarwal,Mr. Ankit Kumar,L.K.G.-Pink,6,,7011730629,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,132
+3214,24-07-2025,24-07-2025,10003088,Avik  Aggarwal,Mr. Ankit Kumar,L.K.G.-Pink,6,,7011730629,Male,Tuition Fees,July + August,5000,Wallet/UPI/QR,Amit,132
+3214,24-07-2025,24-07-2025,10003088,Avik  Aggarwal,Mr. Ankit Kumar,L.K.G.-Pink,6,,7011730629,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,132
+3213,24-07-2025,24-07-2025,10002288,Dakshesh  Sharma,Mr. Babu Ram Sharma,VII-B,15,,7018651584,Male,WonderSkill Workshop,,1000,Wallet/UPI/QR,Amit,232
+3213,24-07-2025,24-07-2025,10002288,Dakshesh  Sharma,Mr. Babu Ram Sharma,VII-B,15,,7018651584,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,232
+3213,24-07-2025,24-07-2025,10002288,Dakshesh  Sharma,Mr. Babu Ram Sharma,VII-B,15,,7018651584,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,232
+3213,24-07-2025,24-07-2025,10002288,Dakshesh  Sharma,Mr. Babu Ram Sharma,VII-B,15,,7018651584,Male,Tuition Fees,July + August,3800,Wallet/UPI/QR,Amit,232
+3212,24-07-2025,24-07-2025,10003225,Banshika  Singh,Mr. Kundan Singh,III-D,26,,9882043743,Female,Tuition Fees,July + August,1000,Cash,Amit,
+3211,24-07-2025,24-07-2025,10002415,Rivanshi  Thakur,Mr. Anurag Thakur,III-B,23,,8628083580,Female,Tuition Fees,July + August,7000,ONLINE,,E2507240JNO2DH
+3211,24-07-2025,24-07-2025,10002415,Rivanshi  Thakur,Mr. Anurag Thakur,III-B,23,,8628083580,Female,Transport Fee,July + August,1300,ONLINE,,E2507240JNO2DH
+3210,14-07-2025,14-07-2025,10002284,Gaurvi  Rana,Mr. Rajender Singh Rana,VII-B,14,,8580673159,Female,Tuition Fees,May + June,7600,NEFT Payment,Amit,1234
+3210,14-07-2025,14-07-2025,10002284,Gaurvi  Rana,Mr. Rajender Singh Rana,VII-B,14,,8580673159,Female,Transport Fee,May + June,1800,NEFT Payment,Amit,1234
+3209,24-07-2025,24-07-2025,10003318,JAPGUN KAUR  ,AMRIK SINGH,Nursery-Blossom,1,,7018866004,Female,Tuition Fees,May + June,5000,Wallet/UPI/QR,Amit,55
+3209,24-07-2025,24-07-2025,10003318,JAPGUN KAUR  ,AMRIK SINGH,Nursery-Blossom,1,,7018866004,Female,Transport Fee,May + June,1500,Wallet/UPI/QR,Amit,55
+3208,24-07-2025,24-07-2025,10001961,Swastik  Bhatt,Mr. Manoj Bhatt,V-A,8,,7018326719,Male,Transport Fee,July + August,900,ONLINE,,E2507240JNK9GQ
+3208,24-07-2025,24-07-2025,10001961,Swastik  Bhatt,Mr. Manoj Bhatt,V-A,8,,7018326719,Male,Tuition Fees,July + August,7000,ONLINE,,E2507240JNK9GQ
+3207,24-07-2025,24-07-2025,10002875,Vedant  Bhatt,Mr. Manoj Bhatt,I-Mynah,8,,7018326720,Male,Tuition Fees,July + August,6160,ONLINE,,E2507240JNK1LL
+3207,24-07-2025,24-07-2025,10002875,Vedant  Bhatt,Mr. Manoj Bhatt,I-Mynah,8,,7018326720,Male,Transport Fee,July + August,900,ONLINE,,E2507240JNK1LL
+3206,24-07-2025,24-07-2025,10001684,Vinay Kumar Mishra,Mr. Praveen Kumar Mishra,IX-B,10,,9816480580,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,45656
+3206,24-07-2025,24-07-2025,10001684,Vinay Kumar Mishra,Mr. Praveen Kumar Mishra,IX-B,10,,9816480580,Male,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,45656
+3205,24-07-2025,24-07-2025,10002130,Jaya  Mishra,Mr. Praveen Kumar Mishra,V-D,26,,9816480580,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,54343
+3205,24-07-2025,24-07-2025,10002130,Jaya  Mishra,Mr. Praveen Kumar Mishra,V-D,26,,9816480580,Female,Tuition Fees,July + August,5950,Credit/Debit Card,Inderjeet,54343
+3204,24-07-2025,24-07-2025,10003470,ANITEJ  SINGH KATHURIA,GURPREET SINGH KATHURIA,X-B,30,,8219604334,Male,Transport Fee,April,900,ONLINE,,E2507240JNIQQO
+3204,24-07-2025,24-07-2025,10003470,ANITEJ  SINGH KATHURIA,GURPREET SINGH KATHURIA,X-B,30,,8219604334,Male,Transport Fee,May + June,1800,ONLINE,,E2507240JNIQQO
+3204,24-07-2025,24-07-2025,10003470,ANITEJ  SINGH KATHURIA,GURPREET SINGH KATHURIA,X-B,30,,8219604334,Male,Tuition Fees,May + June,8000,ONLINE,,E2507240JNIQQO
+3203,24-07-2025,24-07-2025,10002734,Atharv  Sharma,Mr. Dalip Sharma,III-B,6,,9816048710,Male,Tuition Fees,September + October,7000,ONLINE,,E2507240JNHZOF
+3203,24-07-2025,24-07-2025,10002734,Atharv  Sharma,Mr. Dalip Sharma,III-B,6,,9816048710,Male,Transport Fee,September + October,1800,ONLINE,,E2507240JNHZOF
+3202,24-07-2025,24-07-2025,10002811,Mohd  Ruhan,Mr. Sharafat Ali,II-Diamond,16,,9882104407,Male,Tuition Fees,July + August,2975,Wallet/UPI/QR,Amit,232
+3201,24-07-2025,24-07-2025,10002246,Mohd  Aayan,Mr. Sharafat Ali,IV-D,5,,9882104407,Male,Tuition Fees,July + August,3500,Wallet/UPI/QR,Amit,12452
+3200,23-07-2025,23-07-2025,10002221,Vansh  Sharma,Mr. Vikas Sharma,V-A,5,,9625240900,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,2322
+3200,23-07-2025,23-07-2025,10002221,Vansh  Sharma,Mr. Vikas Sharma,V-A,5,,9625240900,Male,Transport Fee,May + June,2120,Wallet/UPI/QR,Amit,2322
+3199,24-07-2025,24-07-2025,10002601,Krishti  Gupta,Mr. Krishna Kumar,IV-C,8,,9816674804,Female,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,555658
+3199,24-07-2025,24-07-2025,10002601,Krishti  Gupta,Mr. Krishna Kumar,IV-C,8,,9816674804,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,555658
+3198,23-07-2025,23-07-2025,10001347,Vaibhav  Kashyap,Mr. Rakesh Kumar,XII-Medical,11,,9418232150,Male,Tuition Fees,September + October,9000,Wallet/UPI/QR,Amit,131
+3198,23-07-2025,23-07-2025,10001347,Vaibhav  Kashyap,Mr. Rakesh Kumar,XII-Medical,11,,9418232150,Male,Transport Fee,September + October,1800,Wallet/UPI/QR,Amit,131
+3197,23-07-2025,23-07-2025,10002042,Ansh  Soni,Mr. Amit Soni,V-A,4,,9318978112,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,232
+3197,23-07-2025,23-07-2025,10002042,Ansh  Soni,Mr. Amit Soni,V-A,4,,9318978112,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,232
+3197,23-07-2025,23-07-2025,10002042,Ansh  Soni,Mr. Amit Soni,V-A,4,,9318978112,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232
+3197,23-07-2025,23-07-2025,10002042,Ansh  Soni,Mr. Amit Soni,V-A,4,,9318978112,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3196,23-07-2025,23-07-2025,10000815,Manan  Maniktala,Mr. Vicky Maniktala,XII-Non-Medical,12,,8219111189,Male,Tuition Fees,May + June,9000,Wallet/UPI/QR,Amit,241
+3196,23-07-2025,23-07-2025,10000815,Manan  Maniktala,Mr. Vicky Maniktala,XII-Non-Medical,12,,8219111189,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,241
+3196,23-07-2025,23-07-2025,10000815,Manan  Maniktala,Mr. Vicky Maniktala,XII-Non-Medical,12,,8219111189,Male,Tuition Fees,July + August,9000,Wallet/UPI/QR,Amit,241
+3196,23-07-2025,23-07-2025,10000815,Manan  Maniktala,Mr. Vicky Maniktala,XII-Non-Medical,12,,8219111189,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,241
+3195,24-07-2025,24-07-2025,10002856,Prarabdh  Thakur,Mr. Praveen Thakur,I-Mynah,6,,9418808484,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232
+3195,24-07-2025,24-07-2025,10002856,Prarabdh  Thakur,Mr. Praveen Thakur,I-Mynah,6,,9418808484,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3194,23-07-2025,23-07-2025,10003157,Harnihal Singh Gill,Mr. Harpreet Singh Gill,L.K.G.-Green,5,,9805303001,Male,Tuition Fees,July + August,5000,ONLINE,,E2507230JN2P6K
+3194,23-07-2025,23-07-2025,10003157,Harnihal Singh Gill,Mr. Harpreet Singh Gill,L.K.G.-Green,5,,9805303001,Male,Transport Fee,July + August,970,ONLINE,,E2507230JN2P6K
+3193,23-07-2025,23-07-2025,10003448,IDHANTVEER SINGH  ,BALWINDER SINGH,IV-A,29,,7089427239,Male,Tuition Fees,July + August,7000,ONLINE,,E2507230JMZTPN
+3192,23-07-2025,23-07-2025,10003019,Rudransh  Vashisht,Mr. Himanshu Vashisht,V-A,22,,9736249988,Male,Tuition Fees,July + August,7000,ONLINE,,E2507230JMZQNJ
+3192,23-07-2025,23-07-2025,10003019,Rudransh  Vashisht,Mr. Himanshu Vashisht,V-A,22,,9736249988,Male,Transport Fee,July + August,900,ONLINE,,E2507230JMZQNJ
+3191,23-07-2025,23-07-2025,10003183,Anika  Kashyap,Mr. Shubham Kumar,III-D,14,,9857761748,Female,Tuition Fees,July + August,7000,ONLINE,,E2507230JMRUTU
+3190,23-07-2025,23-07-2025,10002323,Shourya  Negi,Mr. Pankaj Negi,VII-A,32,,7018315656,Male,Tuition Fees,July + August,7600,ONLINE,,E2507230JMQ0OW
+3190,23-07-2025,23-07-2025,10002323,Shourya  Negi,Mr. Pankaj Negi,VII-A,32,,7018315656,Male,Transport Fee,July + August,970,ONLINE,,E2507230JMQ0OW
+3189,23-07-2025,23-07-2025,10002232,Sai  Sharma,Mr. Sachin Sharma,V-A,29,,9882213046,Female,Tuition Fees,May + June,5950,ONLINE,,E2507230JMQ5W0
+3189,23-07-2025,23-07-2025,10002232,Sai  Sharma,Mr. Sachin Sharma,V-A,29,,9882213046,Female,Transport Fee,May + June,1940,ONLINE,,E2507230JMQ5W0
+3189,23-07-2025,23-07-2025,10002232,Sai  Sharma,Mr. Sachin Sharma,V-A,29,,9882213046,Female,Tuition Fees,July + August,5950,ONLINE,,E2507230JMQ5W0
+3189,23-07-2025,23-07-2025,10002232,Sai  Sharma,Mr. Sachin Sharma,V-A,29,,9882213046,Female,Transport Fee,July + August,970,ONLINE,,E2507230JMQ5W0
+3188,23-07-2025,23-07-2025,10002516,Brijesh  Thakur,Mr. Rajeev Kumar,VI-B,8,,7018341799,Male,Tuition Fees,May + June,7600,ONLINE,,E2507230JMJ96G
+3188,23-07-2025,23-07-2025,10002516,Brijesh  Thakur,Mr. Rajeev Kumar,VI-B,8,,7018341799,Male,Transport Fee,May + June,1940,ONLINE,,E2507230JMJ96G
+3187,23-07-2025,23-07-2025,10002950,Ashkirat  Singh,Mr. Harkirat Singh,U.K.G.-Lotus,4,,9882474747,Male,Tuition Fees,July + August,5600,ONLINE,,E2507230JMEYIK
+3186,23-07-2025,23-07-2025,10002438,Ishit  Changra,Mr. Mukesh Kumar,IV-A,7,,9816225444,Male,Tuition Fees,July + August,7000,ONLINE,,E2507230JME7C5
+3186,23-07-2025,23-07-2025,10002438,Ishit  Changra,Mr. Mukesh Kumar,IV-A,7,,9816225444,Male,Transport Fee,July + August,1150,ONLINE,,E2507230JME7C5
+3185,23-07-2025,23-07-2025,10003450,RIONA CHAUHAN  ,ABHIMANYU CHAUHAN,Nursery-Bloom,21,,9816664440,Female,Tuition Fees,May + June,4250,ONLINE,,E2507230JMDVRD
+3185,23-07-2025,23-07-2025,10003450,RIONA CHAUHAN  ,ABHIMANYU CHAUHAN,Nursery-Bloom,21,,9816664440,Female,Tuition Fees,September + October,4250,ONLINE,,E2507230JMDVRD
+3185,23-07-2025,23-07-2025,10003450,RIONA CHAUHAN  ,ABHIMANYU CHAUHAN,Nursery-Bloom,21,,9816664440,Female,Tuition Fees,July + August,4250,ONLINE,,E2507230JMDVRD
+3184,23-07-2025,23-07-2025,10002221,Vansh  Sharma,Mr. Vikas Sharma,V-A,5,,9625240900,Male,Transport Fee,April,820,ONLINE,,E2507230JMDPML
+3183,23-07-2025,23-07-2025,10001837,Devansh  Sharma,Mr. Sandeep Sharma,VII-A,7,,8091110076,Male,Tuition Fees,July + August,6080,ONLINE,,E2507230JMBXPJ
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Term Charges,April,4600,ONLINE,,E2507230JMB2IA
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Tuition Fees,April,3230,ONLINE,,E2507230JMB2IA
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Parent Orientation,,1000,ONLINE,,E2507230JMB2IA
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,WonderSkill Workshop,,1000,ONLINE,,E2507230JMB2IA
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,"I-Card, Art & Craft, etc.",April,850,ONLINE,,E2507230JMB2IA
+3182,23-07-2025,23-07-2025,10002283,Arshnoor  Kaur,Mr. Jasmeet Singh,VII-B,13,,9816023939,Female,Transport Fee,April,970,ONLINE,,E2507230JMB2IA
+3181,23-07-2025,23-07-2025,10001837,Devansh  Sharma,Mr. Sandeep Sharma,VII-A,7,,8091110076,Male,Tuition Fees,May + June,6080,ONLINE,,E2507230JMB0I8
+3180,23-07-2025,23-07-2025,10001837,Devansh  Sharma,Mr. Sandeep Sharma,VII-A,7,,8091110076,Male,Parent Orientation,,1000,ONLINE,,E2507230JMAQXR
+3179,23-07-2025,23-07-2025,10003336,KAVNOOR   KAUR,PARAMJEET SINGH,IV-D,27,,9736425007,Female,Transport Fee,July + August,1060,Wallet/UPI/QR,Amit,2232
+3179,23-07-2025,23-07-2025,10003336,KAVNOOR   KAUR,PARAMJEET SINGH,IV-D,27,,9736425007,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,2232
+3178,23-07-2025,23-07-2025,10002740,Atharv  Kolash,Mr. Ashish Kolash,I-Koel,20,,7018743637,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,232
+3178,23-07-2025,23-07-2025,10002740,Atharv  Kolash,Mr. Ashish Kolash,I-Koel,20,,7018743637,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,232
+3178,23-07-2025,23-07-2025,10002740,Atharv  Kolash,Mr. Ashish Kolash,I-Koel,20,,7018743637,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232
+3178,23-07-2025,23-07-2025,10002740,Atharv  Kolash,Mr. Ashish Kolash,I-Koel,20,,7018743637,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,232
+3177,23-07-2025,23-07-2025,10003142,Shaurya  Thakur,Mr. Sanjay Thakur,L.K.G.-Green,4,,7018710199,Male,Tuition Fees,May + June,4250,ONLINE,,E2507230JM84Z8
+3177,23-07-2025,23-07-2025,10003142,Shaurya  Thakur,Mr. Sanjay Thakur,L.K.G.-Green,4,,7018710199,Male,Tuition Fees,July + August,4250,ONLINE,,E2507230JM84Z8
+3176,23-07-2025,23-07-2025,10002243,Ananya  ,Mr. Sanjay Thakur,V-B,5,,9882760000,Female,Tuition Fees,July + August,7000,ONLINE,,E2507230JM7PT8
+3176,23-07-2025,23-07-2025,10002243,Ananya  ,Mr. Sanjay Thakur,V-B,5,,9882760000,Female,Transport Fee,July + August,900,ONLINE,,E2507230JM7PT8
+3175,23-07-2025,23-07-2025,10002828,Sanashrut  Rana,Mr. Nihuresh Kumar Rana,IV-D,18,,8894651093,Male,Tuition Fees,July + August,7000,ONLINE,,E2507230JM7ME7
+3175,23-07-2025,23-07-2025,10002828,Sanashrut  Rana,Mr. Nihuresh Kumar Rana,IV-D,18,,8894651093,Male,Transport Fee,July + August,970,ONLINE,,E2507230JM7ME7
+3174,23-07-2025,23-07-2025,10003342,MD AZHAR  ,MUZAHIR KHAN,Nursery-Blossom,3,,7833947404,Male,Transport Fee,July + August,1150,ONLINE,,E2507230JM6IOZ
+3174,23-07-2025,23-07-2025,10003342,MD AZHAR  ,MUZAHIR KHAN,Nursery-Blossom,3,,7833947404,Male,Tuition Fees,July + August,5000,ONLINE,,E2507230JM6IOZ
+3173,23-07-2025,23-07-2025,10003415,DIYAZHINI.P  ,PACHAYAPPAN.M,I-Mynah,24,,9500259773,Female,Tuition Fees,May + June,5950,Wallet/UPI/QR,Amit,232
+3173,23-07-2025,23-07-2025,10003415,DIYAZHINI.P  ,PACHAYAPPAN.M,I-Mynah,24,,9500259773,Female,Transport Fee,May + June,2600,Wallet/UPI/QR,Amit,232
+3173,23-07-2025,23-07-2025,10003415,DIYAZHINI.P  ,PACHAYAPPAN.M,I-Mynah,24,,9500259773,Female,Transport Fee,July + August,1300,Wallet/UPI/QR,Amit,232
+3173,23-07-2025,23-07-2025,10003415,DIYAZHINI.P  ,PACHAYAPPAN.M,I-Mynah,24,,9500259773,Female,Tuition Fees,July + August,5950,Wallet/UPI/QR,Amit,232
+3172,23-07-2025,23-07-2025,10003220,Abhishree  Tiwari,Mr. Abhijit Tiwari,III-A,22,,7405717138,Female,Tuition Fees,July + August,5950,Wallet/UPI/QR,Inderjeet,6565
+3171,23-07-2025,23-07-2025,10003414,DEEKSHAN. P  ,PACHAYAPPAN.M,V-D,30 ,,9500259773,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,2322
+3171,23-07-2025,23-07-2025,10003414,DEEKSHAN. P  ,PACHAYAPPAN.M,V-D,30 ,,9500259773,Male,Transport Fee,May + June,2600,Wallet/UPI/QR,Amit,2322
+3171,23-07-2025,23-07-2025,10003414,DEEKSHAN. P  ,PACHAYAPPAN.M,V-D,30 ,,9500259773,Male,Transport Fee,July + August,1300,Wallet/UPI/QR,Amit,2322
+3171,23-07-2025,23-07-2025,10003414,DEEKSHAN. P  ,PACHAYAPPAN.M,V-D,30 ,,9500259773,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,2322
+3170,23-07-2025,23-07-2025,10003219,Prajeet  Tiwari,Mr. Abhijit Tiwari,V-A,25,,7405717138,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,5454
+3169,23-07-2025,23-07-2025,10002461,Anshita  Gupta,Mr. Sagar Gupta,V-C,18,,7018503972,Female,Tuition Fees,May + June,7000,Credit/Debit Card,Amit,erw
+3169,23-07-2025,23-07-2025,10002461,Anshita  Gupta,Mr. Sagar Gupta,V-C,18,,7018503972,Female,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,erw
+3168,23-07-2025,23-07-2025,10002804,Shreyansh  Marpu,Mr. Ramesh Marpu,VI-B,14,,7732085556,Male,Tuition Fees,May + June,7600,ONLINE,,E2507230JM5QBJ
+3167,23-07-2025,23-07-2025,10002907,Aditi  Sharma,Mr. Surender Singh,VIII-B,14,,9816058148,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,232
+3167,23-07-2025,23-07-2025,10002907,Aditi  Sharma,Mr. Surender Singh,VIII-B,14,,9816058148,Female,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,232
+3167,23-07-2025,23-07-2025,10002907,Aditi  Sharma,Mr. Surender Singh,VIII-B,14,,9816058148,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3167,23-07-2025,23-07-2025,10002907,Aditi  Sharma,Mr. Surender Singh,VIII-B,14,,9816058148,Female,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,232
+3166,23-07-2025,23-07-2025,10002889,Sanvi  Sharma,Mr. Surender Singh,I-Mynah,10,,9816058148,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,232
+3166,23-07-2025,23-07-2025,10002889,Sanvi  Sharma,Mr. Surender Singh,I-Mynah,10,,9816058148,Female,Tuition Fees,May + June,6160,Wallet/UPI/QR,Amit,232
+3166,23-07-2025,23-07-2025,10002889,Sanvi  Sharma,Mr. Surender Singh,I-Mynah,10,,9816058148,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+3166,23-07-2025,23-07-2025,10002889,Sanvi  Sharma,Mr. Surender Singh,I-Mynah,10,,9816058148,Female,Tuition Fees,July + August,6160,Wallet/UPI/QR,Amit,232
+3165,23-07-2025,23-07-2025,10003011,Vidit  Agarwal,Mr. Akash Agarwal,IV-C,24,,9816503593,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,2323
+3165,23-07-2025,23-07-2025,10003011,Vidit  Agarwal,Mr. Akash Agarwal,IV-C,24,,9816503593,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,2323
+3165,23-07-2025,23-07-2025,10003011,Vidit  Agarwal,Mr. Akash Agarwal,IV-C,24,,9816503593,Male,Transport Fee,September + October,1800,Wallet/UPI/QR,Amit,2323
+3165,23-07-2025,23-07-2025,10003011,Vidit  Agarwal,Mr. Akash Agarwal,IV-C,24,,9816503593,Male,Tuition Fees,September + October,7000,Wallet/UPI/QR,Amit,2323
+3164,23-07-2025,23-07-2025,10000814,Chirag  Fanda,Mr. Hitesh Fanda,XII-Non-Medical,6,,9318827105,Male,Tuition Fees,July + August,9000,Credit/Debit Card,Amit,5291
+3163,23-07-2025,23-07-2025,10003124,Vihaan  Jolly,Mr. Ramesh Kumar,U.K.G.-Lily,7,,6005926804,Male,Tuition Fees,July + August,2800,Cash,Inderjeet,
+3162,23-07-2025,23-07-2025,10000913,Sachi  Sharma,Mr. Sachin Sharma,XII-Medical,8,,7018003656,Female,Tuition Fees,May + June,9000,ONLINE,,E2507230JM3H15
+3162,23-07-2025,23-07-2025,10000913,Sachi  Sharma,Mr. Sachin Sharma,XII-Medical,8,,7018003656,Female,Transport Fee,May + June,1940,ONLINE,,E2507230JM3H15
+3162,23-07-2025,23-07-2025,10000913,Sachi  Sharma,Mr. Sachin Sharma,XII-Medical,8,,7018003656,Female,Tuition Fees,July + August,9000,ONLINE,,E2507230JM3H15
+3162,23-07-2025,23-07-2025,10000913,Sachi  Sharma,Mr. Sachin Sharma,XII-Medical,8,,7018003656,Female,Transport Fee,July + August,970,ONLINE,,E2507230JM3H15
+3161,23-07-2025,23-07-2025,10003201,Adnan  ,Mr. Rizwan Ali,L.K.G.-Pink,19,,7018601289,Male,Tuition Fees,May + June,5000,ONLINE,,E2507230JM0SQL
+3161,23-07-2025,23-07-2025,10003201,Adnan  ,Mr. Rizwan Ali,L.K.G.-Pink,19,,7018601289,Male,Transport Fee,May + June,1280,ONLINE,,E2507230JM0SQL
+3160,23-07-2025,23-07-2025,10001377,Saanvi  Bhardwaj,Mr. Sanjeev Bhardwaj,X-A,11,,9418458204,Female,Tuition Fees,July + August,4000,Wallet/UPI/QR,Amit,232
+3159,23-07-2025,23-07-2025,10003434,TRISHA  ,DEVRAJ,Nursery-Bloom,20,,9805428999,Female,Tuition Fees,May + June,4250,Wallet/UPI/QR,Amit,1231
+3159,23-07-2025,23-07-2025,10003434,TRISHA  ,DEVRAJ,Nursery-Bloom,20,,9805428999,Female,Tuition Fees,July + August,4250,Wallet/UPI/QR,Amit,1231
+3158,23-07-2025,23-07-2025,10001666,Dishank  ,Mr. Dev Raj,XI-Commerce,35,,9805428999,Male,Tuition Fees,July + August,8600,Wallet/UPI/QR,Amit,w3q23
+3158,23-07-2025,23-07-2025,10001666,Dishank  ,Mr. Dev Raj,XI-Commerce,35,,9805428999,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,w3q23
+3157,23-07-2025,23-07-2025,10003474,YANSHIKA  ,VINOD KUMAR,XI-Humanities,9,,9805428999,Female,Tuition Fees,July + August,7310,Wallet/UPI/QR,Amit,123
+3157,23-07-2025,23-07-2025,10003474,YANSHIKA  ,VINOD KUMAR,XI-Humanities,9,,9805428999,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,123
+3156,23-07-2025,23-07-2025,10002949,Daumil  Verma,Mr. Dinesh Verma,I-Koel,17,,8219811774,Male,Transport Fee,July + August,1020,Cash,Amit,
+3156,23-07-2025,23-07-2025,10002949,Daumil  Verma,Mr. Dinesh Verma,I-Koel,17,,8219811774,Male,Tuition Fees,July + August,7000,Cash,Amit,
+3155,23-07-2025,23-07-2025,10002940,Shambhavi  Jha,Mr. Ajay Jha,XI-Humanities,5,,9675038194,Female,Transport Fee,July + August,970,Credit/Debit Card,Inderjeet,6456
+3155,23-07-2025,23-07-2025,10002940,Shambhavi  Jha,Mr. Ajay Jha,XI-Humanities,5,,9675038194,Female,Tuition Fees,July + August,8600,Credit/Debit Card,Inderjeet,6456
+3154,23-07-2025,23-07-2025,10001996,Pragya  ,Mr. Rakesh Raushan,V-B,27,,9882311088,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,QWQ
+3154,23-07-2025,23-07-2025,10001996,Pragya  ,Mr. Rakesh Raushan,V-B,27,,9882311088,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,QWQ
+3153,22-07-2025,22-07-2025,10001751,Rohit  Kumar,Mr. Tarsem Singh,IX-C,25,,9816028869,Male,Transport Fee,May + June,820,Cash,Amit,
+3152,22-07-2025,22-07-2025,10001751,Rohit  Kumar,Mr. Tarsem Singh,IX-C,25,,9816028869,Male,Transport Fee,May + June,2000,Wallet/UPI/QR,Amit,126
+3152,22-07-2025,22-07-2025,10001751,Rohit  Kumar,Mr. Tarsem Singh,IX-C,25,,9816028869,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Amit,126
+3151,22-07-2025,22-07-2025,10003457,PARTH   CHOUDHARY,RAKESH KUMAR,I-Mynah,26,,7983758698,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,1245
+3151,22-07-2025,22-07-2025,10003457,PARTH   CHOUDHARY,RAKESH KUMAR,I-Mynah,26,,7983758698,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,1245
+3150,22-07-2025,22-07-2025,10001365,Namay  Goyal,Mr. Vivek Goyal,XI-Medical,5,,9318707904,Male,Tuition Fees,May + June,6000,NEFT Payment,Amit,Paytm
+3150,22-07-2025,22-07-2025,10001365,Namay  Goyal,Mr. Vivek Goyal,XI-Medical,5,,9318707904,Male,Tuition Fees,July + August,3500,NEFT Payment,Amit,Paytm
+3149,22-07-2025,22-07-2025,10002486,Tarnpreet  Kaur,Mr. Mohan Singh,IX-C,16,,9459116329,Female,Tuition Fees,July + August,8000,Wallet/UPI/QR,Inderjeet,90993
+3149,22-07-2025,22-07-2025,10002486,Tarnpreet  Kaur,Mr. Mohan Singh,IX-C,16,,9459116329,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,90993
+3148,22-07-2025,22-07-2025,10001602,Harshdeep  Singh,Mr. Gurmeet Singh,VIII-D,16,,9459025287,Male,Tuition Fees,July + August,2300,Wallet/UPI/QR,Amit,2323
+3147,22-07-2025,22-07-2025,10001713,Shaurya  ,Mr. Hemant Kumar,X-B,1,,9318978105,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Inderjeet,64548
+3147,22-07-2025,22-07-2025,10001713,Shaurya  ,Mr. Hemant Kumar,X-B,1,,9318978105,Male,Tuition Fees,May + June,8000,Wallet/UPI/QR,Inderjeet,64548
+3147,22-07-2025,22-07-2025,10001713,Shaurya  ,Mr. Hemant Kumar,X-B,1,,9318978105,Male,Tuition Fees,July + August,8000,Wallet/UPI/QR,Inderjeet,64548
+3147,22-07-2025,22-07-2025,10001713,Shaurya  ,Mr. Hemant Kumar,X-B,1,,9318978105,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,64548
+3146,22-07-2025,22-07-2025,10001933,Aniket  Sharma,Mr. Pawan Kumar Sharma,XII-Non-Medical,26,,9816129728,Male,Tuition Fees,May + June,9000,Credit/Debit Card,Amit,qwqw
+3146,22-07-2025,22-07-2025,10001933,Aniket  Sharma,Mr. Pawan Kumar Sharma,XII-Non-Medical,26,,9816129728,Male,Transport Fee,May + June,1800,Credit/Debit Card,Amit,qwqw
+3145,22-07-2025,22-07-2025,10003473,SHREYANSH   ATTRI,SANJEEV KUMAR,XI-Medical,12,,8219792008,Male,Tuition Fees,July + August,9000,ONLINE,,E2507220JJNZHK
+3145,22-07-2025,22-07-2025,10003473,SHREYANSH   ATTRI,SANJEEV KUMAR,XI-Medical,12,,8219792008,Male,Transport Fee,July + August,900,ONLINE,,E2507220JJNZHK
+3144,22-07-2025,22-07-2025,10002810,Simon  Malhotra,Mr. Subhash Malhotra,I-Koel,14,,8580658371,Male,Annual Fund,,5000,Credit/Debit Card,Amit,4169
+3144,22-07-2025,22-07-2025,10002810,Simon  Malhotra,Mr. Subhash Malhotra,I-Koel,14,,8580658371,Male,Term Charges,April,4300,Credit/Debit Card,Amit,4169
+3144,22-07-2025,22-07-2025,10002810,Simon  Malhotra,Mr. Subhash Malhotra,I-Koel,14,,8580658371,Male,"I-Card, Art & Craft, etc.",April,900,Credit/Debit Card,Amit,4169
+3143,22-07-2025,22-07-2025,10002384,Vritant  Thakur,Mr. Ramesh Kumar,IV-B,8,,9805120047,Male,Tuition Fees,July + August,5950,Wallet/UPI/QR,Inderjeet,3423
+3142,22-07-2025,22-07-2025,10002058,Vedant  Thakur,Mr. Ramesh Kumar,VIII-D,27,,8894288047,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Inderjeet,3235
+3141,22-07-2025,22-07-2025,10002440,Mrinali  Chauhan,Mr. Subhash,VI-D,28,,9816686110,Female,Tuition Fees,July + August,7600,ONLINE,,E2507220JJHWDT
+3141,22-07-2025,22-07-2025,10002440,Mrinali  Chauhan,Mr. Subhash,VI-D,28,,9816686110,Female,Transport Fee,July + August,900,ONLINE,,E2507220JJHWDT
+3140,22-07-2025,22-07-2025,10002480,Mihul  ,Mr. Gurjit Singh,III-B,3,,9882851190,Male,Transport Fee,May + June,2820,NEFT Payment,Amit,SBI
+3140,22-07-2025,22-07-2025,10002480,Mihul  ,Mr. Gurjit Singh,III-B,3,,9882851190,Male,Tuition Fees,May + June,5950,NEFT Payment,Amit,SBI
+3139,22-07-2025,22-07-2025,10001478,Manik  ,Mr. Gurjit Singh,VIII-C,5,,9882851190,Male,Transport Fee,May + June,2760,NEFT Payment,Amit,SBI
+3139,22-07-2025,22-07-2025,10001478,Manik  ,Mr. Gurjit Singh,VIII-C,5,,9882851190,Male,Tuition Fees,May + June,7600,NEFT Payment,Amit,SBI
+3138,21-07-2025,21-07-2025,10001370,Shreyash  Gupta,Mr. Sachin Gupta,IX-C,7,,9418003970,Male,Tuition Fees,July + August,8000,ONLINE,,E2507210JIURQJ
+3138,21-07-2025,21-07-2025,10001370,Shreyash  Gupta,Mr. Sachin Gupta,IX-C,7,,9418003970,Male,Transport Fee,July + August,900,ONLINE,,E2507210JIURQJ
+3137,21-07-2025,21-07-2025,10000960,Anami  Verma,Mr. Deepak Verma,XI-Commerce,6,,7876570400,Female,Transport Fee,May + June,2300,NEFT Payment,Amit,SBI
+3137,21-07-2025,21-07-2025,10000960,Anami  Verma,Mr. Deepak Verma,XI-Commerce,6,,7876570400,Female,Tuition Fees,May + June,8600,NEFT Payment,Amit,SBI
+3136,21-07-2025,21-07-2025,10001310,Chinmay  Verma,Mr. Deepak Verma,IX-A,6,,7876570400,Male,Transport Fee,May + June,1300,NEFT Payment,Amit,weqw
+3136,21-07-2025,21-07-2025,10001310,Chinmay  Verma,Mr. Deepak Verma,IX-A,6,,7876570400,Male,Tuition Fees,May + June,5600,NEFT Payment,Amit,weqw
+3135,21-07-2025,21-07-2025,10001465,Aradhya  Chaudhary,Mr. Gagan Kumar,VIII-D,1,,8219906709,Female,Tuition Fees,May + June,7600,Cash,Amit,
+3135,21-07-2025,21-07-2025,10001465,Aradhya  Chaudhary,Mr. Gagan Kumar,VIII-D,1,,8219906709,Female,Transport Fee,May + June,900,Cash,Amit,
+3135,21-07-2025,21-07-2025,10001465,Aradhya  Chaudhary,Mr. Gagan Kumar,VIII-D,1,,8219906709,Female,Tuition Fees,July + August,7600,Cash,Amit,
+3135,21-07-2025,21-07-2025,10001465,Aradhya  Chaudhary,Mr. Gagan Kumar,VIII-D,1,,8219906709,Female,Transport Fee,July + August,450,Cash,Amit,
+3134,21-07-2025,21-07-2025,10002852,Anshuman  Chaudhary,Mr. Gagan Kumar,I-Mynah,5,,8219906709,Male,Tuition Fees,May + June,6160,Cash,Amit,
+3134,21-07-2025,21-07-2025,10002852,Anshuman  Chaudhary,Mr. Gagan Kumar,I-Mynah,5,,8219906709,Male,Transport Fee,May + June,900,Cash,Amit,
+3134,21-07-2025,21-07-2025,10002852,Anshuman  Chaudhary,Mr. Gagan Kumar,I-Mynah,5,,8219906709,Male,Tuition Fees,July + August,6160,Cash,Amit,
+3134,21-07-2025,21-07-2025,10002852,Anshuman  Chaudhary,Mr. Gagan Kumar,I-Mynah,5,,8219906709,Male,Transport Fee,July + August,450,Cash,Amit,
+3133,21-07-2025,21-07-2025,10000968,Raghav Rakesh Rajpoot,Mr. Rakesh Kumar,XI-Commerce,23,,9418154600,Male,Tuition Fees,July + August,8600,Cash,Amit,
+3133,21-07-2025,21-07-2025,10000968,Raghav Rakesh Rajpoot,Mr. Rakesh Kumar,XI-Commerce,23,,9418154600,Male,Transport Fee,July + August,1020,Cash,Amit,
+3132,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Tuition Fees,May + June,2975,Cash,Amit,
+3132,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Transport Fee,May + June,330,Cash,Amit,
+3131,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Tuition Fees,May + June,2975,Cash,Amit,
+3131,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Transport Fee,May + June,1610,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Tuition Fees,April,2975,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Parent Orientation,,1000,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,"I-Card, Art & Craft, etc.",April,950,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Admission Fee,,8000,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Transport Fee,April,970,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Security,,5000,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Annual Fund,,5000,Cash,Amit,
+3130,21-07-2025,21-07-2025,10003390,Dhruv  Mouriya,KANWAR SINGH MOURIYA,II-Ruby,17,,9805729142,Male,Term Charges,April,4300,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,Tuition Fees,April,3800,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,Parent Orientation,,1000,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,WonderSkill Workshop,,1000,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,"I-Card, Art & Craft, etc.",April,850,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,Transport Fee,April,970,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,Annual Fund,,5000,Cash,Amit,
+3129,21-07-2025,21-07-2025,10002343,Pratham  ,Mr. Kawar Singh,VII-C,5,,9805729142,Male,Term Charges,April,4600,Cash,Amit,
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,WonderSkill Workshop,,1000,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,"I-Card, Art & Craft, etc.",April,890,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Transport Fee,April,970,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Annual Fund,,5000,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Term Charges,April,4600,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Tuition Fees,April,3800,ONLINE,,E2507210JI2XCU
+3128,21-07-2025,21-07-2025,10002984,Tavneet  Singh,Mr. Gurinderpal Singh,VI-C,21,,8580604477,Male,Parent Orientation,,1000,ONLINE,,E2507210JI2XCU
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,"I-Card, Art & Craft, etc.",April,1010,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Transport Fee,April,970,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Annual Fund,,5000,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Term Charges,April,4800,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,CAPS Workshop,,2000,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Tuition Fees,April,4000,ONLINE,,E2507210JI2SZI
+3127,21-07-2025,21-07-2025,10001712,Japneet  Singh,Mr. Gurinder Pal Singh,X-A,13,,8580604477,Male,Parent Orientation,,1000,ONLINE,,E2507210JI2SZI
+3126,21-07-2025,21-07-2025,10001337,Aaishani  Purkayastha,Mr. Ajay Purkayastha,X-B,18,,9816255403,Female,Tuition Fees,May + June,5000,Wallet/UPI/QR,Inderjeet,67678
+3126,21-07-2025,21-07-2025,10001337,Aaishani  Purkayastha,Mr. Ajay Purkayastha,X-B,18,,9816255403,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Inderjeet,67678
+3126,21-07-2025,21-07-2025,10001337,Aaishani  Purkayastha,Mr. Ajay Purkayastha,X-B,18,,9816255403,Female,Tuition Fees,July + August,5000,Wallet/UPI/QR,Inderjeet,67678
+3126,21-07-2025,21-07-2025,10001337,Aaishani  Purkayastha,Mr. Ajay Purkayastha,X-B,18,,9816255403,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,67678
+3125,21-07-2025,21-07-2025,10000882,Shaurya  Anand,Mr. Rakesh Anand,XII-Commerce,27,,9857155361,Male,Tuition Fees,May + June,8600,Wallet/UPI/QR,Amit,asqw
+3125,21-07-2025,21-07-2025,10000882,Shaurya  Anand,Mr. Rakesh Anand,XII-Commerce,27,,9857155361,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,asqw
+3124,21-07-2025,21-07-2025,10002033,Sanvi  Rana,Mr. Sanjeev Kumar,VI-D,6,,9882520033,Female,Transport Fee,May + June,1800,Cash,Amit,
+3124,21-07-2025,21-07-2025,10002033,Sanvi  Rana,Mr. Sanjeev Kumar,VI-D,6,,9882520033,Female,Tuition Fees,May + June,7600,Cash,Amit,
+3124,21-07-2025,21-07-2025,10002033,Sanvi  Rana,Mr. Sanjeev Kumar,VI-D,6,,9882520033,Female,Tuition Fees,July + August,3800,Cash,Amit,
+3123,19-07-2025,19-07-2025,10001807,Harsh  Kundlash,Mr. Virender Singh,VI-B,24,,7807734757,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,2322
+3123,19-07-2025,19-07-2025,10001807,Harsh  Kundlash,Mr. Virender Singh,VI-B,24,,7807734757,Male,Transport Fee,July + August,1410,Wallet/UPI/QR,Amit,2322
+3122,21-07-2025,21-07-2025,10001210,Tejas  Gupta,Mr. Nitin Gupta,XI-Non-Medical,21,,9418104665,Male,Tuition Fees,July + August,7500,Cash,Inderjeet,
+3121,21-07-2025,21-07-2025,10001420,Khushi  Rastogi,Mr. Atul Kumar Rastogi,X-C,27,,9805938560,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,3755
+3120,21-07-2025,21-07-2025,10003144,Shubh  Anuragi,Mr. Khagesh Chandra Anuragi,U.K.G.-Lotus,16,,9067249893,Male,Transport Fee,July + August,900,ONLINE,,E2507210JHVHZB
+3120,21-07-2025,21-07-2025,10003144,Shubh  Anuragi,Mr. Khagesh Chandra Anuragi,U.K.G.-Lotus,16,,9067249893,Male,Tuition Fees,July + August,5000,ONLINE,,E2507210JHVHZB
+3119,21-07-2025,21-07-2025,10002911,Manit  Anuragi,Mr. Khagesh Chandra Anuragi,V-A,21,,9067249893,Male,Transport Fee,July + August,900,ONLINE,,E2507210JHUKQ1
+3119,21-07-2025,21-07-2025,10002911,Manit  Anuragi,Mr. Khagesh Chandra Anuragi,V-A,21,,9067249893,Male,Tuition Fees,July + August,7000,ONLINE,,E2507210JHUKQ1
+3118,21-07-2025,21-07-2025,10001792,Neelanjan  Sharma,Mr. Sameer Sharma,VII-A,20,,9805184130,Male,Transport Fee,July + August,485,ONLINE,,E2507210JHU7PE
+3118,21-07-2025,21-07-2025,10001792,Neelanjan  Sharma,Mr. Sameer Sharma,VII-A,20,,9805184130,Male,Tuition Fees,July + August,7600,ONLINE,,E2507210JHU7PE
+3117,21-07-2025,21-07-2025,10003439,PRABHLEEN KAUR  ,RUMANDEEP SINGH,I-Koel,25,,9816230143,Female,Tuition Fees,May + June,5425,ONLINE,,E2507210JHSS22
+3117,21-07-2025,21-07-2025,10003439,PRABHLEEN KAUR  ,RUMANDEEP SINGH,I-Koel,25,,9816230143,Female,Transport Fee,May + June,1800,ONLINE,,E2507210JHSS22
+3116,21-07-2025,21-07-2025,10002876,Parneet  Singh,Mr. Rumandeep Singh,IV-C,19,,9816230143,Male,Tuition Fees,May + June,7000,ONLINE,,E2507210JHS7BM
+3116,21-07-2025,21-07-2025,10002876,Parneet  Singh,Mr. Rumandeep Singh,IV-C,19,,9816230143,Male,Transport Fee,May + June,1800,ONLINE,,E2507210JHS7BM
+3115,21-07-2025,21-07-2025,10003254,Vaibhavi  Chauhan,Mr. Gyan Singh,VII-D,1,,9816699058,Female,Tuition Fees,July + August,7600,ONLINE,,E2507210JHQHMK
+3114,21-07-2025,21-07-2025,10003255,Sashwat  Chauhan,Mr. Gyan Singh,IV-A,22,,9816699058,Male,Tuition Fees,July + August,5950,ONLINE,,E2507210JHQ2DB
+3113,21-07-2025,21-07-2025,10002062,Aaditya  Sharma,Mr. Mukesh Kumar Sharma,VI-A,31,,8091494448,Male,Tuition Fees,May + June,7600,ONLINE,,E2507210JHP7ED
+3112,21-07-2025,21-07-2025,10001640,Gursimrat  Kaur,Mr. Iqbal Singh,VII-A,27,,9816326156,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,6765
+3111,21-07-2025,21-07-2025,10003299,Prabhnimrat  Kaur,Mr. Iqbal Singh,Nursery-Bloom,13,,9817496092,Female,Tuition Fees,July + August,4250,Credit/Debit Card,Inderjeet,75645
+3110,21-07-2025,21-07-2025,10001696,Manha  ,Mr. Abdul Saif,VII-A,3,,9857481586,Female,Transport Fee,July + August,900,ONLINE,,E2507210JHJSHT
+3110,21-07-2025,21-07-2025,10001696,Manha  ,Mr. Abdul Saif,VII-A,3,,9857481586,Female,Tuition Fees,July + August,7600,ONLINE,,E2507210JHJSHT
+3109,21-07-2025,21-07-2025,10002251,Zyan  Khan,Mr. Abdul Saif,III-C,9,,9857481586,Male,Transport Fee,July + August,900,ONLINE,,E2507210JHJHVW
+3109,21-07-2025,21-07-2025,10002251,Zyan  Khan,Mr. Abdul Saif,III-C,9,,9857481586,Male,Tuition Fees,July + August,5950,ONLINE,,E2507210JHJHVW
+3108,21-07-2025,21-07-2025,10002052,Pritesh  Satapathy,Mr. Sunil Kumar Satapathy,V-B,8,,9882727739,Male,Transport Fee,July + August,900,ONLINE,,E2507210JHIWX4
+3108,21-07-2025,21-07-2025,10002052,Pritesh  Satapathy,Mr. Sunil Kumar Satapathy,V-B,8,,9882727739,Male,Tuition Fees,July + August,5950,ONLINE,,E2507210JHIWX4
+3107,21-07-2025,21-07-2025,10001111,Shiven  Satapathy,Mr. Sunil Kumar Satapathy,XI-Commerce,32,,9318505495,Male,Tuition Fees,July + August,8600,ONLINE,,E2507210JHIVK9
+3107,21-07-2025,21-07-2025,10001111,Shiven  Satapathy,Mr. Sunil Kumar Satapathy,XI-Commerce,32,,9318505495,Male,Transport Fee,July + August,900,ONLINE,,E2507210JHIVK9
+3106,21-07-2025,21-07-2025,10003232,Jishan  Chauhan,Mr. Joginder Singh,III-D,4,,7895656908,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Inderjeet,5533
+3106,21-07-2025,21-07-2025,10003232,Jishan  Chauhan,Mr. Joginder Singh,III-D,4,,7895656908,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Inderjeet,5533
+3106,21-07-2025,21-07-2025,10003232,Jishan  Chauhan,Mr. Joginder Singh,III-D,4,,7895656908,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,5533
+3106,21-07-2025,21-07-2025,10003232,Jishan  Chauhan,Mr. Joginder Singh,III-D,4,,7895656908,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,5533
+3105,21-07-2025,21-07-2025,10002061,Aastha  Sharma,Mr. Mukesh Kumar Sharma,VI-A,30,,8091494448,Female,Parent Orientation,,1000,ONLINE,,E2507210JHHX0L
+3105,21-07-2025,21-07-2025,10002061,Aastha  Sharma,Mr. Mukesh Kumar Sharma,VI-A,30,,8091494448,Female,Tuition Fees,May + June,6550,ONLINE,,E2507210JHHX0L
+3105,21-07-2025,21-07-2025,10002061,Aastha  Sharma,Mr. Mukesh Kumar Sharma,VI-A,30,,8091494448,Female,Tuition Fees,July + August,6550,ONLINE,,E2507210JHHX0L
+3104,21-07-2025,21-07-2025,10003114,Parnika  Chauhan,Mr. Vijay Chauhan,II-Pearl,14,,9816796484,Female,Tuition Fees,July + August,7000,ONLINE,,E2507210JHF6T7
+3104,21-07-2025,21-07-2025,10003114,Parnika  Chauhan,Mr. Vijay Chauhan,II-Pearl,14,,9816796484,Female,Transport Fee,July + August,900,ONLINE,,E2507210JHF6T7
+3103,20-07-2025,20-07-2025,10002082,Dhairya Vaibhav Suryawanshi,Mr. Vaibhav Suryawanshi,VIII-D,23,,8219690840,Male,Tuition Fees,May + June,7600,ONLINE,,E2507200JGPH6A
+3103,20-07-2025,20-07-2025,10002082,Dhairya Vaibhav Suryawanshi,Mr. Vaibhav Suryawanshi,VIII-D,23,,8219690840,Male,Transport Fee,May + June,1940,ONLINE,,E2507200JGPH6A
+3102,20-07-2025,20-07-2025,10002654,Mayank  ,Mr. Virender Singh,IV-A,5,,9459744765,Male,Transport Fee,July + August,1410,ONLINE,,E2507200JGK5D9
+3102,20-07-2025,20-07-2025,10002654,Mayank  ,Mr. Virender Singh,IV-A,5,,9459744765,Male,Tuition Fees,July + August,7000,ONLINE,,E2507200JGK5D9
+3101,20-07-2025,20-07-2025,10002049,Riyansh  Sharma,Mr. Ashok Sharma,V-A,3,,9882966785,Male,Transport Fee,July + August,900,ONLINE,,E2507200JG3GYR
+3101,20-07-2025,20-07-2025,10002049,Riyansh  Sharma,Mr. Ashok Sharma,V-A,3,,9882966785,Male,Tuition Fees,July + August,7000,ONLINE,,E2507200JG3GYR
+3100,20-07-2025,20-07-2025,10003193,Yashika  Sharma,Mr. Ashok Sharma,L.K.G.-Green,7,,9882966985,Female,Transport Fee,July + August,900,ONLINE,,E2507200JG2NSA
+3100,20-07-2025,20-07-2025,10003193,Yashika  Sharma,Mr. Ashok Sharma,L.K.G.-Green,7,,9882966985,Female,Tuition Fees,July + August,4250,ONLINE,,E2507200JG2NSA
+3099,20-07-2025,20-07-2025,10002607,Vanya  Shandil,Mr. Vikrant Kumar,V-B,2,,9817507611,Female,Transport Fee,July + August,900,ONLINE,,E2507200JG1ZJE
+3099,20-07-2025,20-07-2025,10002607,Vanya  Shandil,Mr. Vikrant Kumar,V-B,2,,9817507611,Female,Tuition Fees,July + August,7000,ONLINE,,E2507200JG1ZJE
+3098,20-07-2025,20-07-2025,10002853,Aayansh  Chauhan,Mr. Subhash Chand,II-Pearl,10,,8894502198,Male,Transport Fee,July + August,970,ONLINE,,E2507200JG1IXV
+3098,20-07-2025,20-07-2025,10002853,Aayansh  Chauhan,Mr. Subhash Chand,II-Pearl,10,,8894502198,Male,Tuition Fees,July + August,7000,ONLINE,,E2507200JG1IXV
+3097,20-07-2025,20-07-2025,10003172,Varun  ,Mr. Yashwant Singh,VIII-D,26,,8894899940,Male,Tuition Fees,July + August,7600,ONLINE,,E2507200JFSI8C
+3097,20-07-2025,20-07-2025,10003172,Varun  ,Mr. Yashwant Singh,VIII-D,26,,8894899940,Male,Transport Fee,July + August,1410,ONLINE,,E2507200JFSI8C
+3096,19-07-2025,19-07-2025,10003456,SHRENIKA  ,PRINCE THAKUR,IV-D,29,,8219205692,Female,Tuition Fees,July + August,7000,ONLINE,,E2507190JF8V94
+3096,19-07-2025,19-07-2025,10003456,SHRENIKA  ,PRINCE THAKUR,IV-D,29,,8219205692,Female,Transport Fee,July + August,970,ONLINE,,E2507190JF8V94
+3095,19-07-2025,19-07-2025,10003463,RIDHIKA  ,PRINCE THAKUR,I-Koel,26,,8219205692,Female,Tuition Fees,July + August,5950,ONLINE,,E2507190JF8MOT
+3095,19-07-2025,19-07-2025,10003463,RIDHIKA  ,PRINCE THAKUR,I-Koel,26,,8219205692,Female,Transport Fee,July + August,970,ONLINE,,E2507190JF8MOT
+3094,19-07-2025,19-07-2025,10001670,Raja Rikshit Chauhan,Mr. Mohan Singh Chauhan,XII-Medical,7,,7986216346,Male,Tuition Fees,May + June,9000,ONLINE,,E2507190JF4IDM
+3094,19-07-2025,19-07-2025,10001670,Raja Rikshit Chauhan,Mr. Mohan Singh Chauhan,XII-Medical,7,,7986216346,Male,Transport Fee,May + June,1800,ONLINE,,E2507190JF4IDM
+3093,19-07-2025,19-07-2025,10001159,Avika  Gupta,Mr. Amit Gupta,XII-Humanities,3,,9816219030,Female,Tuition Fees,September + October,8600,ONLINE,,E2507190JF26U1
+3093,19-07-2025,19-07-2025,10001159,Avika  Gupta,Mr. Amit Gupta,XII-Humanities,3,,9816219030,Female,Transport Fee,September + October,2300,ONLINE,,E2507190JF26U1
+3092,19-07-2025,19-07-2025,10002097,Aakrisht  Dafraik,Mr. Arun Kumar Dafraik,IX-B,16,,8894478278,Male,Tuition Fees,July + August,8000,ONLINE,,E2507190JF202H
+3092,19-07-2025,19-07-2025,10002097,Aakrisht  Dafraik,Mr. Arun Kumar Dafraik,IX-B,16,,8894478278,Male,Transport Fee,July + August,1300,ONLINE,,E2507190JF202H
+3091,19-07-2025,19-07-2025,10001191,Harman  Singh,Mr. Gurcharan Singh,X-A,3,,9418822210,Male,Tuition Fees,July + August,5600,ONLINE,,E2507190JEYVWV
+3090,19-07-2025,19-07-2025,10002333,Aaira  ,Mr. Mohd. Zishan,IV-D,9,,8219296811,Female,Tuition Fees,July + August,4000,ONLINE,,E2507190JEVQZE
+3090,19-07-2025,19-07-2025,10002333,Aaira  ,Mr. Mohd. Zishan,IV-D,9,,8219296811,Female,Transport Fee,July + August,1060,ONLINE,,E2507190JEVQZE
+3089,19-07-2025,19-07-2025,10002293,Radhika  ,Mr. Dake Satish Bansi,VIII-B,11,,6230032171,Female,Tuition Fees,July + August,7600,ONLINE,,E2507190JES8IS
+3088,19-07-2025,19-07-2025,10002314,Akshita  Sharma,Mr. Krishan Kant Sharma,VII-D,8,,7018210525,Female,Transport Fee,July + August,900,ONLINE,,E2507190JEQKMW
+3088,19-07-2025,19-07-2025,10002314,Akshita  Sharma,Mr. Krishan Kant Sharma,VII-D,8,,7018210525,Female,Tuition Fees,July + August,7600,ONLINE,,E2507190JEQKMW
+3087,19-07-2025,19-07-2025,10002196,Parth  Pal,Mr. Gyan Singh Pal,IX-C,23,,8717001047,Male,Transport Fee,July + August,900,ONLINE,,E2507190JEMLP9
+3087,19-07-2025,19-07-2025,10002196,Parth  Pal,Mr. Gyan Singh Pal,IX-C,23,,8717001047,Male,Tuition Fees,July + August,8000,ONLINE,,E2507190JEMLP9
+3086,19-07-2025,19-07-2025,10003419,DEVANSH   GUPTA,GAURAV GUPTA,V-B,32,,9817404090,Male,Tuition Fees,July + August,5950,ONLINE,,E2507190JELZRU
+3086,19-07-2025,19-07-2025,10003419,DEVANSH   GUPTA,GAURAV GUPTA,V-B,32,,9817404090,Male,Transport Fee,July + August,900,ONLINE,,E2507190JELZRU
+3085,19-07-2025,19-07-2025,10002698,Anmol  Thakur,Mr. Rajesh Kumar,V-D,17,,9418154531,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,5522
+3085,19-07-2025,19-07-2025,10002698,Anmol  Thakur,Mr. Rajesh Kumar,V-D,17,,9418154531,Male,Transport Fee,July + August,970,Credit/Debit Card,Inderjeet,5522
+3084,19-07-2025,19-07-2025,10001208,Tamanna  Saini,Mr. Ashok Kumar,X-B,7,,9805346650,Female,Tuition Fees,May + June,8000,Cash,Inderjeet,
+3084,19-07-2025,19-07-2025,10001208,Tamanna  Saini,Mr. Ashok Kumar,X-B,7,,9805346650,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3084,19-07-2025,19-07-2025,10001208,Tamanna  Saini,Mr. Ashok Kumar,X-B,7,,9805346650,Female,Tuition Fees,July + August,8000,Cash,Inderjeet,
+3084,19-07-2025,19-07-2025,10001208,Tamanna  Saini,Mr. Ashok Kumar,X-B,7,,9805346650,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3083,19-07-2025,19-07-2025,10001638,Ritika  Saini,Mr. Ashok Kumar,VII-A,15,,9805346650,Female,Tuition Fees,May + June,7600,Cash,Inderjeet,
+3083,19-07-2025,19-07-2025,10001638,Ritika  Saini,Mr. Ashok Kumar,VII-A,15,,9805346650,Female,Transport Fee,May + June,1800,Cash,Inderjeet,
+3083,19-07-2025,19-07-2025,10001638,Ritika  Saini,Mr. Ashok Kumar,VII-A,15,,9805346650,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3083,19-07-2025,19-07-2025,10001638,Ritika  Saini,Mr. Ashok Kumar,VII-A,15,,9805346650,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+3082,19-07-2025,19-07-2025,10002121,Arnav  Saini,Mr. Ashok Kumar,V-B,26,,9805346650,Male,Tuition Fees,May + June,5950,Cash,Inderjeet,
+3082,19-07-2025,19-07-2025,10002121,Arnav  Saini,Mr. Ashok Kumar,V-B,26,,9805346650,Male,Transport Fee,May + June,1800,Cash,Inderjeet,
+3082,19-07-2025,19-07-2025,10002121,Arnav  Saini,Mr. Ashok Kumar,V-B,26,,9805346650,Male,Tuition Fees,July + August,5950,Cash,Inderjeet,
+3082,19-07-2025,19-07-2025,10002121,Arnav  Saini,Mr. Ashok Kumar,V-B,26,,9805346650,Male,Transport Fee,July + August,900,Cash,Inderjeet,
+3081,19-07-2025,19-07-2025,10001317,Avadh Narayan Pal,Mr. Brij Lal,IX-C,29,,9816378300,Male,Tuition Fees,May + June,8000,Cash,Inderjeet,
+3081,19-07-2025,19-07-2025,10001317,Avadh Narayan Pal,Mr. Brij Lal,IX-C,29,,9816378300,Male,Transport Fee,May + June,1940,Cash,Inderjeet,
+3080,19-07-2025,19-07-2025,10000820,Anya  Sharma,Mr. Achal Sharma,XII-Medical,2,,7018188368,Female,Tuition Fees,May + June,9000,Credit/Debit Card,Inderjeet,5656
+3080,19-07-2025,19-07-2025,10000820,Anya  Sharma,Mr. Achal Sharma,XII-Medical,2,,7018188368,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,5656
+3079,19-07-2025,19-07-2025,10001639,Alan  Sharma,Mr. Achal Sharma,VII-A,14,,9418282768,Male,Tuition Fees,May + June,6080,Credit/Debit Card,Inderjeet,8666
+3079,19-07-2025,19-07-2025,10001639,Alan  Sharma,Mr. Achal Sharma,VII-A,14,,9418282768,Male,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,8666
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Term Charges,April,4300,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,April,3500,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Parent Orientation,,1000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Admission Fee,,12000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Security,,5000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Annual Fund,,5000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,May + June,7000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,July + August,7000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,September + October,7000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Term Charges,November,4300,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,November,3500,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,December + January,7000,Cash,Admin,
+3078,19-07-2025,19-07-2025,test125,demo  ,Demo Father,IV-A,,,,Male,Tuition Fees,February + March,7000,Cash,Admin,
+3077,19-07-2025,19-07-2025,10003351,ADHIRAJ   WALIA,AMAN WALIA,Nursery-Bloom,3,,7988442935,Male,Tuition Fees,July + August,2500,Wallet/UPI/QR,Inderjeet,66442
+3076,19-07-2025,19-07-2025,10001325,Simran  ,Mr. Tej Kumar,IX-B,7,,7018472685,Female,Tuition Fees,July + August,4000,Cash,Inderjeet,
+3075,19-07-2025,19-07-2025,10001622,Aryan  Bhardwaj,Mr. Joginder Sharma,VIII-B,2,,9805449199,Male,Tuition Fees,July + August,3230,Cash,Inderjeet,
+3074,19-07-2025,19-07-2025,10001546,Harshita  Bhardwaj,Mr. Jogander Singh Sharma,XII-Medical,4,,9805449199,Female,Tuition Fees,July + August,4500,Cash,Inderjeet,
+3073,19-07-2025,19-07-2025,10003080,Rwmwi  Daimary,Mr. Dhanjib Daimary,VI-C,23,,8894563299,Female,Tuition Fees,July + August,7600,ONLINE,,E2507190JDZJ44
+3072,19-07-2025,19-07-2025,10003131,Mohd  Azhan,Mr. Tahir Hussain,L.K.G.-Pink,2,,8219575029,Male,Transport Fee,July + August,1020,Cash,Inderjeet,
+3072,19-07-2025,19-07-2025,10003131,Mohd  Azhan,Mr. Tahir Hussain,L.K.G.-Pink,2,,8219575029,Male,Tuition Fees,July + August,5000,Cash,Inderjeet,
+3071,19-07-2025,19-07-2025,10002908,Naksh  ,Mr. Munna Laxman Prasad,VIII-D,24,,8219940781,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,23332
+3071,19-07-2025,19-07-2025,10002908,Naksh  ,Mr. Munna Laxman Prasad,VIII-D,24,,8219940781,Male,Transport Fee,May + June,2600,Wallet/UPI/QR,Amit,23332
+3070,19-07-2025,19-07-2025,10001257,Sherlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,27,,9418557788,Female,Term Charges,November,1100,Wallet/UPI/QR,Amit,15
+3069,19-07-2025,19-07-2025,10001258,Merlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,20,,9418557788,Female,Tuition Fees,November,4300,Wallet/UPI/QR,Amit,156
+3069,19-07-2025,19-07-2025,10001258,Merlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,20,,9418557788,Female,Term Charges,November,3300,Wallet/UPI/QR,Amit,156
+3069,19-07-2025,19-07-2025,10001258,Merlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,20,,9418557788,Female,Transport Fee,November,900,Wallet/UPI/QR,Amit,156
+3069,19-07-2025,19-07-2025,10001258,Merlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,20,,9418557788,Female,Tuition Fees,December + January,8600,Wallet/UPI/QR,Amit,156
+3069,19-07-2025,19-07-2025,10001258,Merlyn  Kaur,Mr. Manjinder Singh,XI-Commerce,20,,9418557788,Female,Transport Fee,December + January,1800,Wallet/UPI/QR,Amit,156
+3068,19-07-2025,19-07-2025,10003165,Harshika  Saini,Mr. Mintu,U.K.G.-Lily,1,,8628027520,Female,Tuition Fees,July + August,5000,Cash,Amit,
+3068,19-07-2025,19-07-2025,10003165,Harshika  Saini,Mr. Mintu,U.K.G.-Lily,1,,8628027520,Female,Transport Fee,July + August,900,Cash,Amit,
+3067,19-07-2025,19-07-2025,10002301,Dev  Saini,Mr. Mintu,VII-B,17,,8628027520,Male,Tuition Fees,July + August,6600,Cash,Amit,
+3067,19-07-2025,19-07-2025,10002301,Dev  Saini,Mr. Mintu,VII-B,17,,8628027520,Male,Transport Fee,July + August,900,Cash,Amit,
+3066,19-07-2025,19-07-2025,10002140,Ritbeek  Kumar,Mr. Bhola Kumar,VII-C,23,,7988964877,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,41656
+3065,19-07-2025,19-07-2025,10002794,Ridhaan  Tomar,Mr. Rajesh Kumar,III-C,2,,7876409866,Male,Parent Orientation,,1000,ONLINE,,E2507190JDTOI1
+3065,19-07-2025,19-07-2025,10002794,Ridhaan  Tomar,Mr. Rajesh Kumar,III-C,2,,7876409866,Male,Transport Fee,May + June,2760,ONLINE,,E2507190JDTOI1
+3065,19-07-2025,19-07-2025,10002794,Ridhaan  Tomar,Mr. Rajesh Kumar,III-C,2,,7876409866,Male,Tuition Fees,May + June,5950,ONLINE,,E2507190JDTOI1
+3064,19-07-2025,19-07-2025,10002634,Ridham  Tomar,Mr. Rajesh Kumar,V-C,28,,7876409866,Male,Parent Orientation,,1000,ONLINE,,E2507190JDTM29
+3064,19-07-2025,19-07-2025,10002634,Ridham  Tomar,Mr. Rajesh Kumar,V-C,28,,7876409866,Male,Transport Fee,May + June,2760,ONLINE,,E2507190JDTM29
+3064,19-07-2025,19-07-2025,10002634,Ridham  Tomar,Mr. Rajesh Kumar,V-C,28,,7876409866,Male,Tuition Fees,May + June,7000,ONLINE,,E2507190JDTM29
+3063,19-07-2025,19-07-2025,10001483,Aragya  ,Mr. Naresh Kumar,VIII-C,25,,9805233135,Female,Transport Fee,July + August,485,Wallet/UPI/QR,Amit,644
+3063,19-07-2025,19-07-2025,10001483,Aragya  ,Mr. Naresh Kumar,VIII-C,25,,9805233135,Female,Tuition Fees,July + August,4600,Wallet/UPI/QR,Amit,644
+3062,19-07-2025,19-07-2025,10003391,Jiyakshi  ,NARESH KUMAR,II-Ruby,18,,9805233135,Female,Transport Fee,July + August,485,Wallet/UPI/QR,Amit,1264
+3062,19-07-2025,19-07-2025,10003391,Jiyakshi  ,NARESH KUMAR,II-Ruby,18,,9805233135,Female,Tuition Fees,July + August,4000,Wallet/UPI/QR,Amit,1264
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Term Charges,April,4600,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Tuition Fees,April,3800,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Parent Orientation,,1000,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,WonderSkill Workshop,,1000,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,"I-Card, Art & Craft, etc.",April,850,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Transport Fee,April,900,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Annual Fund,,5000,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Tuition Fees,May + June,7600,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Transport Fee,May + June,1800,Credit/Debit Card,Amit,548
+3061,19-07-2025,19-07-2025,10003274,Kanak  Singh,Mr. Amit Kumar Singh,VII-C,19,,7702477095,Female,Tuition Fees,July + August,3800,Credit/Debit Card,Amit,548
+3060,18-07-2025,18-07-2025,10002225,Avika  Dafraik,Mr. Arun Kumar Dafraik,IV-C,6,,7018599785,Female,Tuition Fees,July + August,5950,ONLINE,,E2507180JD248J
+3060,18-07-2025,18-07-2025,10002225,Avika  Dafraik,Mr. Arun Kumar Dafraik,IV-C,6,,7018599785,Female,Transport Fee,July + August,1300,ONLINE,,E2507180JD248J
+3059,18-07-2025,18-07-2025,10003309,MANVEER   SINGH,GURPREET SINGH,VI-B,27,,8894544007,Male,Tuition Fees,July + August,7600,ONLINE,,E2507180JD0NED
+3059,18-07-2025,18-07-2025,10003309,MANVEER   SINGH,GURPREET SINGH,VI-B,27,,8894544007,Male,Transport Fee,July + August,1060,ONLINE,,E2507180JD0NED
+3058,18-07-2025,18-07-2025,10003001,Dakshita  Singh,Mr. Arun Kumar,IV-B,23,,8888877434,Female,Tuition Fees,July + August,7000,ONLINE,,E2507180JCWSXL
+3058,18-07-2025,18-07-2025,10003001,Dakshita  Singh,Mr. Arun Kumar,IV-B,23,,8888877434,Female,Transport Fee,July + August,970,ONLINE,,E2507180JCWSXL
+3057,18-07-2025,18-07-2025,10003367,MUHAMMAD AHNAF   ,MOHD ABID,I-Mynah,23,,6395367087,Male,Transport Fee,July + August,970,ONLINE,,E2507180JCUC6V
+3057,18-07-2025,18-07-2025,10003367,MUHAMMAD AHNAF   ,MOHD ABID,I-Mynah,23,,6395367087,Male,Tuition Fees,July + August,7000,ONLINE,,E2507180JCUC6V
+3056,18-07-2025,18-07-2025,10002883,Manpreet  Singh,Mr. Ranjeet Singh,XII-Commerce,18,,9857224951,Male,Tuition Fees,July + August,2800,Wallet/UPI/QR,Amit,88866
+3055,18-07-2025,18-07-2025,10002151,Prateek  Verma,Mr. Ravi Verma,VI-A,13,,8894618428,Male,Tuition Fees,May + June,2100,Wallet/UPI/QR,Amit,26
+3055,18-07-2025,18-07-2025,10002151,Prateek  Verma,Mr. Ravi Verma,VI-A,13,,8894618428,Male,Tuition Fees,July + August,1700,Wallet/UPI/QR,Amit,26
+3054,18-07-2025,18-07-2025,10002034,Lakshay  ,Mr. Bhim Singh,V-A,1,,8219948869,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,222
+3054,18-07-2025,18-07-2025,10002034,Lakshay  ,Mr. Bhim Singh,V-A,1,,8219948869,Male,Transport Fee,July + August,1410,Wallet/UPI/QR,Amit,222
+3053,18-07-2025,18-07-2025,10003266,Navya  Gupta,Mr. Rohit Gupta,VI-B,22,,9682143655,Female,Tuition Fees,July + August,7600,ONLINE,,E2507180JCCXI1
+3053,18-07-2025,18-07-2025,10003266,Navya  Gupta,Mr. Rohit Gupta,VI-B,22,,9682143655,Female,Transport Fee,July + August,970,ONLINE,,E2507180JCCXI1
+3052,18-07-2025,18-07-2025,10001509,Divyansh Singh Chaudhary,Mr. Mukesh Kumar,VIII-A,8,,9816127676,Male,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3052,18-07-2025,18-07-2025,10001509,Divyansh Singh Chaudhary,Mr. Mukesh Kumar,VIII-A,8,,9816127676,Male,Transport Fee,July + August,900,Cash,Inderjeet,
+3051,18-07-2025,18-07-2025,10001819,Virat  Choudhary,Mr. Sandeep Kumar,V-B,14,,9816417821,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Inderjeet,4544545
+3051,18-07-2025,18-07-2025,10001819,Virat  Choudhary,Mr. Sandeep Kumar,V-B,14,,9816417821,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Inderjeet,4544545
+3051,18-07-2025,18-07-2025,10001819,Virat  Choudhary,Mr. Sandeep Kumar,V-B,14,,9816417821,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,4544545
+3051,18-07-2025,18-07-2025,10001819,Virat  Choudhary,Mr. Sandeep Kumar,V-B,14,,9816417821,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,4544545
+3050,18-07-2025,18-07-2025,10003477,KHUSHI   ,HEMRAJ,VIII-A,,,9736803035,Female,Tuition Fees,September + October,6460,Cash,Inderjeet,
+3050,18-07-2025,18-07-2025,10003477,KHUSHI   ,HEMRAJ,VIII-A,,,9736803035,Female,Transport Fee,September + October,2600,Cash,Inderjeet,
+3050,18-07-2025,18-07-2025,10003477,KHUSHI   ,HEMRAJ,VIII-A,,,9736803035,Female,Term Charges,November,4600,Cash,Inderjeet,
+3050,18-07-2025,18-07-2025,10003477,KHUSHI   ,HEMRAJ,VIII-A,,,9736803035,Female,Transport Fee,November,1300,Cash,Inderjeet,
+3050,18-07-2025,18-07-2025,10003477,KHUSHI   ,HEMRAJ,VIII-A,,,9736803035,Female,Tuition Fees,November,3230,Cash,Inderjeet,
+3049,18-07-2025,18-07-2025,10003423,MANVI CHAUDHARY  ,RAM SINGH,VIII-A,30,,9736803035,Female,Tuition Fees,July + August,7600,Cash,Inderjeet,
+3049,18-07-2025,18-07-2025,10003423,MANVI CHAUDHARY  ,RAM SINGH,VIII-A,30,,9736803035,Female,Transport Fee,July + August,1060,Cash,Inderjeet,
+3048,18-07-2025,18-07-2025,10002890,Anshika  Bhatt,Mr. Satish Chandra Bhatt,VII-D,21,,7668812370,Female,Tuition Fees,July + August,7600,ONLINE,,E2507180JC8BGH
+3048,18-07-2025,18-07-2025,10002890,Anshika  Bhatt,Mr. Satish Chandra Bhatt,VII-D,21,,7668812370,Female,Transport Fee,July + August,900,ONLINE,,E2507180JC8BGH
+3047,18-07-2025,18-07-2025,10002227,Vansh  Fanda,Mr. Nitesh Fanda,IV-D,3,,9318690882,Male,Tuition Fees,May + June,7000,Credit/Debit Card,Inderjeet,4355
+3047,18-07-2025,18-07-2025,10002227,Vansh  Fanda,Mr. Nitesh Fanda,IV-D,3,,9318690882,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,4355
+3046,18-07-2025,18-07-2025,10002305,Jashanpreet  Kaur,Mr. Jaswinder Singh,VI-C,24,,7018573325,Female,Tuition Fees,July + August,6550,Wallet/UPI/QR,Amit,9687
+3046,18-07-2025,18-07-2025,10002305,Jashanpreet  Kaur,Mr. Jaswinder Singh,VI-C,24,,7018573325,Female,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,9687
+3045,18-07-2025,18-07-2025,10001468,Sukhpreet  Singh,Mr. Jaswinder Singh,VIII-C,27,,7018573325,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,9687
+3045,18-07-2025,18-07-2025,10001468,Sukhpreet  Singh,Mr. Jaswinder Singh,VIII-C,27,,7018573325,Male,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,9687
+3044,18-07-2025,18-07-2025,10003263,Krishna  Sharma,Mr. Nitin Sharma,I-Mynah,20,,7559787027,Male,Tuition Fees,July + August,3080,Cash,Amit,
+3043,18-07-2025,18-07-2025,10001624,Vaishnavi  Sharma,Mr. Nitin Sharma,VIII-D,8,,7559787027,Female,Tuition Fees,July + August,3800,Cash,Amit,
+3042,18-07-2025,18-07-2025,10002490,Srishti  ,Mr. Amit Kumar,VI-A,29,,8077701395,Female,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,233
+3042,18-07-2025,18-07-2025,10002490,Srishti  ,Mr. Amit Kumar,VI-A,29,,8077701395,Female,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,233
+3042,18-07-2025,18-07-2025,10002490,Srishti  ,Mr. Amit Kumar,VI-A,29,,8077701395,Female,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,233
+3042,18-07-2025,18-07-2025,10002490,Srishti  ,Mr. Amit Kumar,VI-A,29,,8077701395,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,233
+3041,18-07-2025,18-07-2025,10002954,Himanshi  ,Mr. Ravi Kumar Roja,U.K.G.-Lotus,5,,9418509225,Female,Tuition Fees,July + August,5600,Wallet/UPI/QR,Amit,45
+3040,18-07-2025,18-07-2025,10003127,Shivansh  Chaudhary,Mr. Guljari Lal,U.K.G.-Rose,12,,9805399524,Male,Tuition Fees,May + June,5600,Cash,Inderjeet,
+3039,17-07-2025,17-07-2025,10002598,Lucky  Sharma,Mr. Nishant Kumar,III-A,14,,8126225844,Male,Tuition Fees,July + August,7000,ONLINE,,E2507170JB9DNI
+3039,17-07-2025,17-07-2025,10002598,Lucky  Sharma,Mr. Nishant Kumar,III-A,14,,8126225844,Male,Transport Fee,July + August,900,ONLINE,,E2507170JB9DNI
+3038,17-07-2025,17-07-2025,10002834,Adarsh  Chauhan,Mr. Satpal Chauhan,V-C,22,,7876381850,Male,Tuition Fees,May + June,7000,ONLINE,,E2507170JAXOT3
+3038,17-07-2025,17-07-2025,10002834,Adarsh  Chauhan,Mr. Satpal Chauhan,V-C,22,,7876381850,Male,Tuition Fees,July + August,7000,ONLINE,,E2507170JAXOT3
+3037,17-07-2025,17-07-2025,10002833,Atharv  Chauhan,Mr. Satpal Chauhan,III-C,7,,7876381850,Male,Tuition Fees,May + June,5950,ONLINE,,E2507170JAWKLS
+3037,17-07-2025,17-07-2025,10002833,Atharv  Chauhan,Mr. Satpal Chauhan,III-C,7,,7876381850,Male,Tuition Fees,July + August,5950,ONLINE,,E2507170JAWKLS
+3036,17-07-2025,17-07-2025,10000941,Mayank  ,Mr. Avtar Singh,XII-Commerce,19,,9817961785,Male,Tuition Fees,July + August,4300,Credit/Debit Card,Amit,416
+3035,16-07-2025,16-07-2025,10002483,Aayat  Khan,Mr. Firoz Khan,III-A,11,,9149978985,Female,Transport Fee,May + June,1150,Wallet/UPI/QR,Amit,5956
+3035,16-07-2025,16-07-2025,10002483,Aayat  Khan,Mr. Firoz Khan,III-A,11,,9149978985,Female,Tuition Fees,May + June,3500,Wallet/UPI/QR,Amit,5956
+3035,16-07-2025,16-07-2025,10002483,Aayat  Khan,Mr. Firoz Khan,III-A,11,,9149978985,Female,Tuition Fees,July + August,3500,Wallet/UPI/QR,Amit,5956
+3035,16-07-2025,16-07-2025,10002483,Aayat  Khan,Mr. Firoz Khan,III-A,11,,9149978985,Female,Transport Fee,July + August,1150,Wallet/UPI/QR,Amit,5956
+3034,16-07-2025,16-07-2025,10002756,Aadil  Khan,Mr. Firoz Khan,I-Koel,8,,9149978985,Male,Transport Fee,May + June,1150,Wallet/UPI/QR,Amit,549
+3034,16-07-2025,16-07-2025,10002756,Aadil  Khan,Mr. Firoz Khan,I-Koel,8,,9149978985,Male,Tuition Fees,May + June,3080,Wallet/UPI/QR,Amit,549
+3034,16-07-2025,16-07-2025,10002756,Aadil  Khan,Mr. Firoz Khan,I-Koel,8,,9149978985,Male,Tuition Fees,July + August,3080,Wallet/UPI/QR,Amit,549
+3034,16-07-2025,16-07-2025,10002756,Aadil  Khan,Mr. Firoz Khan,I-Koel,8,,9149978985,Male,Transport Fee,July + August,430,Wallet/UPI/QR,Amit,549
+3033,17-07-2025,17-07-2025,10003427,ARADHYA  ,KULVINDER SINGH,Nursery-Bloom,17,,7018799511,Female,Tuition Fees,July + August,2300,Cash,Amit,
+3033,17-07-2025,17-07-2025,10003427,ARADHYA  ,KULVINDER SINGH,Nursery-Bloom,17,,7018799511,Female,Transport Fee,July + August,900,Cash,Amit,
+3032,17-07-2025,17-07-2025,10002277,Mannat  Sharma,Mr. Deep Ram Sharma,VII-B,10,,9816008733,Female,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,232
+3032,17-07-2025,17-07-2025,10002277,Mannat  Sharma,Mr. Deep Ram Sharma,VII-B,10,,9816008733,Female,Tuition Fees,May + June,3230,Wallet/UPI/QR,Amit,232
+3031,17-07-2025,17-07-2025,10001886,Varun Kumar Sharma,Mr. Deep Ram Sharma,XII-Non-Medical,21,,9816008733,Male,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,22
+3031,17-07-2025,17-07-2025,10001886,Varun Kumar Sharma,Mr. Deep Ram Sharma,XII-Non-Medical,21,,9816008733,Male,Tuition Fees,May + June,4500,Wallet/UPI/QR,Amit,22
+3030,17-07-2025,17-07-2025,10001594,Azmat  Khan,Mr. Hakim Khan,VIII-D,13,,9736662315,Male,Tuition Fees,May + June,6200,Wallet/UPI/QR,Amit,4
+3030,17-07-2025,17-07-2025,10001594,Azmat  Khan,Mr. Hakim Khan,VIII-D,13,,9736662315,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,4
+3029,17-07-2025,17-07-2025,10003340,AHANA   TOMAR,KULDEEP SINGH,Nursery-Bloom,4,,7018347892,Female,Tuition Fees,July + August,5000,ONLINE,,E2507170JA9TZ0
+3029,17-07-2025,17-07-2025,10003340,AHANA   TOMAR,KULDEEP SINGH,Nursery-Bloom,4,,7018347892,Female,Transport Fee,July + August,970,ONLINE,,E2507170JA9TZ0
+3028,17-07-2025,17-07-2025,10001924,Riyansh  Chaudhary,Mr. Jaspal,VI-A,1,,9418547662,Male,Tuition Fees,July + August,7600,Cash,Amit,
+3027,17-07-2025,17-07-2025,10001458,Parmeet  Kaur,Mr. Jasbir Singh,IX-A,10,,9882812744,Female,Transport Fee,July + August,1130,NEFT Payment,Amit,sbi
+3027,17-07-2025,17-07-2025,10001458,Parmeet  Kaur,Mr. Jasbir Singh,IX-A,10,,9882812744,Female,Tuition Fees,July + August,8000,NEFT Payment,Amit,sbi
+3026,17-07-2025,17-07-2025,10002237,Palakdeep  Kaur,Mr. Jasbir Singh,IV-B,7,,9882812744,Female,Transport Fee,July + August,1130,NEFT Payment,Amit,SBI
+3026,17-07-2025,17-07-2025,10002237,Palakdeep  Kaur,Mr. Jasbir Singh,IV-B,7,,9882812744,Female,Tuition Fees,July + August,5950,NEFT Payment,Amit,SBI
+3025,17-07-2025,17-07-2025,10002359,Harreet  Kaur,Mr. Jasbir Singh,IV-D,12,,7831932431,Female,Transport Fee,September + October,1800,ONLINE,,E2507170JA4AR1
+3025,17-07-2025,17-07-2025,10002359,Harreet  Kaur,Mr. Jasbir Singh,IV-D,12,,7831932431,Female,Tuition Fees,September + October,7000,ONLINE,,E2507170JA4AR1
+3025,17-07-2025,17-07-2025,10002359,Harreet  Kaur,Mr. Jasbir Singh,IV-D,12,,7831932431,Female,Term Charges,November,4300,ONLINE,,E2507170JA4AR1
+3025,17-07-2025,17-07-2025,10002359,Harreet  Kaur,Mr. Jasbir Singh,IV-D,12,,7831932431,Female,Transport Fee,November,900,ONLINE,,E2507170JA4AR1
+3025,17-07-2025,17-07-2025,10002359,Harreet  Kaur,Mr. Jasbir Singh,IV-D,12,,7831932431,Female,Tuition Fees,November,3500,ONLINE,,E2507170JA4AR1
+3024,17-07-2025,17-07-2025,10003343,HARMEET   SINGH,AMRIK SINGH,Nursery-Bloom,10,,9625277558,Male,Transport Fee,July + August,20,Wallet/UPI/QR,Amit,222
+3023,17-07-2025,17-07-2025,10003343,HARMEET   SINGH,AMRIK SINGH,Nursery-Bloom,10,,9625277558,Male,Transport Fee,July + August,1000,Cash,Amit,
+3023,17-07-2025,17-07-2025,10003343,HARMEET   SINGH,AMRIK SINGH,Nursery-Bloom,10,,9625277558,Male,Tuition Fees,July + August,5000,Cash,Amit,
+3022,16-07-2025,16-07-2025,10001711,Kashvi  Tomar,Mr. Jagdeep Singh Tomar,X-C,3,,7018604842,Female,Tuition Fees,May + June,7000,NEFT Payment,Amit,SBI
+3021,17-07-2025,17-07-2025,10003401,Yanish  ,SATINDER SINGH,II-Ruby,24,,9816707684,Male,Tuition Fees,May + June,7000,ONLINE,,E2507170JA1MEY
+3021,17-07-2025,17-07-2025,10003401,Yanish  ,SATINDER SINGH,II-Ruby,24,,9816707684,Male,Transport Fee,May + June,1940,ONLINE,,E2507170JA1MEY
+3020,17-07-2025,17-07-2025,10001292,Kumari  Sara,Mr. Sanjeev Kumar,X-C,6,,9418507267,Female,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,86545
+3020,17-07-2025,17-07-2025,10001292,Kumari  Sara,Mr. Sanjeev Kumar,X-C,6,,9418507267,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Inderjeet,86545
+3019,16-07-2025,16-07-2025,10002272,Svetlana  Singh,Mr. Sanjay Singh,VII-B,8,,9891423078,Female,Tuition Fees,July + August,7600,ONLINE,,E2507160J9NIG7
+3019,16-07-2025,16-07-2025,10002272,Svetlana  Singh,Mr. Sanjay Singh,VII-B,8,,9891423078,Female,Transport Fee,July + August,970,ONLINE,,E2507160J9NIG7
+3018,15-07-2025,15-07-2025,10003231,Maira  Ansari,Mr. Wasim Ansari,III-D,6,,9882953398,Female,Tuition Fees,May + June,2000,NEFT Payment,Amit,SBI
+3017,14-07-2025,14-07-2025,10002089,Tanisha  Ansari,Mr. Wasim Ansari,VIII-C,28,,9882953398,Female,Tuition Fees,May + June,2300,NEFT Payment,Amit,SBI
+3017,14-07-2025,14-07-2025,10002089,Tanisha  Ansari,Mr. Wasim Ansari,VIII-C,28,,9882953398,Female,Transport Fee,May + June,70,NEFT Payment,Amit,SBI
+3014,16-07-2025,16-07-2025,10003446,ANANYA SHARMA  ,SANJEEV SHARMA,V-D,31,,9816265030,Female,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,wqeqw
+3014,16-07-2025,16-07-2025,10003446,ANANYA SHARMA  ,SANJEEV SHARMA,V-D,31,,9816265030,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,wqeqw
+3013,16-07-2025,16-07-2025,10003447,SONAKSHI SHARMA  ,SANJEEV SHARMA,VIII-A,32,,9816265030,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,wqwe
+3013,16-07-2025,16-07-2025,10003447,SONAKSHI SHARMA  ,SANJEEV SHARMA,VIII-A,32,,9816265030,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,wqwe
+3010,16-07-2025,16-07-2025,10002304,Adiba  ,Mr. Shajad Ali,VII-B,19,,7018704616,Female,Tuition Fees,May + June,7600,Credit/Debit Card,Inderjeet,7895
+3010,16-07-2025,16-07-2025,10002304,Adiba  ,Mr. Shajad Ali,VII-B,19,,7018704616,Female,Transport Fee,May + June,2040,Credit/Debit Card,Inderjeet,7895
+3010,16-07-2025,16-07-2025,10002304,Adiba  ,Mr. Shajad Ali,VII-B,19,,7018704616,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,7895
+3010,16-07-2025,16-07-2025,10002304,Adiba  ,Mr. Shajad Ali,VII-B,19,,7018704616,Female,Transport Fee,July + August,1020,Credit/Debit Card,Inderjeet,7895
+3009,16-07-2025,16-07-2025,10001333,Avni  ,Mr. Kuldeep Singh ,IX-C,1,,9816313586,Female,Tuition Fees,July + August,4000,Credit/Debit Card,Amit,232
+3007,16-07-2025,16-07-2025,10001454,Thakur Ganeshwer Singh Chauhan,Mr. Ramesh Chauhan,IX-B,32,,9805476552,Male,Term Charges,April,4800,Credit/Debit Card,Inderjeet,87978
+3007,16-07-2025,16-07-2025,10001454,Thakur Ganeshwer Singh Chauhan,Mr. Ramesh Chauhan,IX-B,32,,9805476552,Male,Tuition Fees,May + June,8000,Credit/Debit Card,Inderjeet,87978
+3007,16-07-2025,16-07-2025,10001454,Thakur Ganeshwer Singh Chauhan,Mr. Ramesh Chauhan,IX-B,32,,9805476552,Male,Tuition Fees,July + August,4000,Credit/Debit Card,Inderjeet,87978
+3006,16-07-2025,16-07-2025,10002378,Khush  Dhurkari,Mr. Ram Kumar Dhurkari,VII-B,3,,9902192082,Male,Transport Fee,July + August,1300,Credit/Debit Card,Amit,156
+3006,16-07-2025,16-07-2025,10002378,Khush  Dhurkari,Mr. Ram Kumar Dhurkari,VII-B,3,,9902192082,Male,Tuition Fees,July + August,3800,Credit/Debit Card,Amit,156
+3005,16-07-2025,16-07-2025,10002271,Vivaan  Panchal,Mr. Arvind Kumar Panchal,VI-D,1,,8708085063,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,23232
+3005,16-07-2025,16-07-2025,10002271,Vivaan  Panchal,Mr. Arvind Kumar Panchal,VI-D,1,,8708085063,Male,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,23232
+3003,16-07-2025,16-07-2025,10002455,Aradhya  Rajput,Mr. Ashish Kumar,VI-A,18,,7746822899,Female,Transport Fee,September + October,1940,ONLINE,,E2507160J8DT14
+3003,16-07-2025,16-07-2025,10002455,Aradhya  Rajput,Mr. Ashish Kumar,VI-A,18,,7746822899,Female,Tuition Fees,September + October,7600,ONLINE,,E2507160J8DT14
+3002,16-07-2025,16-07-2025,10001834,Rishit  Dhiman,Mr. Deepak Dhiman,VII-C,3,,9805980484,Male,Tuition Fees,July + August,7600,ONLINE,,E2507160J8BX6J
+3002,16-07-2025,16-07-2025,10001834,Rishit  Dhiman,Mr. Deepak Dhiman,VII-C,3,,9805980484,Male,Transport Fee,July + August,1080,ONLINE,,E2507160J8BX6J
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Security,,5000,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Annual Fund,,5000,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Term Charges,April,4600,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,CAPS Workshop,,2000,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Parent Orientation,,1000,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,"I-Card, Art & Craft, etc.",April,1240,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Admission Fee,,12000,Wallet/UPI/QR,Amit,2322
+3001,15-07-2025,15-07-2025,10003485,SWATI  ,RAVINDER ,VIII-B,,,9736634549,Female,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,2322
+3000,16-07-2025,16-07-2025,10002663,Namandeep  Singh,Mr. Manpreet Singh,V-D,6,,8219271441,Male,Tuition Fees,July + August,7000,ONLINE,,E2507160J88SNM
+3000,16-07-2025,16-07-2025,10002663,Namandeep  Singh,Mr. Manpreet Singh,V-D,6,,8219271441,Male,Transport Fee,July + August,970,ONLINE,,E2507160J88SNM
+2999,16-07-2025,16-07-2025,10002587,Aarav  ,Mr. Neeraj Kumar,III-C,21,,9736882651,Male,Tuition Fees,September + October,3000,Cash,Amit,
+2998,16-07-2025,16-07-2025,10002822,Sarabjot  Singh,Mr. Gurdial Singh,I-Mynah,3,,9459422855,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Inderjeet,98789
+2998,16-07-2025,16-07-2025,10002822,Sarabjot  Singh,Mr. Gurdial Singh,I-Mynah,3,,9459422855,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,98789
+2997,14-07-2025,14-07-2025,10003469,DIVYANSHU   SAINI,JITENDER KUMAR,X-B,28,,8894981080,Male,Tuition Fees,July + August,5000,Wallet/UPI/QR,Amit,2232322
+2996,16-07-2025,16-07-2025,10001538,Kanupriya  Chauhan,Mr. Navneet Kumar,XI-Commerce,17,,9805655561,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,67776
+2996,16-07-2025,16-07-2025,10001538,Kanupriya  Chauhan,Mr. Navneet Kumar,XI-Commerce,17,,9805655561,Female,Tuition Fees,May + June,8600,Credit/Debit Card,Inderjeet,67776
+2995,16-07-2025,16-07-2025,10002762,Jaishikha  ,Mr. Navneet Kumar,IV-B,15,,9805655561,Female,Transport Fee,May + June,1800,Credit/Debit Card,Inderjeet,6765
+2995,16-07-2025,16-07-2025,10002762,Jaishikha  ,Mr. Navneet Kumar,IV-B,15,,9805655561,Female,Tuition Fees,May + June,5950,Credit/Debit Card,Inderjeet,6765
+2994,15-07-2025,15-07-2025,10002748,Shrihan  ,Mr. Pradeep Kumar,I-Koel,7,,7018958163,Male,Transport Fee,May + June,1800,Wallet/UPI/QR,Amit,123232
+2994,15-07-2025,15-07-2025,10002748,Shrihan  ,Mr. Pradeep Kumar,I-Koel,7,,7018958163,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,123232
+2994,15-07-2025,15-07-2025,10002748,Shrihan  ,Mr. Pradeep Kumar,I-Koel,7,,7018958163,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,123232
+2994,15-07-2025,15-07-2025,10002748,Shrihan  ,Mr. Pradeep Kumar,I-Koel,7,,7018958163,Male,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,123232
+2993,16-07-2025,16-07-2025,10003116,Manomay  Mehta,Mr. Anil Mehta,VIII-B,19,,9915622108,Male,Tuition Fees,July + August,7600,ONLINE,,E2507160J81N84
+2992,15-07-2025,15-07-2025,10002912,Vansh  Choudhary,Mr. Kamal Kumar,IV-D,20,,8263013332,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,67778
+2992,15-07-2025,15-07-2025,10002912,Vansh  Choudhary,Mr. Kamal Kumar,IV-D,20,,8263013332,Male,Transport Fee,July + August,1410,Wallet/UPI/QR,Inderjeet,67778
+2991,15-07-2025,15-07-2025,10002616,Gurekas Singh Sukhija,Mr. Harpreet Singh Sukhija,IV-A,11,,9816004793,Male,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,232
+2990,15-07-2025,15-07-2025,10002617,Harkiran  Kaur,Mr. Harpreet Singh Sukhija,X-C,14,,9816004793,Female,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,6005
+2989,15-07-2025,15-07-2025,10003041,Anant  Tomar,Mr. Suresh Kumar,IV-A,28,,9818855710,Male,Tuition Fees,July + August,7000,Cash,Amit,
+2988,15-07-2025,15-07-2025,10001756,Aaradhya  ,Mr. Anuj Kumar Jagdish Prasad,VIII-A,15,,8894703506,Female,Tuition Fees,May + June,7600,ONLINE,,E2507150J6PZB4
+2988,15-07-2025,15-07-2025,10001756,Aaradhya  ,Mr. Anuj Kumar Jagdish Prasad,VIII-A,15,,8894703506,Female,Transport Fee,May + June,1800,ONLINE,,E2507150J6PZB4
+2988,15-07-2025,15-07-2025,10001756,Aaradhya  ,Mr. Anuj Kumar Jagdish Prasad,VIII-A,15,,8894703506,Female,Transport Fee,July + August,900,ONLINE,,E2507150J6PZB4
+2988,15-07-2025,15-07-2025,10001756,Aaradhya  ,Mr. Anuj Kumar Jagdish Prasad,VIII-A,15,,8894703506,Female,Tuition Fees,July + August,7600,ONLINE,,E2507150J6PZB4
+2987,15-07-2025,15-07-2025,10002990,Ananya Anuj Kumar,Mr. Anuj Kumar Jagdish Prasad,II-Pearl,5,,8894788326,Female,Tuition Fees,May + June,5950,ONLINE,,E2507150J6PUOI
+2987,15-07-2025,15-07-2025,10002990,Ananya Anuj Kumar,Mr. Anuj Kumar Jagdish Prasad,II-Pearl,5,,8894788326,Female,Transport Fee,May + June,1800,ONLINE,,E2507150J6PUOI
+2987,15-07-2025,15-07-2025,10002990,Ananya Anuj Kumar,Mr. Anuj Kumar Jagdish Prasad,II-Pearl,5,,8894788326,Female,Transport Fee,July + August,900,ONLINE,,E2507150J6PUOI
+2987,15-07-2025,15-07-2025,10002990,Ananya Anuj Kumar,Mr. Anuj Kumar Jagdish Prasad,II-Pearl,5,,8894788326,Female,Tuition Fees,July + August,5950,ONLINE,,E2507150J6PUOI
+2986,15-07-2025,15-07-2025,10001480,Vanshika  Kaur,Mr. Harjinder Singh,VIII-C,18,,7876727159,Female,Tuition Fees,July + August,3800,Wallet/UPI/QR,Amit,www
+2985,15-07-2025,15-07-2025,10001892,Gurjot  Singh,Mr. Parvinder Singh,IX-C,13,,7018170452,Male,Transport Fee,May + June,800,Wallet/UPI/QR,Amit,www
+2984,15-07-2025,15-07-2025,10001892,Gurjot  Singh,Mr. Parvinder Singh,IX-C,13,,7018170452,Male,Transport Fee,May + June,1000,Cash,Amit,
+2984,15-07-2025,15-07-2025,10001892,Gurjot  Singh,Mr. Parvinder Singh,IX-C,13,,7018170452,Male,Tuition Fees,May + June,8000,Cash,Amit,
+2983,15-07-2025,15-07-2025,10002463,Kirpanjot  Kaur,Mr. Bikramjit Singh,V-C,27,,8886300014,Female,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,wq22
+2982,15-07-2025,15-07-2025,10002157,Avijot  Singh,Mr. Bikramjit Singh,X-B,10,,8886300014,Male,Tuition Fees,July + August,8000,Credit/Debit Card,Amit,wq
+2981,15-07-2025,15-07-2025,10002711,Jaskirt  Singh,Mr. Harpreet Singh,VIII-A,7,,9041199788,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,232
+2980,15-07-2025,15-07-2025,10002710,Karanbir  Singh,Mr. Harpreet Singh,V-C,26,,9041199788,Male,Tuition Fees,July + August,5950,Credit/Debit Card,Amit,wqw
+2979,15-07-2025,15-07-2025,10003199,Gursimran  Singh,Mr. Gurmeet Singh,XII-Commerce,12,,9736126767,Male,Tuition Fees,July + August,8600,Cash,Amit,
+2978,15-07-2025,15-07-2025,10003206,Harihar  Sewal,Mr. Sunny Sewal,III-D,3,,8219681077,Male,Tuition Fees,July + August,3500,Wallet/UPI/QR,Amit,54545
+2977,15-07-2025,15-07-2025,10001481,Aishwarya  Thakur,Mr. Hemant Singh,IX-B,6,,7807537713,Female,Tuition Fees,July + August,4000,Cash,Amit,
+2977,15-07-2025,15-07-2025,10001481,Aishwarya  Thakur,Mr. Hemant Singh,IX-B,6,,7807537713,Female,Transport Fee,July + August,900,Cash,Amit,
+2976,15-07-2025,15-07-2025,10002055,Ayushman Singh Thakur,Mr. Hemant Singh,V-B,25 ,,8219716673,Male,Tuition Fees,July + August,2975,Cash,Amit,
+2976,15-07-2025,15-07-2025,10002055,Ayushman Singh Thakur,Mr. Hemant Singh,V-B,25 ,,8219716673,Male,Transport Fee,July + August,900,Cash,Amit,
+2975,15-07-2025,15-07-2025,10002083,Srishti  ,Mr. Devinder Singh,VIII-C,26,,8894463868,Female,Tuition Fees,May + June,7600,Wallet/UPI/QR,Amit,232
+2975,15-07-2025,15-07-2025,10002083,Srishti  ,Mr. Devinder Singh,VIII-C,26,,8894463868,Female,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,232
+2975,15-07-2025,15-07-2025,10002083,Srishti  ,Mr. Devinder Singh,VIII-C,26,,8894463868,Female,Tuition Fees,July + August,7600,Wallet/UPI/QR,Amit,232
+2975,15-07-2025,15-07-2025,10002083,Srishti  ,Mr. Devinder Singh,VIII-C,26,,8894463868,Female,Transport Fee,July + August,970,Wallet/UPI/QR,Amit,232
+2974,15-07-2025,15-07-2025,10001854,Aaditya  Sisodiya,Mr. Kapil Chauhan,IX-A,27,,9816058612,Male,Tuition Fees,July + August,8000,ONLINE,,E2507150J6EPJH
+2973,15-07-2025,15-07-2025,10003092,Banoth Lalith Meenan,Mr. Banoth Harilal,IX-B,19,,9848761524,Male,Transport Fee,July + August,1110,Cash,Amit,
+2973,15-07-2025,15-07-2025,10003092,Banoth Lalith Meenan,Mr. Banoth Harilal,IX-B,19,,9848761524,Male,Tuition Fees,July + August,6800,Cash,Amit,
+2972,15-07-2025,15-07-2025,10003091,Banoth Laxmi Charvika,Mr. Banoth Harilal,XI-Medical,11,,9848761524,Female,Transport Fee,July + August,1110,Cash,Amit,
+2972,15-07-2025,15-07-2025,10003091,Banoth Laxmi Charvika,Mr. Banoth Harilal,XI-Medical,11,,9848761524,Female,Tuition Fees,July + August,9000,Cash,Amit,
+2971,15-07-2025,15-07-2025,10003236,Harleen  Kaur,Mr. Jasjeet Singh,VIII-A,25,,8077447549,Female,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,2040
+2971,15-07-2025,15-07-2025,10003236,Harleen  Kaur,Mr. Jasjeet Singh,VIII-A,25,,8077447549,Female,Tuition Fees,September + October,7600,Credit/Debit Card,Amit,2040
+2971,15-07-2025,15-07-2025,10003236,Harleen  Kaur,Mr. Jasjeet Singh,VIII-A,25,,8077447549,Female,Term Charges,November,4600,Credit/Debit Card,Amit,2040
+2971,15-07-2025,15-07-2025,10003236,Harleen  Kaur,Mr. Jasjeet Singh,VIII-A,25,,8077447549,Female,Tuition Fees,November,3800,Credit/Debit Card,Amit,2040
+2970,15-07-2025,15-07-2025,10002874,Arnav  Mangla,Mr. Amit Mangla,VI-D,25,,7505632751,Male,Tuition Fees,July + August,7600,ONLINE,,E2507150J6CFT1
+2969,15-07-2025,15-07-2025,10001911,Abhishek  Gupta,Mr. Sunil Kumar Gupta,XII-Medical,1,,7018653217,Male,Tuition Fees,May + June,9000,Credit/Debit Card,Amit,4330
+2969,15-07-2025,15-07-2025,10001911,Abhishek  Gupta,Mr. Sunil Kumar Gupta,XII-Medical,1,,7018653217,Male,Tuition Fees,July + August,9000,Credit/Debit Card,Amit,4330
+2968,15-07-2025,15-07-2025,10002404,Gagandeep  Singh,Mr. Sukveer Singh,IV-C,13,,7018434499,Male,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,4564
+2968,15-07-2025,15-07-2025,10002404,Gagandeep  Singh,Mr. Sukveer Singh,IV-C,13,,7018434499,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,4564
+2967,15-07-2025,15-07-2025,10002392,Aymaan  ,Mr. Abid Ali,IV-B,6,,8146785766,Male,Tuition Fees,July + August,7000,ONLINE,,E2507150J67ZZC
+2967,15-07-2025,15-07-2025,10002392,Aymaan  ,Mr. Abid Ali,IV-B,6,,8146785766,Male,Transport Fee,July + August,1130,ONLINE,,E2507150J67ZZC
+2966,15-07-2025,15-07-2025,10003283,Siraaj  Hassan,Mr. Samoon Hassan,I-Bulbul,16,,9736970330,Male,Tuition Fees,May + June,4000,ONLINE,,E2507150J67OA3
+2965,15-07-2025,15-07-2025,10003163,Bhavya  Gupta,Mr. Shyam Babu Gupta,I-Bulbul,14,,8639589769,Female,Transport Fee,July + August,900,Credit/Debit Card,Amit,1654
+2965,15-07-2025,15-07-2025,10003163,Bhavya  Gupta,Mr. Shyam Babu Gupta,I-Bulbul,14,,8639589769,Female,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,1654
+2964,15-07-2025,15-07-2025,10002900,Divyana  Singh,Mr. Sandeep Singh,I-Mynah,14,,8219965992,Female,Tuition Fees,May + June,6000,ONLINE,,E2507150J64HOW
+2964,15-07-2025,15-07-2025,10002900,Divyana  Singh,Mr. Sandeep Singh,I-Mynah,14,,8219965992,Female,Transport Fee,May + June,2300,ONLINE,,E2507150J64HOW
+2963,15-07-2025,15-07-2025,10003002,Ishaan  Singh,Mr. Sumit Kumar Singh,IV-B,24,,8894130784,Male,Transport Fee,July + August,970,ONLINE,,E2507150J63TPE
+2963,15-07-2025,15-07-2025,10003002,Ishaan  Singh,Mr. Sumit Kumar Singh,IV-B,24,,8894130784,Male,Tuition Fees,July + August,7000,ONLINE,,E2507150J63TPE
+2962,14-07-2025,14-07-2025,10003455,HARGUNPREET   KAUR,BALJEET SINGH,II-Pearl,29,,9805162084,Female,Tuition Fees,July + August,5950,ONLINE,,E2507140J5TP82
+2961,14-07-2025,14-07-2025,10003454,JASHANPREET   SINGH,BALJEET SINGH,VIII-C,32,,9805162084,Male,Tuition Fees,July + August,7600,ONLINE,,E2507140J5THRK
+2960,14-07-2025,14-07-2025,10002212,Ashvika  Sharma,Mr. Sachin,V-A,9,,9857138325,Female,Tuition Fees,May + June,5950,ONLINE,,E2507140J5N9ZG
+2959,14-07-2025,14-07-2025,10001311,Yuvika  Sharma,Mr. Sachin,IX-A,8,,9857138325,Female,Parent Orientation,,1000,ONLINE,,E2507140J5N38I
+2959,14-07-2025,14-07-2025,10001311,Yuvika  Sharma,Mr. Sachin,IX-A,8,,9857138325,Female,Tuition Fees,May + June,8000,ONLINE,,E2507140J5N38I
+2958,14-07-2025,14-07-2025,10001856,Madhav  Goyal,Mr. Himanshu Goyal,VIII-C,13,,9882156847,Male,Transport Fee,July + August,1060,ONLINE,,E2507140J5IKO0
+2958,14-07-2025,14-07-2025,10001856,Madhav  Goyal,Mr. Himanshu Goyal,VIII-C,13,,9882156847,Male,Tuition Fees,July + August,7600,ONLINE,,E2507140J5IKO0
+2956,14-07-2025,14-07-2025,10002353,Shlok Ujwal Padole,Mr. Ujwal Padole,V-A,28,,7018282275,Male,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+2956,14-07-2025,14-07-2025,10002353,Shlok Ujwal Padole,Mr. Ujwal Padole,V-A,28,,7018282275,Male,Tuition Fees,May + June,5950,NEFT Payment,Amit,SBI
+2956,14-07-2025,14-07-2025,10002353,Shlok Ujwal Padole,Mr. Ujwal Padole,V-A,28,,7018282275,Male,Tuition Fees,July + August,2975,NEFT Payment,Amit,SBI
+2955,14-07-2025,14-07-2025,10001501,Arnav Ujwal Padole,Mr. Ujwal Padole,IX-A,29,,8219144989,Male,Transport Fee,May + June,1800,NEFT Payment,Amit,SBI
+2955,14-07-2025,14-07-2025,10001501,Arnav Ujwal Padole,Mr. Ujwal Padole,IX-A,29,,8219144989,Male,Tuition Fees,May + June,8000,NEFT Payment,Amit,SBI
+2955,14-07-2025,14-07-2025,10001501,Arnav Ujwal Padole,Mr. Ujwal Padole,IX-A,29,,8219144989,Male,Tuition Fees,July + August,4000,NEFT Payment,Amit,SBI
+2954,14-07-2025,14-07-2025,10002139,Kusum  ,Mr. Layak Ram,XI-Commerce,18,,7426082571,Female,Tuition Fees,July + August,4300,NEFT Payment,Amit,SBIO
+2953,14-07-2025,14-07-2025,10002128,Kanak  ,Mr. Layak Ram,X-A,4,,7426082571,Female,Tuition Fees,July + August,3400,NEFT Payment,Amit,SBI
+2952,14-07-2025,14-07-2025,10002505,Naman  Sharma,Mr. Pravesh Sharma,VI-D,13,,9805302111,Male,Tuition Fees,July + August,3800,Wallet/UPI/QR,Amit,232
+2951,14-07-2025,14-07-2025,10002727,Devaditya  Thakur,Mr. Rupesh Thakur,III-A,9,,9805754939,Male,Transport Fee,May + June,2820,Wallet/UPI/QR,Amit,233
+2951,14-07-2025,14-07-2025,10002727,Devaditya  Thakur,Mr. Rupesh Thakur,III-A,9,,9805754939,Male,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,233
+2951,14-07-2025,14-07-2025,10002727,Devaditya  Thakur,Mr. Rupesh Thakur,III-A,9,,9805754939,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,233
+2951,14-07-2025,14-07-2025,10002727,Devaditya  Thakur,Mr. Rupesh Thakur,III-A,9,,9805754939,Male,Transport Fee,July + August,1410,Wallet/UPI/QR,Amit,233
+2950,14-07-2025,14-07-2025,10003312,KRITIKA  ,TARUN KUMAR,Nursery-Blossom,2,,7807084198,Female,Tuition Fees,July + August,5000,ONLINE,,E2507140J4XB3O
+2950,14-07-2025,14-07-2025,10003312,KRITIKA  ,TARUN KUMAR,Nursery-Blossom,2,,7807084198,Female,Transport Fee,July + August,1380,ONLINE,,E2507140J4XB3O
+2949,14-07-2025,14-07-2025,10003145,Karnika  Chauhan,Mr. Karan Chauhan,L.K.G.-Green,8,,9736350400,Female,Transport Fee,July + August,900,Cash,Inderjeet,
+2949,14-07-2025,14-07-2025,10003145,Karnika  Chauhan,Mr. Karan Chauhan,L.K.G.-Green,8,,9736350400,Female,Tuition Fees,July + August,5000,Cash,Inderjeet,
+2948,14-07-2025,14-07-2025,10003279,Akshansh  Patel,Mr. Sunil Kumar,IX-C,30,,7029480863,Male,Tuition Fees,July + August,8000,ONLINE,,E2507140J4UTY1
+2948,14-07-2025,14-07-2025,10003279,Akshansh  Patel,Mr. Sunil Kumar,IX-C,30,,7029480863,Male,Transport Fee,July + August,900,ONLINE,,E2507140J4UTY1
+2947,14-07-2025,14-07-2025,10002680,Aarya Singh Negi,Mr. Devender Singh,V-D,11,,9816732648,Male,Tuition Fees,July + August,2800,Cash,Amit,
+2946,14-07-2025,14-07-2025,10002341,Aaradhya  Negi,Mr. Devender Singh,VII-A,31,,9816732648,Female,Tuition Fees,July + August,3040,Cash,Amit,
+2945,14-07-2025,14-07-2025,10002339,Vedanshi  Negi,Mr. Devender Singh,XI-Humanities,6,,9816732648,Female,Tuition Fees,July + August,4300,Cash,Amit,
+2944,14-07-2025,14-07-2025,10002340,Akshitaa  Negi,Mr. Devender Singh,IX-B,18,,9816732648,Female,Tuition Fees,July + August,3200,Cash,Amit,
+2943,14-07-2025,14-07-2025,10003461,HARDIK   CHAUDHARY,BALDEV SINGH,VIII-B,31,,7018463064,Male,Tuition Fees,May + June,7600,Wallet/UPI/QR,Inderjeet,88555
+2943,14-07-2025,14-07-2025,10003461,HARDIK   CHAUDHARY,BALDEV SINGH,VIII-B,31,,7018463064,Male,Transport Fee,May + June,2300,Wallet/UPI/QR,Inderjeet,88555
+2943,14-07-2025,14-07-2025,10003461,HARDIK   CHAUDHARY,BALDEV SINGH,VIII-B,31,,7018463064,Male,Tuition Fees,July + August,3800,Wallet/UPI/QR,Inderjeet,88555
+2942,14-07-2025,14-07-2025,10003469,DIVYANSHU   SAINI,JITENDER KUMAR,X-B,28,,8894981080,Male,Tuition Fees,July + August,3000,Wallet/UPI/QR,Amit,232
+2941,14-07-2025,14-07-2025,10001156,Manya  Soni,Mr. Suresh Soni,XII-Non-Medical,13,,9816623065,Female,Tuition Fees,July + August,9000,Credit/Debit Card,Amit,213
+2941,14-07-2025,14-07-2025,10001156,Manya  Soni,Mr. Suresh Soni,XII-Non-Medical,13,,9816623065,Female,Transport Fee,July + August,970,Credit/Debit Card,Amit,213
+2940,14-07-2025,14-07-2025,10002826,Anvi  Chauhan,Mr. Jeevan Singh Chauhan,II-Diamond,18,,9805925354,Female,Tuition Fees,July + August,5950,ONLINE,,E2507140J4PXWN
+2939,14-07-2025,14-07-2025,10002235,Srishty  Kashyap,Mr. Bhupender Kumar,IV-B,3,,9817210559,Female,Tuition Fees,July + August,7000,ONLINE,,E2507140J4P4ZK
+2939,14-07-2025,14-07-2025,10002235,Srishty  Kashyap,Mr. Bhupender Kumar,IV-B,3,,9817210559,Female,Transport Fee,July + August,1150,ONLINE,,E2507140J4P4ZK
+2938,14-07-2025,14-07-2025,10003143,Saksham  Kashyap,Mr. Bhupender Kumar,U.K.G.-Lily,9,,8091794099,Male,Tuition Fees,July + August,5000,ONLINE,,E2507140J4OU79
+2938,14-07-2025,14-07-2025,10003143,Saksham  Kashyap,Mr. Bhupender Kumar,U.K.G.-Lily,9,,8091794099,Male,Transport Fee,July + August,1150,ONLINE,,E2507140J4OU79
+2937,14-07-2025,14-07-2025,10002865,Hridaan  Singh,Mr. Amritpal Singh,V-C,21,,9953501657,Male,Transport Fee,July + August,970,Credit/Debit Card,Inderjeet,8588
+2937,14-07-2025,14-07-2025,10002865,Hridaan  Singh,Mr. Amritpal Singh,V-C,21,,9953501657,Male,Tuition Fees,July + August,7000,Credit/Debit Card,Inderjeet,8588
+2936,14-07-2025,14-07-2025,10003137,Manvi  ,Mr. Pradeep Kumar,VII-A,21,,9015484181,Female,Tuition Fees,May + June,3800,Wallet/UPI/QR,Inderjeet,5666
+2936,14-07-2025,14-07-2025,10003137,Manvi  ,Mr. Pradeep Kumar,VII-A,21,,9015484181,Female,Transport Fee,May + June,970,Wallet/UPI/QR,Inderjeet,5666
+2936,14-07-2025,14-07-2025,10003137,Manvi  ,Mr. Pradeep Kumar,VII-A,21,,9015484181,Female,Tuition Fees,July + August,3800,Wallet/UPI/QR,Inderjeet,5666
+2936,14-07-2025,14-07-2025,10003137,Manvi  ,Mr. Pradeep Kumar,VII-A,21,,9015484181,Female,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,5666
+2935,14-07-2025,14-07-2025,10003068,Dabheliya Jal Janak,Mr. Janak Dabheliya,VI-C,22,,9104011091,Male,Transport Fee,May + June,1800,ONLINE,,E2507140J4KIM2
+2935,14-07-2025,14-07-2025,10003068,Dabheliya Jal Janak,Mr. Janak Dabheliya,VI-C,22,,9104011091,Male,Tuition Fees,May + June,7600,ONLINE,,E2507140J4KIM2
+2934,14-07-2025,14-07-2025,10003037,Manasveer  Singh,Mr. Dalbir Singh,V-B,31,,7876530802,Male,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,65999
+2934,14-07-2025,14-07-2025,10003037,Manasveer  Singh,Mr. Dalbir Singh,V-B,31,,7876530802,Male,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,65999
+2934,14-07-2025,14-07-2025,10003037,Manasveer  Singh,Mr. Dalbir Singh,V-B,31,,7876530802,Male,Transport Fee,September + October,1940,Wallet/UPI/QR,Inderjeet,65999
+2934,14-07-2025,14-07-2025,10003037,Manasveer  Singh,Mr. Dalbir Singh,V-B,31,,7876530802,Male,Tuition Fees,September + October,7000,Wallet/UPI/QR,Inderjeet,65999
+2933,14-07-2025,14-07-2025,10002820,Vaidehi  Thakur,Mr. Shivendu Singh Tomar,II-Pearl,21,,8894902094,Female,Transport Fee,July + August,900,Wallet/UPI/QR,Amit,232
+2933,14-07-2025,14-07-2025,10002820,Vaidehi  Thakur,Mr. Shivendu Singh Tomar,II-Pearl,21,,8894902094,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232
+2932,14-07-2025,14-07-2025,10002692,Gaurav  Chauhan,Mr. Surender Singh,V-D,14,,8627813270,Male,Transport Fee,July + August,1020,Cash,Inderjeet,
+2932,14-07-2025,14-07-2025,10002692,Gaurav  Chauhan,Mr. Surender Singh,V-D,14,,8627813270,Male,Tuition Fees,July + August,7000,Cash,Inderjeet,
+2931,14-07-2025,14-07-2025,10003329,JASMINE   KAUR,SATNAM SINGH,Nursery-Bloom,12,,8353008276,Female,Tuition Fees,July + August,5000,Wallet/UPI/QR,Amit,234
+2931,14-07-2025,14-07-2025,10003329,JASMINE   KAUR,SATNAM SINGH,Nursery-Bloom,12,,8353008276,Female,Transport Fee,July + August,1020,Wallet/UPI/QR,Amit,234
+2930,14-07-2025,14-07-2025,10001290,Tanvir  Singh,Latecharanjeet Singh,X-A,16,,8580950026,Male,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,45
+2930,14-07-2025,14-07-2025,10001290,Tanvir  Singh,Latecharanjeet Singh,X-A,16,,8580950026,Male,Tuition Fees,May + June,5000,Wallet/UPI/QR,Amit,45
+2929,14-07-2025,14-07-2025,10002451,Ekansh  ,Mr. Suresh Kumar,V-A,18,,8894671002,Male,Transport Fee,May + June,900,NEFT Payment,Amit,HDFC Paytm
+2929,14-07-2025,14-07-2025,10002451,Ekansh  ,Mr. Suresh Kumar,V-A,18,,8894671002,Male,Tuition Fees,May + June,2975,NEFT Payment,Amit,HDFC Paytm
+2928,14-07-2025,14-07-2025,10001859,Prachi  ,Mr. Suresh Kumar,IX-A,16,,9805562228,Female,Transport Fee,May + June,900,NEFT Payment,Amit,HDFC Paytm
+2928,14-07-2025,14-07-2025,10001859,Prachi  ,Mr. Suresh Kumar,IX-A,16,,9805562228,Female,Tuition Fees,May + June,4000,NEFT Payment,Amit,HDFC Paytm
+2927,14-07-2025,14-07-2025,10002992,Kinshuk  Thakur,Mr. Jagdish Kumar,III-B,20,,8307687613,Male,Transport Fee,May + June,900,Wallet/UPI/QR,Amit,22
+2927,14-07-2025,14-07-2025,10002992,Kinshuk  Thakur,Mr. Jagdish Kumar,III-B,20,,8307687613,Male,Tuition Fees,May + June,3500,Wallet/UPI/QR,Amit,22
+2926,14-07-2025,14-07-2025,10001934,Avantika  Kaushik,Mr. Chander Shekhar,VIII-D,14,,9816272821,Female,Tuition Fees,May + June,7600,Cash,Amit,
+2926,14-07-2025,14-07-2025,10001934,Avantika  Kaushik,Mr. Chander Shekhar,VIII-D,14,,9816272821,Female,Transport Fee,May + June,1800,Cash,Amit,
+2925,14-07-2025,14-07-2025,10003136,Ved  Singh,Mr. Durg Vijay Singh,I-Bulbul,11,,7060500788,Male,Transport Fee,July + August,900,ONLINE,,E2507140J4COUV
+2925,14-07-2025,14-07-2025,10003136,Ved  Singh,Mr. Durg Vijay Singh,I-Bulbul,11,,7060500788,Male,Tuition Fees,July + August,7000,ONLINE,,E2507140J4COUV
+2922,14-07-2025,14-07-2025,10003341,ARPITA   CHAUHAN,LAL SINGH CHAUHAN,U.K.G.-Rose,13,,9805505725,Female,Tuition Fees,May + June,4340,Wallet/UPI/QR,Amit,wqw
+2922,14-07-2025,14-07-2025,10003341,ARPITA   CHAUHAN,LAL SINGH CHAUHAN,U.K.G.-Rose,13,,9805505725,Female,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,wqw
+2921,14-07-2025,14-07-2025,10001563,Itika  Chauhan,Mr. Lal Singh Chauhan,IX-C,21,,9816460407,Female,Tuition Fees,May + June,6400,Wallet/UPI/QR,Amit,232
+2921,14-07-2025,14-07-2025,10001563,Itika  Chauhan,Mr. Lal Singh Chauhan,IX-C,21,,9816460407,Female,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,232
+2920,14-07-2025,14-07-2025,10001432,Abhay  Chauhan,Mr. Lal Singh Chauhan,XI-Non-Medical,2,,9816460407,Male,Tuition Fees,May + June,9000,Wallet/UPI/QR,Amit,2w3
+2920,14-07-2025,14-07-2025,10001432,Abhay  Chauhan,Mr. Lal Singh Chauhan,XI-Non-Medical,2,,9816460407,Male,Transport Fee,May + June,1940,Wallet/UPI/QR,Amit,2w3
+2919,14-07-2025,14-07-2025,10003323,SHAURY   SHARMA,SUSHIL KUMAR,Nursery-Blossom,10,,7018338491,Male,Tuition Fees,July + August,5000,ONLINE,,E2507140J4BVSJ
+2918,14-07-2025,14-07-2025,10002830,Arushi Ranjan Singh,Mr. Ashish Ranjan,V-B,18,,7989575108,Female,Tuition Fees,July + August,7000,ONLINE,,E2507140J4BJBR
+2917,14-07-2025,14-07-2025,10003140,Hardik  Keshari,Mr. Narendra Kumar Keshari,I-Bulbul,12,,8350881175,Male,Transport Fee,July + August,900,Credit/Debit Card,Inderjeet,665643
+2917,14-07-2025,14-07-2025,10003140,Hardik  Keshari,Mr. Narendra Kumar Keshari,I-Bulbul,12,,8350881175,Male,Tuition Fees,July + August,6160,Credit/Debit Card,Inderjeet,665643
+2916,14-07-2025,14-07-2025,10002066,Yug  Keshari,Mr. Narendra Kumar Keshari,VII-C,27,,8894789468,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Inderjeet,4566
+2915,14-07-2025,14-07-2025,10002665,Aarohi  Thakur,Mr. Chattar Singh,III-A,1,,7807348800,Female,Transport Fee,July + August,970,Wallet/UPI/QR,Inderjeet,455579
+2915,14-07-2025,14-07-2025,10002665,Aarohi  Thakur,Mr. Chattar Singh,III-A,1,,7807348800,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Inderjeet,455579
+2913,14-07-2025,14-07-2025,10003148,Prisha  Singh,Mr. Nirmal Singh,II-Diamond,19,,7017084070,Female,Transport Fee,July + August,970,Credit/Debit Card,Amit,5005
+2913,14-07-2025,14-07-2025,10003148,Prisha  Singh,Mr. Nirmal Singh,II-Diamond,19,,7017084070,Female,Tuition Fees,July + August,7000,Credit/Debit Card,Amit,5005
+2912,14-07-2025,14-07-2025,10002877,Bhuvika  Kohali,Mr. Bhushan kumar Kohali,I-Mynah,9,,9719174517,Female,Tuition Fees,May + June,6160,Wallet/UPI/QR,Amit,232
+2912,14-07-2025,14-07-2025,10002877,Bhuvika  Kohali,Mr. Bhushan kumar Kohali,I-Mynah,9,,9719174517,Female,Tuition Fees,July + August,6160,Wallet/UPI/QR,Amit,232
+2911,14-07-2025,14-07-2025,10002541,Prathama  Kohali,Mr. Bhushan kumar Kohali,V-C,20,,9719174517,Female,Tuition Fees,May + June,7000,Wallet/UPI/QR,Amit,232
+2911,14-07-2025,14-07-2025,10002541,Prathama  Kohali,Mr. Bhushan kumar Kohali,V-C,20,,9719174517,Female,Tuition Fees,July + August,7000,Wallet/UPI/QR,Amit,232
+2910,14-07-2025,14-07-2025,10002513,Chirag  Rana,Mr. Dushyant Kumar,VI-B,1,,9816180837,Male,Tuition Fees,May + June,3800,Credit/Debit Card,Amit,156
+2910,14-07-2025,14-07-2025,10002513,Chirag  Rana,Mr. Dushyant Kumar,VI-B,1,,9816180837,Male,Transport Fee,May + June,970,Credit/Debit Card,Amit,156
+2910,14-07-2025,14-07-2025,10002513,Chirag  Rana,Mr. Dushyant Kumar,VI-B,1,,9816180837,Male,Transport Fee,July + August,970,Credit/Debit Card,Amit,156
+2910,14-07-2025,14-07-2025,10002513,Chirag  Rana,Mr. Dushyant Kumar,VI-B,1,,9816180837,Male,Tuition Fees,July + August,7600,Credit/Debit Card,Amit,156
+2909,14-07-2025,14-07-2025,10002960,Siddhanshu  Yadav,Mr. Akhilesh Kumar Yadav,III-C,11,,8421055223,Male,Tuition Fees,July + August,7000,ONLINE,,E2507140J47B5M
+2909,14-07-2025,14-07-2025,10002960,Siddhanshu  Yadav,Mr. Akhilesh Kumar Yadav,III-C,11,,8421055223,Male,Transport Fee,July + August,900,ONLINE,,E2507140J47B5M

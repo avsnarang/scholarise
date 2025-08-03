@@ -554,7 +554,14 @@ export const paymentGatewayRouter = createTRPCRouter({
               },
             },
           },
-          feeTerm: true,
+          items: {
+            include: {
+              feeHead: true,
+              feeTerm: true,
+            },
+          },
+          branch: true,
+          session: true,
         },
         orderBy: { createdAt: 'desc' },
         take: limit, // Get full limit from manual payments
@@ -597,6 +604,10 @@ export const paymentGatewayRouter = createTRPCRouter({
 
       // Add manual payments
       manualPayments.forEach((payment) => {
+        // Get unique fee term names from payment items
+        const feeTermNames = [...new Set(payment.items.map(item => item.feeTerm.name))];
+        const feeTermName = feeTermNames.join(', ') || 'Unknown';
+        
         items.push({
           id: payment.id,
           receiptNumber: payment.receiptNumber,
@@ -604,7 +615,7 @@ export const paymentGatewayRouter = createTRPCRouter({
           studentAdmissionNumber: payment.student.admissionNumber,
           className: payment.student.section?.class?.name,
           sectionName: payment.student.section?.name,
-          feeTermName: payment.feeTerm.name,
+          feeTermName: feeTermName,
           amount: payment.totalAmount,
           paymentMode: payment.paymentMode,
           status: payment.status,

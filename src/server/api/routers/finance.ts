@@ -202,7 +202,7 @@ export const financeRouter = createTRPCRouter({
           _count: {
             select: {
               classwiseFees: true,
-              feeCollections: true,
+              feeCollectionItems: true,
             },
           },
         },
@@ -435,7 +435,7 @@ export const financeRouter = createTRPCRouter({
           _count: {
             select: {
               classwiseFees: true,
-              feeCollections: true,
+              feeCollectionItems: true,
             },
           },
         },
@@ -449,7 +449,7 @@ export const financeRouter = createTRPCRouter({
       }
 
       // Check if fee term is used in classwise fees or collections
-      const totalUsage = feeTerm._count.classwiseFees + feeTerm._count.feeCollections;
+      const totalUsage = feeTerm._count.classwiseFees + feeTerm._count.feeCollectionItems;
       if (totalUsage > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -615,7 +615,7 @@ export const financeRouter = createTRPCRouter({
               class: true,
             },
           },
-          feeTerm: true,
+
           feeHead: true,
           branch: true,
           session: true,
@@ -735,7 +735,7 @@ export const financeRouter = createTRPCRouter({
                 class: true,
               },
             },
-            feeTerm: true,
+  
             feeHead: true,
           },
         });
@@ -833,7 +833,7 @@ export const financeRouter = createTRPCRouter({
                 class: true,
               },
             },
-            feeTerm: true,
+  
             feeHead: true,
           },
         });
@@ -856,7 +856,13 @@ export const financeRouter = createTRPCRouter({
       const where = withBranchFilter(input?.branchId, {
         ...(input?.sessionId && { sessionId: input.sessionId }),
         ...(input?.studentId && { studentId: input.studentId }),
-        ...(input?.feeTermId && { feeTermId: input.feeTermId }),
+        ...(input?.feeTermId && {
+          items: {
+            some: {
+              feeTermId: input.feeTermId,
+            },
+          },
+        }),
         ...(input?.startDate && input?.endDate && {
           paymentDate: {
             gte: input.startDate,
@@ -882,10 +888,10 @@ export const financeRouter = createTRPCRouter({
               },
             },
           },
-          feeTerm: true,
           items: {
             include: {
               feeHead: true,
+              feeTerm: true,
             },
           },
           branch: true,
@@ -906,16 +912,62 @@ export const financeRouter = createTRPCRouter({
       };
     }),
 
+  // Get Fee Collection Details by Receipt Number
+  getFeeCollectionByReceiptNumber: publicProcedure
+    .input(z.object({
+      receiptNumber: z.string(),
+      branchId: z.string().optional(),
+      sessionId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const where = withBranchFilter(input?.branchId, {
+        receiptNumber: input.receiptNumber,
+        ...(input?.sessionId && { sessionId: input.sessionId }),
+      });
+
+      const feeCollection = await ctx.db.feeCollection.findFirst({
+        where,
+        include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                },
+              },
+              parent: true,
+            },
+          },
+          items: {
+            include: {
+              feeHead: true,
+            },
+          },
+          branch: true,
+          session: true,
+        },
+      });
+
+      if (!feeCollection) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Fee collection not found with the provided receipt number",
+        });
+      }
+
+      return feeCollection;
+    }),
+
   createFeeCollection: protectedProcedure
     .input(z.object({
       studentId: z.string(),
-      feeTermId: z.string(),
       paymentMode: z.enum(["Cash", "Card", "Online", "Cheque", "DD", "Bank Transfer"]),
       transactionReference: z.string().optional(),
       paymentDate: z.date(),
-      notes: z.string().optional(),
+      notes: z.string().nullish(),
       items: z.array(z.object({
         feeHeadId: z.string(),
+        feeTermId: z.string(),
         amount: z.number().min(0.01, "Amount must be greater than 0"),
       })).min(1, "At least one fee item is required"),
       branchId: z.string(),
@@ -951,15 +1003,20 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      // Validate fee term
-      const feeTerm = await ctx.db.feeTerm.findUnique({
-        where: { id: input.feeTermId },
+      // Validate fee terms (multiple terms can be included now)
+      const feeTermIds = [...new Set(items.map(item => item.feeTermId))];
+      const validFeeTerms = await ctx.db.feeTerm.findMany({
+        where: {
+          id: { in: feeTermIds },
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        },
       });
 
-      if (!feeTerm || feeTerm.branchId !== input.branchId || feeTerm.sessionId !== input.sessionId) {
+      if (validFeeTerms.length !== feeTermIds.length) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid fee term for the specified branch and session",
+          message: "Some fee terms are invalid for the specified branch and session",
         });
       }
 
@@ -984,22 +1041,58 @@ export const financeRouter = createTRPCRouter({
       const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
       return ctx.db.$transaction(async (prisma) => {
-        // Generate improved receipt number
-        const year = new Date().getFullYear();
-        const month = String(new Date().getMonth() + 1).padStart(2, '0');
-        
-        // Get count for this branch, year, and month for better uniqueness
-        const receiptCount = await prisma.feeCollection.count({
+        // Generate new format receipt number: TSH{Branch Code}/FIN/{Session Name}/000001
+        const [branch, session] = await Promise.all([
+          prisma.branch.findUnique({
+            where: { id: input.branchId },
+            select: { code: true }
+          }),
+          prisma.academicSession.findUnique({
+            where: { id: input.sessionId },
+            select: { name: true }
+          })
+        ]);
+
+        if (!branch) {
+          throw new Error(`Branch not found for ID: ${input.branchId}`);
+        }
+        if (!session) {
+          throw new Error(`Session not found for ID: ${input.sessionId}`);
+        }
+
+        const branchCode = branch.code;
+        const sessionName = session.name;
+        const prefix = `TSH${branchCode}/FIN/${sessionName}/`;
+
+        // Find the highest existing receipt number for this branch/session
+        const lastReceipt = await prisma.feeCollection.findFirst({
           where: {
             branchId: input.branchId,
-            createdAt: {
-              gte: new Date(year, new Date().getMonth(), 1),
-              lt: new Date(year, new Date().getMonth() + 1, 1),
+            sessionId: input.sessionId,
+            receiptNumber: {
+              startsWith: prefix,
             },
           },
+          orderBy: {
+            receiptNumber: 'desc'
+          },
+          select: {
+            receiptNumber: true
+          }
         });
 
-        const receiptNumber = `RCP-${year}${month}-${input.branchId.slice(-3).toUpperCase()}-${String(receiptCount + 1).padStart(4, '0')}`;
+        let nextNumber: number;
+        if (!lastReceipt) {
+          nextNumber = 1;
+        } else {
+          const lastReceiptNumber = lastReceipt.receiptNumber;
+          const numberPart = lastReceiptNumber.split('/').pop();
+          const lastNumber = parseInt(numberPart || '0', 10);
+          nextNumber = lastNumber + 1;
+        }
+
+        const paddedNumber = nextNumber.toString().padStart(6, '0');
+        const receiptNumber = `${prefix}${paddedNumber}`;
 
         // Create fee collection
         const feeCollection = await prisma.feeCollection.create({
@@ -1016,6 +1109,7 @@ export const financeRouter = createTRPCRouter({
           data: items.map((item) => ({
             feeCollectionId: feeCollection.id,
             feeHeadId: item.feeHeadId,
+            feeTermId: item.feeTermId,
             amount: item.amount,
           })),
         });
@@ -1033,7 +1127,6 @@ export const financeRouter = createTRPCRouter({
                 },
               },
             },
-            feeTerm: true,
             items: {
               include: {
                 feeHead: true,
@@ -1055,7 +1148,7 @@ export const financeRouter = createTRPCRouter({
         paymentMode: z.enum(["Cash", "Card", "Online", "Cheque", "DD", "Bank Transfer"]),
         transactionReference: z.string().optional(),
         paymentDate: z.date(),
-        notes: z.string().optional(),
+        notes: z.string().nullish(),
         items: z.array(z.object({
           feeHeadId: z.string(),
           amount: z.number().min(0.01),
@@ -1157,7 +1250,6 @@ export const financeRouter = createTRPCRouter({
           const feeCollection = await prisma.feeCollection.create({
             data: {
               studentId: collection.studentId,
-              feeTermId: collection.feeTermId,
               paymentMode: collection.paymentMode,
               transactionReference: collection.transactionReference,
               paymentDate: collection.paymentDate,
@@ -1176,6 +1268,7 @@ export const financeRouter = createTRPCRouter({
             data: collection.items.map((item) => ({
               feeCollectionId: feeCollection.id,
               feeHeadId: item.feeHeadId,
+              feeTermId: collection.feeTermId,
               amount: item.amount,
             })),
           });
@@ -1193,7 +1286,7 @@ export const financeRouter = createTRPCRouter({
       paymentMode: z.enum(["Cash", "Card", "Online", "Cheque", "DD", "Bank Transfer"]),
       transactionReference: z.string().optional(),
       paymentDate: z.date(),
-      notes: z.string().optional(),
+      notes: z.string().nullish(),
       items: z.array(z.object({
         feeHeadId: z.string(),
         amount: z.number().min(0.01),
@@ -1207,7 +1300,11 @@ export const financeRouter = createTRPCRouter({
         const existing = await prisma.feeCollection.findUnique({
           where: { id },
           include: {
-            items: true,
+            items: {
+              include: {
+      
+              },
+            },
           },
         });
 
@@ -1245,13 +1342,24 @@ export const financeRouter = createTRPCRouter({
             where: { feeCollectionId: id },
           });
 
-          // Create new items
+          // Create new items (preserving existing term IDs where possible)
           await prisma.feeCollectionItem.createMany({
-            data: items.map((item) => ({
-              feeCollectionId: id,
-              feeHeadId: item.feeHeadId,
-              amount: item.amount,
-            })),
+            data: items.map((item) => {
+              // Try to find an existing item with the same feeHeadId to preserve its term
+              const existingItem = existing.items.find(ei => ei.feeHeadId === item.feeHeadId);
+              const feeTermId = existingItem?.feeTermId || existing.items[0]?.feeTermId;
+              
+              if (!feeTermId) {
+                throw new Error(`Cannot determine feeTermId for feeHeadId: ${item.feeHeadId}`);
+              }
+              
+              return {
+                feeCollectionId: id,
+                feeHeadId: item.feeHeadId,
+                feeTermId,
+                amount: item.amount,
+              };
+            }),
           });
 
           totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
@@ -1280,7 +1388,7 @@ export const financeRouter = createTRPCRouter({
                 },
               },
             },
-            feeTerm: true,
+  
             items: {
               include: {
                 feeHead: true,
@@ -1374,8 +1482,8 @@ export const financeRouter = createTRPCRouter({
           },
         },
         include: {
-          feeTerm: true,
           feeHead: true,
+          feeTerm: true,
         },
       });
 
@@ -1409,11 +1517,7 @@ export const financeRouter = createTRPCRouter({
         },
         include: {
           feeHead: true,
-          feeCollection: {
-            include: {
-              feeTerm: true,
-            },
-          },
+          feeTerm: true,
         },
       });
 
@@ -1468,13 +1572,13 @@ export const financeRouter = createTRPCRouter({
           .filter(
             (item) =>
               item.feeHeadId === classwiseFee.feeHeadId &&
-              item.feeCollection.feeTermId === classwiseFee.feeTermId
+              item.feeTermId === classwiseFee.feeTermId
           )
           .reduce((sum, item) => sum + item.amount, 0);
 
         const due = Math.max(0, effectiveAmount - paid);
         const today = new Date();
-        const dueDate = new Date(classwiseFee.feeTerm.dueDate);
+        const dueDate = new Date(classwiseFee.feeTerm?.dueDate || new Date());
         
         let status: 'Paid' | 'Pending' | 'Partially Paid' | 'Overdue';
         if (due === 0) {
@@ -1636,7 +1740,7 @@ export const financeRouter = createTRPCRouter({
         where: classwiseFeesQuery,
         include: {
           feeHead: true,
-          feeTerm: true,
+
           section: {
             include: {
               class: true,
@@ -2073,8 +2177,8 @@ export const financeRouter = createTRPCRouter({
             ...(input.feeTermId && { feeTermId: input.feeTermId }),
           },
           include: {
-            feeTerm: true,
             feeHead: true,
+            feeTerm: true,
           },
         });
 
@@ -2091,7 +2195,7 @@ export const financeRouter = createTRPCRouter({
           include: {
             feeCollection: {
               include: {
-                feeTerm: true,
+      
               },
             },
           },
@@ -2104,12 +2208,12 @@ export const financeRouter = createTRPCRouter({
               .filter(
                 (item) =>
                   item.feeHeadId === classwiseFee.feeHeadId &&
-                  item.feeCollection.feeTermId === classwiseFee.feeTermId
+                  item.feeTermId === classwiseFee.feeTermId
               )
               .reduce((sum, item) => sum + item.amount, 0);
 
             const due = Math.max(0, classwiseFee.amount - paid);
-            const dueDate = new Date(classwiseFee.feeTerm.dueDate);
+            const dueDate = new Date(classwiseFee.feeTerm?.dueDate || new Date());
             const today = new Date();
             const overdueDays = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -2175,7 +2279,7 @@ export const financeRouter = createTRPCRouter({
             },
           },
           student: true,
-          feeTerm: true,
+
         },
       });
 
@@ -2253,7 +2357,7 @@ export const financeRouter = createTRPCRouter({
       description: z.string().optional(),
       type: z.enum(["PERCENTAGE", "FIXED"]).default("PERCENTAGE"),
       value: z.number().min(0, "Value cannot be negative"),
-      maxValue: z.number().min(0, "Max value cannot be negative").optional(),
+      maxValue: z.number().min(0, "Max value cannot be negative").nullish(),
       applicableStudentTypes: z.array(z.enum(["NEW_ADMISSION", "OLD_STUDENT", "BOTH"])).default(["BOTH"]),
       eligibilityCriteria: z.string().optional(),
       requiredDocuments: z.array(z.string()).default([]),
@@ -2314,7 +2418,7 @@ export const financeRouter = createTRPCRouter({
       description: z.string().optional(),
       type: z.enum(["PERCENTAGE", "FIXED"]),
       value: z.number().min(0, "Value cannot be negative"),
-      maxValue: z.number().min(0, "Max value cannot be negative").optional(),
+      maxValue: z.number().min(0, "Max value cannot be negative").nullish(),
       applicableStudentTypes: z.array(z.enum(["NEW_ADMISSION", "OLD_STUDENT", "BOTH"])),
       eligibilityCriteria: z.string().optional(),
       requiredDocuments: z.array(z.string()),
@@ -2465,7 +2569,7 @@ export const financeRouter = createTRPCRouter({
       validUntil: z.date().optional(),
       appliedFeeHeads: z.array(z.string()).default([]),
       appliedFeeTerms: z.array(z.string()).default([]),
-      notes: z.string().optional(),
+      notes: z.string().nullish(),
       branchId: z.string(),
       sessionId: z.string(),
       createdBy: z.string().optional(),
@@ -2600,7 +2704,7 @@ export const financeRouter = createTRPCRouter({
     .input(z.object({
       id: z.string(),
       approvedBy: z.string(),
-      notes: z.string().optional(),
+      notes: z.string().nullish(),
     }))
     .mutation(async ({ ctx, input }) => {
       const concession = await ctx.db.studentConcession.findUnique({
@@ -3266,15 +3370,17 @@ export const financeRouter = createTRPCRouter({
             studentId: { in: studentIds },
             branchId: input.branchId,
             sessionId: input.sessionId,
-            ...(input.feeTermIds && input.feeTermIds.length > 0 && { feeTermId: { in: input.feeTermIds } }),
           },
+          ...(input.feeTermIds && input.feeTermIds.length > 0 && { feeTermId: { in: input.feeTermIds } }),
           ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { feeHeadId: { in: input.feeHeadIds } }),
         },
         include: {
           feeHead: true,
+          feeTerm: true,
           feeCollection: {
-            include: {
-              feeTerm: true,
+            select: {
+              studentId: true,
+              status: true,
             },
           },
         },
@@ -3385,7 +3491,7 @@ export const financeRouter = createTRPCRouter({
           const paidAmount = studentPaidAmounts
             .filter(pa => 
               pa.feeHeadId === classwiseFee.feeHeadId && 
-              pa.feeCollection.feeTermId === classwiseFee.feeTermId
+              pa.feeTermId === classwiseFee.feeTermId
             )
             .reduce((sum, pa) => sum + pa.amount, 0);
 
@@ -3403,7 +3509,7 @@ export const financeRouter = createTRPCRouter({
 
           // Determine status
           const today = new Date();
-          const dueDate = new Date(classwiseFee.feeTerm.dueDate);
+          const dueDate = new Date(classwiseFee.feeTerm?.dueDate || new Date());
           let status: 'Paid' | 'Pending' | 'Partially Paid' | 'Overdue';
           
           if (dueAmount === 0) {
@@ -3420,7 +3526,7 @@ export const financeRouter = createTRPCRouter({
             feeHeadId: classwiseFee.feeHeadId,
             feeHeadName: classwiseFee.feeHead.name,
             feeTermId: classwiseFee.feeTermId,
-            feeTermName: classwiseFee.feeTerm.name,
+            feeTermName: classwiseFee.feeTerm?.name || 'Unknown Term',
             originalAmount: classwiseFee.amount,
             concessionAmount,
             toBeCollected,
@@ -3518,7 +3624,11 @@ export const financeRouter = createTRPCRouter({
             lte: endDate,
           },
           ...(input.feeTermIds && input.feeTermIds.length > 0 && {
-            feeTermId: { in: input.feeTermIds }
+            items: {
+              some: {
+                feeTermId: { in: input.feeTermIds }
+              }
+            }
           }),
         },
         include: {
@@ -3532,10 +3642,10 @@ export const financeRouter = createTRPCRouter({
               firstJoinedSession: true,
             }
           },
-          feeTerm: true,
           items: {
             include: {
               feeHead: true,
+              feeTerm: true,
             },
           },
         },
@@ -3632,7 +3742,7 @@ export const financeRouter = createTRPCRouter({
           admissionNumber: c.student.admissionNumber || '',
           className: c.student.section?.class?.name || '',
           sectionName: c.student.section?.name || '',
-          feeTermName: c.feeTerm?.name || 'Unknown',
+          feeTermName: [...new Set(c.items.map(item => item.feeTerm.name))].join(', ') || 'Unknown',
           totalAmount: c.items.reduce((sum, item) => sum + item.amount, 0),
           receiptNumber: c.receiptNumber || '',
         })),
@@ -3675,10 +3785,10 @@ export const financeRouter = createTRPCRouter({
               }
             }
           },
-          feeTerm: true,
           items: {
             include: {
               feeHead: true,
+              feeTerm: true,
             },
           },
         },
@@ -3730,8 +3840,12 @@ export const financeRouter = createTRPCRouter({
         };
       });
 
+      // Calculate summary before grouping
+      const rawCollectionsCount = filteredCollections.length;
+      const uniqueStudentsCount = new Set(filteredCollections.map(c => c.studentId)).size;
+      
       const summary = {
-        totalCollections: filteredCollections.length,
+        totalCollections: rawCollectionsCount, // Keep original collections count for statistics
         totalAmount: filteredCollections.reduce((sum, c) => sum + c.items.reduce((itemSum, item) => {
           if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
             return itemSum;
@@ -3739,7 +3853,7 @@ export const financeRouter = createTRPCRouter({
           return itemSum + item.amount;
         }, 0), 0),
         selectedDate: selectedDate,
-        uniqueStudents: new Set(filteredCollections.map(c => c.studentId)).size,
+        uniqueStudents: uniqueStudentsCount,
         peakHour: Object.entries(hourlyData).reduce((a, b) => {
           const aTotal = Object.values(a[1]).reduce((sum, val) => sum + val, 0);
           const bTotal = Object.values(b[1]).reduce((sum, val) => sum + val, 0);
@@ -3752,27 +3866,67 @@ export const financeRouter = createTRPCRouter({
         chartData,
         feeHeads: sortedFeeHeads, // Add fee heads array for chart legend
         collectorSummary: [],
-        collections: filteredCollections.slice(0, 100).map(c => ({
-          id: c.id,
-          receiptNumber: c.receiptNumber || '',
-          collectionTime: c.paymentDate,
-          studentName: `${c.student.firstName} ${c.student.lastName}`.trim(),
-          admissionNumber: c.student.admissionNumber || '',
-          className: c.student.section?.class?.name || '',
-          sectionName: c.student.section?.name || '',
-          feeTermName: c.feeTerm?.name || 'Unknown',
-          totalAmount: c.items.reduce((sum, item) => {
-            if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
-              return sum;
+        collections: (() => {
+          // Group collections by student
+          const groupedByStudent = filteredCollections.reduce((acc, collection) => {
+            const studentId = collection.studentId;
+            if (!acc[studentId]) {
+              acc[studentId] = [];
             }
-            return sum + item.amount;
-          }, 0),
-          collectorName: 'System',
-          items: c.items.map(item => ({
-            feeHeadName: item.feeHead.name,
-            amountPaid: item.amount,
-          })),
-        })),
+            acc[studentId].push(collection);
+            return acc;
+          }, {} as Record<string, typeof filteredCollections>);
+
+          // Convert grouped collections to consolidated student entries
+          return Object.values(groupedByStudent).map(studentCollections => {
+            const firstCollection = studentCollections[0];
+            if (!firstCollection) return null;
+
+            // Combine all fee terms
+            const feeTerms = [...new Set(studentCollections.flatMap(c => c.items.map(item => item.feeTerm.name)))];
+            
+            // Combine all receipt numbers
+            const receiptNumbers = [...new Set(studentCollections.map(c => c.receiptNumber).filter(Boolean))];
+            
+            // Combine all fee items across all collections for this student
+            const allItems: Array<{ feeHeadName: string; amountPaid: number; termName: string }> = [];
+            studentCollections.forEach(collection => {
+              collection.items.forEach(item => {
+                if (input.feeHeadIds && input.feeHeadIds.length > 0 && !input.feeHeadIds.includes(item.feeHeadId)) {
+                  return;
+                }
+                allItems.push({
+                  feeHeadName: item.feeHead.name,
+                  amountPaid: item.amount,
+                  termName: item.feeTerm.name,
+                });
+              });
+            });
+
+            // Calculate total amount across all collections for this student
+            const totalAmount = allItems.reduce((sum, item) => sum + item.amountPaid, 0);
+            
+            // Use the earliest payment time
+            const earliestPaymentTime = studentCollections.reduce((earliest, current) => 
+              current.paymentDate < earliest.paymentDate ? current : earliest
+            ).paymentDate;
+
+            return {
+              id: firstCollection.id, // Use first collection ID as representative
+              receiptNumber: receiptNumbers.join(', '),
+              collectionTime: earliestPaymentTime,
+              studentName: `${firstCollection.student.firstName} ${firstCollection.student.lastName}`.trim(),
+              admissionNumber: firstCollection.student.admissionNumber || '',
+              className: firstCollection.student.section?.class?.name || '',
+              sectionName: firstCollection.student.section?.name || '',
+              feeTermName: feeTerms.join(', '),
+              totalAmount,
+              collectorName: 'System',
+              items: allItems,
+              collectionsCount: studentCollections.length, // Add count for reference
+            };
+          }).filter(Boolean);
+        })(),
       };
     }),
 
@@ -4793,6 +4947,69 @@ export const financeRouter = createTRPCRouter({
           currentSystemAmount: calculationMethods.groupedMethod.calculation,
           difference: calculationMethods.groupedMethod.calculation - 101539600,
         }
+      };
+    }),
+
+  getConcessionStats: protectedProcedure
+    .input(z.object({
+      branchId: z.string().optional(),
+      sessionId: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const whereClause: any = {};
+      
+      if (input.branchId) {
+        whereClause.branchId = input.branchId;
+      }
+      
+      if (input.sessionId) {
+        whereClause.sessionId = input.sessionId;
+      }
+
+      // Get total concessions count
+      const totalConcessions = await ctx.db.studentConcession.count({
+        where: whereClause,
+      });
+
+      // Get approved concessions count
+      const approvedConcessions = await ctx.db.studentConcession.count({
+        where: {
+          ...whereClause,
+          status: 'APPROVED',
+        },
+      });
+
+      // Get pending concessions count (all pending statuses)
+      const pendingConcessions = await ctx.db.studentConcession.count({
+        where: {
+          ...whereClause,
+          status: {
+            in: ['PENDING', 'PENDING_FIRST', 'PENDING_SECOND'],
+          },
+        },
+      });
+
+      // Calculate total concession amount for approved concessions
+      const approvedConcessionsWithDetails = await ctx.db.studentConcession.findMany({
+        where: {
+          ...whereClause,
+          status: 'APPROVED',
+        },
+        include: {
+          concessionType: true,
+        },
+      });
+
+      const totalConcessionAmount = approvedConcessionsWithDetails.reduce((sum, concession) => {
+        const amount = concession.customValue ?? concession.concessionType.value;
+        return sum + amount;
+      }, 0);
+
+      return {
+        totalConcessions,
+        approvedConcessions,
+        pendingConcessions,
+        totalConcessionAmount,
       };
     }),
 }); 

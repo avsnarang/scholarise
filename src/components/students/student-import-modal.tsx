@@ -33,7 +33,10 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
-import { parseExcelFile } from "@/utils/export"
+import { parseExcelFile, downloadStudentImportTemplate, downloadStudentImportExcelTemplate } from "@/utils/export"
+import { useGlobalBranchFilter } from "@/hooks/useGlobalBranchFilter"
+import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext"
+import { api } from "@/utils/api"
 import * as XLSX from 'xlsx'
 
 interface StudentImportModalProps {
@@ -56,26 +59,94 @@ interface ColumnMapping {
 
 // Available property types for student data
 const PROPERTY_TYPES = [
+  // Required fields
   { value: "firstName", label: "First Name", required: true },
   { value: "lastName", label: "Last Name", required: true },
+  { value: "gender", label: "Gender", required: true },
+  { value: "dateOfBirth", label: "Date of Birth", required: true },
+  
+  // School information
   { value: "admissionNumber", label: "Admission Number" },
-  { value: "email", label: "Email" },
-  { value: "phone", label: "Phone" },
-  { value: "gender", label: "Gender" },
-  { value: "dateOfBirth", label: "Date of Birth" },
+  { value: "branchCode", label: "Branch Code" },
+  { value: "classId", label: "Class ID" },
   { value: "className", label: "Class Name" },
   { value: "sectionName", label: "Section" },
+  { value: "dateOfAdmission", label: "Date of Admission" },
   { value: "rollNumber", label: "Roll Number" },
+  
+  // Basic information
+  { value: "email", label: "Email" },
+  { value: "personalEmail", label: "Personal Email" },
+  { value: "phone", label: "Phone" },
   { value: "bloodGroup", label: "Blood Group" },
   { value: "religion", label: "Religion" },
   { value: "nationality", label: "Nationality" },
   { value: "caste", label: "Caste" },
-  { value: "address", label: "Address" },
+  { value: "aadharNumber", label: "Aadhar Number" },
+  { value: "udiseId", label: "UDISE ID" },
+  { value: "username", label: "Username" },
+  { value: "password", label: "Password" },
+  
+  // Address information
+  { value: "permanentAddress", label: "Permanent Address" },
+  { value: "permanentCity", label: "Permanent City" },
+  { value: "permanentState", label: "Permanent State" },
+  { value: "permanentCountry", label: "Permanent Country" },
+  { value: "permanentZipCode", label: "Permanent Zip Code" },
+  { value: "correspondenceAddress", label: "Correspondence Address" },
+  { value: "correspondenceCity", label: "Correspondence City" },
+  { value: "correspondenceState", label: "Correspondence State" },
+  { value: "correspondenceCountry", label: "Correspondence Country" },
+  { value: "correspondenceZipCode", label: "Correspondence Zip Code" },
+  
+  // Previous school information
+  { value: "previousSchool", label: "Previous School" },
+  { value: "lastClassAttended", label: "Last Class Attended" },
+  { value: "mediumOfInstruction", label: "Medium of Instruction" },
+  { value: "recognisedByStateBoard", label: "Recognised by State Board" },
+  { value: "schoolCity", label: "School City" },
+  { value: "schoolState", label: "School State" },
+  { value: "reasonForLeaving", label: "Reason for Leaving" },
+  
+  // Father's information
   { value: "fatherName", label: "Father Name" },
+  { value: "fatherDob", label: "Father Date of Birth" },
+  { value: "fatherEducation", label: "Father Education" },
+  { value: "fatherOccupation", label: "Father Occupation" },
+  { value: "fatherWorkplace", label: "Father Workplace" },
+  { value: "fatherDesignation", label: "Father Designation" },
+  { value: "fatherMobile", label: "Father Mobile" },
+  { value: "fatherEmail", label: "Father Email" },
+  { value: "fatherAadharNumber", label: "Father Aadhar Number" },
+  
+  // Mother's information
   { value: "motherName", label: "Mother Name" },
+  { value: "motherDob", label: "Mother Date of Birth" },
+  { value: "motherEducation", label: "Mother Education" },
+  { value: "motherOccupation", label: "Mother Occupation" },
+  { value: "motherWorkplace", label: "Mother Workplace" },
+  { value: "motherDesignation", label: "Mother Designation" },
+  { value: "motherMobile", label: "Mother Mobile" },
+  { value: "motherEmail", label: "Mother Email" },
+  { value: "motherAadharNumber", label: "Mother Aadhar Number" },
+  
+  // Guardian's information
   { value: "guardianName", label: "Guardian Name" },
+  { value: "guardianDob", label: "Guardian Date of Birth" },
+  { value: "guardianEducation", label: "Guardian Education" },
+  { value: "guardianOccupation", label: "Guardian Occupation" },
+  { value: "guardianWorkplace", label: "Guardian Workplace" },
+  { value: "guardianDesignation", label: "Guardian Designation" },
+  { value: "guardianMobile", label: "Guardian Mobile" },
+  { value: "guardianEmail", label: "Guardian Email" },
+  { value: "guardianAadharNumber", label: "Guardian Aadhar Number" },
+  { value: "guardianRelationship", label: "Guardian Relationship" },
+  
+  // Legacy/alternative fields
   { value: "parentPhone", label: "Parent Phone" },
   { value: "parentEmail", label: "Parent Email" },
+  { value: "address", label: "Address" },
+  
   { value: "skip", label: "Skip Column" },
 ] as const
 
@@ -93,6 +164,19 @@ export function StudentImportModal({
   const [importProgress, setImportProgress] = useState(0)
   
   const { toast } = useToast()
+  const { branchId } = useGlobalBranchFilter()
+  const { currentSessionId } = useAcademicSessionContext()
+
+  // Get available classes for Excel template
+  const { data: availableClasses } = api.class.getClassIdsForImport.useQuery(
+    { 
+      branchId: branchId!, 
+      sessionId: currentSessionId! 
+    },
+    { 
+      enabled: !!branchId && !!currentSessionId 
+    }
+  )
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -412,6 +496,47 @@ export function StudentImportModal({
             </DialogHeader>
 
             <div className="flex-1 flex flex-col gap-6">
+              {/* Template Download Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Download Template</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadStudentImportTemplate()}
+                      className="flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                      CSV Template
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadStudentImportExcelTemplate(availableClasses)}
+                      className="flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Excel Template
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium mb-1">Template Information:</p>
+                      <ul className="space-y-1">
+                        <li>• <strong>Excel Template:</strong> Includes class reference sheet with exact IDs</li>
+                        <li>• <strong>CSV Template:</strong> Simple format with all available columns</li>
+                        <li>• Required fields: First Name*, Last Name*, Gender*, Date of Birth*</li>
+                        <li>• Date format: DD/MM/YYYY (e.g., 15/05/2010)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* File Upload Area */}
               <div className="space-y-4">
                 <Label>Upload CSV/Excel</Label>

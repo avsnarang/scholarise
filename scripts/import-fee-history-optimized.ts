@@ -435,7 +435,6 @@ async function createFeeCollections(collections: ProcessedCollection[]): Promise
             const feeCollectionData = {
               receiptNumber,
               studentId: collection.studentId,
-              feeTermId,
               totalAmount: termTotalAmount,
               paidAmount: termTotalAmount,
               paymentMode: collection.paymentMode,
@@ -455,6 +454,7 @@ async function createFeeCollections(collections: ProcessedCollection[]): Promise
               feeCollectionItemsToCreate.push({
                 collectionIndex: feeCollectionsToCreate.length - 1,
                 feeHeadId: item.feeHeadId,
+                feeTermId,
                 amount: item.amount,
               });
             });
@@ -471,6 +471,7 @@ async function createFeeCollections(collections: ProcessedCollection[]): Promise
           const itemsWithCollectionIds = feeCollectionItemsToCreate.map(item => ({
             feeCollectionId: createdCollections[item.collectionIndex]!.id,
             feeHeadId: item.feeHeadId,
+            feeTermId: item.feeTermId,
             amount: item.amount,
           }));
           

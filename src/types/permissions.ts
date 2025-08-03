@@ -170,6 +170,18 @@ export enum Permission {
   EDIT_COURTESY_CALL_FEEDBACK = "edit_courtesy_call_feedback",
   DELETE_COURTESY_CALL_FEEDBACK = "delete_courtesy_call_feedback",
   
+  // Action Items permissions
+  VIEW_ACTION_ITEMS = "view_action_items",
+  VIEW_OWN_ACTION_ITEMS = "view_own_action_items",
+  VIEW_ALL_ACTION_ITEMS = "view_all_action_items",
+  CREATE_ACTION_ITEM = "create_action_item",
+  EDIT_ACTION_ITEM = "edit_action_item",
+  DELETE_ACTION_ITEM = "delete_action_item",
+  ASSIGN_ACTION_ITEM = "assign_action_item",
+  COMPLETE_ACTION_ITEM = "complete_action_item",
+  VERIFY_ACTION_ITEM = "verify_action_item",
+  REJECT_ACTION_ITEM = "reject_action_item",
+  
   // Communication permissions
   VIEW_COMMUNICATION = "view_communication",
   CREATE_COMMUNICATION_MESSAGE = "create_communication_message",

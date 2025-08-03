@@ -28,10 +28,7 @@ import {
   Clock,
   Star,
   Zap,
-  Shield
-} from 'lucide-react';
-
-import {
+  Shield,
   ArrowRight,
   BarChart2,
   BarChart3,
@@ -43,13 +40,23 @@ import {
   Activity,
   Bell,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  MoreVertical,
+  Download,
+  Edit
 } from 'lucide-react';
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
 import { formatIndianCurrency } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { printFeeReceiptDirectly } from '@/utils/receipt-print';
 
 const quickActions = [
   { title: "Manage Fee Heads", href: "/finance/fee-head", icon: <Settings /> },
@@ -75,6 +82,7 @@ export default function FinancePage() {
   const { currentSessionId } = useAcademicSessionContext();
   const [selectedDays, setSelectedDays] = React.useState<number | undefined>(undefined); // Default to "All time"
   const [isCreatingTestPayment, setIsCreatingTestPayment] = React.useState(false);
+  // Removed modal state - now using direct print
 
   // Test payment mutation
   const createTestPayment = api.paymentGateway.createTestPaymentLink.useMutation({
@@ -104,6 +112,73 @@ export default function FinancePage() {
       branchId: currentBranchId,
       sessionId: currentSessionId,
     });
+  };
+
+  const handleDownloadReceipt = (transaction: any) => {
+    // Prepare receipt data and directly open print dialog
+    const receiptData = prepareReceiptData(transaction);
+    if (receiptData) {
+      printFeeReceiptDirectly(receiptData);
+    } else {
+      alert('Unable to prepare receipt data. Please try again.');
+    }
+  };
+
+  const prepareReceiptData = (transaction: any) => {
+    if (!transaction) return null;
+
+    // Transform transaction items for receipt format
+    const feeItems = transaction.items?.map((item: any) => ({
+      feeHeadName: item.feeHead?.name || 'Fee',
+      feeTermName: transaction.feeTerm?.name || 'Term',
+      originalAmount: item.amount || 0,
+      concessionAmount: 0, // TODO: Get from concession data if available
+      finalAmount: item.amount || 0,
+      appliedConcessions: [], // TODO: Get from concession data if available
+    })) || [];
+
+    const totals = {
+      totalOriginalAmount: transaction.totalAmount || 0,
+      totalConcessionAmount: 0,
+      totalNetAmount: transaction.totalAmount || 0,
+      totalPaidAmount: transaction.paidAmount || transaction.totalAmount || 0,
+    };
+
+    return {
+      receiptData: {
+        receiptNumber: transaction.receiptNumber || '',
+        paymentDate: new Date(transaction.paymentDate),
+        paymentMode: transaction.paymentMode || 'Cash',
+        transactionReference: transaction.transactionReference,
+        notes: transaction.notes,
+      },
+      student: {
+        firstName: transaction.student?.firstName || '',
+        lastName: transaction.student?.lastName || '',
+        admissionNumber: transaction.student?.admissionNumber || '',
+        section: {
+          class: {
+            name: transaction.student?.section?.class?.name || 'N/A',
+          },
+        },
+        parent: {
+          fatherName: transaction.student?.parent?.firstName
+            ? `${transaction.student.parent.firstName} ${transaction.student.parent.lastName || ''}`
+            : undefined,
+        },
+      },
+      branch: {
+        name: branchQuery.data?.name || 'School Name',
+        address: branchQuery.data?.address,
+        city: branchQuery.data?.city,
+        state: branchQuery.data?.state,
+      },
+      session: {
+        name: sessionQuery.data?.name || 'Academic Session',
+      },
+      feeItems,
+      totals,
+    };
   };
 
   // Fetch real financial analytics data
@@ -149,6 +224,18 @@ export default function FinancePage() {
     {
       enabled: !!currentBranchId && !!currentSessionId,
     }
+  );
+
+  // Get branch details for receipt
+  const branchQuery = api.branch.getById.useQuery(
+    { id: currentBranchId! },
+    { enabled: !!currentBranchId }
+  );
+
+  // Get session details for receipt (using academic session API)
+  const sessionQuery = api.academicSession.getById.useQuery(
+    { id: currentSessionId! },
+    { enabled: !!currentSessionId }
   );
 
   // Fetch advanced analytics data
@@ -924,16 +1011,30 @@ export default function FinancePage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 px-2" title="Print Receipt">
-                              <Printer className="h-3 w-3" />
-                            </Button>
-                            <Link href={`/finance/fee-collection/${txn.id}/edit`}>
-                              <Button variant="ghost" size="sm" className="h-7 px-2" title="Edit Payment">
-                                <FileText className="h-3 w-3" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </Link>
-                          </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleDownloadReceipt(txn)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                <span>Download Receipt</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.print()}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                <span>Print Receipt</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/finance/fee-collection/${txn.id}/edit`}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Edit Payment</span>
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     ))}
@@ -989,6 +1090,7 @@ export default function FinancePage() {
         </TabsContent>
       </Tabs>
 
+      {/* Modal removed - now using direct print */}
     </PageWrapper>
   );
 } 

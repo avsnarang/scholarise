@@ -35,6 +35,7 @@ import { formatIndianCurrency } from "@/lib/utils";
 import { StudentConcessionFormModal } from "./student-concession-form-modal";
 import { PaymentGatewayButton } from './payment-gateway-button';
 import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
+import { FeeReceiptModal } from './fee-receipt-modal';
 
 interface FeeItem {
   id: string;
@@ -115,6 +116,15 @@ interface StreamlinedFeeCollectionProps {
   }>;
   onAssignConcession?: (data: any) => Promise<void>;
   onRefreshFees?: () => void;
+  branch?: {
+    name: string;
+    address?: string;
+    city?: string;
+    state?: string;
+  };
+  session?: {
+    name: string;
+  };
 }
 
 const paymentModes = [
@@ -147,10 +157,12 @@ export function StreamlinedFeeCollection({
   feeHeads = [],
   feeTerms = [],
   onAssignConcession,
-  onRefreshFees
+  onRefreshFees,
+  branch = { name: 'School Name' },
+  session = { name: '2024-25' }
 }: StreamlinedFeeCollectionProps) {
   const { toast } = useToast();
-  const receiptRef = useRef<HTMLDivElement>(null);
+
   
   // Monitor real-time payment updates for this student
   useStudentPaymentMonitor(student.id);
@@ -166,16 +178,29 @@ export function StreamlinedFeeCollection({
   const [adjustmentMode, setAdjustmentMode] = useState<'auto' | 'manual'>('auto');
   const [receiptData, setReceiptData] = useState<{
     receiptNumber: string;
-    totalAmount: number;
     paymentDate: Date;
     paymentMode: string;
     transactionReference?: string;
     notes?: string;
-    selectedFees: Array<{
+    feeItems: Array<{
       feeHeadName: string;
       feeTermName: string;
-      amount: number;
+      originalAmount: number;
+      concessionAmount: number;
+      finalAmount: number;
+      appliedConcessions?: Array<{
+        name: string;
+        type: 'PERCENTAGE' | 'FIXED';
+        value: number;
+        amount: number;
+      }>;
     }>;
+    totals: {
+      totalOriginalAmount: number;
+      totalConcessionAmount: number;
+      totalNetAmount: number;
+      totalPaidAmount: number;
+    };
   } | null>(null);
 
   // Group fee items by term
@@ -323,21 +348,42 @@ export function StreamlinedFeeCollection({
         paymentDate: new Date(),
       });
 
-      // Prepare receipt data
+      // Prepare receipt data with concession details
+      const selectedFeeItems = feeItems.filter(item => selectedFeeIds.has(item.id));
+      
+      const receiptFeeItems = selectedFeeItems.map(item => {
+        let amount = item.outstandingAmount;
+        
+        if (adjustmentMode === 'manual') {
+          const customAmount = parseFloat(customAmounts[item.id] || '0');
+          amount = Math.min(customAmount, item.outstandingAmount);
+        }
+        
+        return {
+          feeHeadName: item.feeHeadName,
+          feeTermName: item.feeTermName,
+          originalAmount: item.originalAmount || item.totalAmount,
+          concessionAmount: item.concessionAmount || 0,
+          finalAmount: amount,
+          appliedConcessions: item.appliedConcessions || [],
+        };
+      });
+
+      const totals = {
+        totalOriginalAmount: receiptFeeItems.reduce((sum, item) => sum + item.originalAmount, 0),
+        totalConcessionAmount: receiptFeeItems.reduce((sum, item) => sum + item.concessionAmount, 0),
+        totalNetAmount: receiptFeeItems.reduce((sum, item) => sum + (item.originalAmount - item.concessionAmount), 0),
+        totalPaidAmount: receiptFeeItems.reduce((sum, item) => sum + item.finalAmount, 0),
+      };
+
       const receiptInfo = {
         receiptNumber: result.receiptNumber,
-        totalAmount: result.totalAmount,
         paymentDate: new Date(),
         paymentMode,
         transactionReference: transactionReference || undefined,
         notes: notes || undefined,
-        selectedFees: feeItems
-          .filter(item => selectedFeeIds.has(item.id))
-          .map(item => ({
-            feeHeadName: item.feeHeadName,
-            feeTermName: item.feeTermName,
-            amount: item.outstandingAmount,
-          })),
+        feeItems: receiptFeeItems,
+        totals,
       };
 
       setReceiptData(receiptInfo);
@@ -367,47 +413,7 @@ export function StreamlinedFeeCollection({
     }
   };
 
-  // Handle receipt print
-  const handlePrintReceipt = () => {
-    const printContent = receiptRef.current;
-    if (!printContent) return;
 
-    const newWindow = window.open('', '_blank');
-    if (!newWindow) return;
-
-    newWindow.document.write(`
-      <html>
-        <head>
-          <title>Fee Receipt - ${receiptData?.receiptNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .receipt-header { text-align: center; margin-bottom: 20px; }
-            .receipt-info { margin-bottom: 15px; }
-            .fee-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            .fee-table th, .fee-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .fee-table th { background-color: #f5f5f5; }
-            .total-row { font-weight: bold; background-color: #f9f9f9; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `);
-    
-    newWindow.document.close();
-    newWindow.print();
-  };
-
-  // Handle receipt download as PDF (simplified - you can integrate with a proper PDF library)
-  const handleDownloadReceipt = () => {
-    handlePrintReceipt(); // For now, use print dialog
-    toast({
-      title: "Receipt Ready",
-      description: "Use your browser's print dialog to save as PDF.",
-    });
-  };
 
   // Handle concession assignment
   const handleAssignConcession = async (concessionData: any) => {
@@ -437,101 +443,22 @@ export function StreamlinedFeeCollection({
 
   if (showReceipt && receiptData) {
     return (
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                Fee Payment Receipt
-              </CardTitle>
-              <CardDescription>Receipt generated successfully</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowReceipt(false)} variant="outline">
-                Back to Collection
-              </Button>
-              <Button onClick={handleDownloadReceipt} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-              <Button onClick={handlePrintReceipt}>
-                <Printer className="h-4 w-4 mr-2" />
-                Print Receipt
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div ref={receiptRef} className="bg-white p-8 border rounded-lg">
-            {/* Receipt Header */}
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">SCHOLARISE SCHOOL</h1>
-              <p className="text-gray-600">Fee Payment Receipt</p>
-              <p className="text-lg font-semibold mt-2">Receipt No: {receiptData.receiptNumber}</p>
-            </div>
-
-            {/* Student and Payment Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="font-semibold mb-2">Student Information</h3>
-                <p><strong>Name:</strong> {student.firstName} {student.lastName}</p>
-                <p><strong>Admission No:</strong> {student.admissionNumber}</p>
-                <p><strong>Class:</strong> {student.section?.class?.name || 'N/A'}</p>
-                {student.parent && (
-                  <p><strong>Parent:</strong> {student.parent.firstName} {student.parent.lastName}</p>
-                )}
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Payment Information</h3>
-                <p><strong>Date:</strong> {receiptData.paymentDate.toLocaleDateString()}</p>
-                <p><strong>Time:</strong> {receiptData.paymentDate.toLocaleTimeString()}</p>
-                <p><strong>Payment Mode:</strong> {receiptData.paymentMode}</p>
-                {receiptData.transactionReference && (
-                  <p><strong>Transaction Ref:</strong> {receiptData.transactionReference}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Fee Details Table */}
-            <table className="fee-table w-full border-collapse mb-6">
-              <thead>
-                <tr>
-                  <th className="border p-2 text-left">Fee Head</th>
-                  <th className="border p-2 text-left">Term</th>
-                  <th className="border p-2 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receiptData.selectedFees.map((fee, index) => (
-                  <tr key={index}>
-                    <td className="border p-2">{fee.feeHeadName}</td>
-                    <td className="border p-2">{fee.feeTermName}</td>
-                    <td className="border p-2 text-right">{formatIndianCurrency(fee.amount)}</td>
-                  </tr>
-                ))}
-                <tr className="total-row">
-                  <td className="border p-2 font-bold" colSpan={2}>Total Amount</td>
-                  <td className="border p-2 text-right font-bold">{formatIndianCurrency(receiptData.totalAmount)}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* Notes */}
-            {receiptData.notes && (
-              <div className="mb-4">
-                <strong>Notes:</strong> {receiptData.notes}
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="text-center text-sm text-gray-600 mt-8">
-              <p>This is a computer-generated receipt and does not require a signature.</p>
-              <p>Generated on {new Date().toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <FeeReceiptModal
+        isOpen={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        receiptData={{
+          receiptNumber: receiptData.receiptNumber,
+          paymentDate: receiptData.paymentDate,
+          paymentMode: receiptData.paymentMode,
+          transactionReference: receiptData.transactionReference,
+          notes: receiptData.notes,
+        }}
+        student={student}
+        branch={branch}
+        session={session}
+        feeItems={receiptData.feeItems}
+        totals={receiptData.totals}
+      />
     );
   }
 

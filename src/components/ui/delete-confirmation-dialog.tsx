@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,14 +29,8 @@ export function DeleteConfirmationDialog({
   description,
   isDeleting = false,
 }: DeleteConfirmationDialogProps) {
-  const handleOpenChange = useCallback((open: boolean) => {
-    if (!open && !isDeleting) {
-      onClose();
-    }
-  }, [onClose, isDeleting]);
-
   return (
-    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => !open && !isDeleting && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

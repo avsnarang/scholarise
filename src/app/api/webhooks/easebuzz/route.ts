@@ -129,28 +129,61 @@ export async function POST(req: NextRequest) {
     // If payment is successful, create fee collection record
     if (paymentStatus === 'SUCCESS' && transaction.paymentRequest) {
       try {
-        // Generate receipt number
-        const year = new Date().getFullYear();
-        const month = String(new Date().getMonth() + 1).padStart(2, '0');
-        
-        const receiptCount = await db.feeCollection.count({
+        // Generate new format receipt number: TSH{Branch Code}/FIN/{Session Name}/000001
+        const [branch, session] = await Promise.all([
+          db.branch.findUnique({
+            where: { id: transaction.branchId },
+            select: { code: true }
+          }),
+          db.academicSession.findUnique({
+            where: { id: transaction.sessionId },
+            select: { name: true }
+          })
+        ]);
+
+        if (!branch || !session) {
+          throw new Error(`Branch or session not found for transaction ${transaction.id}`);
+        }
+
+        const branchCode = branch.code;
+        const sessionName = session.name;
+        const prefix = `TSH${branchCode}/FIN/${sessionName}/`;
+
+        // Find the highest existing receipt number for this branch/session
+        const lastReceipt = await db.feeCollection.findFirst({
           where: {
             branchId: transaction.branchId,
-            createdAt: {
-              gte: new Date(year, new Date().getMonth(), 1),
-              lt: new Date(year, new Date().getMonth() + 1, 1),
+            sessionId: transaction.sessionId,
+            receiptNumber: {
+              startsWith: prefix,
             },
           },
+          orderBy: {
+            receiptNumber: 'desc'
+          },
+          select: {
+            receiptNumber: true
+          }
         });
 
-        const receiptNumber = `RCP-${year}${month}-${transaction.branchId.slice(-3).toUpperCase()}-${String(receiptCount + 1).padStart(4, '0')}`;
+        let nextNumber: number;
+        if (!lastReceipt) {
+          nextNumber = 1;
+        } else {
+          const lastReceiptNumber = lastReceipt.receiptNumber;
+          const numberPart = lastReceiptNumber.split('/').pop();
+          const lastNumber = parseInt(numberPart || '0', 10);
+          nextNumber = lastNumber + 1;
+        }
+
+        const paddedNumber = nextNumber.toString().padStart(6, '0');
+        const receiptNumber = `${prefix}${paddedNumber}`;
 
         // Create fee collection
         const feeCollection = await db.feeCollection.create({
           data: {
             receiptNumber,
             studentId: transaction.studentId,
-            feeTermId: transaction.feeTermId,
             totalAmount: transaction.amount,
             paidAmount: transaction.amount,
             paymentMode: 'Online',
@@ -172,6 +205,7 @@ export async function POST(req: NextRequest) {
           data: fees.map(fee => ({
             feeCollectionId: feeCollection.id,
             feeHeadId: fee.feeHeadId,
+            feeTermId: transaction.feeTermId,
             amount: fee.amount,
           })),
         });

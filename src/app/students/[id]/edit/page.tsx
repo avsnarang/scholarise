@@ -67,7 +67,7 @@ function EditStudentPageContent() {
             Error: {error?.message || "Student not found"}
           </p>
           <Button asChild>
-            <Link href="/students">Back to Students</Link>
+            <Link href="/students/list">Back to Students</Link>
           </Button>
         </div>
       </div>

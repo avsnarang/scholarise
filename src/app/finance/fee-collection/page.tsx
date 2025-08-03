@@ -151,6 +151,18 @@ export default function FeeCollectionPage() {
     { enabled: !!currentBranchId && !!currentSessionId }
   );
 
+  // Get branch details for receipt
+  const branchQuery = api.branch.getById.useQuery(
+    { id: currentBranchId! },
+    { enabled: !!currentBranchId }
+  );
+
+  // Get session details for receipt  
+  const sessionQuery = api.academicSession.getById.useQuery(
+    { id: currentSessionId! },
+    { enabled: !!currentSessionId }
+  );
+
   // Note: feeCollectionsQuery removed as payment history is now handled within StreamlinedFeeCollection
 
   // Transform API data into the format expected by StreamlinedFeeCollection
@@ -343,40 +355,28 @@ export default function FeeCollectionPage() {
     try {
       setIsLoading(true);
       
-      // Group fees by term to handle multiple API calls
-      const feesByTerm: Record<string, Array<{ feeHeadId: string; amount: number; }>> = {};
-      paymentData.selectedFees.forEach(fee => {
-        if (!feesByTerm[fee.feeTermId]) {
-          feesByTerm[fee.feeTermId] = [];
-        }
-        feesByTerm[fee.feeTermId]!.push({
+      // New logic: Single API call for all fees across all terms
+      const result = await collectPaymentMutation.mutateAsync({
+        studentId: paymentData.studentId,
+        items: paymentData.selectedFees.map(fee => ({
           feeHeadId: fee.feeHeadId,
+          feeTermId: fee.feeTermId,
           amount: fee.amount,
-        });
+        })),
+        paymentMode: paymentData.paymentMode as "Cash" | "Card" | "Online" | "Cheque" | "DD" | "Bank Transfer",
+        transactionReference: paymentData.transactionReference,
+        paymentDate: paymentData.paymentDate,
+        notes: paymentData.notes,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
       });
-
-      // Process payments for each term
-      let lastResult: any = null;
-      for (const [feeTermId, items] of Object.entries(feesByTerm)) {
-        lastResult = await collectPaymentMutation.mutateAsync({
-          studentId: paymentData.studentId,
-          feeTermId,
-          items,
-          paymentMode: paymentData.paymentMode as "Cash" | "Card" | "Online" | "Cheque" | "DD" | "Bank Transfer",
-          transactionReference: paymentData.transactionReference,
-          paymentDate: paymentData.paymentDate,
-          notes: paymentData.notes,
-          branchId: currentBranchId!,
-          sessionId: currentSessionId!,
-        });
-      }
 
       const totalAmount = paymentData.selectedFees.reduce((sum, fee) => sum + fee.amount, 0);
 
       await getStudentFeesQuery.refetch();
 
       return {
-        receiptNumber: lastResult?.receiptNumber || `RCP-${Date.now()}`,
+        receiptNumber: result?.receiptNumber || `RCP-${Date.now()}`,
         totalAmount,
       };
     } catch (error) {
@@ -649,6 +649,15 @@ export default function FeeCollectionPage() {
               feeTerms={feeTermsQuery.data || []}
               onAssignConcession={handleAssignConcession}
               onRefreshFees={handleRefreshFees}
+              branch={{
+                name: branchQuery.data?.name || 'School Name',
+                address: branchQuery.data?.address || undefined,
+                city: branchQuery.data?.city || undefined,
+                state: branchQuery.data?.state || undefined,
+              }}
+              session={{
+                name: sessionQuery.data?.name || 'Academic Session',
+              }}
             />
           )}
 

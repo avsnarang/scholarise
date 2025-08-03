@@ -80,6 +80,7 @@ model Branch {
   automationLogs               AutomationLog[]
   paymentGatewayTransactions   PaymentGatewayTransaction[]
   paymentRequests              PaymentRequest[]
+  actionItems                  ActionItem[]
 }
 
 model User {
@@ -198,6 +199,7 @@ model Student {
   transportAssignments    TransportAssignment[]
   paymentGatewayTransactions PaymentGatewayTransaction[]
   paymentRequests         PaymentRequest[]
+  actionItems             ActionItem[]
 
   @@index([admissionNumber])
   @@index([branchId])
@@ -263,12 +265,49 @@ model CourtesyCallFeedback {
   Employee   Employee?  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   Teacher    Teacher?   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  actionItems ActionItem[]
 
   @@index([studentId, callDate])
   @@index([callerId, callDate])
   @@index([branchId, callDate])
   @@index([employeeId, callDate])
   @@index([teacherId, callDate])
+}
+
+model ActionItem {
+  id                    String              @id @default(cuid())
+  title                 String
+  description           String
+  status                ActionItemStatus    @default(PENDING)
+  priority              ActionItemPriority  @default(MEDIUM)
+  dueDate               DateTime?
+  assignedToId          String
+  assignedById          String
+  courtesyCallFeedbackId String
+  studentId             String
+  branchId              String
+  completedAt           DateTime?
+  completionNotes       String?
+  verifiedAt            DateTime?
+  verifiedById          String?
+  rejectionReason       String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  courtesyCallFeedback  CourtesyCallFeedback @relation(fields: [courtesyCallFeedbackId], references: [id], onDelete: Cascade)
+  assignedTo            Teacher             @relation("AssignedActionItems", fields: [assignedToId], references: [id], onDelete: Cascade)
+  assignedBy            Employee            @relation("CreatedActionItems", fields: [assignedById], references: [id], onDelete: Cascade)
+  verifiedBy            Employee?           @relation("VerifiedActionItems", fields: [verifiedById], references: [id], onDelete: SetNull)
+  student               Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  branch                Branch              @relation(fields: [branchId], references: [id])
+  
+  @@index([assignedToId, status])
+  @@index([assignedById, createdAt])
+  @@index([studentId, status])
+  @@index([branchId, createdAt])
+  @@index([dueDate, status])
+  @@index([courtesyCallFeedbackId])
 }
 
 model Teacher {
@@ -348,6 +387,7 @@ model Teacher {
   salaries                   TeacherSalary[]
   userRoles                  UserRole[]
   staffAttendances           StaffAttendance[]
+  assignedActionItems        ActionItem[]    @relation("AssignedActionItems")
 
   @@index([employeeCode])
   @@index([userId])
@@ -433,6 +473,8 @@ model Employee {
   salaryIncrements           SalaryIncrement[]
   userRoles                  UserRole[]
   staffAttendances           StaffAttendance[]
+  createdActionItems         ActionItem[]    @relation("CreatedActionItems")
+  verifiedActionItems        ActionItem[]    @relation("VerifiedActionItems")
 
   @@index([userId])
 }
@@ -1738,9 +1780,9 @@ model FeeTerm {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   order          Int              @default(0)
-  classwiseFees  ClasswiseFee[]
-  feeCollections FeeCollection[]
-  branch         Branch           @relation(fields: [branchId], references: [id])
+  classwiseFees          ClasswiseFee[]
+  feeCollectionItems     FeeCollectionItem[]
+  branch                 Branch           @relation(fields: [branchId], references: [id])
   session        AcademicSession  @relation("FeeTermSession", fields: [sessionId], references: [id])
   feeHeads       FeeTermFeeHead[]
   paymentGatewayTransactions PaymentGatewayTransaction[]
@@ -1906,7 +1948,6 @@ model FeeCollection {
   id                     String                     @id @default(cuid())
   receiptNumber          String                     @unique
   studentId              String
-  feeTermId              String
   totalAmount            Float
   paidAmount             Float
   paymentMode            String
@@ -1923,7 +1964,6 @@ model FeeCollection {
   paymentRequestId       String?
   gateway                PaymentGateway?
   branch                 Branch                     @relation(fields: [branchId], references: [id])
-  feeTerm                FeeTerm                    @relation(fields: [feeTermId], references: [id])
   session                AcademicSession            @relation("FeeCollectionSession", fields: [sessionId], references: [id])
   student                Student                    @relation(fields: [studentId], references: [id])
   items                  FeeCollectionItem[]
@@ -2037,10 +2077,12 @@ model FeeCollectionItem {
   id              String        @id @default(cuid())
   feeCollectionId String
   feeHeadId       String
+  feeTermId       String
   amount          Float
   createdAt       DateTime      @default(now())
   feeCollection   FeeCollection @relation(fields: [feeCollectionId], references: [id], onDelete: Cascade)
   feeHead         FeeHead       @relation(fields: [feeHeadId], references: [id])
+  feeTerm         FeeTerm       @relation(fields: [feeTermId], references: [id])
 }
 
 model BackgroundTask {
@@ -3079,6 +3121,23 @@ model InquiryFollowUp {
   
   @@index([inquiryId])
   @@index([followUpDate])
+}
+
+// Action Item enums
+enum ActionItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  VERIFIED
+  REJECTED
+  CANCELLED
+}
+
+enum ActionItemPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 // Simplified enums for admission system

@@ -29,6 +29,7 @@ import {
   Shield,
   Eye,
   EyeOff,
+  ListTodo,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
@@ -43,6 +44,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { CreateActionItemModal } from "@/components/action-items/create-action-item-modal";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/types/permissions";
 
 interface Student {
   id: string;
@@ -97,6 +101,7 @@ interface FeedbackHistoryModalProps {
   onEdit?: (feedback: FeedbackRecord) => void;
   onDelete?: (feedbackId: string) => Promise<void>;
   isDeleting?: boolean;
+  onActionItemCreated?: () => void;
 }
 
 export function FeedbackHistoryModal({
@@ -111,9 +116,15 @@ export function FeedbackHistoryModal({
   onEdit,
   onDelete,
   isDeleting = false,
+  onActionItemCreated,
 }: FeedbackHistoryModalProps) {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [createActionItemModalOpen, setCreateActionItemModalOpen] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackRecord | null>(null);
+
+  const canCreateActionItem = can(Permission.CREATE_ACTION_ITEM);
 
   if (!student) return null;
 
@@ -256,6 +267,19 @@ export function FeedbackHistoryModal({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {canCreateActionItem && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedFeedback(feedback);
+                                setCreateActionItemModalOpen(true);
+                              }}
+                              title="Create Action Item"
+                            >
+                              <ListTodo className="w-4 h-4" />
+                            </Button>
+                          )}
                           {canEdit && onEdit && (
                             <Button
                               variant="ghost"
@@ -350,6 +374,31 @@ export function FeedbackHistoryModal({
           <Button onClick={onClose}>Close</Button>
         </div>
       </DialogContent>
+
+      {/* Create Action Item Modal */}
+      {selectedFeedback && student && (
+        <CreateActionItemModal
+          open={createActionItemModalOpen}
+          onOpenChange={setCreateActionItemModalOpen}
+          onSuccess={() => {
+            setCreateActionItemModalOpen(false);
+            setSelectedFeedback(null);
+            onActionItemCreated?.();
+            toast({
+              title: "Success",
+              description: "Action item created successfully",
+            });
+          }}
+          courtesyCallFeedbackId={selectedFeedback.id}
+          studentId={student.id}
+          prefilledData={{
+            studentName: `${student.firstName} ${student.lastName}`,
+            admissionNumber: student.admissionNumber,
+            className: student.section ? `${student.section.class?.name}-${student.section.name}` : undefined,
+            feedbackSummary: `${selectedFeedback.purpose ? `Purpose: ${selectedFeedback.purpose}\n` : ""}Feedback: ${selectedFeedback.feedback}${selectedFeedback.followUp ? `\nFollow-up: ${selectedFeedback.followUp}` : ""}`,
+          }}
+        />
+      )}
     </Dialog>
   );
 } 

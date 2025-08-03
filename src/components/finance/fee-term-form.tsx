@@ -38,7 +38,7 @@ export interface FeeTerm {
   }>;
   _count?: {
     classwiseFees: number;
-    feeCollections: number;
+    feeCollectionItems: number;
   };
 }
 

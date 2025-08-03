@@ -583,6 +583,7 @@ function FeeDefaultersReport() {
                       <div>
                   <p className="text-sm font-medium text-muted-foreground">Students with Dues</p>
                   <p className="text-2xl font-bold">{summary.totalStudents}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Active students only</p>
                       </div>
                 <Users className="h-8 w-8 text-muted-foreground" />
                     </div>
@@ -595,6 +596,7 @@ function FeeDefaultersReport() {
                       <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Due Amount</p>
                   <p className="text-2xl font-bold text-red-600">{valueFormatter(summary.totalDueAmount)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Active students only</p>
                       </div>
                 <TrendingDown className="h-8 w-8 text-red-500" />
                     </div>
@@ -607,6 +609,7 @@ function FeeDefaultersReport() {
                       <div>
                   <p className="text-sm font-medium text-muted-foreground">To Be Collected</p>
                   <p className="text-2xl font-bold text-blue-600">{valueFormatter(summary.totalToBeCollected)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Active students only</p>
                       </div>
                 <DollarSign className="h-8 w-8 text-blue-500" />
                       </div>
@@ -619,6 +622,7 @@ function FeeDefaultersReport() {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Concession Applied</p>
                    <p className="text-2xl font-bold text-green-600">{valueFormatter(summary.totalConcessionApplied)}</p>
+                   <p className="text-xs text-muted-foreground mt-1">Active students only</p>
                  </div>
                  <TrendingUp className="h-8 w-8 text-green-500" />
                     </div>
@@ -631,6 +635,7 @@ function FeeDefaultersReport() {
                       <div>
                    <p className="text-sm font-medium text-muted-foreground">Collected Till Date</p>
                    <p className="text-2xl font-bold text-green-600">{valueFormatter((summary as any).totalCollectedTillDate || 0)}</p>
+                   <p className="text-xs text-muted-foreground mt-1">Active students only</p>
                       </div>
                  <CheckCircle className="h-8 w-8 text-green-500" />
                     </div>
@@ -1495,40 +1500,193 @@ function DailyCollectionReport() {
           <CardDescription>All collections for the selected date</CardDescription>
                       </CardHeader>
                       <CardContent>
-                          <Table>
+                            <div className="relative w-full">
+                              <table className="w-full caption-bottom text-sm">
                             <TableHeader>
-                              <TableRow>
-                <TableHead>Receipt No.</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Student</TableHead>
-                                <TableHead>Class</TableHead>
-                <TableHead>Collector</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                              <TableRow className="border-b-2 border-border">
+                <TableHead className="py-4 font-semibold text-foreground">Receipt No.</TableHead>
+                <TableHead className="py-4 font-semibold text-foreground">Time</TableHead>
+                <TableHead className="py-4 font-semibold text-foreground">Student</TableHead>
+                                <TableHead className="py-4 font-semibold text-foreground">Class</TableHead>
+                <TableHead className="py-4 font-semibold text-foreground">Fee Heads</TableHead>
+                <TableHead className="py-4 font-semibold text-foreground text-right">Amount</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-              {reportData.collections.slice(0, 10).map((collection) => (
-                <TableRow key={collection.id}>
-                  <TableCell className="font-mono">{collection.receiptNumber}</TableCell>
-                  <TableCell>
-                    {collection.collectionTime.toLocaleTimeString('en-IN', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{collection.studentName}</div>
-                      <div className="text-sm text-muted-foreground">{collection.admissionNumber}</div>
+              {reportData.collections.map((collection) => 
+                collection ? (
+                <TableRow key={collection.id} className="hover:bg-muted/50 transition-colors border-b border-border">
+                  <TableCell className="font-mono py-4 px-4">
+                    <div className="max-w-32">
+                      {collection.receiptNumber.split(', ').length > 2 ? (
+                        <div>
+                          <div className="truncate text-foreground">{collection.receiptNumber.split(', ')[0]}</div>
+                          <div className="text-xs text-muted-foreground">
+                            +{collection.receiptNumber.split(', ').length - 1} more
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="truncate text-foreground">{collection.receiptNumber}</div>
+                      )}
+                      {collection.collectionsCount > 1 && (
+                        <div className="text-xs text-primary font-medium mt-1">
+                          {collection.collectionsCount} payments
+                        </div>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>{collection.className} - {collection.sectionName}</TableCell>
-                  <TableCell>{collection.collectorName}</TableCell>
-                  <TableCell className="text-right font-mono">{valueFormatter(collection.totalAmount)}</TableCell>
-                                </TableRow>
+                  <TableCell className="py-4 px-4">
+                    <div className="text-center">
+                      <div className="font-mono text-sm font-semibold text-foreground">
+                        {collection.collectionTime.toLocaleTimeString('en-IN', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {collection.collectionTime.toLocaleDateString('en-IN', { 
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 px-4">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-foreground truncate">{collection.studentName}</div>
+                      <div className="text-sm text-muted-foreground font-mono">{collection.admissionNumber}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 px-4">
+                    <div className="text-sm">
+                      <div className="font-medium text-foreground">{collection.className}</div>
+                      <div className="text-muted-foreground">{collection.sectionName}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 px-4 relative">
+                    {(() => {
+                      const itemsByTerm = collection.items?.reduce((acc, item) => {
+                        const termName = item.termName || 'Unknown';
+                        if (!acc[termName]) {
+                          acc[termName] = [];
+                        }
+                        acc[termName].push(item);
+                        return acc;
+                      }, {} as Record<string, typeof collection.items>) || {};
+
+                      const totalFeeHeads = collection.items?.length || 0;
+                      const totalTerms = Object.keys(itemsByTerm).length;
+
+                      return (
+                        <div 
+                          className="group cursor-pointer"
+                          onMouseEnter={(e) => {
+                            const tooltip = e.currentTarget.querySelector('.fee-tooltip') as HTMLElement;
+                            if (tooltip) {
+                              tooltip.style.visibility = 'visible';
+                              tooltip.style.opacity = '1';
+                              tooltip.style.transform = 'scale(1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            const tooltip = e.currentTarget.querySelector('.fee-tooltip') as HTMLElement;
+                            if (tooltip) {
+                              tooltip.style.visibility = 'hidden';
+                              tooltip.style.opacity = '0';
+                              tooltip.style.transform = 'scale(0.95)';
+                            }
+                          }}
+                        >
+                          <div className="bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg p-3 transition-colors duration-200">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-primary rounded-full"></div>
+                              <div className="text-sm font-medium text-foreground">
+                                {totalFeeHeads} fee head{totalFeeHeads !== 1 ? 's' : ''}
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground ml-4">
+                              across {totalTerms} term{totalTerms !== 1 ? 's' : ''}
+                            </div>
+                            <div className="flex items-center gap-1 mt-2 ml-4">
+                              <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="text-xs text-primary font-medium">
+                                Hover for breakdown
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Detailed tooltip */}
+                          <div className="fee-tooltip absolute left-0 top-full mt-2 z-[9999] min-w-80 max-w-96 bg-card border border-border rounded-xl shadow-xl p-5 transition-all duration-300 transform scale-95"
+                               style={{ 
+                                 visibility: 'hidden', 
+                                 opacity: '0',
+                                 transformOrigin: 'top left'
+                               }}>
+                            <div className="absolute -top-2 left-4 w-4 h-4 bg-card border-l border-t border-border transform rotate-45"></div>
+                            
+                            <div className="space-y-4">
+                              <div className="border-b border-border pb-2">
+                                <h4 className="font-semibold text-card-foreground text-sm">Fee Payment Details</h4>
+                                <p className="text-xs text-muted-foreground">Complete breakdown by term</p>
+                              </div>
+                              
+                              {Object.entries(itemsByTerm).map(([termName, items], termIndex) => (
+                                <div key={termName} className={`${termIndex > 0 ? 'pt-4 border-t border-border' : ''}`}>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className="text-sm font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-full shadow-sm">
+                                      {termName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {items.length} item{items.length !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-2 bg-muted/50 rounded-lg p-3">
+                                    {items.map((item, index) => (
+                                      <div key={index} className="flex justify-between items-center text-sm">
+                                        <span className="font-medium text-foreground flex-1">{item.feeHeadName}</span>
+                                        <span className="text-primary font-bold ml-3">₹{item.amountPaid.toLocaleString('en-IN')}</span>
+                                      </div>
+                                    ))}
+                                    <div className="border-t border-border pt-2 mt-2">
+                                      <div className="flex justify-between items-center text-sm font-semibold">
+                                        <span className="text-muted-foreground">Term Total:</span>
+                                        <span className="text-primary">₹{items.reduce((sum, item) => sum + item.amountPaid, 0).toLocaleString('en-IN')}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
                               ))}
+                              
+                              <div className="border-t-2 border-primary/30 pt-3 bg-primary/10 rounded-lg p-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-foreground">Grand Total:</span>
+                                  <span className="font-bold text-lg text-primary">₹{collection.totalAmount.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-right py-4 px-4">
+                    <div className="font-bold text-lg text-primary">
+                      {valueFormatter(collection.totalAmount)}
+                    </div>
+                    {collection.collectionsCount > 1 && (
+                      <div className="text-xs text-muted-foreground">
+                        across {collection.collectionsCount} payments
+                      </div>
+                    )}
+                  </TableCell>
+                                </TableRow>
+                ) : null
+                              )}
                             </TableBody>
-                          </Table>
+                              </table>
+                            </div>
         </CardContent>
       </Card>
     </div>
@@ -1750,6 +1908,7 @@ function ClasswiseAnalysisReport() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Students</p>
                 <p className="text-2xl font-bold text-purple-600">{reportData.summary.totalStudents}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active students only</p>
               </div>
               <Users className="h-8 w-8 text-purple-500" />
             </div>
@@ -1762,6 +1921,7 @@ function ClasswiseAnalysisReport() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Collected</p>
                 <p className="text-2xl font-bold text-green-600">{valueFormatter(reportData.summary.totalCollected)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active students only</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
@@ -1774,6 +1934,7 @@ function ClasswiseAnalysisReport() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Expected</p>
                 <p className="text-2xl font-bold text-blue-600">{valueFormatter(reportData.summary.totalExpected)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active students only</p>
               </div>
               <DollarSign className="h-8 w-8 text-blue-500" />
             </div>
@@ -1786,6 +1947,7 @@ function ClasswiseAnalysisReport() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Outstanding</p>
                 <p className="text-2xl font-bold text-red-600">{valueFormatter(reportData.summary.totalOutstanding)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Active students only</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
@@ -2309,7 +2471,7 @@ export default function FinanceReportsPage() {
           }
         `
       }} />
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-none">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-6">
           {reportTabs.map((tab) => (
             <TabsTrigger 
@@ -2323,23 +2485,23 @@ export default function FinanceReportsPage() {
           ))}
         </TabsList>
 
-        <TabsContent value="fee-defaulters">
+        <TabsContent value="fee-defaulters" className="flex-none">
           <FeeDefaultersReport />
         </TabsContent>
 
-        <TabsContent value="collection-summary">
+        <TabsContent value="collection-summary" className="flex-none">
           <CollectionSummaryReport />
         </TabsContent>
 
-        <TabsContent value="daily-collection">
+        <TabsContent value="daily-collection" className="flex-none">
           <DailyCollectionReport />
         </TabsContent>
 
-        <TabsContent value="class-wise">
+        <TabsContent value="class-wise" className="flex-none">
           <ClasswiseAnalysisReport />
         </TabsContent>
 
-        <TabsContent value="concession">
+        <TabsContent value="concession" className="flex-none">
           <ConcessionReport />
         </TabsContent>
       </Tabs>

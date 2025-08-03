@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -28,8 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { X, Plus, Award, Calendar as CalendarIcon, Users, AlertTriangle } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Award, Calendar as CalendarIcon, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -48,12 +46,12 @@ interface Student {
 interface ConcessionType {
   id: string;
   name: string;
-  type: 'PERCENTAGE' | 'FIXED';
+  type: string;
   value: number;
-  maxValue?: number;
-  description?: string;
+  maxValue?: number | null;
+  description?: string | null;
   applicableStudentTypes: string[];
-  eligibilityCriteria?: string;
+  eligibilityCriteria?: string | null;
   requiredDocuments: string[];
 }
 
@@ -91,6 +89,13 @@ interface StudentConcessionFormModalProps {
   editingConcession?: any;
 }
 
+interface FormErrors {
+  studentId?: string;
+  concessionTypeId?: string;
+  customValue?: string;
+  validUntil?: string;
+}
+
 export function StudentConcessionFormModal({
   isOpen,
   onClose,
@@ -102,7 +107,6 @@ export function StudentConcessionFormModal({
   isLoading = false,
   editingConcession,
 }: StudentConcessionFormModalProps) {
-  const { toast } = useToast();
   const [formData, setFormData] = useState<StudentConcessionFormData>({
     studentId: '',
     concessionTypeId: '',
@@ -110,33 +114,48 @@ export function StudentConcessionFormModal({
     appliedFeeHeads: [],
     appliedFeeTerms: [],
   });
+  
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedConcessionType, setSelectedConcessionType] = useState<ConcessionType | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [showValidUntilCalendar, setShowValidUntilCalendar] = useState(false);
   const [showValidFromCalendar, setShowValidFromCalendar] = useState(false);
 
-  // Initialize form data when editing
+  // Reset form when modal state changes
   useEffect(() => {
-    if (editingConcession) {
-      setFormData({
-        studentId: editingConcession.studentId,
-        concessionTypeId: editingConcession.concessionTypeId,
-        customValue: editingConcession.customValue,
-        reason: editingConcession.reason,
-        validFrom: new Date(editingConcession.validFrom),
-        validUntil: editingConcession.validUntil ? new Date(editingConcession.validUntil) : undefined,
-        appliedFeeHeads: editingConcession.appliedFeeHeads || [],
-        appliedFeeTerms: editingConcession.appliedFeeTerms || [],
-        notes: editingConcession.notes,
-      });
-      
-      const student = students.find(s => s.id === editingConcession.studentId);
-      setSelectedStudent(student || null);
-      
-      const concessionType = concessionTypes.find(ct => ct.id === editingConcession.concessionTypeId);
-      setSelectedConcessionType(concessionType || null);
+    if (isOpen) {
+      if (editingConcession) {
+        setFormData({
+          studentId: editingConcession.studentId,
+          concessionTypeId: editingConcession.concessionTypeId,
+          customValue: editingConcession.customValue,
+          reason: editingConcession.reason,
+          validFrom: new Date(editingConcession.validFrom),
+          validUntil: editingConcession.validUntil ? new Date(editingConcession.validUntil) : undefined,
+          appliedFeeHeads: editingConcession.appliedFeeHeads || [],
+          appliedFeeTerms: editingConcession.appliedFeeTerms || [],
+          notes: editingConcession.notes,
+        });
+        
+        const student = students.find(s => s.id === editingConcession.studentId);
+        setSelectedStudent(student || null);
+        
+        const concessionType = concessionTypes.find(ct => ct.id === editingConcession.concessionTypeId);
+        setSelectedConcessionType(concessionType || null);
+      } else {
+        // Reset form for new concession
+        setFormData({
+          studentId: '',
+          concessionTypeId: '',
+          validFrom: new Date(),
+          appliedFeeHeads: [],
+          appliedFeeTerms: [],
+        });
+        setSelectedStudent(null);
+        setSelectedConcessionType(null);
+      }
     } else {
-      // Reset form for new concession
+      // Reset form when modal closes
       setFormData({
         studentId: '',
         concessionTypeId: '',
@@ -147,12 +166,57 @@ export function StudentConcessionFormModal({
       setSelectedStudent(null);
       setSelectedConcessionType(null);
     }
-  }, [editingConcession, students, concessionTypes]);
+    setErrors({});
+  }, [isOpen, editingConcession, students, concessionTypes]);
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+    
+    if (!formData.studentId) {
+      newErrors.studentId = "Please select a student";
+    }
+
+    if (!formData.concessionTypeId) {
+      newErrors.concessionTypeId = "Please select a concession type";
+    }
+
+    if (formData.customValue !== undefined && selectedConcessionType) {
+      if (selectedConcessionType.type === 'PERCENTAGE' && formData.customValue > 100) {
+        newErrors.customValue = "Percentage value cannot exceed 100%";
+      }
+
+      if (selectedConcessionType.maxValue && formData.customValue > selectedConcessionType.maxValue) {
+        newErrors.customValue = `Value cannot exceed maximum of ${selectedConcessionType.maxValue}`;
+      }
+    }
+
+    if (formData.validUntil && formData.validUntil <= formData.validFrom) {
+      newErrors.validUntil = "Valid until date must be after valid from date";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      await onSubmit(formData);
+    } catch (error) {
+      console.error('Error submitting concession:', error);
+    }
+  };
 
   const handleStudentChange = (studentId: string) => {
     const student = students.find(s => s.id === studentId);
     setSelectedStudent(student || null);
     setFormData(prev => ({ ...prev, studentId }));
+    setErrors(prev => ({ ...prev, studentId: undefined }));
   };
 
   const handleConcessionTypeChange = (concessionTypeId: string) => {
@@ -163,6 +227,7 @@ export function StudentConcessionFormModal({
       concessionTypeId,
       customValue: undefined, // Reset custom value when type changes
     }));
+    setErrors(prev => ({ ...prev, concessionTypeId: undefined, customValue: undefined }));
   };
 
   const handleFeeHeadToggle = (feeHeadId: string) => {
@@ -183,73 +248,8 @@ export function StudentConcessionFormModal({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.studentId) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a student",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.concessionTypeId) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a concession type",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.customValue !== undefined && selectedConcessionType) {
-      if (selectedConcessionType.type === 'PERCENTAGE' && formData.customValue > 100) {
-        toast({
-          title: "Validation Error",
-          description: "Percentage value cannot exceed 100%",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (selectedConcessionType.maxValue && formData.customValue > selectedConcessionType.maxValue) {
-        toast({
-          title: "Validation Error",
-          description: `Value cannot exceed maximum of ${selectedConcessionType.maxValue}`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    if (formData.validUntil && formData.validUntil <= formData.validFrom) {
-      toast({
-        title: "Validation Error",
-        description: "Valid until date must be after valid from date",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await onSubmit(formData);
-      onClose();
-    } catch (error) {
-      console.error('Error submitting concession:', error);
-    }
-  };
-
-  const handleCancel = () => {
-    if (!isLoading) {
-      onClose();
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleCancel}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export function StudentConcessionFormModal({
                 onValueChange={handleStudentChange}
                 disabled={isLoading || !!editingConcession}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.studentId ? "border-red-300" : ""}>
                   <SelectValue placeholder="Select student..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -292,6 +292,9 @@ export function StudentConcessionFormModal({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.studentId && (
+                <p className="text-sm text-red-600">{errors.studentId}</p>
+              )}
             </div>
 
             {/* Concession Type Selection */}
@@ -302,7 +305,7 @@ export function StudentConcessionFormModal({
                 onValueChange={handleConcessionTypeChange}
                 disabled={isLoading}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.concessionTypeId ? "border-red-300" : ""}>
                   <SelectValue placeholder="Select concession type..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,6 +322,9 @@ export function StudentConcessionFormModal({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.concessionTypeId && (
+                <p className="text-sm text-red-600">{errors.concessionTypeId}</p>
+              )}
             </div>
           </div>
 
@@ -332,16 +338,23 @@ export function StudentConcessionFormModal({
                 id="customValue"
                 type="number"
                 value={formData.customValue || ''}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  customValue: parseFloat(e.target.value) || undefined 
-                }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    customValue: parseFloat(e.target.value) || undefined 
+                  }));
+                  setErrors(prev => ({ ...prev, customValue: undefined }));
+                }}
                 placeholder={`Default: ${selectedConcessionType.value}`}
                 min="0"
-                max={selectedConcessionType.type === 'PERCENTAGE' ? 100 : selectedConcessionType.maxValue}
+                max={selectedConcessionType.type === 'PERCENTAGE' ? 100 : selectedConcessionType.maxValue || undefined}
                 step="0.01"
                 disabled={isLoading}
+                className={errors.customValue ? "border-red-300" : ""}
               />
+              {errors.customValue && (
+                <p className="text-sm text-red-600">{errors.customValue}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Leave empty to use default value of {selectedConcessionType.value}
                 {selectedConcessionType.type === 'PERCENTAGE' ? '%' : '₹'}
@@ -367,7 +380,7 @@ export function StudentConcessionFormModal({
                     {formData.validFrom ? format(formData.validFrom, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.validFrom}
@@ -391,7 +404,8 @@ export function StudentConcessionFormModal({
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !formData.validUntil && "text-muted-foreground"
+                      !formData.validUntil && "text-muted-foreground",
+                      errors.validUntil && "border-red-300"
                     )}
                     disabled={isLoading}
                   >
@@ -399,19 +413,23 @@ export function StudentConcessionFormModal({
                     {formData.validUntil ? format(formData.validUntil, "PPP") : "No expiry"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.validUntil}
                     onSelect={(date) => {
                       setFormData(prev => ({ ...prev, validUntil: date }));
                       setShowValidUntilCalendar(false);
+                      setErrors(prev => ({ ...prev, validUntil: undefined }));
                     }}
                     disabled={(date) => date <= formData.validFrom}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              {errors.validUntil && (
+                <p className="text-sm text-red-600">{errors.validUntil}</p>
+              )}
             </div>
           </div>
 
@@ -515,7 +533,7 @@ export function StudentConcessionFormModal({
             <Button
               type="button"
               variant="outline"
-              onClick={handleCancel}
+              onClick={onClose}
               disabled={isLoading}
             >
               Cancel
@@ -524,6 +542,7 @@ export function StudentConcessionFormModal({
               type="submit"
               disabled={isLoading || !formData.studentId || !formData.concessionTypeId}
             >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? 'Saving...' : editingConcession ? 'Update Concession' : 'Assign Concession'}
             </Button>
           </div>
@@ -531,4 +550,4 @@ export function StudentConcessionFormModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

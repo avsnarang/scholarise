@@ -35,6 +35,7 @@ import { financeRouter } from "./routers/finance";
 import { backgroundTasksRouter } from "./routers/background-tasks";
 import { examinationRouter } from "./routers/examination";
 import { courtesyCallsRouter } from "./routers/courtesy-calls";
+import { actionItemsRouter } from "./routers/action-items";
 import { communicationRouter } from "./routers/communication";
 import { chatRouter } from "./routers/chat";
 import { mediaRouter } from "./routers/media";
@@ -84,6 +85,7 @@ export const appRouter = createTRPCRouter({
   backgroundTasks: backgroundTasksRouter,
   examination: examinationRouter,
   courtesyCalls: courtesyCallsRouter,
+  actionItems: actionItemsRouter,
   communication: communicationRouter,
   chat: chatRouter,
   media: mediaRouter,

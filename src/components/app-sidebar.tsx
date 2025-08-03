@@ -33,6 +33,7 @@ import {
   FolderOpen,
   CheckSquare,
   Activity,
+  ListTodo,
 } from "lucide-react"
 import { type Prisma } from "@prisma/client"
 import { useBranchContext } from "@/hooks/useBranchContext"
@@ -98,6 +99,9 @@ const navPermissions = {
   courtesyCalls: ["view_courtesy_calls"],
   viewOwnCourtesyCallFeedback: ["view_own_courtesy_call_feedback"],
   viewAllCourtesyCallFeedback: ["view_all_courtesy_call_feedback"],
+  actionItems: ["view_action_items"],
+  viewOwnActionItems: ["view_own_action_items"],
+  viewAllActionItems: ["view_all_action_items"],
   attendanceReports: ["view_attendance_reports"],
   examReports: ["view_exam_reports"],
   financeReports: ["view_finance_reports"],
@@ -464,7 +468,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/classes/students",
           permissions: [Permission.MANAGE_CLASS_STUDENTS],
         },
-
       ],
     },
     {
@@ -504,7 +507,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Attendance",
       href: "/attendance",
       icon: Clock,
-      permissions: [Permission.VIEW_ATTENDANCE, Permission.MARK_ATTENDANCE, Permission.MARK_SELF_ATTENDANCE, Permission.MARK_ALL_STAFF_ATTENDANCE],
+      permissions: [
+        Permission.VIEW_ATTENDANCE,
+        Permission.MARK_ATTENDANCE,
+        Permission.MARK_SELF_ATTENDANCE,
+        Permission.MARK_ALL_STAFF_ATTENDANCE,
+      ],
       children: [
         {
           title: "Dashboard",
@@ -527,18 +535,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Leave Management",
       href: "/leave-management",
       icon: Calendar,
-      permissions: [Permission.VIEW_LEAVES, Permission.MANAGE_LEAVE_POLICIES, Permission.MANAGE_LEAVE_APPLICATIONS],
+      permissions: [
+        Permission.VIEW_LEAVES,
+        Permission.MANAGE_LEAVE_POLICIES,
+        Permission.MANAGE_LEAVE_APPLICATIONS,
+      ],
       children: [
-                  {
-            title: "Apply for Leave",
-            href: "/leave-management/application",
-            permissions: [Permission.MANAGE_LEAVE_APPLICATIONS],
-          },
-          {
-            title: "Manage Leave Policies",
-            href: "/leave-management/policies",
-            permissions: [Permission.MANAGE_LEAVE_POLICIES],
-          },
+        {
+          title: "Apply for Leave",
+          href: "/leave-management/application",
+          permissions: [Permission.MANAGE_LEAVE_APPLICATIONS],
+        },
+        {
+          title: "Manage Leave Policies",
+          href: "/leave-management/policies",
+          permissions: [Permission.MANAGE_LEAVE_POLICIES],
+        },
       ],
     },
     {
@@ -568,6 +580,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: [Permission.COLLECT_FEES],
         },
         {
+          title: "Payment History",
+          href: "/finance/payment-history",
+          permissions: [Permission.VIEW_FINANCE_MODULE],
+        },
+        {
           title: "Concession Types",
           href: "/finance/concession-types",
           permissions: [Permission.MANAGE_CONCESSION_TYPES],
@@ -593,7 +610,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Money Collection",
       href: "/money-collection",
       icon: DollarSign,
-      permissions: [Permission.VIEW_MONEY_COLLECTION, Permission.CREATE_MONEY_COLLECTION],
+      permissions: [
+        Permission.VIEW_MONEY_COLLECTION,
+        Permission.CREATE_MONEY_COLLECTION,
+      ],
       children: [
         {
           title: "All Collections",
@@ -650,34 +670,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-      {
-        title: "Communication",
-        href: "/communication",
-        icon: MessageSquare,
-        permissions: [Permission.VIEW_COMMUNICATION],
-        children: [
-          {
-            title: "WhatsApp Chat",
-            href: "/chat",
-            permissions: [Permission.VIEW_COMMUNICATION_LOGS],
-            target: "_blank",
-          },
-          {
-            title: "Send Message",
-            href: "/communication/send",
-            permissions: [Permission.CREATE_COMMUNICATION_MESSAGE],
-          },
-          {
-            title: "Templates",
-            href: "/communication/templates",
-            permissions: [Permission.MANAGE_WHATSAPP_TEMPLATES],
-          },
-          {
-            title: "Message History",
-            href: "/communication/history",
-            permissions: [Permission.VIEW_COMMUNICATION_LOGS],
-          },
-                  {
+    {
+      title: "Communication",
+      href: "/communication",
+      icon: MessageSquare,
+      permissions: [Permission.VIEW_COMMUNICATION],
+      children: [
+        {
+          title: "WhatsApp Chat",
+          href: "/chat",
+          permissions: [Permission.VIEW_COMMUNICATION_LOGS],
+          target: "_blank",
+        },
+        {
+          title: "Send Message",
+          href: "/communication/send",
+          permissions: [Permission.CREATE_COMMUNICATION_MESSAGE],
+        },
+        {
+          title: "Templates",
+          href: "/communication/templates",
+          permissions: [Permission.MANAGE_WHATSAPP_TEMPLATES],
+        },
+        {
+          title: "Message History",
+          href: "/communication/history",
+          permissions: [Permission.VIEW_COMMUNICATION_LOGS],
+        },
+        {
           title: "Settings",
           href: "/communication/settings",
           permissions: [Permission.MANAGE_COMMUNICATION_SETTINGS],
@@ -689,69 +709,69 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-      {
-        title: "Transport",
-        href: "/transportation",
-        icon: Bus,
-        permissions: [Permission.VIEW_TRANSPORT],
-        children: [
-          {
-            title: "Bus Management",
-            href: "/transportation/buses",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Staff Management",
-            href: "/transportation/staff",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Routes & Stops",
-            href: "/transportation/routes",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Student Assignments",
-            href: "/transportation/assignments",
-            permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
-          },
-          {
-            title: "Trip Manager",
-            href: "/transportation/trips",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Fee Management",
-            href: "/transportation/fees",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Fuel Tracking",
-            href: "/transportation/fuel-logs",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Maintenance Logs",
-            href: "/transportation/maintenance",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Bus Inspections",
-            href: "/transportation/inspections",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Configuration",
-            href: "/transportation/configuration",
-            permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
-          },
-          {
-            title: "Reports",
-            href: "/transportation/reports",
-            permissions: [Permission.VIEW_TRANSPORT],
-          },
-        ],
-      },
+    {
+      title: "Transport",
+      href: "/transportation",
+      icon: Bus,
+      permissions: [Permission.VIEW_TRANSPORT],
+      children: [
+        {
+          title: "Bus Management",
+          href: "/transportation/buses",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Staff Management",
+          href: "/transportation/staff",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Routes & Stops",
+          href: "/transportation/routes",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Student Assignments",
+          href: "/transportation/assignments",
+          permissions: [Permission.MANAGE_TRANSPORT_ASSIGNMENTS],
+        },
+        {
+          title: "Trip Manager",
+          href: "/transportation/trips",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Fee Management",
+          href: "/transportation/fees",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Fuel Tracking",
+          href: "/transportation/fuel-logs",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Maintenance Logs",
+          href: "/transportation/maintenance",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Bus Inspections",
+          href: "/transportation/inspections",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Configuration",
+          href: "/transportation/configuration",
+          permissions: [Permission.MANAGE_TRANSPORT_ROUTES],
+        },
+        {
+          title: "Reports",
+          href: "/transportation/reports",
+          permissions: [Permission.VIEW_TRANSPORT],
+        },
+      ],
+    },
     {
       title: "Settings",
       href: "/settings",
@@ -929,6 +949,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href: "/courtesy-calls/head",
           permissions: [Permission.VIEW_ALL_COURTESY_CALL_FEEDBACK],
         },
+      ],
+    },
+    {
+      title: "Action Items",
+      href: "/action-items",
+      icon: ListTodo,
+      permissions: [
+        Permission.VIEW_ACTION_ITEMS,
+        Permission.VIEW_OWN_ACTION_ITEMS,
+        Permission.VIEW_ALL_ACTION_ITEMS,
       ],
     },
     {
