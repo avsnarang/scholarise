@@ -18,6 +18,7 @@ model Branch {
   country                      String?
   phone                        String?
   email                        String?
+  logoUrl                      String?
   createdAt                    DateTime                      @default(now())
   updatedAt                    DateTime                      @updatedAt
   order                        Int                           @default(0)
@@ -1834,6 +1835,9 @@ model ConcessionType {
   eligibilityCriteria    String?
   requiredDocuments      String[]            @default([])
   autoApproval           Boolean             @default(false)
+  appliedFeeHeads        String[]            @default([])
+  appliedFeeTerms        String[]            @default([])
+  feeTermAmounts         Json?               @default("{}")
   branchId               String
   sessionId              String
   createdAt              DateTime            @default(now())
@@ -1846,6 +1850,8 @@ model ConcessionType {
   @@index([branchId, sessionId])
   @@index([isActive])
   @@index([type])
+  @@index([appliedFeeHeads])
+  @@index([appliedFeeTerms])
 }
 
 model StudentConcession {
@@ -1859,8 +1865,6 @@ model StudentConcession {
   status           String              @default("PENDING")
   validFrom        DateTime            @default(now())
   validUntil       DateTime?
-  appliedFeeHeads  String[]            @default([])
-  appliedFeeTerms  String[]            @default([])
   documents        String[]            @default([])
   notes            String?
   branchId         String

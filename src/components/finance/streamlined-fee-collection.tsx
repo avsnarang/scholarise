@@ -874,8 +874,7 @@ export function StreamlinedFeeCollection({
           onSubmit={handleAssignConcession}
           students={[student]}
           concessionTypes={concessionTypes}
-          feeHeads={feeHeads}
-          feeTerms={feeTerms}
+
           isLoading={false}
         />
       )}

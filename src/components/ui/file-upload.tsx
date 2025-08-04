@@ -21,23 +21,28 @@ export function FileUpload({
   className = "",
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setIsUploading(true);
+      setUploadProgress("Preparing file...");
 
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error("You must select a file to upload.");
       }
 
       const file = event.target.files[0]!;
+      console.log(`📁 Selected file: ${file.name}, ${(file.size / 1024).toFixed(1)}KB`);
 
       // Check file size
       if (file.size > maxSize * 1024 * 1024) {
         throw new Error(`File size must be less than ${maxSize}MB.`);
       }
+
+      setUploadProgress("Creating preview...");
 
       // Create a preview for images
       if (file.type.startsWith("image/")) {
@@ -48,16 +53,26 @@ export function FileUpload({
         reader.readAsDataURL(file);
       }
 
+      setUploadProgress("Uploading to server...");
+
       // Create FormData
       const formData = new FormData();
       formData.append("file", file);
       formData.append("bucket", bucket);
 
+      const uploadStartTime = Date.now();
+
       // Upload file
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        credentials: 'include', // This ensures cookies are sent with the request
       });
+
+      const uploadTime = Date.now() - uploadStartTime;
+      console.log(`⏱️ Upload completed in ${uploadTime}ms`);
+      
+      setUploadProgress("Processing response...");
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -65,6 +80,15 @@ export function FileUpload({
       }
 
       const data = await response.json();
+      console.log('📦 Upload API response:', data);
+
+      // Validate response structure
+      if (!data.url || !data.path) {
+        console.error('❌ Invalid upload response:', data);
+        throw new Error('Upload API returned invalid response - missing URL or path');
+      }
+
+      console.log('✅ Calling onUpload with:', { url: data.url, path: data.path });
 
       // Call the onUpload callback with the file URL and path
       onUpload(data.url, data.path);
@@ -83,6 +107,7 @@ export function FileUpload({
       setPreview(null);
     } finally {
       setIsUploading(false);
+      setUploadProgress("");
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -109,7 +134,7 @@ export function FileUpload({
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
+              {uploadProgress || "Uploading..."}
             </>
           ) : (
             <>

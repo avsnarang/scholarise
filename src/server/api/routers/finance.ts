@@ -941,6 +941,7 @@ export const financeRouter = createTRPCRouter({
           items: {
             include: {
               feeHead: true,
+              feeTerm: true,
             },
           },
           branch: true,
@@ -1526,12 +1527,12 @@ export const financeRouter = createTRPCRouter({
         // Calculate applicable concessions for this specific fee head and term
         const applicableConcessions = studentConcessions.filter((concession: any) => {
           // Check if concession applies to this fee head (empty array means all fee heads)
-          if (concession.appliedFeeHeads.length > 0 && !concession.appliedFeeHeads.includes(classwiseFee.feeHeadId)) {
+          if (concession.concessionType.appliedFeeHeads.length > 0 && !concession.concessionType.appliedFeeHeads.includes(classwiseFee.feeHeadId)) {
             return false;
           }
           
           // Check if concession applies to this fee term (empty array means all fee terms)
-          if (concession.appliedFeeTerms.length > 0 && !concession.appliedFeeTerms.includes(classwiseFee.feeTermId)) {
+          if (concession.concessionType.appliedFeeTerms.length > 0 && !concession.concessionType.appliedFeeTerms.includes(classwiseFee.feeTermId)) {
             return false;
           }
           
@@ -2125,7 +2126,8 @@ export const financeRouter = createTRPCRouter({
         { firstName: "asc" },
         { lastName: "asc" },
       ],
-      take: input.search ? 100 : 50, // Higher limit when searching, lower for general listing
+      // Remove arbitrary limit for student concession assignment
+      // All active students should be available for search
     });
     }),
 
@@ -2362,6 +2364,9 @@ export const financeRouter = createTRPCRouter({
       eligibilityCriteria: z.string().optional(),
       requiredDocuments: z.array(z.string()).default([]),
       autoApproval: z.boolean().default(false),
+      appliedFeeHeads: z.array(z.string()).default([]),
+      appliedFeeTerms: z.array(z.string()).default([]),
+      feeTermAmounts: z.record(z.string(), z.number()).default({}),
       branchId: z.string(),
       sessionId: z.string(),
     }))
@@ -2399,6 +2404,28 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
+      // Validate fee application logic
+      if (input.type === "PERCENTAGE" && Object.keys(input.feeTermAmounts).length > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Individual fee term amounts are not allowed for percentage-based concessions",
+        });
+      }
+
+      // For FIXED type, validate fee term amounts
+      if (input.type === "FIXED" && input.appliedFeeTerms.length > 0) {
+        const missingAmounts = input.appliedFeeTerms.filter(termId => 
+          !(termId in input.feeTermAmounts) || (input.feeTermAmounts[termId] ?? 0) <= 0
+        );
+        
+        if (missingAmounts.length > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "All selected fee terms must have valid amounts greater than 0 for fixed-amount concessions",
+          });
+        }
+      }
+
       return ctx.db.concessionType.create({
         data: {
           ...input,
@@ -2423,6 +2450,9 @@ export const financeRouter = createTRPCRouter({
       eligibilityCriteria: z.string().optional(),
       requiredDocuments: z.array(z.string()),
       autoApproval: z.boolean(),
+      appliedFeeHeads: z.array(z.string()).default([]),
+      appliedFeeTerms: z.array(z.string()).default([]),
+      feeTermAmounts: z.record(z.string(), z.number()).default({}),
     }))
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
@@ -2472,6 +2502,28 @@ export const financeRouter = createTRPCRouter({
           code: "BAD_REQUEST",
           message: "Value cannot be greater than max value",
         });
+      }
+
+      // Validate fee application logic
+      if (data.type === "PERCENTAGE" && Object.keys(data.feeTermAmounts).length > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Individual fee term amounts are not allowed for percentage-based concessions",
+        });
+      }
+
+      // For FIXED type, validate fee term amounts
+      if (data.type === "FIXED" && data.appliedFeeTerms.length > 0) {
+        const missingAmounts = data.appliedFeeTerms.filter(termId => 
+          !(termId in data.feeTermAmounts) || (data.feeTermAmounts[termId] ?? 0) <= 0
+        );
+        
+        if (missingAmounts.length > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "All selected fee terms must have valid amounts greater than 0 for fixed-amount concessions",
+          });
+        }
       }
 
       return ctx.db.concessionType.update({
@@ -3468,12 +3520,12 @@ export const financeRouter = createTRPCRouter({
           let concessionAmount = 0;
           for (const concession of studentConcessionsList) {
             // Check if concession applies to this fee head (empty array means all fee heads)
-            const isApplicable = concession.appliedFeeHeads.length === 0 || 
-              concession.appliedFeeHeads.includes(classwiseFee.feeHeadId);
+            const isApplicable = concession.concessionType.appliedFeeHeads.length === 0 || 
+              concession.concessionType.appliedFeeHeads.includes(classwiseFee.feeHeadId);
             
             // Also check if concession applies to this fee term (empty array means all fee terms)
-            const isTermApplicable = concession.appliedFeeTerms.length === 0 || 
-              concession.appliedFeeTerms.includes(classwiseFee.feeTermId);
+            const isTermApplicable = concession.concessionType.appliedFeeTerms.length === 0 || 
+              concession.concessionType.appliedFeeTerms.includes(classwiseFee.feeTermId);
             
             if (isApplicable && isTermApplicable) {
               if (concession.concessionType.type === 'PERCENTAGE') {

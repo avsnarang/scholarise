@@ -102,6 +102,7 @@ export const branchRouter = createTRPCRouter({
         country: z.string().optional(),
         phone: z.string().optional(),
         email: z.string().email().optional(),
+        logoUrl: z.string().optional(),
         order: z.number().int().min(0).optional(),
       })
     )
@@ -174,6 +175,7 @@ export const branchRouter = createTRPCRouter({
         country: z.string().optional(),
         phone: z.string().optional(),
         email: z.string().email().optional(),
+        logoUrl: z.string().optional(),
         order: z.number().int().min(0).optional(),
       })
     )

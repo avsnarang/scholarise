@@ -166,6 +166,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     id: string;
     name: string;
     code: string;
+    logoUrl?: string | null;
   };
 
   // Define navigation item types
@@ -1228,11 +1229,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground dark:hover:bg-sidebar-accent/30"
                 >
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
                     {isLoadingBranches ? (
                       <Skeleton className="h-4 w-4 rounded-full dark:bg-gray-600" />
+                    ) : selectedBranch?.logoUrl ? (
+                      <img 
+                        src={selectedBranch.logoUrl} 
+                        alt={`${selectedBranch.name} logo`}
+                        className="w-full h-full object-contain rounded-lg"
+                        onError={(e) => {
+                          // Fallback to School icon if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.setAttribute('style', 'display: flex');
+                        }}
+                      />
                     ) : (
-                      <School className="size-4 dark:text-primary" />
+                      <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg">
+                        <School className="size-4 dark:text-primary" />
+                      </div>
+                    )}
+                    {selectedBranch?.logoUrl && (
+                      <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg" style={{ display: 'none' }}>
+                        <School className="size-4 dark:text-primary" />
+                      </div>
                     )}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -1274,8 +1294,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         onClick={() => setCurrentBranchId(branch.id)}
                         className={`gap-2 p-2 ${branch.id === 'headquarters' ? 'bg-red-50 hover:bg-red-100' : ''}`}
                       >
-                        <div className={`flex size-6 items-center justify-center rounded-md border border-gray-200 ${branch.id === 'headquarters' ? 'border-red-200 bg-red-100' : ''}`}>
-                          <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
+                        <div className={`flex size-6 items-center justify-center rounded-md overflow-hidden ${branch.logoUrl ? '' : 'border border-gray-200'} ${branch.id === 'headquarters' && !branch.logoUrl ? 'border-red-200 bg-red-100' : ''}`}>
+                          {branch.logoUrl ? (
+                            <img 
+                              src={branch.logoUrl} 
+                              alt={`${branch.name} logo`}
+                              className="w-full h-full object-contain rounded-md"
+                              onError={(e) => {
+                                // Fallback to School icon if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.setAttribute('style', 'display: flex');
+                              }}
+                            />
+                          ) : (
+                            <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
+                          )}
+                          {branch.logoUrl && (
+                            <div className={`flex size-6 items-center justify-center border border-gray-200 rounded-md ${branch.id === 'headquarters' ? 'border-red-200 bg-red-100' : ''}`} style={{ display: 'none' }}>
+                              <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
+                            </div>
+                          )}
                         </div>
                         <span className={`font-medium ${branch.id === 'headquarters' ? 'text-red-800' : ''}`}>{branch.code}</span>
                         <span className={`flex-1 ${branch.id === 'headquarters' ? 'text-red-800' : 'text-gray-500'}`}>{branch.name}</span>

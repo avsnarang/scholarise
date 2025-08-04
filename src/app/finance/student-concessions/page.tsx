@@ -17,7 +17,14 @@ import {
   Settings,
   Award,
   User,
-  FileText
+  FileText,
+  Filter,
+  Download,
+  AlertCircle,
+  Info,
+  TrendingUp,
+  Percent,
+  IndianRupee
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,6 +36,7 @@ import { DataTable, type DataTableFilter } from "@/components/ui/data-table";
 import { ConcessionStatsCards } from "@/components/finance/concession-stats-cards";
 import { StudentConcessionFormModal } from "@/components/finance/student-concession-form-modal";
 import { ConcessionApprovalSettings } from "@/components/finance/concession-approval-settings";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -81,24 +89,80 @@ interface StudentConcession {
   };
 }
 
-const statusColors = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  PENDING_FIRST: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  PENDING_SECOND: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  APPROVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  SUSPENDED: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-  EXPIRED: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+// Enhanced status badge component
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'APPROVED':
+      return (
+        <Badge variant="default" className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200">
+          <CheckCircle className="h-3 w-3" />
+          Approved
+        </Badge>
+      );
+    case 'PENDING':
+      return (
+        <Badge variant="outline" className="gap-1 bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-200">
+          <Clock className="h-3 w-3" />
+          Pending
+        </Badge>
+      );
+    case 'PENDING_FIRST':
+      return (
+        <Badge variant="outline" className="gap-1 bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900 dark:text-orange-200">
+          <Clock className="h-3 w-3" />
+          Pending First
+        </Badge>
+      );
+    case 'PENDING_SECOND':
+      return (
+        <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200">
+          <Clock className="h-3 w-3" />
+          Pending Second
+        </Badge>
+      );
+    case 'REJECTED':
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="h-3 w-3" />
+          Rejected
+        </Badge>
+      );
+    case 'SUSPENDED':
+      return (
+        <Badge variant="secondary" className="gap-1 bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <AlertCircle className="h-3 w-3" />
+          Suspended
+        </Badge>
+      );
+    case 'EXPIRED':
+      return (
+        <Badge variant="secondary" className="gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+          <Calendar className="h-3 w-3" />
+          Expired
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline" className="gap-1">
+          <Clock className="h-3 w-3" />
+          {status.replace('_', ' ')}
+        </Badge>
+      );
+  }
 };
 
-const statusIcons = {
-  PENDING: <Clock className="h-3 w-3" />,
-  PENDING_FIRST: <Clock className="h-3 w-3" />,
-  PENDING_SECOND: <Clock className="h-3 w-3" />,
-  APPROVED: <CheckCircle className="h-3 w-3" />,
-  REJECTED: <XCircle className="h-3 w-3" />,
-  SUSPENDED: <XCircle className="h-3 w-3" />,
-  EXPIRED: <Calendar className="h-3 w-3" />,
+const getConcessionTypeBadge = (type: string) => {
+  return type === 'PERCENTAGE' ? (
+    <Badge variant="default" className="gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+      <Percent className="h-3 w-3" />
+      Percentage
+    </Badge>
+  ) : (
+    <Badge variant="secondary" className="gap-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+      <IndianRupee className="h-3 w-3" />
+      Fixed Amount
+    </Badge>
+  );
 };
 
 const formatValue = (type: 'PERCENTAGE' | 'FIXED', value: number) => {
@@ -288,12 +352,21 @@ export default function StudentConcessionsPage() {
         cell: ({ row }) => {
           const concessionType = row.original.concessionType;
           const customValue = row.original.customValue;
+          const effectiveValue = customValue ?? concessionType.value;
           return (
-            <div>
-              <div className="font-medium">{concessionType.name}</div>
-              <div className="text-sm text-muted-foreground">
-                {formatValue(concessionType.type, customValue ?? concessionType.value)}
+            <div className="space-y-2">
+              <div className="font-medium text-sm">{concessionType.name}</div>
+              <div className="flex items-center gap-2">
+                {getConcessionTypeBadge(concessionType.type)}
+                <span className="text-sm font-mono font-semibold">
+                  {formatValue(concessionType.type, effectiveValue)}
+                </span>
               </div>
+              {customValue && (
+                <div className="text-xs text-blue-600 dark:text-blue-400">
+                  Custom value applied
+                </div>
+              )}
             </div>
           );
         },
@@ -334,12 +407,7 @@ export default function StudentConcessionsPage() {
         header: "Status",
         cell: ({ row }) => {
           const status = row.original.status;
-          return (
-            <Badge className={`${statusColors[status as keyof typeof statusColors] || statusColors.PENDING} flex items-center gap-1`}>
-              {statusIcons[status as keyof typeof statusIcons] || statusIcons.PENDING}
-              {status.replace('_', ' ')}
-            </Badge>
-          );
+          return getStatusBadge(status);
         },
       },
       {
@@ -383,7 +451,7 @@ export default function StudentConcessionsPage() {
     []
   );
 
-  // Define filters for DataTable
+  // Enhanced filters for DataTable
   const filters: DataTableFilter[] = [
     {
       key: "status",
@@ -431,7 +499,7 @@ export default function StudentConcessionsPage() {
   return (
     <PageWrapper>
       <div className="space-y-6">
-        {/* Header */}
+        {/* Enhanced Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Student Concessions</h1>
@@ -440,6 +508,10 @@ export default function StudentConcessionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
             <Button
               variant="outline"
               onClick={() => setIsSettingsModalOpen(true)}
@@ -461,14 +533,14 @@ export default function StudentConcessionsPage() {
         {/* Stats Cards */}
         <ConcessionStatsCards sessionId={currentSessionId} />
 
-        {/* Data Table */}
+        {/* Enhanced Data Table */}
         <div className="rounded-lg border bg-card">
           <div className="p-6">
             <DataTable
               columns={columns}
               data={studentConcessions as any}
-              searchKey="student.firstName"
-              searchPlaceholder="Search students..."
+              searchKey="student"
+              searchPlaceholder="Search student concessions..."
               filters={filters}
               pageSize={50}
             />
@@ -482,9 +554,10 @@ export default function StudentConcessionsPage() {
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         students={students}
-        concessionTypes={concessionTypes}
-        feeHeads={feeHeads}
-        feeTerms={feeTerms}
+        concessionTypes={concessionTypes.map(ct => ({
+          ...ct,
+          feeTermAmounts: ct.feeTermAmounts as Record<string, number> | null
+        }))}
         isLoading={assignConcessionMutation.isPending}
         editingConcession={selectedConcession}
       />

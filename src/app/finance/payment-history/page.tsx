@@ -1140,13 +1140,14 @@ export default function PaymentHistoryPage() {
           address: feeCollectionData.branch?.address || undefined,
           city: feeCollectionData.branch?.city || undefined,
           state: feeCollectionData.branch?.state || undefined,
+          logoUrl: feeCollectionData.branch?.logoUrl || undefined,
         },
         session: {
           name: feeCollectionData.session?.name || 'Academic Session',
         },
         feeItems: feeCollectionData.items?.map((item: any) => ({
           feeHeadName: item.feeHead?.name || 'Fee',
-          feeTermName: 'Term', // You might need to get this from the fee term
+          feeTermName: item.feeTerm?.name || 'Term',
           originalAmount: item.amount || 0,
           concessionAmount: 0, // Add concession logic if needed
           finalAmount: item.amount || 0,

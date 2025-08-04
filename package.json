@@ -41,7 +41,8 @@
     "fix:missing-user-records": "tsx scripts/fix-missing-user-records.ts",
     "fix:teacher-profile-links": "tsx scripts/fix-teacher-profile-links.ts",
     "debug:teacher-links": "tsx scripts/debug-teacher-links.ts",
-    "diagnose:teacher-error": "tsx scripts/diagnose-specific-teacher-error.ts"
+    "diagnose:teacher-error": "tsx scripts/diagnose-specific-teacher-error.ts",
+    "setup:storage": "tsx scripts/setup-supabase-buckets.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",

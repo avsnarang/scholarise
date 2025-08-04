@@ -567,28 +567,17 @@ async function processCSVRow(
     } else {
       // Actual database operations
       if (existingConcession) {
-        // Update existing concession with additional fee heads/terms
-        const appliedFeeHeads = new Set(existingConcession.appliedFeeHeads);
-        const appliedFeeTerms = new Set(existingConcession.appliedFeeTerms);
-
-        if (foundFeeHead) appliedFeeHeads.add(foundFeeHead.id);
-        if (foundFeeTerm) appliedFeeTerms.add(foundFeeTerm.id);
-
+        // Update existing concession (fee heads/terms are now managed at concession type level)
         await prisma.studentConcession.update({
           where: { id: existingConcession.id },
           data: {
-            appliedFeeHeads: Array.from(appliedFeeHeads),
-            appliedFeeTerms: Array.from(appliedFeeTerms),
             customValue: customValue ?? existingConcession.customValue,
           },
         });
 
         console.log(`Updated existing concession for student ${admissionNumber} - ${concessionCategory}`);
       } else {
-        // Create new student concession
-        const appliedFeeHeads = foundFeeHead ? [foundFeeHead.id] : [];
-        const appliedFeeTerms = foundFeeTerm ? [foundFeeTerm.id] : [];
-
+        // Create new student concession (fee heads/terms are now managed at concession type level)
         await prisma.studentConcession.create({
           data: {
             studentId: student.id,
@@ -597,8 +586,6 @@ async function processCSVRow(
             reason: `Imported from CSV - ${concessionCategory}`,
             status: 'APPROVED', // Auto-approve imported concessions
             validFrom: new Date(),
-            appliedFeeHeads,
-            appliedFeeTerms,
             branchId,
             sessionId,
             approvedBy: 'SYSTEM_IMPORT',

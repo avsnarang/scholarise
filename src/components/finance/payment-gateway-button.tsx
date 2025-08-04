@@ -159,25 +159,27 @@ export function PaymentGatewayButton({
   };
 
   const startPaymentStatusPolling = (transactionId: string) => {
-    // Simple polling mechanism - in production, you'd use WebSocket or Server-Sent Events
-    const pollInterval = setInterval(async () => {
-      try {
-        // This would typically be done via a separate API call to check status
-        // For now, we'll rely on webhook processing
-        console.log('Polling payment status for transaction:', transactionId);
+    // DISABLED TO PREVENT API SPAM - USE WEBHOOKS INSTEAD
+    console.log('Payment status polling disabled to prevent API spam. Use webhooks for real-time updates.');
+    // // Simple polling mechanism - in production, you'd use WebSocket or Server-Sent Events
+    // const pollInterval = setInterval(async () => {
+    //   try {
+    //     // This would typically be done via a separate API call to check status
+    //     // For now, we'll rely on webhook processing
+    //     console.log('Polling payment status for transaction:', transactionId);
         
-        // In a real implementation, you'd check the transaction status here
-        // and handle success/failure accordingly
+    //     // In a real implementation, you'd check the transaction status here
+    //     // and handle success/failure accordingly
         
-      } catch (error) {
-        console.error('Error polling payment status:', error);
-      }
-    }, 5000); // Poll every 5 seconds
+    //   } catch (error) {
+    //     console.error('Error polling payment status:', error);
+    //   }
+    // }, 5000); // Poll every 5 seconds
 
-    // Clear polling after 30 minutes (payment link expiry)
-    setTimeout(() => {
-      clearInterval(pollInterval);
-    }, 30 * 60 * 1000);
+    // // Clear polling after 30 minutes (payment link expiry)
+    // setTimeout(() => {
+    //   clearInterval(pollInterval);
+    // }, 30 * 60 * 1000);
   };
 
   const isEasebuzzConfigured = gatewayConfig?.easebuzz?.isConfigured ?? false;

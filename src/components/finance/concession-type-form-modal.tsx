@@ -22,7 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Award, Loader2 } from 'lucide-react';
+import { X, Plus, Award, Loader2, FileText, Calculator, Users, Settings, CheckCircle, Info, Trash2, Percent, IndianRupee, Target, Shield, BookOpen, AlertTriangle } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatIndianCurrency, cn } from "@/lib/utils";
 
 interface ConcessionType {
   id: string;
@@ -36,6 +40,19 @@ interface ConcessionType {
   eligibilityCriteria?: string;
   requiredDocuments: string[];
   autoApproval: boolean;
+  appliedFeeHeads?: string[];
+  appliedFeeTerms?: string[];
+  feeTermAmounts?: Record<string, number>; // For FIXED type: feeTermId -> amount
+}
+
+interface FeeHead {
+  id: string;
+  name: string;
+}
+
+interface FeeTerm {
+  id: string;
+  name: string;
 }
 
 interface ConcessionTypeFormModalProps {
@@ -44,6 +61,8 @@ interface ConcessionTypeFormModalProps {
   onSuccess: (data: any) => void;
   concessionType?: ConcessionType | null;
   isLoading: boolean;
+  feeHeads: FeeHead[];
+  feeTerms: FeeTerm[];
 }
 
 const studentTypeOptions = [
@@ -57,7 +76,9 @@ export function ConcessionTypeFormModal({
   onClose,
   onSuccess,
   concessionType,
-  isLoading
+  isLoading,
+  feeHeads,
+  feeTerms
 }: ConcessionTypeFormModalProps) {
   
   const [formData, setFormData] = useState({
@@ -71,10 +92,28 @@ export function ConcessionTypeFormModal({
     eligibilityCriteria: '',
     requiredDocuments: [] as string[],
     autoApproval: false,
+    appliedFeeHeads: [] as string[],
+    appliedFeeTerms: [] as string[],
+    feeTermAmounts: {} as Record<string, number>,
   });
 
   const [newDocument, setNewDocument] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formProgress, setFormProgress] = useState(0);
+
+  // Calculate form completion progress
+  const calculateProgress = () => {
+    let progress = 0;
+    
+    if (formData.name.trim()) progress += 20;
+    if (formData.type) progress += 15;
+    if (formData.value > 0) progress += 15;
+    if (formData.appliedFeeHeads.length > 0 || formData.appliedFeeTerms.length > 0) progress += 20;
+    if (formData.type === 'FIXED' && Object.keys(formData.feeTermAmounts).length > 0) progress += 15;
+    if (formData.type === 'PERCENTAGE') progress += 15; // Auto-complete for percentage since no individual amounts needed
+    
+    return Math.min(progress, 100);
+  };
 
   // Reset form when modal state changes
   useEffect(() => {
@@ -91,6 +130,9 @@ export function ConcessionTypeFormModal({
           eligibilityCriteria: concessionType.eligibilityCriteria || '',
           requiredDocuments: [...(concessionType.requiredDocuments || [])],
           autoApproval: concessionType.autoApproval ?? false,
+          appliedFeeHeads: concessionType.appliedFeeHeads || [],
+          appliedFeeTerms: concessionType.appliedFeeTerms || [],
+          feeTermAmounts: concessionType.feeTermAmounts || {},
         });
       } else {
         setFormData({
@@ -104,12 +146,20 @@ export function ConcessionTypeFormModal({
           eligibilityCriteria: '',
           requiredDocuments: [],
           autoApproval: false,
+          appliedFeeHeads: [],
+          appliedFeeTerms: [],
+          feeTermAmounts: {},
         });
       }
       setErrors({});
       setNewDocument('');
     }
   }, [isOpen, concessionType]);
+
+  // Update progress when form data changes
+  useEffect(() => {
+    setFormProgress(calculateProgress());
+  }, [formData]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -173,129 +223,460 @@ export function ConcessionTypeFormModal({
     }));
   };
 
+  // Fee head toggle handler
+  const handleFeeHeadToggle = (feeHeadId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      appliedFeeHeads: prev.appliedFeeHeads.includes(feeHeadId)
+        ? prev.appliedFeeHeads.filter(id => id !== feeHeadId)
+        : [...prev.appliedFeeHeads, feeHeadId]
+    }));
+  };
+
+  // Fee term toggle handler
+  const handleFeeTermToggle = (feeTermId: string) => {
+    setFormData(prev => {
+      const newAppliedFeeTerms = prev.appliedFeeTerms.includes(feeTermId)
+        ? prev.appliedFeeTerms.filter(id => id !== feeTermId)
+        : [...prev.appliedFeeTerms, feeTermId];
+      
+      // For FIXED type, initialize amount for new fee terms
+      let newFeeTermAmounts = { ...prev.feeTermAmounts };
+      if (prev.type === 'FIXED') {
+        if (newAppliedFeeTerms.includes(feeTermId) && !prev.feeTermAmounts[feeTermId]) {
+          newFeeTermAmounts[feeTermId] = 0;
+        } else if (!newAppliedFeeTerms.includes(feeTermId)) {
+          delete newFeeTermAmounts[feeTermId];
+        }
+      }
+
+      return {
+        ...prev,
+        appliedFeeTerms: newAppliedFeeTerms,
+        feeTermAmounts: newFeeTermAmounts
+      };
+    });
+  };
+
+  // Update fee term amount for FIXED type
+  const handleFeeTermAmountChange = (feeTermId: string, amount: number) => {
+    setFormData(prev => ({
+      ...prev,
+      feeTermAmounts: {
+        ...prev.feeTermAmounts,
+        [feeTermId]: amount
+      }
+    }));
+  };
+
+  // Handle type change to clear FIXED-specific data when switching to PERCENTAGE
+  const handleTypeChange = (newType: 'PERCENTAGE' | 'FIXED') => {
+    setFormData(prev => ({
+      ...prev,
+      type: newType,
+      feeTermAmounts: newType === 'PERCENTAGE' ? {} : prev.feeTermAmounts,
+      maxValue: undefined, // Reset max value when changing type
+    }));
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5" />
-            {concessionType ? 'Edit Concession Type' : 'Add New Concession Type'}
-          </DialogTitle>
-          <DialogDescription>
-            {concessionType 
-              ? 'Update the concession type details below.'
-              : 'Create a new concession type for student fee management.'
-            }
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Basic Information</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Merit Scholarship"
-                  className={errors.name ? "border-red-500" : ""}
-                  disabled={isLoading}
-                />
-                {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: 'PERCENTAGE' | 'FIXED') => {
-                    setFormData(prev => ({ ...prev, type: value, maxValue: undefined }));
-                  }}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-                    <SelectItem value="FIXED">Fixed Amount (₹)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
+        <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg text-white">
+                  <Award className="h-5 w-5" />
+                </div>
+                {concessionType ? 'Edit Concession Type' : 'Create New Concession Type'}
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                {concessionType 
+                  ? 'Update the concession type details and fee application settings.'
+                  : 'Create a new concession type with specific fee heads and terms configuration.'
+                }
+              </DialogDescription>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of the concession type"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* Value Configuration */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Value Configuration</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="value">
-                  {formData.type === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount (₹)'} *
-                </Label>
-                <Input
-                  id="value"
-                  type="number"
-                  min="0"
-                  max={formData.type === 'PERCENTAGE' ? "100" : undefined}
-                  step={formData.type === 'PERCENTAGE' ? "0.1" : "1"}
-                  value={formData.value}
-                  onChange={(e) => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
-                  className={errors.value ? "border-red-500" : ""}
-                  disabled={isLoading}
-                />
-                {errors.value && <p className="text-sm text-red-500">{errors.value}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="maxValue">
-                  Maximum {formData.type === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount (₹)'}
-                </Label>
-                <Input
-                  id="maxValue"
-                  type="number"
-                  min="0"
-                  max={formData.type === 'PERCENTAGE' ? "100" : undefined}
-                  step={formData.type === 'PERCENTAGE' ? "0.1" : "1"}
-                  value={formData.maxValue || ''}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    maxValue: e.target.value ? parseFloat(e.target.value) : undefined 
-                  }))}
-                  placeholder="Optional"
-                  className={errors.maxValue ? "border-red-500" : ""}
-                  disabled={isLoading}
-                />
-                {errors.maxValue && <p className="text-sm text-red-500">{errors.maxValue}</p>}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  {formProgress}% Complete
+                </div>
+                <Progress value={formProgress} className="w-24 h-2 mt-1" />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Applicability */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Applicability</h3>
-            
+        <div className="p-6">{/* Content will go here */}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Left Column */}
+              <div className="space-y-6">
+                
+                {/* Basic Information Card */}
+                <Card className="shadow-sm border-0 ring-1 ring-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div className="p-1.5 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-md">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      Basic Information
+                    </CardTitle>
+                    <CardDescription>
+                      Define the basic details and description for this concession type.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-medium">Concession Name *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="e.g., Merit Scholarship, Sports Quota"
+                          className={cn(
+                            "h-10",
+                            errors.name ? "border-red-500 focus-visible:ring-red-500" : ""
+                          )}
+                          disabled={isLoading}
+                        />
+                        {errors.name && <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {errors.name}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="type" className="text-sm font-medium">Concession Type *</Label>
+                        <Select
+                          value={formData.type}
+                          onValueChange={handleTypeChange}
+                          disabled={isLoading}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PERCENTAGE">
+                              <div className="flex items-center gap-2">
+                                <Percent className="h-3 w-3" />
+                                Percentage Discount
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="FIXED">
+                              <div className="flex items-center gap-2">
+                                <IndianRupee className="h-3 w-3" />
+                                Fixed Amount
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Brief description of this concession type and its purpose..."
+                          rows={3}
+                          className="resize-none"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Value Configuration Card */}
+                <Card className="shadow-sm border-0 ring-1 ring-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div className="p-1.5 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800 rounded-md">
+                        <Calculator className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      Value Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Set the {formData.type === 'PERCENTAGE' ? 'percentage discount' : 'fixed amount'} for this concession type.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="value" className="text-sm font-medium">
+                          {formData.type === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount (₹)'} *
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="value"
+                            type="number"
+                            min="0"
+                            max={formData.type === 'PERCENTAGE' ? "100" : undefined}
+                            step={formData.type === 'PERCENTAGE' ? "0.1" : "1"}
+                            value={formData.value}
+                            onChange={(e) => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                            className={cn(
+                              "h-10 pr-8",
+                              errors.value ? "border-red-500 focus-visible:ring-red-500" : ""
+                            )}
+                            placeholder={formData.type === 'PERCENTAGE' ? "e.g., 25" : "e.g., 5000"}
+                            disabled={isLoading}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {formData.type === 'PERCENTAGE' ? '%' : '₹'}
+                          </div>
+                        </div>
+                        {errors.value && <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {errors.value}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="maxValue" className="text-sm font-medium">
+                          Maximum {formData.type === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount (₹)'}
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="maxValue"
+                            type="number"
+                            min="0"
+                            max={formData.type === 'PERCENTAGE' ? "100" : undefined}
+                            step={formData.type === 'PERCENTAGE' ? "0.1" : "1"}
+                            value={formData.maxValue || ''}
+                            onChange={(e) => setFormData(prev => ({ 
+                              ...prev, 
+                              maxValue: e.target.value ? parseFloat(e.target.value) : undefined 
+                            }))}
+                            placeholder="Optional limit"
+                            className={cn(
+                              "h-10 pr-8",
+                              errors.maxValue ? "border-red-500 focus-visible:ring-red-500" : ""
+                            )}
+                            disabled={isLoading}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {formData.type === 'PERCENTAGE' ? '%' : '₹'}
+                          </div>
+                        </div>
+                        {errors.maxValue && <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {errors.maxValue}
+                        </p>}
+                      </div>
+                    </div>
+
+                    {/* Value Preview */}
+                    {formData.value > 0 && (
+                      <div className="p-3 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Target className="h-4 w-4 text-emerald-600" />
+                          <span className="font-medium text-emerald-900 dark:text-emerald-100">
+                            Preview: {formData.type === 'PERCENTAGE' 
+                              ? `${formData.value}% discount`
+                              : `${formatIndianCurrency(formData.value)} fixed amount`
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-6">
+
+                {/* Fee Application Card */}
+                <Card className="shadow-sm border-0 ring-1 ring-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div className="p-1.5 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 rounded-md">
+                        <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      Fee Application
+                    </CardTitle>
+                    <CardDescription>
+                      Configure which fee heads and terms this concession applies to.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Fee Heads Selection */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-orange-600" />
+                        <Label className="text-sm font-medium">Applicable Fee Heads</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select which fee heads this concession applies to
+                      </p>
+                      <div className="border rounded-lg p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                        <div className="grid grid-cols-1 gap-3 max-h-40 overflow-y-auto">
+                          {feeHeads.map((feeHead) => (
+                            <div key={feeHead.id} className="flex items-center space-x-3 p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors">
+                              <Checkbox
+                                id={`feeHead-${feeHead.id}`}
+                                checked={formData.appliedFeeHeads.includes(feeHead.id)}
+                                onCheckedChange={() => handleFeeHeadToggle(feeHead.id)}
+                                disabled={isLoading}
+                                className="data-[state=checked]:bg-orange-600"
+                              />
+                              <Label 
+                                htmlFor={`feeHead-${feeHead.id}`} 
+                                className="text-sm cursor-pointer font-medium"
+                              >
+                                {feeHead.name}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fee Terms Selection */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-indigo-600" />
+                        <Label className="text-sm font-medium">Applicable Fee Terms</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.type === 'PERCENTAGE' 
+                          ? 'Select fee terms - the same percentage will apply to all selected terms'
+                          : 'Select fee terms and set individual amounts for each term'
+                        }
+                      </p>
+                      
+                      {formData.type === 'PERCENTAGE' ? (
+                        <div className="border rounded-lg p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950">
+                          <div className="grid grid-cols-1 gap-3 max-h-40 overflow-y-auto">
+                            {feeTerms.map((feeTerm) => (
+                              <div key={feeTerm.id} className="flex items-center space-x-3 p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors">
+                                <Checkbox
+                                  id={`feeTerm-${feeTerm.id}`}
+                                  checked={formData.appliedFeeTerms.includes(feeTerm.id)}
+                                  onCheckedChange={() => handleFeeTermToggle(feeTerm.id)}
+                                  disabled={isLoading}
+                                  className="data-[state=checked]:bg-indigo-600"
+                                />
+                                <Label 
+                                  htmlFor={`feeTerm-${feeTerm.id}`} 
+                                  className="text-sm cursor-pointer font-medium"
+                                >
+                                  {feeTerm.name}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 border rounded-lg p-4 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950">
+                          {feeTerms.map((feeTerm) => (
+                            <div key={feeTerm.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                              <div className="flex items-center space-x-3">
+                                <Checkbox
+                                  id={`feeTerm-${feeTerm.id}`}
+                                  checked={formData.appliedFeeTerms.includes(feeTerm.id)}
+                                  onCheckedChange={() => handleFeeTermToggle(feeTerm.id)}
+                                  disabled={isLoading}
+                                  className="data-[state=checked]:bg-yellow-600"
+                                />
+                                <Label 
+                                  htmlFor={`feeTerm-${feeTerm.id}`} 
+                                  className="font-medium cursor-pointer"
+                                >
+                                  {feeTerm.name}
+                                </Label>
+                              </div>
+                              {formData.appliedFeeTerms.includes(feeTerm.id) && (
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-sm font-medium">₹</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={formData.feeTermAmounts[feeTerm.id] || ''}
+                                    onChange={(e) => handleFeeTermAmountChange(feeTerm.id, parseFloat(e.target.value) || 0)}
+                                    placeholder="0"
+                                    className="w-28 h-8"
+                                    disabled={isLoading}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fee Application Summary */}
+                    {(formData.appliedFeeHeads.length > 0 || formData.appliedFeeTerms.length > 0) && (
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1 bg-blue-600 rounded-full">
+                            <Info className="h-3 w-3 text-white" />
+                          </div>
+                          <div className="text-sm flex-1">
+                            <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">Application Summary</p>
+                            <div className="space-y-1">
+                              <p className="text-blue-800 dark:text-blue-200">
+                                • {formData.appliedFeeHeads.length} fee head(s) selected
+                              </p>
+                              <p className="text-blue-800 dark:text-blue-200">
+                                • {formData.appliedFeeTerms.length} fee term(s) selected
+                              </p>
+                            </div>
+                            {formData.type === 'FIXED' && Object.keys(formData.feeTermAmounts).length > 0 && (
+                              <div className="mt-3 p-2 bg-blue-100 dark:bg-blue-900 rounded border">
+                                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-1">Fixed Amounts:</p>
+                                <div className="grid grid-cols-1 gap-1">
+                                  {Object.entries(formData.feeTermAmounts).map(([termId, amount]) => {
+                                    const term = feeTerms.find(t => t.id === termId);
+                                    return term && amount > 0 ? (
+                                      <div key={termId} className="text-xs text-blue-700 dark:text-blue-300 flex justify-between">
+                                        <span>{term.name}:</span>
+                                        <span className="font-medium">{formatIndianCurrency(amount)}</span>
+                                      </div>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+        {/* Student Applicability Card */}
+        <Card className="shadow-sm border-0 ring-1 ring-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="p-1.5 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-800 rounded-md">
+                <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              Student Applicability
+            </CardTitle>
+            <CardDescription>
+              Define which types of students are eligible for this concession.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-3">
-              <Label>Applicable Student Types *</Label>
-              <div className="flex flex-wrap gap-3">
+              <Label className="text-sm font-medium">Applicable Student Types *</Label>
+              <div className="grid grid-cols-1 gap-3">
                 {studentTypeOptions.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
+                  <div key={option.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <Checkbox
                       id={option.value}
                       checked={formData.applicableStudentTypes.includes(option.value)}
@@ -313,8 +694,9 @@ export function ConcessionTypeFormModal({
                         }
                       }}
                       disabled={isLoading}
+                      className="data-[state=checked]:bg-indigo-600"
                     />
-                    <Label htmlFor={option.value} className="text-sm">
+                    <Label htmlFor={option.value} className="text-sm cursor-pointer font-medium flex-1">
                       {option.label}
                     </Label>
                   </div>
@@ -323,20 +705,32 @@ export function ConcessionTypeFormModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="eligibilityCriteria">Eligibility Criteria</Label>
+              <Label htmlFor="eligibilityCriteria" className="text-sm font-medium">Eligibility Criteria</Label>
               <Textarea
                 id="eligibilityCriteria"
                 value={formData.eligibilityCriteria}
                 onChange={(e) => setFormData(prev => ({ ...prev, eligibilityCriteria: e.target.value }))}
-                placeholder="Criteria for students to be eligible for this concession"
+                placeholder="Define specific criteria students must meet to be eligible..."
+                rows={3}
+                className="resize-none"
                 disabled={isLoading}
               />
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Required Documents */}
+        </div>
+      </div>
+
+      {/* Full Width Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Required Documents Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Required Documents</h3>
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <FileText className="h-4 w-4 text-orange-600" />
+              <h3 className="font-medium">Required Documents</h3>
+            </div>
             
             <div className="flex gap-2">
               <Input
@@ -371,51 +765,74 @@ export function ConcessionTypeFormModal({
             )}
           </div>
 
-          {/* Settings */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Settings</h3>
-            
-            <div className="flex items-center justify-between">
-              <Label htmlFor="autoApproval">Auto Approval</Label>
-              <Switch
-                id="autoApproval"
-                checked={formData.autoApproval}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoApproval: checked }))}
-                disabled={isLoading}
-              />
+                        {/* Settings Card */}
+              <Card className="shadow-sm border-0 ring-1 ring-border">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <div className="p-1.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-md">
+                      <Settings className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                    </div>
+                    Settings & Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Configure approval settings and status for this concession type.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+                      <div className="space-y-1">
+                        <Label htmlFor="autoApproval" className="text-sm font-medium">Auto Approval</Label>
+                        <p className="text-xs text-muted-foreground">Automatically approve concessions of this type</p>
+                      </div>
+                      <Switch
+                        id="autoApproval"
+                        checked={formData.autoApproval}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoApproval: checked }))}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 dark:border-blue-800">
+                      <div className="space-y-1">
+                        <Label htmlFor="isActive" className="text-sm font-medium">Active Status</Label>
+                        <p className="text-xs text-muted-foreground">Make this concession type available for assignment</p>
+                      </div>
+                      <Switch
+                        id="isActive"
+                        checked={formData.isActive}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="isActive">Active Status</Label>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-6 border-t bg-gray-50 dark:bg-gray-900 px-6 py-4 -mx-6 -mb-6 rounded-b-lg">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
                 disabled={isLoading}
-              />
+                className="h-10 px-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading || !formData.name.trim()}
+                className="h-10 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? 'Saving...' : concessionType ? 'Update Concession Type' : 'Create Concession Type'}
+              </Button>
             </div>
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {concessionType ? 'Update' : 'Create'} Concession Type
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

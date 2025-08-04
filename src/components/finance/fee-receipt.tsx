@@ -33,6 +33,7 @@ interface FeeReceiptProps {
     address?: string;
     city?: string;
     state?: string;
+    logoUrl?: string;
   };
   session: {
     name: string;
@@ -89,20 +90,31 @@ export const FeeReceipt = forwardRef<HTMLDivElement, FeeReceiptProps>(
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '2px solid #000', paddingBottom: '6px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '2px' }}>
-            The Scholars' Home, {branch.name}
-          </div>
-          {branch.address && (
-            <div style={{ fontSize: '9px', color: '#333', marginBottom: '2px' }}>
-              {branch.address}{branch.city && `, ${branch.city}`}{branch.state && `, ${branch.state}`}
+        <div style={{ position: 'relative', marginBottom: '10px', borderBottom: '2px solid #000', paddingBottom: '6px' }}>
+          {branch.logoUrl && (
+            <div style={{ position: 'absolute', top: '0', left: '0', width: '50px', height: '50px' }}>
+              <img 
+                src={branch.logoUrl} 
+                alt={`${branch.name} Logo`} 
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+              />
             </div>
           )}
-          <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '4px', marginBottom: '2px' }}>
-            RECEIPT
-          </div>
-          <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
-            Receipt Number: {receiptData.receiptNumber}
+          <div style={{ textAlign: 'center', paddingLeft: branch.logoUrl ? '60px' : '0' }}>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '2px' }}>
+              The Scholars' Home, {branch.name}
+            </div>
+            {branch.address && (
+              <div style={{ fontSize: '9px', color: '#333', marginBottom: '2px' }}>
+                {branch.address}{branch.city && `, ${branch.city}`}{branch.state && `, ${branch.state}`}
+              </div>
+            )}
+            <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '4px', marginBottom: '2px' }}>
+              RECEIPT
+            </div>
+            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
+              Receipt Number: {receiptData.receiptNumber}
+            </div>
           </div>
         </div>
 
@@ -121,7 +133,7 @@ export const FeeReceipt = forwardRef<HTMLDivElement, FeeReceiptProps>(
               <strong>Father:</strong> {parentName}
             </div>
             {/* Fee Terms/Cycles */}
-            <div style={{ marginBottom: '4px', fontSize: '8px', color: '#333', lineHeight: '1.0' }}>
+            <div style={{ marginBottom: '4px', fontSize: '10px', color: '#333', lineHeight: '1.0' }}>
               <strong>Fee Terms/Cycles:</strong><br/>
               {uniqueFeeTerms}
             </div>

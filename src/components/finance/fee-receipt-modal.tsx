@@ -49,6 +49,7 @@ interface FeeReceiptModalProps {
     address?: string;
     city?: string;
     state?: string;
+    logoUrl?: string;
   };
   session: {
     name: string;

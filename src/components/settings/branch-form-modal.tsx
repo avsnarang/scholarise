@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/ui/file-upload";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -36,6 +37,7 @@ const branchFormSchema = z.object({
   country: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  logoUrl: z.string().optional(),
 });
 
 type BranchFormValues = z.infer<typeof branchFormSchema>;
@@ -54,6 +56,7 @@ interface BranchFormModalProps {
     country?: string | null;
     phone?: string | null;
     email?: string | null;
+    logoUrl?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
   };
@@ -61,6 +64,7 @@ interface BranchFormModalProps {
 
 export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentLogoUrl, setCurrentLogoUrl] = useState<string>("");
   const { toast } = useToast();
   const utils = api.useContext();
 
@@ -88,6 +92,7 @@ export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFo
       country: "",
       phone: "",
       email: "",
+      logoUrl: "",
     },
   });
 
@@ -107,7 +112,9 @@ export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFo
           country: branch.country || "",
           phone: branch.phone || "",
           email: branch.email || "",
+          logoUrl: branch.logoUrl || "",
         });
+        setCurrentLogoUrl(branch.logoUrl || "");
         console.log("Form values after reset:", form.getValues());
       }, 100);
     } else if (!branch && isOpen) {
@@ -121,7 +128,9 @@ export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFo
         country: "",
         phone: "",
         email: "",
+        logoUrl: "",
       });
+      setCurrentLogoUrl("");
     }
   }, [branch, isOpen, form]);
 
@@ -158,9 +167,27 @@ export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFo
     return () => clearTimeout(debounceTimeout);
   }, [codeValue, isEditing, branch?.code, form, checkBranchCode]);
 
+  // Handle logo upload
+  const handleLogoUpload = (url: string, path: string) => {
+    console.log('🎯 handleLogoUpload called with:', { url, path });
+    
+    form.setValue("logoUrl", url);
+    setCurrentLogoUrl(url);
+    
+    console.log('✅ Form logoUrl set to:', url);
+    console.log('✅ currentLogoUrl set to:', url);
+    
+    toast({
+      title: "Logo uploaded",
+      description: "Branch logo has been uploaded successfully.",
+      variant: "success",
+    });
+  };
+
   // Handle dialog close
   const handleClose = useCallback(() => {
     form.reset();
+    setCurrentLogoUrl("");
     onClose();
   }, [form, onClose]);
 
@@ -345,6 +372,42 @@ export function BranchFormModal({ isOpen, onClose, onSuccess, branch }: BranchFo
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Branch Logo Upload */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Branch Logo</label>
+                <p className="text-sm text-gray-500">
+                  Upload a logo for this branch (optional)
+                </p>
+              </div>
+              
+              <FileUpload
+                onUpload={handleLogoUpload}
+                bucket="branch-logos"
+                accept="image/*"
+                maxSize={2}
+                buttonText="Upload Logo"
+                className="w-full"
+              />
+              
+              {/* Display current logo if exists */}
+              {currentLogoUrl && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                    <img
+                      src={currentLogoUrl}
+                      alt="Branch Logo"
+                      className="w-12 h-12 object-contain rounded"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Current Logo</p>
+                      <p className="text-xs text-gray-500">Logo uploaded successfully</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <DialogFooter>

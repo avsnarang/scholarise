@@ -306,19 +306,19 @@ export function ConcessionApprovalSettings({
     }
   }, [currentSettings]);
 
-  // Enhanced debug logging
-  useEffect(() => {
-    console.log('Personnel Search Debug:', {
-      currentBranchId,
-      personnelSearchQuery,
-      debouncedPersonnelQuery,
-      personnelResults: personnelResults?.length || 0,
-      personnelLoading,
-      personnelError: personnelError?.message,
-      queryEnabled: !!currentBranchId && debouncedPersonnelQuery.length >= 2,
-      resultsData: personnelResults,
-    });
-  }, [currentBranchId, personnelSearchQuery, debouncedPersonnelQuery, personnelResults, personnelLoading, personnelError]);
+  // Enhanced debug logging - DISABLED TO PREVENT API SPAM
+  // useEffect(() => {
+  //   console.log('Personnel Search Debug:', {
+  //     currentBranchId,
+  //     personnelSearchQuery,
+  //     debouncedPersonnelQuery,
+  //     personnelResults: personnelResults?.length || 0,
+  //     personnelLoading,
+  //     personnelError: personnelError?.message,
+  //     queryEnabled: !!currentBranchId && debouncedPersonnelQuery.length >= 2,
+  //     resultsData: personnelResults,
+  //   });
+  // }, [currentBranchId, personnelSearchQuery, debouncedPersonnelQuery, personnelResults, personnelLoading, personnelError]);
 
   const handleSettingChange = (key: keyof ApprovalSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));

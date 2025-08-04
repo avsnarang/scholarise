@@ -172,6 +172,7 @@ export default function FinancePage() {
         address: branchQuery.data?.address,
         city: branchQuery.data?.city,
         state: branchQuery.data?.state,
+        logoUrl: branchQuery.data?.logoUrl,
       },
       session: {
         name: sessionQuery.data?.name || 'Academic Session',

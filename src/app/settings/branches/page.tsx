@@ -12,6 +12,7 @@ import {
   Edit,
   Trash,
   RefreshCw,
+  ImageIcon,
 } from "lucide-react";
 
 import { api } from "@/utils/api";
@@ -42,8 +43,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BranchFormModal } from "@/components/settings/branch-form-modal";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { BranchFormModal } from "@/components/settings/branch-form-modal";
+// import { AuthDebug } from "@/components/debug/auth-debug"; // Commented out - debug resolved
 
 export default function BranchesPage() {
   const { toast } = useToast();
@@ -158,6 +160,9 @@ export default function BranchesPage() {
   return (
     <PageWrapper>
       <div className="space-y-6">
+        {/* Auth Debug Panel - Commented out since issue is resolved
+        <AuthDebug /> */}
+        
         <div className="flex items-center justify-between">
           <Link href="/settings">
             <Button variant="ghost" className="flex items-center gap-1 p-0">
@@ -230,6 +235,7 @@ export default function BranchesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Logo</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Code</TableHead>
                       <TableHead>Address</TableHead>
@@ -240,6 +246,7 @@ export default function BranchesPage() {
                   <TableBody>
                     {Array.from({ length: 3 }).map((_, index) => (
                       <TableRow key={index}>
+                        <TableCell><Skeleton className="h-8 w-8 rounded" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-48" /></TableCell>
@@ -255,6 +262,7 @@ export default function BranchesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Logo</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Code</TableHead>
                       <TableHead>Address</TableHead>
@@ -265,13 +273,28 @@ export default function BranchesPage() {
                   <TableBody>
                     {filteredBranches.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">
+                        <TableCell colSpan={6} className="text-center">
                           {searchQuery ? "No branches found matching your search." : "No branches found. Click the 'Add Branch' button to create your first branch."}
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredBranches.map((branch) => (
                         <TableRow key={branch.id}>
+                          <TableCell>
+                            <div className="flex items-center justify-center w-10 h-10">
+                              {branch.logoUrl ? (
+                                <img
+                                  src={branch.logoUrl}
+                                  alt={`${branch.name} logo`}
+                                  className="w-8 h-8 object-contain rounded"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                  <ImageIcon className="w-4 h-4 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center">
                               <Building className="mr-2 h-4 w-4 text-gray-400" />

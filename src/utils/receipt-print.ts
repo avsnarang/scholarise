@@ -30,6 +30,7 @@ interface FeeReceiptData {
     address?: string;
     city?: string;
     state?: string;
+    logoUrl?: string;
   };
   session: {
     name: string;
@@ -140,11 +141,18 @@ function generateReceiptHTML(data: FeeReceiptData): string {
   return `
     <div class="fee-receipt-container" style="width: 8.17in; height: 5.73in; max-width: 8.17in; max-height: 5.73in; padding: 0.2in; font-size: 10px; line-height: 1.1; position: relative; border: 1px solid #000; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: white; color: black; font-family: Arial, sans-serif;">
       <!-- Header -->
-      <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px;">
-        <div style="font-size: 15px; font-weight: bold; margin-bottom: 2px;">The Scholars' Home, ${data.branch.name}</div>
-        ${data.branch.address ? `<div style="font-size: 9px; color: #333; margin-bottom: 2px;">${data.branch.address}${data.branch.city ? `, ${data.branch.city}` : ''}${data.branch.state ? `, ${data.branch.state}` : ''}</div>` : ''}
-        <div style="font-size: 13px; font-weight: bold; margin-top: 4px; margin-bottom: 2px;">RECEIPT</div>
-        <div style="font-size: 11px; font-weight: bold;">Receipt Number: ${data.receiptData.receiptNumber}</div>
+      <div style="position: relative; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px;">
+        ${data.branch.logoUrl ? `
+          <div style="position: absolute; top: 0; left: 0; width: 50px; height: 50px;">
+            <img src="${data.branch.logoUrl}" alt="${data.branch.name} Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+          </div>
+        ` : ''}
+        <div style="text-align: center; ${data.branch.logoUrl ? 'padding-left: 60px;' : ''}">
+          <div style="font-size: 15px; font-weight: bold; margin-bottom: 2px;">The Scholars' Home, ${data.branch.name}</div>
+          ${data.branch.address ? `<div style="font-size: 9px; color: #333; margin-bottom: 2px;">${data.branch.address}${data.branch.city ? `, ${data.branch.city}` : ''}${data.branch.state ? `, ${data.branch.state}` : ''}</div>` : ''}
+          <div style="font-size: 13px; font-weight: bold; margin-top: 4px; margin-bottom: 2px;">RECEIPT</div>
+          <div style="font-size: 11px; font-weight: bold;">Receipt Number: ${data.receiptData.receiptNumber}</div>
+        </div>
       </div>
 
       <!-- Session -->
