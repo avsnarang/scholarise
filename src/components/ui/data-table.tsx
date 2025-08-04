@@ -133,20 +133,38 @@ export function DataTable<TData, TValue>({
 
   // Apply custom filters to data
   const filteredData = React.useMemo(() => {
-    if (Object.keys(customFilters).length === 0) return data;
+    if (!Array.isArray(data) || Object.keys(customFilters).length === 0) return data || [];
     
     return data.filter(item => {
+      // Skip invalid items
+      if (!item || typeof item !== 'object') return false;
+      
       return Object.entries(customFilters).every(([key, value]) => {
         if (!value || value === 'all') return true;
         
-        // Get nested property value
-        const itemValue = key.split('.').reduce((obj: any, k) => obj?.[k], item);
-        
-        // Convert to string for comparison
-        const itemValueStr = String(itemValue || '').toLowerCase();
-        const filterValueStr = String(value).toLowerCase();
-        
-        return itemValueStr === filterValueStr;
+        try {
+          // Get nested property value
+          const itemValue = key.split('.').reduce((obj: any, k) => obj?.[k], item);
+          
+          // Convert to string for comparison - handle undefined/null/object cases
+          let itemValueStr = '';
+          if (itemValue !== null && itemValue !== undefined) {
+            if (typeof itemValue === 'string') {
+              itemValueStr = itemValue.toLowerCase();
+            } else if (typeof itemValue === 'number' || typeof itemValue === 'boolean') {
+              itemValueStr = String(itemValue).toLowerCase();
+            } else {
+              // For objects, arrays, etc., convert to empty string
+              itemValueStr = '';
+            }
+          }
+          const filterValueStr = String(value || '').toLowerCase();
+          
+          return itemValueStr === filterValueStr;
+        } catch (error) {
+          console.warn('Error filtering data:', error, { item, key, value });
+          return false;
+        }
       });
     });
   }, [data, customFilters]);
@@ -197,7 +215,7 @@ export function DataTable<TData, TValue>({
   }, [data, columns]);
 
   const table = useReactTable({
-    data: filteredData,
+    data: Array.isArray(filteredData) ? filteredData : [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -306,30 +324,43 @@ export function DataTable<TData, TValue>({
                   )}
                 </div>
 
-                {filters.map((filter) => (
-                  <div key={filter.key} className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {filter.label}
-                    </label>
-                    <Select
-                      value={customFilters[filter.key] || "all"}
-                      onValueChange={(value) => handleFilterChange(filter.key, value === "all" ? "" : value)}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder={filter.placeholder || `All ${filter.label.toLowerCase()}`} />
-                      </SelectTrigger>
-                      <SelectContent className="z-[70]">
-                        <SelectItem value="all">All {filter.label.toLowerCase()}</SelectItem>
-                        {filter.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.icon && <span className="mr-2">{option.icon}</span>}
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
+                {filters && Array.isArray(filters) && filters.map((filter) => {
+                  // Skip invalid filters
+                  if (!filter || typeof filter !== 'object' || !filter.key || !filter.label) {
+                    console.warn('Invalid filter object:', filter);
+                    return null;
+                  }
+                  
+                  return (
+                    <div key={filter.key} className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        {filter.label}
+                      </label>
+                      <Select
+                        value={customFilters[filter.key] || "all"}
+                        onValueChange={(value) => handleFilterChange(filter.key, value === "all" ? "" : value)}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder={filter.placeholder || `All ${(filter.label || 'items').toLowerCase()}`} />
+                        </SelectTrigger>
+                        <SelectContent className="z-[70]">
+                          <SelectItem value="all">All {(filter.label || 'items').toLowerCase()}</SelectItem>
+                          {filter.options && Array.isArray(filter.options) && filter.options.map((option) => {
+                            if (!option || typeof option !== 'object' || option.value === undefined) {
+                              return null;
+                            }
+                            return (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.icon && <span className="mr-2">{option.icon}</span>}
+                                {option.label || option.value}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
               </div>
             </PopoverContent>
           </Popover>

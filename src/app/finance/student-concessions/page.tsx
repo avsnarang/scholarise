@@ -18,6 +18,7 @@ import {
   Settings,
   Award,
   User,
+  Users,
   FileText,
   Filter,
   Download,
@@ -36,6 +37,7 @@ import {
 import { DataTable, type DataTableFilter } from "@/components/ui/data-table";
 import { ConcessionStatsCards } from "@/components/finance/concession-stats-cards";
 import { StudentConcessionFormModal } from "@/components/finance/student-concession-form-modal";
+import { BulkConcessionAssignmentModal } from "@/components/finance/bulk-concession-assignment-modal";
 import { ConcessionApprovalSettings } from "@/components/finance/concession-approval-settings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -176,6 +178,7 @@ function StudentConcessionsPageContent() {
   const { toast } = useToast();
   
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedConcession, setSelectedConcession] = useState<StudentConcession | null>(null);
@@ -189,6 +192,7 @@ function StudentConcessionsPageContent() {
     {
       branchId: currentBranchId ?? undefined,
       sessionId: currentSessionId ?? undefined,
+      status: "APPROVED", // Only show approved concessions in the main report
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
@@ -260,6 +264,23 @@ function StudentConcessionsPageContent() {
     },
   });
 
+  const bulkAssignConcessionMutation = api.finance.bulkAssignConcession.useMutation({
+    onSuccess: (result) => {
+      toast({
+        title: "Success",
+        description: `Successfully assigned ${result.concessionType} to ${result.assignedCount} students`,
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign bulk concessions",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Note: Use specific mutations like approveConcession, rejectConcession, suspendConcession
   // instead of a generic updateStudentConcession
 
@@ -303,6 +324,22 @@ function StudentConcessionsPageContent() {
     }
   };
 
+  const handleBulkAssignSubmit = async (data: any) => {
+    const bulkConcessionData = {
+      studentIds: data.selectedStudentIds,
+      concessionTypeId: data.concessionTypeId,
+      customValue: data.customValue,
+      reason: data.reason,
+      validFrom: data.validFrom,
+      validUntil: data.validUntil,
+      notes: data.notes,
+      branchId: currentBranchId!,
+      sessionId: currentSessionId!,
+    };
+
+    await bulkAssignConcessionMutation.mutateAsync(bulkConcessionData);
+  };
+
   const handleEdit = (concession: StudentConcession) => {
     setSelectedConcession(concession);
     setIsFormModalOpen(true);
@@ -322,6 +359,10 @@ function StudentConcessionsPageContent() {
   const handleFormClose = () => {
     setIsFormModalOpen(false);
     setSelectedConcession(null);
+  };
+
+  const handleBulkAssignClose = () => {
+    setIsBulkAssignModalOpen(false);
   };
 
   // Define columns for DataTable
@@ -522,6 +563,14 @@ function StudentConcessionsPageContent() {
               Settings
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setIsBulkAssignModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Bulk Assign
+            </Button>
+            <Button
               onClick={() => setIsFormModalOpen(true)}
               className="flex items-center gap-2"
             >
@@ -561,6 +610,23 @@ function StudentConcessionsPageContent() {
         }))}
         isLoading={assignConcessionMutation.isPending}
         editingConcession={selectedConcession}
+      />
+
+      <BulkConcessionAssignmentModal
+        isOpen={isBulkAssignModalOpen}
+        onClose={handleBulkAssignClose}
+        onSubmit={handleBulkAssignSubmit}
+        students={students}
+        concessionTypes={concessionTypes.map(ct => ({
+          id: ct.id,
+          name: ct.name,
+          description: ct.description,
+          type: ct.type as 'PERCENTAGE' | 'FIXED',
+          value: ct.value,
+          maxValue: ct.maxValue,
+          applicableStudentTypes: ct.applicableStudentTypes,
+        }))}
+        isLoading={bulkAssignConcessionMutation.isPending}
       />
 
       <ConcessionApprovalSettings

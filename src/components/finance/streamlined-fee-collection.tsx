@@ -499,7 +499,7 @@ export function StreamlinedFeeCollection({
                     Fee Structure
                   </CardTitle>
                   <CardDescription className="text-muted-foreground dark:text-gray-400">
-                    Select fees to collect payment
+                    All fees (paid and unpaid) - Select unpaid fees to collect payment
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -529,11 +529,12 @@ export function StreamlinedFeeCollection({
             <CardContent className="space-y-4">
               {Object.entries(feesByTerm).map(([termId, termFees], index) => {
                 const termName = termFees[0]?.feeTermName || 'Unknown Term';
-                const termTotal = termFees.reduce((sum, fee) => sum + fee.outstandingAmount, 0);
+                const termTotal = termFees.reduce((sum, fee) => sum + fee.totalAmount, 0);
+                const termOutstanding = termFees.reduce((sum, fee) => sum + fee.outstandingAmount, 0);
                 const hasOutstanding = termFees.some(fee => fee.outstandingAmount > 0);
                 const termDueDate = termFees[0]?.dueDate || '';
 
-                if (!hasOutstanding) return null;
+                // Always show term, regardless of outstanding amount
 
                 return (
                   <div 
@@ -543,10 +544,12 @@ export function StreamlinedFeeCollection({
                     {/* Term Header */}
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-border dark:border-gray-700">
                       <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={isTermFullySelected(termId)}
-                          onCheckedChange={(checked) => handleTermSelection(termId, checked as boolean)}
-                        />
+                        {hasOutstanding && (
+                          <Checkbox
+                            checked={isTermFullySelected(termId)}
+                            onCheckedChange={(checked) => handleTermSelection(termId, checked as boolean)}
+                          />
+                        )}
                         <div>
                           <h4 className="font-semibold text-base text-foreground dark:text-white">
                             {termName}
@@ -561,11 +564,27 @@ export function StreamlinedFeeCollection({
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-xl text-primary">
-                          {formatIndianCurrency(termTotal)}
+                        <div className="space-y-1">
+                          <div className="font-bold text-lg text-foreground dark:text-white">
+                            Total: {formatIndianCurrency(termTotal)}
+                          </div>
+                          {termOutstanding > 0 && (
+                            <div className="font-semibold text-base text-primary">
+                              Outstanding: {formatIndianCurrency(termOutstanding)}
+                            </div>
+                          )}
+                          {/* Show concession info if any fees have concessions */}
+                          {termFees.some(fee => fee.concessionAmount && fee.concessionAmount > 0) && (
+                            <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                              Concessions Applied: -{formatIndianCurrency(termFees.reduce((sum, fee) => sum + (fee.concessionAmount || 0), 0))}
+                            </div>
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground dark:text-gray-400">
-                          {termFees.filter(f => f.outstandingAmount > 0).length} fee{termFees.filter(f => f.outstandingAmount > 0).length !== 1 ? 's' : ''}
+                          {termFees.length} fee{termFees.length !== 1 ? 's' : ''} • {termFees.filter(f => f.outstandingAmount > 0).length} pending
+                          {termFees.some(fee => fee.concessionAmount && fee.concessionAmount > 0) && (
+                            <span className="ml-1 text-green-600 dark:text-green-400">• {termFees.filter(f => f.concessionAmount && f.concessionAmount > 0).length} with concessions</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -573,60 +592,98 @@ export function StreamlinedFeeCollection({
                     {/* Fee Items */}
                     <div className="space-y-2">
                       {termFees.map((fee) => {
-                        if (fee.outstandingAmount <= 0) return null;
+                        const isPaid = fee.outstandingAmount <= 0;
                         
                         return (
                           <div 
                             key={fee.id} 
                             className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-                              selectedFeeIds.has(fee.id) 
-                                ? 'bg-primary/10 dark:bg-primary/20 border-primary/30 dark:border-primary/40' 
-                                : 'bg-background dark:bg-gray-800 border-border dark:border-gray-600 hover:bg-muted/50 dark:hover:bg-gray-700/50'
+                              isPaid
+                                ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-300 dark:border-gray-600 opacity-80'
+                                : selectedFeeIds.has(fee.id) 
+                                  ? 'bg-primary/10 dark:bg-primary/20 border-primary/30 dark:border-primary/40' 
+                                  : 'bg-background dark:bg-gray-800 border-border dark:border-gray-600 hover:bg-muted/50 dark:hover:bg-gray-700/50'
                             }`}
                           >
                             <div className="flex items-center gap-3 flex-1">
-                              <Checkbox
-                                checked={selectedFeeIds.has(fee.id)}
-                                onCheckedChange={(checked) => handleFeeSelection(fee.id, checked as boolean)}
-                              />
+                              {!isPaid ? (
+                                <Checkbox
+                                  checked={selectedFeeIds.has(fee.id)}
+                                  onCheckedChange={(checked) => handleFeeSelection(fee.id, checked as boolean)}
+                                />
+                              ) : (
+                                <div className="w-4"></div>
+                              )}
                               <div className="flex-1">
                                 <div className="font-medium text-sm text-foreground dark:text-white">
                                   {fee.feeHeadName}
                                 </div>
-                                <div className="text-xs space-y-1">
-                                  {fee.originalAmount && fee.concessionAmount && fee.concessionAmount > 0 ? (
-                                    <>
-                                      <div className="text-muted-foreground dark:text-gray-400">
-                                        Original: {formatIndianCurrency(fee.originalAmount)} | 
-                                        Concession: -{formatIndianCurrency(fee.concessionAmount)} |
-                                        Outstanding: {formatIndianCurrency(fee.outstandingAmount)}
-                                      </div>
-                                      {fee.appliedConcessions && fee.appliedConcessions.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {fee.appliedConcessions.map((concession) => (
-                                            <Badge 
-                                              key={concession.id} 
-                                              variant="secondary" 
-                                              className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                              title={concession.reason || concession.name}
-                                            >
-                                              <Gift className="h-3 w-3 mr-1" />
-                                              {concession.name} ({concession.type === 'PERCENTAGE' ? `${concession.value}%` : formatIndianCurrency(concession.value)})
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div className="text-muted-foreground dark:text-gray-400">
-                                      Outstanding: {formatIndianCurrency(fee.outstandingAmount)}
+                                {/* Enhanced Concession Display */}
+                                {fee.originalAmount && fee.concessionAmount && fee.concessionAmount > 0 ? (
+                                  <div className="mt-2">
+                                    {/* Price breakdown with visual flow */}
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="text-muted-foreground line-through">
+                                        {formatIndianCurrency(fee.originalAmount)}
+                                      </span>
+                                      <span className="text-green-600 dark:text-green-400 font-medium">
+                                        -{formatIndianCurrency(fee.concessionAmount)}
+                                      </span>
+                                      <span className="text-foreground dark:text-white font-semibold">
+                                        = {formatIndianCurrency(fee.totalAmount)}
+                                      </span>
                                     </div>
-                                  )}
-                                </div>
+                                    
+                                    {/* Concession badges - simplified and cleaner */}
+                                    {fee.appliedConcessions && fee.appliedConcessions.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {fee.appliedConcessions.map((concession) => (
+                                          <div
+                                            key={concession.id}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 rounded-md text-xs border border-green-200 dark:border-green-800"
+                                            title={`${concession.name}\n${concession.reason || 'No reason provided'}\nAmount: ${formatIndianCurrency(concession.amount)}`}
+                                          >
+                                            <Gift className="h-3 w-3" />
+                                            <span className="font-medium">{concession.name}</span>
+                                            <span className="opacity-75">
+                                              {concession.type === 'PERCENTAGE' ? `${concession.value}%` : formatIndianCurrency(concession.amount)}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Status indicator */}
+                                    <div className="mt-1.5">
+                                      <span className={`text-xs font-medium ${
+                                        isPaid 
+                                          ? 'text-blue-600 dark:text-blue-400' 
+                                          : 'text-primary'
+                                      }`}>
+                                        {isPaid ? 'Paid' : 'Outstanding'}: {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mt-2">
+                                    <div className="text-sm">
+                                      <span className={`font-medium ${
+                                        isPaid 
+                                          ? 'text-blue-600 dark:text-blue-400' 
+                                          : 'text-foreground dark:text-white'
+                                      }`}>
+                                        {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
+                                      </span>
+                                      <span className="text-muted-foreground ml-1">
+                                        {isPaid ? 'paid' : 'due'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {adjustmentMode === 'manual' && selectedFeeIds.has(fee.id) ? (
+                              {adjustmentMode === 'manual' && selectedFeeIds.has(fee.id) && !isPaid ? (
                                 <div className="flex flex-col gap-1">
                                   <Input
                                     type="number"
@@ -643,13 +700,27 @@ export function StreamlinedFeeCollection({
                                   </div>
                                 </div>
                               ) : (
-                                <div className="text-right mr-2">
-                                  <div className="font-semibold text-sm text-foreground dark:text-white">
-                                    {formatIndianCurrency(fee.outstandingAmount)}
+                                <div className="text-right">
+                                  <div className={`font-bold text-lg ${
+                                    isPaid 
+                                      ? 'text-blue-600 dark:text-blue-400' 
+                                      : 'text-foreground dark:text-white'
+                                  }`}>
+                                    {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
                                   </div>
+                                  {fee.concessionAmount && fee.concessionAmount > 0 && !isPaid && fee.originalAmount && (
+                                    <div className="text-xs text-muted-foreground">
+                                      Original: {formatIndianCurrency(fee.originalAmount)}
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                              {fee.status === 'Overdue' && (
+                              {isPaid && (
+                                <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800">
+                                  PAID
+                                </Badge>
+                              )}
+                              {fee.status === 'Overdue' && !isPaid && (
                                 <Badge variant="destructive" className="text-xs">
                                   Overdue
                                 </Badge>
@@ -839,20 +910,7 @@ export function StreamlinedFeeCollection({
         </div>
       </div>
 
-      {/* No Outstanding Fees */}
-      {feeItems.every(fee => fee.outstandingAmount <= 0) && (
-        <Card className="border-border dark:border-gray-700 bg-card dark:bg-gray-900">
-          <CardContent className="py-12">
-            <div className="text-center">
-              <DollarSign className="h-12 w-12 mx-auto text-green-600 dark:text-green-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2 text-foreground dark:text-white">All Fees Paid</h3>
-              <p className="text-muted-foreground dark:text-gray-400">
-                This student has no outstanding fees to collect.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Loading State */}
       {isLoading && (

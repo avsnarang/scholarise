@@ -596,6 +596,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: [Permission.MANAGE_STUDENT_CONCESSIONS],
         },
         {
+          title: "Concession Approvals",
+          href: "/finance/concession-approvals",
+          permissions: [Permission.MANAGE_STUDENT_CONCESSIONS],
+        },
+        {
           title: "Fee Reminders",
           href: "/finance/reminders",
           permissions: [Permission.MANAGE_FEE_REMINDERS],

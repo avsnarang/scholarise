@@ -232,6 +232,20 @@ function FeeDefaultersReport() {
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
 
+  // Early return BEFORE any other hooks to prevent hooks ordering issues
+  if (!currentBranchId || !currentSessionId) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-[#3a3a3a] dark:bg-[#252525]">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Please select a branch and academic session to view reports.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   // Detect dark mode for theme-aware colors
   const [isDarkMode, setIsDarkMode] = useState(false);
   
@@ -384,19 +398,6 @@ function FeeDefaultersReport() {
       return aIndex - bIndex;
     });
   }, [reportQuery.data?.tableData, searchQuery]);
-
-  if (!currentBranchId || !currentSessionId) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-[#3a3a3a] dark:bg-[#252525]">
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Please select a branch and academic session to view reports.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   const { chartData, tableData, summary, feeHeads } = reportQuery.data || {};
   
@@ -2091,6 +2092,20 @@ function ConcessionReport() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
 
+  // Early return BEFORE any other hooks to prevent hooks ordering issues
+  if (!currentBranchId || !currentSessionId) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-[#3a3a3a] dark:bg-[#252525]">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Please select a branch and academic session to view concession reports.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   // Filter states
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [selectedConcessionTypeIds, setSelectedConcessionTypeIds] = useState<string[]>([]);
@@ -2142,19 +2157,6 @@ function ConcessionReport() {
       label: type.name,
     }));
   }, [reportQuery.data?.concessionTypes]);
-
-  if (!currentBranchId || !currentSessionId) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-[#3a3a3a] dark:bg-[#252525]">
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Please select a branch and academic session to view concession reports.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   const { chartData, tableData, summary } = reportQuery.data || {};
 

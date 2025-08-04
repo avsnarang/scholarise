@@ -1548,7 +1548,16 @@ export const financeRouter = createTRPCRouter({
           if (concession.concessionType.type === 'PERCENTAGE') {
             concessionAmount = classwiseFee.amount * (concessionValue / 100);
           } else {
-            concessionAmount = concessionValue;
+            // For FIXED concessions, check if there are per-term amounts configured
+            if (concession.concessionType.feeTermAmounts && 
+                typeof concession.concessionType.feeTermAmounts === 'object' &&
+                concession.concessionType.feeTermAmounts[classwiseFee.feeTermId]) {
+              // Use the specific amount for this fee term
+              concessionAmount = concession.concessionType.feeTermAmounts[classwiseFee.feeTermId];
+            } else {
+              // Fallback to the base value (for backward compatibility or non-term-specific concessions)
+              concessionAmount = concessionValue;
+            }
           }
           
           totalConcessionAmount += concessionAmount;
@@ -2619,8 +2628,6 @@ export const financeRouter = createTRPCRouter({
       reason: z.string().optional(),
       validFrom: z.date().optional(),
       validUntil: z.date().optional(),
-      appliedFeeHeads: z.array(z.string()).default([]),
-      appliedFeeTerms: z.array(z.string()).default([]),
       notes: z.string().nullish(),
       branchId: z.string(),
       sessionId: z.string(),
@@ -2752,15 +2759,277 @@ export const financeRouter = createTRPCRouter({
       });
     }),
 
+  bulkAssignConcession: protectedProcedure
+    .input(z.object({
+      studentIds: z.array(z.string()).min(1, "At least one student must be selected"),
+      concessionTypeId: z.string(),
+      customValue: z.number().min(0, "Custom value cannot be negative").optional(),
+      reason: z.string().min(1, "Reason is required"),
+      validFrom: z.date().optional(),
+      validUntil: z.date().optional(),
+      notes: z.string().nullish(),
+      branchId: z.string(),
+      sessionId: z.string(),
+      createdBy: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { studentIds, createdBy, ...concessionData } = input;
+
+      // Validate concession type first
+      const concessionType = await ctx.db.concessionType.findUnique({
+        where: { id: input.concessionTypeId },
+      });
+
+      if (!concessionType || 
+          concessionType.branchId !== input.branchId || 
+          concessionType.sessionId !== input.sessionId ||
+          !concessionType.isActive) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid or inactive concession type for the specified branch and session",
+        });
+      }
+
+      // Validate custom value if provided
+      if (input.customValue !== undefined) {
+        if (concessionType.type === "PERCENTAGE" && input.customValue > 100) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Custom percentage value cannot exceed 100%",
+          });
+        }
+
+        if (concessionType.maxValue && input.customValue > concessionType.maxValue) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Custom value cannot exceed the maximum allowed value",
+          });
+        }
+      }
+
+      // Validate all students belong to the branch and session
+      const students = await ctx.db.student.findMany({
+        where: { 
+          id: { in: studentIds },
+          branchId: input.branchId
+        },
+        include: {
+          section: {
+            include: {
+              class: true,
+            },
+          },
+        },
+      });
+
+      if (students.length !== studentIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Some students are invalid or don't belong to the specified branch",
+        });
+      }
+
+      // Check that all students are enrolled in the specified session
+      const invalidStudents = students.filter(student => 
+        !student.section?.class || student.section.class.sessionId !== input.sessionId
+      );
+
+      if (invalidStudents.length > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Some students are not enrolled in the specified academic session: ${invalidStudents.map(s => s.admissionNumber).join(', ')}`,
+        });
+      }
+
+      // Check for existing active concessions of the same type
+      const existingConcessions = await ctx.db.studentConcession.findMany({
+        where: {
+          studentId: { in: studentIds },
+          concessionTypeId: input.concessionTypeId,
+          status: { in: ["PENDING", "APPROVED"] },
+        },
+        include: {
+          student: {
+            select: {
+              admissionNumber: true,
+              firstName: true,
+              lastName: true,
+            }
+          }
+        }
+      });
+
+      if (existingConcessions.length > 0) {
+        const conflictingStudents = existingConcessions.map(c => 
+          `${c.student.firstName} ${c.student.lastName} (${c.student.admissionNumber})`
+        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `The following students already have an active concession of this type: ${conflictingStudents.join(', ')}`,
+        });
+      }
+
+      // Perform bulk assignment in a transaction
+      return ctx.db.$transaction(async (prisma) => {
+        const status = concessionType.autoApproval ? "APPROVED" : "PENDING";
+        const now = new Date();
+        const results = [];
+
+        for (const studentId of studentIds) {
+          // Create student concession
+          const studentConcession = await prisma.studentConcession.create({
+            data: {
+              ...concessionData,
+              studentId,
+              status,
+              ...(status === "APPROVED" && {
+                approvedBy: createdBy,
+                approvedAt: now,
+              }),
+            },
+          });
+
+          // Create history record
+          await prisma.concessionHistory.create({
+            data: {
+              studentConcessionId: studentConcession.id,
+              action: "CREATED",
+              newValue: input.customValue ?? concessionType.value,
+              reason: input.reason,
+              performedBy: createdBy || "system",
+            },
+          });
+
+          results.push(studentConcession);
+        }
+
+        // Return summary
+        return {
+          success: true,
+          assignedCount: results.length,
+          concessionType: concessionType.name,
+          status,
+          concessionIds: results.map(r => r.id),
+        };
+      });
+    }),
+
+  // Check if user has approval permissions
+  checkApprovalPermissions: protectedProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      userId: z.string(),
+      userEmail: z.string().optional(),
+      concessionAmount: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Get approval settings
+      const settings = await ctx.db.concessionApprovalSettings.findUnique({
+        where: {
+          branchId_sessionId: {
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+          },
+        },
+      });
+
+      if (!settings) {
+        // Use default settings if none configured
+        return {
+          canApprove: false,
+          canSecondApprove: false,
+          requiresSecondApproval: false,
+          isAutoApproved: false,
+          message: "No approval settings configured",
+        };
+      }
+
+      // Check auto-approval threshold
+      const amount = input.concessionAmount || 0;
+      if (amount > 0 && amount <= settings.autoApproveBelow) {
+        return {
+          canApprove: true,
+          canSecondApprove: false,
+          requiresSecondApproval: false,
+          isAutoApproved: true,
+          message: "Auto-approved (below threshold)",
+        };
+      }
+
+      // Check if amount exceeds maximum
+      if (amount > settings.maxApprovalAmount) {
+        return {
+          canApprove: false,
+          canSecondApprove: false,
+          requiresSecondApproval: false,
+          isAutoApproved: false,
+          message: "Amount exceeds maximum approval limit",
+        };
+      }
+
+      let canApprove = false;
+      let canSecondApprove = false;
+
+      if (settings.authorizationType === 'ROLE_BASED') {
+        // Get user's roles
+        const userRoles = await ctx.db.userRole.findMany({
+          where: { userId: input.userId },
+          include: { role: true },
+        });
+
+        const userRoleIds = userRoles.map((ur: any) => ur.roleId);
+
+        // Check first approval roles
+        canApprove = settings.approvalRoles.some(roleId => userRoleIds.includes(roleId));
+
+        // Check second approval roles if 2-person approval
+        if (settings.approvalType === '2_PERSON') {
+          canSecondApprove = settings.secondApprovalRoles?.some(roleId => userRoleIds.includes(roleId)) || false;
+        }
+      } else {
+        // Individual-based authorization
+        const userEmail = input.userEmail;
+        if (userEmail) {
+          canApprove = settings.approvalIndividuals.includes(userEmail);
+          
+          if (settings.approvalType === '2_PERSON') {
+            canSecondApprove = settings.secondApprovalIndividuals?.includes(userEmail) || false;
+          }
+        }
+      }
+
+      // Check if second approval is required for this amount
+      const requiresSecondApproval = settings.approvalType === '2_PERSON' && 
+                                   amount > settings.escalationThreshold;
+
+      return {
+        canApprove,
+        canSecondApprove,
+        requiresSecondApproval,
+        isAutoApproved: false,
+        settings: {
+          approvalType: settings.approvalType,
+          authorizationType: settings.authorizationType,
+          requireReason: settings.requireReason,
+          allowSelfApproval: settings.allowSelfApproval,
+        },
+      };
+    }),
+
   approveConcession: protectedProcedure
     .input(z.object({
-      id: z.string(),
+      concessionId: z.string(),
+      notes: z.string().optional(),
       approvedBy: z.string(),
-      notes: z.string().nullish(),
     }))
     .mutation(async ({ ctx, input }) => {
       const concession = await ctx.db.studentConcession.findUnique({
-        where: { id: input.id },
+        where: { id: input.concessionId },
+        include: {
+          concessionType: true,
+          student: true,
+        },
       });
 
       if (!concession) {
@@ -2770,23 +3039,121 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      if (concession.status !== "PENDING") {
+      // Get approval settings
+      const settings = await ctx.db.concessionApprovalSettings.findUnique({
+        where: {
+          branchId_sessionId: {
+            branchId: concession.branchId,
+            sessionId: concession.sessionId,
+          },
+        },
+      });
+
+      // Check if notes are required
+      if (settings?.requireReason && !input.notes) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Only pending concessions can be approved",
+          message: "Approval reason is required",
+        });
+      }
+
+      // Check valid statuses for approval
+      const validStatuses = ['PENDING', 'PENDING_FIRST', 'PENDING_SECOND'];
+      if (!validStatuses.includes(concession.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot approve concession with status: ${concession.status}`,
+        });
+      }
+
+      // Calculate concession amount
+      const concessionAmount = concession.customValue ?? concession.concessionType.value;
+
+      // Check user permissions
+      const userEmail = await ctx.db.user.findUnique({
+        where: { id: input.approvedBy },
+        select: { email: true },
+      });
+
+      let permissions = {
+        canApprove: false,
+        canSecondApprove: false,
+        requiresSecondApproval: false,
+        isAutoApproved: false,
+      };
+
+      if (settings) {
+        // Check auto-approval threshold
+        if (concessionAmount > 0 && concessionAmount <= settings.autoApproveBelow) {
+          permissions.isAutoApproved = true;
+          permissions.canApprove = true;
+        } else if (concessionAmount <= settings.maxApprovalAmount) {
+          if (settings.authorizationType === 'ROLE_BASED') {
+            const userRoles = await ctx.db.userRole.findMany({
+              where: { userId: input.approvedBy },
+              include: { role: true },
+            });
+            const userRoleIds = userRoles.map((ur: any) => ur.roleId);
+            permissions.canApprove = settings.approvalRoles.some(roleId => userRoleIds.includes(roleId));
+            if (settings.approvalType === '2_PERSON') {
+              permissions.canSecondApprove = settings.secondApprovalRoles?.some(roleId => userRoleIds.includes(roleId)) || false;
+            }
+          } else {
+            // Individual-based authorization
+            if (userEmail?.email) {
+              permissions.canApprove = settings.approvalIndividuals.includes(userEmail.email);
+              if (settings.approvalType === '2_PERSON') {
+                permissions.canSecondApprove = settings.secondApprovalIndividuals?.includes(userEmail.email) || false;
+              }
+            }
+          }
+          permissions.requiresSecondApproval = settings.approvalType === '2_PERSON' && concessionAmount > settings.escalationThreshold;
+        }
+      }
+
+      if (!permissions.canApprove && !permissions.canSecondApprove) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have permission to approve this concession",
         });
       }
 
       return ctx.db.$transaction(async (prisma) => {
         const now = new Date();
+        let newStatus = "APPROVED";
+        let historyAction = "APPROVED";
+
+        // Determine new status based on approval workflow
+        if (settings?.approvalType === '2_PERSON') {
+          if (concession.status === 'PENDING' || concession.status === 'PENDING_FIRST') {
+            // First approval
+            if (permissions.requiresSecondApproval && concessionAmount > (settings.escalationThreshold || 0)) {
+              newStatus = "PENDING_SECOND";
+              historyAction = "FIRST_APPROVED";
+            } else {
+              newStatus = "APPROVED";
+              historyAction = "APPROVED";
+            }
+          } else if (concession.status === 'PENDING_SECOND') {
+            // Second approval
+            if (!permissions.canSecondApprove) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You don't have permission for second approval",
+              });
+            }
+            newStatus = "APPROVED";
+            historyAction = "SECOND_APPROVED";
+          }
+        }
 
         // Update concession status
         const updatedConcession = await prisma.studentConcession.update({
-          where: { id: input.id },
+          where: { id: input.concessionId },
           data: {
-            status: "APPROVED",
+            status: newStatus,
             approvedBy: input.approvedBy,
-            approvedAt: now,
+            approvedAt: newStatus === "APPROVED" ? now : undefined,
             ...(input.notes && { notes: input.notes }),
           },
         });
@@ -2794,9 +3161,9 @@ export const financeRouter = createTRPCRouter({
         // Create history record
         await prisma.concessionHistory.create({
           data: {
-            studentConcessionId: input.id,
-            action: "APPROVED",
-            reason: input.notes || "Concession approved",
+            studentConcessionId: input.concessionId,
+            action: historyAction,
+            reason: input.notes || `Concession ${historyAction.toLowerCase().replace('_', ' ')}`,
             performedBy: input.approvedBy,
           },
         });
@@ -2807,13 +3174,17 @@ export const financeRouter = createTRPCRouter({
 
   rejectConcession: protectedProcedure
     .input(z.object({
-      id: z.string(),
+      concessionId: z.string(),
       rejectedBy: z.string(),
       reason: z.string().min(1, "Rejection reason is required"),
     }))
     .mutation(async ({ ctx, input }) => {
       const concession = await ctx.db.studentConcession.findUnique({
-        where: { id: input.id },
+        where: { id: input.concessionId },
+        include: {
+          concessionType: true,
+          student: true,
+        },
       });
 
       if (!concession) {
@@ -2823,17 +3194,71 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      if (concession.status !== "PENDING") {
+      // Check valid statuses for rejection
+      const validStatuses = ['PENDING', 'PENDING_FIRST', 'PENDING_SECOND'];
+      if (!validStatuses.includes(concession.status)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Only pending concessions can be rejected",
+          message: `Cannot reject concession with status: ${concession.status}`,
+        });
+      }
+
+      // Check user permissions (same as approval)
+      const userEmail = await ctx.db.user.findUnique({
+        where: { id: input.rejectedBy },
+        select: { email: true },
+      });
+
+      const concessionAmount = concession.customValue ?? concession.concessionType.value;
+      
+      // Get approval settings for permission check
+      const settings = await ctx.db.concessionApprovalSettings.findUnique({
+        where: {
+          branchId_sessionId: {
+            branchId: concession.branchId,
+            sessionId: concession.sessionId,
+          },
+        },
+      });
+
+      let permissions = {
+        canApprove: false,
+        canSecondApprove: false,
+      };
+
+      if (settings && concessionAmount <= settings.maxApprovalAmount) {
+        if (settings.authorizationType === 'ROLE_BASED') {
+          const userRoles = await ctx.db.userRole.findMany({
+            where: { userId: input.rejectedBy },
+            include: { role: true },
+          });
+          const userRoleIds = userRoles.map((ur: any) => ur.roleId);
+          permissions.canApprove = settings.approvalRoles.some(roleId => userRoleIds.includes(roleId));
+          if (settings.approvalType === '2_PERSON') {
+            permissions.canSecondApprove = settings.secondApprovalRoles?.some(roleId => userRoleIds.includes(roleId)) || false;
+          }
+        } else {
+          // Individual-based authorization
+          if (userEmail?.email) {
+            permissions.canApprove = settings.approvalIndividuals.includes(userEmail.email);
+            if (settings.approvalType === '2_PERSON') {
+              permissions.canSecondApprove = settings.secondApprovalIndividuals?.includes(userEmail.email) || false;
+            }
+          }
+        }
+      }
+
+      if (!permissions.canApprove && !permissions.canSecondApprove) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You don't have permission to reject this concession",
         });
       }
 
       return ctx.db.$transaction(async (prisma) => {
         // Update concession status
         const updatedConcession = await prisma.studentConcession.update({
-          where: { id: input.id },
+          where: { id: input.concessionId },
           data: {
             status: "REJECTED",
             notes: input.reason,
@@ -2843,7 +3268,7 @@ export const financeRouter = createTRPCRouter({
         // Create history record
         await prisma.concessionHistory.create({
           data: {
-            studentConcessionId: input.id,
+            studentConcessionId: input.concessionId,
             action: "REJECTED",
             reason: input.reason,
             performedBy: input.rejectedBy,
@@ -3450,9 +3875,8 @@ export const financeRouter = createTRPCRouter({
             { validUntil: null },
             { validUntil: { gte: new Date() } },
           ],
-          ...(input.feeHeadIds && input.feeHeadIds.length > 0 && { 
-            appliedFeeHeads: { hasSome: input.feeHeadIds }
-          }),
+          // Note: Removed appliedFeeHeads filter as it's on concessionType, not studentConcession
+          // We'll filter by the concessionType.appliedFeeHeads during processing instead
         },
         include: {
           concessionType: true,
@@ -3501,6 +3925,11 @@ export const financeRouter = createTRPCRouter({
         let studentTotalPaid = 0;
         let studentTotalDue = 0;
 
+        // Calculate student's total concession amount once (not per fee)
+        const studentTotalConcessionValue = studentConcessionsList.reduce((sum, concession) => {
+          return sum + (concession.customValue || concession.concessionType.value);
+        }, 0);
+
         for (const classwiseFee of studentClasswiseFees) {
           // Check if student is eligible for this fee head based on student type
           const isNewAdmission = student.firstJoinedSessionId === input.sessionId;
@@ -3516,24 +3945,11 @@ export const financeRouter = createTRPCRouter({
             continue;
           }
           
-          // Calculate concession for this fee
+          // Distribute student's total concession amount proportionally across applicable fees
+          // This ensures the total concession matches our CSV import amounts
           let concessionAmount = 0;
-          for (const concession of studentConcessionsList) {
-            // Check if concession applies to this fee head (empty array means all fee heads)
-            const isApplicable = concession.concessionType.appliedFeeHeads.length === 0 || 
-              concession.concessionType.appliedFeeHeads.includes(classwiseFee.feeHeadId);
-            
-            // Also check if concession applies to this fee term (empty array means all fee terms)
-            const isTermApplicable = concession.concessionType.appliedFeeTerms.length === 0 || 
-              concession.concessionType.appliedFeeTerms.includes(classwiseFee.feeTermId);
-            
-            if (isApplicable && isTermApplicable) {
-              if (concession.concessionType.type === 'PERCENTAGE') {
-                concessionAmount += (classwiseFee.amount * (concession.customValue || concession.concessionType.value)) / 100;
-              } else {
-                concessionAmount += concession.customValue || concession.concessionType.value;
-              }
-            }
+          if (studentTotalConcessionValue > 0 && studentClasswiseFees.length > 0) {
+            concessionAmount = studentTotalConcessionValue / studentClasswiseFees.length;
           }
 
           concessionAmount = Math.min(concessionAmount, classwiseFee.amount);
@@ -4354,7 +4770,14 @@ export const financeRouter = createTRPCRouter({
           // For now, using custom value or estimated amount
           concessionAmount = concession.customValue || 0;
         } else if (concession.concessionType.type === 'FIXED') {
-          concessionAmount = concession.customValue || concession.concessionType.value;
+          // For FIXED concessions, sum up all per-term amounts if available
+          if (concession.concessionType.feeTermAmounts && 
+              typeof concession.concessionType.feeTermAmounts === 'object') {
+            // Sum all per-term amounts
+            concessionAmount = Object.values(concession.concessionType.feeTermAmounts).reduce((sum: number, amount: any) => sum + (amount || 0), 0);
+          } else {
+            concessionAmount = concession.customValue || concession.concessionType.value;
+          }
         }
 
         return {

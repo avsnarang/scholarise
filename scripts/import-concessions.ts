@@ -7,6 +7,21 @@ import { createReadStream } from 'fs';
 
 const prisma = new PrismaClient();
 
+// Helper function to detect double month terms
+function isDoubleMonthTerm(termName: string): boolean {
+  const doubleMonthTerms = [
+    'May + June',
+    'July + August', 
+    'September + October',
+    'December + January',
+    'February + March'
+  ];
+  
+  return doubleMonthTerms.some(doubleTerm => 
+    termName.toLowerCase().includes(doubleTerm.toLowerCase())
+  );
+}
+
 interface ConcessionCSVRow {
   'Admission Number': string;
   'Student Name': string;
@@ -30,6 +45,18 @@ interface ConcessionTypeConfig {
   autoApproval: boolean;
 }
 
+interface ImportStats {
+  processed: number;
+  success: number;
+  created: number;
+  skipped: number;
+  updated: number;
+  errors: string[];
+  concessionTypeBreakdown: Record<string, number>;
+  termBreakdown: Record<string, number>;
+  feeHeadBreakdown: Record<string, number>;
+}
+
 const CONCESSION_TYPE_MAPPINGS: Record<string, ConcessionTypeConfig> = {
   'Sibling Concession - 15% discount on applicable fee': {
     name: 'Sibling Concession',
@@ -47,13 +74,21 @@ const CONCESSION_TYPE_MAPPINGS: Record<string, ConcessionTypeConfig> = {
     applicableStudentTypes: ['BOTH'],
     autoApproval: true,
   },
-  'Bright Foundation - 8000 concession on Admission Fee': {
+  'Bright Foundation - _8000 concession on Admission Fee': {
     name: 'Bright Foundation Scholarship',
     description: '8000 discount on admission fee for needy students',
     type: 'FIXED',
     value: 8000,
     applicableStudentTypes: ['NEW_ADMISSION'],
     autoApproval: false,
+  },
+  'Junior Wing Admission Fee Concession - _4000 off': {
+    name: 'Junior Wing Admission Fee Concession',
+    description: '4000 discount on admission fee for junior wing students',
+    type: 'FIXED',
+    value: 4000,
+    applicableStudentTypes: ['NEW_ADMISSION'],
+    autoApproval: true,
   },
   'TSH Juniors Admission Fee Concession - 4000 off': {
     name: 'TSH Juniors Admission Concession',
@@ -393,13 +428,15 @@ async function getDefaultBranchAndSession() {
 }
 
 async function createConcessionTypes(branchId: string, sessionId: string) {
-  console.log('Creating concession types...');
+  console.log('🔧 Creating concession types...');
   const concessionTypeMap: Record<string, string> = {};
+  let created = 0;
+  let existing = 0;
 
   for (const [category, config] of Object.entries(CONCESSION_TYPE_MAPPINGS)) {
     try {
       // Check if concession type already exists
-      const existing = await prisma.concessionType.findFirst({
+      const existingType = await prisma.concessionType.findFirst({
         where: {
           name: config.name,
           branchId,
@@ -407,9 +444,10 @@ async function createConcessionTypes(branchId: string, sessionId: string) {
         },
       });
 
-      if (existing) {
-        console.log(`Concession type "${config.name}" already exists, using existing one`);
-        concessionTypeMap[category] = existing.id;
+      if (existingType) {
+        console.log(`   ✓ Concession type "${config.name}" already exists`);
+        concessionTypeMap[category] = existingType.id;
+        existing++;
         continue;
       }
 
@@ -429,11 +467,17 @@ async function createConcessionTypes(branchId: string, sessionId: string) {
       });
 
       concessionTypeMap[category] = concessionType.id;
-      console.log(`Created concession type: ${config.name}`);
+      console.log(`   ➕ Created concession type: ${config.name}`);
+      created++;
     } catch (error) {
       console.error(`Error creating concession type "${config.name}":`, error);
     }
   }
+
+  console.log(`✅ Concession types setup completed:`);
+  console.log(`   • Created: ${created} new types`);
+  console.log(`   • Existing: ${existing} types found`);
+  console.log(`   • Total: ${Object.keys(concessionTypeMap).length} types available\n`);
 
   return concessionTypeMap;
 }
@@ -486,7 +530,7 @@ async function processCSVRow(
   concessionTypeMap: Record<string, string>,
   branchId: string,
   sessionId: string,
-  stats: { processed: number; success: number; errors: string[] },
+  stats: ImportStats,
   dryRun: boolean = false
 ) {
   stats.processed++;
@@ -540,42 +584,54 @@ async function processCSVRow(
           }
         }
       } else if (concessionType.type === 'FIXED') {
-        // Use custom value if different from default
-        if (Math.abs(concessionAmount - concessionType.value) > 0.01) {
+        // For fixed concessions, adjust expected value for double-month terms
+        const isDoubleTerm = isDoubleMonthTerm(termName);
+        const expectedValue = isDoubleTerm ? concessionType.value * 2 : concessionType.value;
+        
+        // Use custom value if different from expected value (considering double months)
+        if (Math.abs(concessionAmount - expectedValue) > 0.01) {
           customValue = concessionAmount;
         }
+        
+        console.log(`Fixed concession for ${admissionNumber} - Term: ${termName} ${isDoubleTerm ? '(Double Month)' : '(Single Month)'} - Expected: ${expectedValue}, Actual: ${concessionAmount}`);
       }
     }
 
-    // Check if this student concession already exists
-    const existingConcession = await prisma.studentConcession.findFirst({
+    // Check if this student concession already exists (using unique constraint fields)
+    const existingConcession = await prisma.studentConcession.findUnique({
       where: {
-        studentId: student.id,
-        concessionTypeId,
-        branchId,
-        sessionId,
+        student_concession_type_unique: {
+          studentId: student.id,
+          concessionTypeId,
+        },
       },
     });
 
     if (dryRun) {
       // Dry run mode - just log what would happen
       if (existingConcession) {
-        console.log(`[DRY RUN] Would update existing concession for student ${admissionNumber} (${student.section?.class?.name} ${student.section?.name}) - ${concessionCategory} - Amount: ${concessionAmount}`);
+        console.log(`[DRY RUN] Would skip duplicate concession for student ${admissionNumber} (${student.section?.class?.name} ${student.section?.name}) - ${concessionCategory} - Term: ${termName}`);
       } else {
         console.log(`[DRY RUN] Would create new concession for student ${admissionNumber} (${student.section?.class?.name} ${student.section?.name}) - ${concessionCategory} - Amount: ${concessionAmount}`);
       }
     } else {
       // Actual database operations
       if (existingConcession) {
-        // Update existing concession (fee heads/terms are now managed at concession type level)
-        await prisma.studentConcession.update({
-          where: { id: existingConcession.id },
-          data: {
-            customValue: customValue ?? existingConcession.customValue,
-          },
-        });
-
-        console.log(`Updated existing concession for student ${admissionNumber} - ${concessionCategory}`);
+        // Skip duplicate - concession already exists for this student and type
+        console.log(`⚠️  Skipping duplicate concession for student ${admissionNumber} - ${concessionCategory} (Term: ${termName}) - already exists`);
+        stats.skipped++;
+        
+        // Only update if the custom value is significantly different
+        if (customValue && Math.abs(customValue - (existingConcession.customValue || 0)) > 0.01) {
+          await prisma.studentConcession.update({
+            where: { id: existingConcession.id },
+            data: {
+              customValue: customValue,
+            },
+          });
+          console.log(`   ✓ Updated custom value to ${customValue}`);
+          stats.updated++;
+        }
       } else {
         // Create new student concession (fee heads/terms are now managed at concession type level)
         await prisma.studentConcession.create({
@@ -593,11 +649,18 @@ async function processCSVRow(
           },
         });
 
-        console.log(`Created concession for student ${admissionNumber} - ${concessionCategory}`);
+        console.log(`✅ Created concession for student ${admissionNumber} - ${concessionCategory}`);
+        stats.created++;
       }
     }
 
     stats.success++;
+    
+    // Track statistics for breakdown reports
+    stats.concessionTypeBreakdown[concessionCategory] = (stats.concessionTypeBreakdown[concessionCategory] || 0) + 1;
+    stats.feeHeadBreakdown[feeHeadName] = (stats.feeHeadBreakdown[feeHeadName] || 0) + 1;
+    stats.termBreakdown[termName] = (stats.termBreakdown[termName] || 0) + 1;
+    
   } catch (error) {
     const errorMsg = `Error processing row for student ${row['Admission Number']}: ${error instanceof Error ? error.message : String(error)}`;
     stats.errors.push(errorMsg);
@@ -606,41 +669,64 @@ async function processCSVRow(
 }
 
 async function importConcessions(dryRun: boolean = false) {
-  console.log(`Starting concession import${dryRun ? ' (DRY RUN MODE)' : ''}...`);
+  const startTime = Date.now();
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🚀 Starting concession import${dryRun ? ' (DRY RUN MODE)' : ''}...`);
+  console.log(`📅 Timestamp: ${new Date().toLocaleString()}`);
+  console.log(`${'='.repeat(60)}\n`);
   
   try {
+    console.log(`📋 Step 1: Validating configuration...`);
     const { branch, session } = await getDefaultBranchAndSession();
-    console.log(`Using branch: ${branch.name}, session: ${session.name}`);
+    console.log(`✅ Branch: ${branch.name} (ID: ${branch.id})`);
+    console.log(`✅ Session: ${session.name} (ID: ${session.id})`);
+    console.log(`✅ Configuration validated successfully\n`);
 
     // Create concession types (skip in dry run mode)
+    console.log(`📋 Step 2: Setting up concession types...`);
     let concessionTypeMap: Record<string, string> = {};
+    const totalConcessionTypes = Object.keys(CONCESSION_TYPE_MAPPINGS).length;
+    
     if (!dryRun) {
+      console.log(`🔧 Creating ${totalConcessionTypes} concession types...`);
       concessionTypeMap = await createConcessionTypes(branch.id, session.id);
+      console.log(`✅ All concession types created successfully\n`);
     } else {
+      console.log(`⚠️  [DRY RUN] Skipping concession type creation - using dummy IDs for validation`);
       // In dry run mode, just map to dummy IDs for validation
       for (const category of Object.keys(CONCESSION_TYPE_MAPPINGS)) {
         concessionTypeMap[category] = `dummy-id-${category}`;
       }
-      console.log(`[DRY RUN] Skipping concession type creation - using dummy IDs for validation`);
+      console.log(`✅ ${totalConcessionTypes} dummy concession type mappings created\n`);
     }
 
     // Read and process CSV file
-    const csvFilePath = path.join(process.cwd(), 'AI', 'Concession_02-08-2025.csv');
+    console.log(`📋 Step 3: Reading CSV file...`);
+    const csvFilePath = path.join(process.cwd(), 'AI', 'concession_4-8-2025.csv');
+    console.log(`📁 File path: ${csvFilePath}`);
     
     if (!fs.existsSync(csvFilePath)) {
-      throw new Error(`CSV file not found: ${csvFilePath}`);
+      throw new Error(`❌ CSV file not found: ${csvFilePath}`);
     }
+    console.log(`✅ CSV file found`);
 
-    const stats = {
+    const stats: ImportStats = {
       processed: 0,
       success: 0,
-      errors: [] as string[],
+      created: 0,
+      skipped: 0,
+      updated: 0,
+      errors: [],
+      concessionTypeBreakdown: {},
+      termBreakdown: {},
+      feeHeadBreakdown: {},
     };
 
     const rows: ConcessionCSVRow[] = [];
     let totalRowsRead = 0;
     let validRows = 0;
 
+    console.log(`📖 Reading CSV data...`);
     // Read CSV file
     await new Promise<void>((resolve, reject) => {
       createReadStream(csvFilePath)
@@ -653,11 +739,14 @@ async function importConcessions(dryRun: boolean = false) {
           
           // Debug first few rows
           if (totalRowsRead <= 2) {
-            console.log('Available field names:', Object.keys(row));
-            console.log('Sample row data:', {
+            console.log(`📋 CSV Headers:`, Object.keys(row));
+            console.log(`📝 Sample row ${totalRowsRead}:`, {
               admissionNumber: row['Admission Number'],
+              studentName: row['Student Name'],
               category: row['Concession Category'],
-              feeHead: row['Fee Head']
+              feeHead: row['Fee Head'],
+              term: row['Term'],
+              concessionAmount: row['Concession']
             });
           }
           
@@ -665,48 +754,126 @@ async function importConcessions(dryRun: boolean = false) {
           if (admissionNumber && admissionNumber.toString().trim()) {
             validRows++;
             rows.push(row);
+          } else {
+            console.log(`⚠️  Skipping row ${totalRowsRead} - missing admission number`);
           }
         })
         .on('end', () => {
+          console.log(`✅ CSV reading completed`);
+          console.log(`📊 Total rows read: ${totalRowsRead}`);
+          console.log(`📊 Valid rows: ${validRows}`);
+          console.log(`📊 Skipped rows: ${totalRowsRead - validRows}\n`);
           resolve();
         })
         .on('error', (error) => {
+          console.error(`❌ CSV reading error:`, error);
           reject(error);
         });
     });
 
-    console.log(`Found ${rows.length} valid rows in CSV file`);
+    console.log(`📋 Step 4: Processing concession data...`);
+    console.log(`📊 Found ${rows.length} valid concession records to process\n`);
 
-    // Process rows in batches to avoid overwhelming the database
-    const batchSize = 50;
+    // Enhanced batch processing with better performance and logging
+    const batchSize = 25; // Reduced for better database performance
+    const totalBatches = Math.ceil(rows.length / batchSize);
+    
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(rows.length / batchSize)}`);
+      const currentBatch = Math.floor(i / batchSize) + 1;
       
-      await Promise.all(
-        batch.map(row => processCSVRow(row, concessionTypeMap, branch.id, session.id, stats, dryRun))
+      console.log(`⚡ Processing batch ${currentBatch}/${totalBatches} (${batch.length} records)...`);
+      const batchStart = Date.now();
+      
+      // Process batch with controlled concurrency and error handling
+      const batchPromises = batch.map((row, index) => 
+        processCSVRow(row, concessionTypeMap, branch.id, session.id, stats, dryRun)
+          .catch(error => {
+            console.error(`❌ Error in batch ${currentBatch}, row ${index + 1}:`, error.message);
+            stats.errors.push(`Batch ${currentBatch}, Row ${index + 1}: ${error.message}`);
+          })
       );
+      
+      await Promise.all(batchPromises);
+      
+      const batchTime = Date.now() - batchStart;
+      const progress = ((i + batchSize) / rows.length * 100).toFixed(1);
+      console.log(`✅ Batch ${currentBatch} completed in ${batchTime}ms (${progress}% total progress)`);
+      
+      // Add a small delay between batches to prevent overwhelming the database
+      if (currentBatch < totalBatches) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    // Print summary
-    console.log('\n=== IMPORT SUMMARY ===');
-    console.log(`Total rows processed: ${stats.processed}`);
-    console.log(`Successful imports: ${stats.success}`);
-    console.log(`Errors: ${stats.errors.length}`);
+    // Enhanced final summary with comprehensive statistics
+    const endTime = Date.now();
+    const totalTime = (endTime - startTime) / 1000;
+    
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📊 IMPORT SUMMARY ${dryRun ? '(DRY RUN)' : ''}`);
+    console.log(`${'='.repeat(60)}`);
+    console.log(`⏱️  Total execution time: ${totalTime.toFixed(2)} seconds`);
+    console.log(`📈 Processing rate: ${(stats.processed / totalTime).toFixed(1)} records/second`);
+    console.log(`📋 Total rows processed: ${stats.processed}`);
+    console.log(`✅ Successful operations: ${stats.success}`);
+    console.log(`   • 🆕 Created: ${stats.created} new concessions`);
+    console.log(`   • ⚠️  Skipped: ${stats.skipped} duplicates`);
+    console.log(`   • 🔄 Updated: ${stats.updated} existing concessions`);
+    console.log(`❌ Errors: ${stats.errors.length}`);
+    console.log(`📊 Success rate: ${((stats.success / stats.processed) * 100).toFixed(1)}%`);
+
+    // Show breakdown by concession type
+    if (Object.keys(stats.concessionTypeBreakdown).length > 0) {
+      console.log(`\n📊 CONCESSION TYPE BREAKDOWN:`);
+      Object.entries(stats.concessionTypeBreakdown)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10) // Show top 10
+        .forEach(([type, count]) => {
+          console.log(`   • ${type}: ${count} records`);
+        });
+    }
+
+    // Show breakdown by fee head
+    if (Object.keys(stats.feeHeadBreakdown).length > 0) {
+      console.log(`\n📊 FEE HEAD BREAKDOWN:`);
+      Object.entries(stats.feeHeadBreakdown)
+        .sort(([,a], [,b]) => b - a)
+        .forEach(([feeHead, count]) => {
+          console.log(`   • ${feeHead}: ${count} records`);
+        });
+    }
+
+    // Show breakdown by term
+    if (Object.keys(stats.termBreakdown).length > 0) {
+      console.log(`\n📊 TERM BREAKDOWN:`);
+      Object.entries(stats.termBreakdown)
+        .sort(([,a], [,b]) => b - a)
+        .forEach(([term, count]) => {
+          console.log(`   • ${term}: ${count} records`);
+        });
+    }
 
     if (stats.errors.length > 0) {
-      console.log('\n=== ERRORS ===');
-      stats.errors.forEach((error, index) => {
-        console.log(`${index + 1}. ${error}`);
+      console.log(`\n❌ ERRORS (${stats.errors.length}):`);
+      stats.errors.slice(0, 10).forEach((error, index) => {
+        console.log(`   ${index + 1}. ${error}`);
       });
-    }
-
-    // Save error log to file
-    if (stats.errors.length > 0) {
+      
+      if (stats.errors.length > 10) {
+        console.log(`   ... and ${stats.errors.length - 10} more errors`);
+      }
+      
+      // Save errors to file
       const errorLogPath = path.join(process.cwd(), 'scripts', 'concession-import-errors.log');
       fs.writeFileSync(errorLogPath, stats.errors.join('\n'));
-      console.log(`\nError log saved to: ${errorLogPath}`);
+      console.log(`\n📄 Full error log saved to: ${errorLogPath}`);
     }
+
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🎉 ${dryRun ? 'Dry run' : 'Import'} completed successfully!`);
+    console.log(`📅 Completed at: ${new Date().toLocaleString()}`);
+    console.log(`${'='.repeat(60)}\n`);
 
   } catch (error) {
     console.error('Import failed:', error);

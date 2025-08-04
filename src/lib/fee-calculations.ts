@@ -39,9 +39,11 @@ export interface StudentConcession {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
   validFrom: Date;
   validUntil?: Date;
-  appliedFeeHeads: string[];
-  appliedFeeTerms: string[];
   reason?: string;
+  concessionType?: {
+    appliedFeeHeads: string[];
+    appliedFeeTerms: string[];
+  };
 }
 
 export interface PaymentRecord {
@@ -199,12 +201,14 @@ export function calculateConcessions(
     if (concession.validUntil && asOfDate > concession.validUntil) return false;
     
     // Check if concession applies to this fee head (empty array means all fee heads)
-    if (concession.appliedFeeHeads.length > 0 && !concession.appliedFeeHeads.includes(feeHeadId)) {
+    const appliedFeeHeads = concession.concessionType?.appliedFeeHeads || [];
+    if (appliedFeeHeads.length > 0 && !appliedFeeHeads.includes(feeHeadId)) {
       return false;
     }
     
     // Check if concession applies to this fee term (empty array means all fee terms)
-    if (concession.appliedFeeTerms.length > 0 && !concession.appliedFeeTerms.includes(feeTermId)) {
+    const appliedFeeTerms = concession.concessionType?.appliedFeeTerms || [];
+    if (appliedFeeTerms.length > 0 && !appliedFeeTerms.includes(feeTermId)) {
       return false;
     }
     
@@ -261,12 +265,14 @@ export function calculateConcessionAmount(
     if (validUntil && asOfDate > validUntil) return false;
     
     // Check if applies to specific fee heads (empty array means applies to all)
-    if (concession.appliedFeeHeads.length > 0 && !concession.appliedFeeHeads.includes(feeHeadId)) {
+    const appliedFeeHeads = concession.concessionType?.appliedFeeHeads || [];
+    if (appliedFeeHeads.length > 0 && !appliedFeeHeads.includes(feeHeadId)) {
       return false;
     }
     
     // Check if applies to specific fee terms (empty array means applies to all)
-    if (concession.appliedFeeTerms.length > 0 && !concession.appliedFeeTerms.includes(feeTermId)) {
+    const appliedFeeTerms = concession.concessionType?.appliedFeeTerms || [];
+    if (appliedFeeTerms.length > 0 && !appliedFeeTerms.includes(feeTermId)) {
       return false;
     }
     
