@@ -169,7 +169,7 @@ function StudentsPageContent() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: filters.isActive || "true", // Use filter state with fallback
+      isActive: filters.isActive !== undefined ? filters.isActive : "true", // Use filter state with proper fallback
       classId: filters.classId,
       sectionId: filters.sectionId,
       gender: filters.gender,
@@ -187,7 +187,7 @@ function StudentsPageContent() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: filters.isActive || "true",
+      isActive: filters.isActive !== undefined ? filters.isActive : "true",
       classId: filters.classId,
       sectionId: filters.sectionId,
       gender: filters.gender,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { format, subDays, isToday, isYesterday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameMonth, isSameDay } from "date-fns";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import {
   CheckCircle2,
   Clock,
@@ -368,6 +368,7 @@ function StudentAttendancePageContent() {
   const { currentSessionId } = useAcademicSessionContext();
   const { withBranchFilter } = useGlobalBranchFilter();
   const { withSessionFilter } = useGlobalSessionFilter();
+  const { toast } = useToast();
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, teacherId } = useUserRole();
   const { can } = usePermissions();
 
@@ -598,12 +599,20 @@ function StudentAttendancePageContent() {
   // Enhance the save function for better database persistence and verification
   const handleSaveAttendance = async () => {
     if (!canModifyAttendance) {
-      toast.error("You don't have permission to save attendance");
+              toast({
+          title: "Permission Denied",
+          description: "You don't have permission to save attendance",
+          variant: "destructive",
+        });
       return;
     }
 
     if (!selectedSectionId || !classAttendance) {
-      toast.error("Cannot save: Missing class or attendance data");
+              toast({
+          title: "Error",
+          description: "Cannot save: Missing class or attendance data",
+          variant: "destructive",
+        });
       return;
     }
 
@@ -650,7 +659,11 @@ function StudentAttendancePageContent() {
       });
 
       // If we got here, the save was successful
-      toast.success(`Attendance saved successfully for ${filteredStudents.length} students`);
+                  toast({
+              title: "Success",
+              description: `Attendance saved successfully for ${filteredStudents.length} students`,
+              variant: "success",
+            });
       setIsSaved(true);
       setSaveDialogOpen(false);
       setSaveVerification(prev => ({ 
@@ -670,7 +683,11 @@ function StudentAttendancePageContent() {
     } catch (error) {
       // Handle errors with more detail
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(`Failed to save attendance: ${errorMessage}`);
+                  toast({
+              title: "Error",
+              description: `Failed to save attendance: ${errorMessage}`,
+              variant: "destructive",
+            });
       setSaveVerification(prev => ({ 
         ...prev, 
         inProgress: false, 

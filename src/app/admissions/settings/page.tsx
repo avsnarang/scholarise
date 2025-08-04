@@ -357,7 +357,11 @@ const DynamicSettingsPageContent = dynamic(() => Promise.resolve(SettingsPageCon
 });
 
 export default function AdmissionsSettingsPage() {
-  return <DynamicSettingsPageContent />;
+  return (
+    <AdmissionsPageGuard>
+      <DynamicSettingsPageContent />
+    </AdmissionsPageGuard>
+  );
 }
 
  

@@ -72,7 +72,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { printFeeReceiptDirectly } from '@/utils/receipt-print';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useToast } from "@/components/ui/use-toast";
 
 // Form schema for editing payments
 const editPaymentSchema = z.object({
@@ -463,6 +463,7 @@ function PaymentDetailsModal({
   onPaymentUpdated?: () => void;
   onPrint: (payment: PaymentHistoryItem) => void;
 }) {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -497,7 +498,11 @@ function PaymentDetailsModal({
       // Placeholder for update mutation
       console.log('Update payment:', data);
       setTimeout(() => {
-        toast.success('Payment updated successfully');
+        toast({
+          title: "Success",
+          description: "Payment updated successfully",
+          variant: "success",
+        });
         setIsEditing(false);
         onPaymentUpdated?.();
       }, 1000);
@@ -510,7 +515,11 @@ function PaymentDetailsModal({
       // Placeholder for delete mutation
       console.log('Delete payment:', data);
       setTimeout(() => {
-        toast.success('Payment deleted successfully');
+        toast({
+          title: "Success",
+          description: "Payment deleted successfully",
+          variant: "success",
+        });
         setShowDeleteDialog(false);
         onClose();
         onPaymentUpdated?.();
@@ -925,6 +934,7 @@ function PaymentDetailsModal({
 function PaymentHistoryPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
+  const { toast } = useToast();
   
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
@@ -1087,7 +1097,11 @@ function PaymentHistoryPageContent() {
       if (window.confirm(`Are you sure you want to delete the payment of ${formatIndianCurrency(payment.amount)} for ${payment.studentName}?`)) {
         // Placeholder for delete logic
         console.log('Delete payment:', payment);
-        toast.success('Payment deleted successfully');
+        toast({
+          title: "Success",
+          description: "Payment deleted successfully",
+          variant: "success",
+        });
         handlePaymentUpdated();
       }
     }, 100);
@@ -1099,7 +1113,11 @@ function PaymentHistoryPageContent() {
   // Handle print receipt
   const handlePrintReceipt = async (payment: PaymentHistoryItem) => {
     if (!payment.receiptNumber) {
-      toast.error('No receipt number available for printing');
+              toast({
+          title: "Print Error",
+          description: "No receipt number available for printing",
+          variant: "destructive",
+        });
       return;
     }
 
@@ -1165,10 +1183,18 @@ function PaymentHistoryPageContent() {
 
       // Call the print function
       printFeeReceiptDirectly(receiptData);
-      toast.success('Receipt sent to printer');
+      toast({
+        title: "Success",
+        description: "Receipt sent to printer",
+        variant: "success",
+      });
     } catch (error) {
       console.error('Failed to fetch receipt data:', error);
-      toast.error('Failed to fetch receipt data for printing');
+      toast({
+        title: "Print Error", 
+        description: "Failed to fetch receipt data for printing",
+        variant: "destructive",
+      });
     }
   };
 

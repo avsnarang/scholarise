@@ -27,7 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { api } from "@/utils/api";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 
 // Form schema validation
 const designationFormSchema = z.object({
@@ -80,6 +80,7 @@ type DesignationFormProps = {
 export function DesignationForm({ initialData, branches = [] }: DesignationFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   // Set up form with default values
   const form = useForm<DesignationFormValues>({
@@ -104,11 +105,19 @@ export function DesignationForm({ initialData, branches = [] }: DesignationFormP
       // Invalidate queries to refresh the list
       void utils.designation.getAll.invalidate();
       void utils.designation.getStats.invalidate();
-      toast.success("Designation created successfully");
+      toast({
+        title: "Success",
+        description: "Designation created successfully",
+        variant: "success",
+      });
       router.push("/staff/designations/list");
     },
     onError: (error) => {
-      toast.error(`Error creating designation: ${error.message}`);
+      toast({
+        title: "Error",
+        description: `Error creating designation: ${error.message}`,
+        variant: "destructive",
+      });
       setIsSubmitting(false);
     },
   });
@@ -118,11 +127,19 @@ export function DesignationForm({ initialData, branches = [] }: DesignationFormP
       // Invalidate queries to refresh the list
       void utils.designation.getAll.invalidate();
       void utils.designation.getStats.invalidate();
-      toast.success("Designation updated successfully");
+      toast({
+        title: "Success",
+        description: "Designation updated successfully",
+        variant: "success",
+      });
       router.push("/staff/designations/list");
     },
     onError: (error) => {
-      toast.error(`Error updating designation: ${error.message}`);
+      toast({
+        title: "Error",
+        description: `Error updating designation: ${error.message}`,
+        variant: "destructive",
+      });
       setIsSubmitting(false);
     },
   });

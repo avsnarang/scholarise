@@ -27,7 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { api } from "@/utils/api";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 
 // Form schema validation
 const departmentFormSchema = z.object({
@@ -67,6 +67,7 @@ type DepartmentFormProps = {
 export function DepartmentForm({ initialData, branches = [] }: DepartmentFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   // Set up form with default values
   const form = useForm<DepartmentFormValues>({
@@ -91,11 +92,19 @@ export function DepartmentForm({ initialData, branches = [] }: DepartmentFormPro
       // Invalidate queries to refresh the list
       void utils.department.getAll.invalidate();
       void utils.department.getStats.invalidate();
-      toast.success("Department created successfully");
+      toast({
+        title: "Success",
+        description: "Department created successfully",
+        variant: "success",
+      });
       router.push("/staff/departments/list");
     },
     onError: (error) => {
-      toast.error(`Error creating department: ${error.message}`);
+      toast({
+        title: "Error",
+        description: `Error creating department: ${error.message}`,
+        variant: "destructive",
+      });
       setIsSubmitting(false);
     },
   });
@@ -105,11 +114,19 @@ export function DepartmentForm({ initialData, branches = [] }: DepartmentFormPro
       // Invalidate queries to refresh the list
       void utils.department.getAll.invalidate();
       void utils.department.getStats.invalidate();
-      toast.success("Department updated successfully");
+      toast({
+        title: "Success",
+        description: "Department updated successfully",
+        variant: "success",
+      });
       router.push("/staff/departments/list");
     },
     onError: (error) => {
-      toast.error(`Error updating department: ${error.message}`);
+      toast({
+        title: "Error",
+        description: `Error updating department: ${error.message}`,
+        variant: "destructive",
+      });
       setIsSubmitting(false);
     },
   });

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Select, 
   SelectContent, 
@@ -65,6 +65,7 @@ export function UserRoleAssignmentComponent({
   showUserSelection = true 
 }: UserRoleAssignmentProps) {
   const { can } = usePermissions();
+  const { toast } = useToast();
   const [selectedUserId, setSelectedUserId] = useState(userId || "");
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [formData, setFormData] = useState<UserRoleFormData>({
@@ -101,24 +102,40 @@ export function UserRoleAssignmentComponent({
   // Mutations
   const assignRoleMutation = api.role.assignToUser.useMutation({
     onSuccess: () => {
-      toast.success("Role assigned successfully");
+      toast({
+        title: "Success",
+        description: "Role assigned successfully",
+        variant: "success",
+      });
       refetchUserRoles();
       setIsAssignDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to assign role");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign role",
+        variant: "destructive",
+      });
     },
   });
 
   const removeRoleMutation = api.role.removeFromUser.useMutation({
     onSuccess: () => {
-      toast.success("Role removed successfully");
+      toast({
+        title: "Success",
+        description: "Role removed successfully",
+        variant: "success",
+      });
       refetchUserRoles();
       setRoleToRemove(null);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to remove role");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove role",
+        variant: "destructive",
+      });
     },
   });
 

@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Select, 
   SelectContent, 
@@ -154,6 +154,7 @@ function formatPermissionName(permissionName: string): string {
 
 export function RoleManagement() {
   const { can } = usePermissions();
+  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -186,56 +187,96 @@ export function RoleManagement() {
   // Mutations
   const createRoleMutation = api.role.create.useMutation({
     onSuccess: () => {
-      toast.success("Role created successfully");
+      toast({
+        title: "Success",
+        description: "Role created successfully",
+        variant: "success",
+      });
       refetchRoles();
       setIsCreateDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create role");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create role",
+        variant: "destructive",
+      });
     },
   });
 
   const updatePermissionsMutation = api.role.updatePermissions.useMutation({
     onSuccess: () => {
-      toast.success("Role permissions updated successfully");
+      toast({
+        title: "Success",
+        description: "Role permissions updated successfully",
+        variant: "success",
+      });
       refetchRoles();
       setIsEditDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update role permissions");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update role permissions",
+        variant: "destructive",
+      });
     },
   });
 
   const seedDefaultRolesMutation = api.role.seedDefaultRoles.useMutation({
     onSuccess: () => {
-      toast.success("Default roles seeded successfully");
+      toast({
+        title: "Success",
+        description: "Default roles seeded successfully",
+        variant: "success",
+      });
       refetchRoles();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to seed default roles");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to seed default roles",
+        variant: "destructive",
+      });
     },
   });
 
   const clearCacheMutation = api.role.clearCache.useMutation({
     onSuccess: () => {
-      toast.success("Cache cleared successfully");
+      toast({
+        title: "Success",
+        description: "Cache cleared successfully",
+        variant: "success",
+      });
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to clear cache");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear cache",
+        variant: "destructive",
+      });
     },
   });
 
   const deleteRoleMutation = api.role.delete.useMutation({
     onSuccess: () => {
-      toast.success("Role deleted successfully");
+      toast({
+        title: "Success",
+        description: "Role deleted successfully",
+        variant: "success",
+      });
       refetchRoles();
       setIsDeleteDialogOpen(false);
       setRoleToDelete(null);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to delete role");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete role",
+        variant: "destructive",
+      });
     },
   });
 

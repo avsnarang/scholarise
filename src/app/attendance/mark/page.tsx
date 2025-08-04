@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Check,
   Clock,
@@ -43,7 +43,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
 import {
   convertToMilesOrKm,
   getCurrentPosition,
@@ -108,6 +107,7 @@ function MarkAttendancePageContent() {
   const { user, session } = useAuth();
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, userId, teacherId, employeeId } = useUserRole();
   const { can } = usePermissions();
+  const { toast } = useToast();
   const utils = api.useUtils();
 
   // Check for granular permissions
@@ -346,28 +346,44 @@ function MarkAttendancePageContent() {
 
   const markAttendance = () => {
     if (!selectedLocationId || !currentPosition || !distance) {
-      toast.error("Please check your location first");
+              toast({
+          title: "Location Required",
+          description: "Please check your location first",
+          variant: "destructive",
+        });
       return;
     }
 
     // Check if we have a valid teacher/employee ID to mark attendance for
     if (!effectiveTeacherId && !employeeId) {
-      toast.error((isSuperAdmin || canMarkAllStaffAttendance) 
-        ? "Please select a teacher to mark attendance for" 
-        : "Unable to identify user for attendance marking");
+      toast({
+        title: "User Identification Error",
+        description: (isSuperAdmin || canMarkAllStaffAttendance) 
+          ? "Please select a teacher to mark attendance for" 
+          : "Unable to identify user for attendance marking",
+        variant: "destructive",
+      });
       return;
     }
 
     // Check if attendance types are available
     if (availableTypes.length === 0) {
-      toast.error("No attendance options are currently available");
+              toast({
+          title: "Error",
+          description: "No attendance options are currently available",
+          variant: "destructive",
+        });
       return;
     }
 
     const selectedLocation = locations.find((loc: Location) => loc.id === selectedLocationId);
 
     if (!selectedLocation) {
-      toast.error("Selected location not found");
+              toast({
+          title: "Error",
+          description: "Selected location not found",
+          variant: "destructive",
+        });
       return;
     }
 
@@ -389,12 +405,20 @@ function MarkAttendancePageContent() {
         const teacherName = effectiveTeacherId && selectedTeacherId 
           ? teachers?.items?.find((t: any) => t.id === selectedTeacherId)?.firstName 
           : "Your";
-        toast.success(`${attendanceType} attendance marked successfully${teacherName !== "Your" ? ` for ${teacherName}` : ""}`);
+        toast({
+          title: "Success",
+          description: `${attendanceType} attendance marked successfully${teacherName !== "Your" ? ` for ${teacherName}` : ""}`,
+          variant: "success",
+        });
         // Explicitly fetch data again
         await fetchAttendanceData();
       },
       onError: (error) => {
-        toast.error(`Failed to mark attendance: ${error.message}`);
+        toast({
+          title: "Error",
+          description: `Failed to mark attendance: ${error.message}`,
+          variant: "destructive",
+        });
       },
     });
   };

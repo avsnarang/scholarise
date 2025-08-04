@@ -32,7 +32,11 @@ const DynamicStaffPageContent = dynamic(() => Promise.resolve(StaffPageContent),
 });
 
 export default function StaffPage() {
-  return <DynamicStaffPageContent />;
+  return (
+    <AdmissionsPageGuard>
+      <DynamicStaffPageContent />
+    </AdmissionsPageGuard>
+  );
 }
 
  

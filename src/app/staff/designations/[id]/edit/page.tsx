@@ -6,12 +6,13 @@ import { PageWrapper } from "@/components/layout/page-wrapper";
 import { DesignationForm } from "@/components/designations/designation-form";
 import { api } from "@/utils/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function EditDesignationPage() {
   const router = useRouter();
   const params = useParams();
   const id = typeof params?.id === 'string' ? params.id : '';
+  const { toast } = useToast();
 
   // Fetch designation data
   const { data: designation, isLoading: isDesignationLoading, error } = api.designation.getById.useQuery(
@@ -28,7 +29,11 @@ export default function EditDesignationPage() {
   // Check for error
   useEffect(() => {
     if (error) {
-      toast.error("Designation not found");
+      toast({
+        title: "Error",
+        description: "Designation not found",
+        variant: "destructive",
+      });
       router.push("/staff/designations/list");
     }
   }, [error, router]);

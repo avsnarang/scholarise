@@ -150,7 +150,7 @@ export function StudentFilters({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="end">
+        <PopoverContent className="w-64 p-3 z-50" align="end">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">Filters</h4>
@@ -176,7 +176,7 @@ export function StudentFilters({
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50">
                   <SelectItem value="all">All classes</SelectItem>
                   {classesData?.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
@@ -198,7 +198,7 @@ export function StudentFilters({
                   <SelectTrigger className="h-8">
                     <SelectValue placeholder="All sections" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50">
                     <SelectItem value="all">All sections</SelectItem>
                     {sectionsData?.map((section) => (
                       <SelectItem key={section.id} value={section.id}>
@@ -220,7 +220,7 @@ export function StudentFilters({
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="All genders" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50">
                   <SelectItem value="all">All genders</SelectItem>
                   <SelectItem value="Male">Male</SelectItem>
                   <SelectItem value="Female">Female</SelectItem>
@@ -239,7 +239,7 @@ export function StudentFilters({
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50">
                   <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="true">Active</SelectItem>
                   <SelectItem value="false">Inactive</SelectItem>

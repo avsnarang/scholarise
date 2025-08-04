@@ -48,7 +48,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { toast } from "sonner"
+import { useToast } from "@/components/ui/use-toast"
 import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -206,11 +206,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
+          // Demo functionality - just log the action
+          console.log(`Saving ${row.original.header}`)
+          setTimeout(() => {
+            console.log("Save completed")
+          }, 1000)
         }}
       >
         <Label htmlFor={`${row.original.id}-target`} className="sr-only">
@@ -231,11 +231,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
-            success: "Done",
-            error: "Error",
-          })
+          // Demo functionality - just log the action
+          console.log(`Saving ${row.original.header}`)
+          setTimeout(() => {
+            console.log("Save completed")
+          }, 1000)
         }}
       >
         <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
@@ -339,6 +339,7 @@ export function DataTable({
 }: {
   data: z.infer<typeof schema>[]
 }) {
+  const { toast } = useToast()
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
