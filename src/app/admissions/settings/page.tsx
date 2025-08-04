@@ -9,9 +9,10 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { api } from "@/utils/api";
 import { useToast } from "@/components/ui/use-toast";
+import { SendRegistrationLinkModal } from "@/components/admissions/send-registration-link-modal";
 import { 
   ExternalLink, Copy, QrCode, Share, Globe, 
-  GraduationCap, Calendar, MapPin, Mail, Phone 
+  GraduationCap, Calendar, MapPin, Mail, Phone, Send 
 } from "lucide-react";
 import { AdmissionsPageGuard } from "@/components/auth/page-guard";
 
@@ -19,6 +20,16 @@ function SettingsPageContent() {
   const { currentBranchId, currentBranch } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
+  
+  // Modal state for sending registration links
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [selectedLinkData, setSelectedLinkData] = useState<{
+    branchId: string;
+    sessionId: string;
+    branchName: string;
+    sessionName: string;
+    registrationUrl: string;
+  } | null>(null);
   
   // Fetch active academic sessions for link generation
   const { data: allSessions } = api.academicSession.getAll.useQuery();
@@ -61,6 +72,18 @@ function SettingsPageContent() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSendLink = (branchId: string, sessionId: string, branchName: string, sessionName: string) => {
+    const registrationUrl = generateRegistrationUrl(branchId, sessionId);
+    setSelectedLinkData({
+      branchId,
+      sessionId,
+      branchName,
+      sessionName,
+      registrationUrl
+    });
+    setSendModalOpen(true);
   };
 
   const generateRegistrationUrl = (branchId: string, sessionId: string) => {
@@ -131,6 +154,7 @@ function SettingsPageContent() {
                     variant="outline"
                     onClick={() => handleCopyLink(generateRegistrationUrl(currentBranchId, currentSessionId))}
                     className="shrink-0"
+                    title="Copy link"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -139,8 +163,23 @@ function SettingsPageContent() {
                     variant="outline"
                     onClick={() => window.open(generateRegistrationUrl(currentBranchId, currentSessionId), '_blank')}
                     className="shrink-0"
+                    title="Open link"
                   >
                     <ExternalLink className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSendLink(
+                      currentBranchId, 
+                      currentSessionId, 
+                      currentBranch?.name || 'Current Branch',
+                      activeSessions.find(s => s.id === currentSessionId)?.name || "Current Session"
+                    )}
+                    className="shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    title="Send via WhatsApp"
+                  >
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -227,6 +266,7 @@ function SettingsPageContent() {
                             variant="outline"
                             onClick={() => handleCopyLink(generateRegistrationUrl(branch.id, session.id))}
                             className="shrink-0"
+                            title="Copy link"
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -235,8 +275,18 @@ function SettingsPageContent() {
                             variant="outline"
                             onClick={() => window.open(generateRegistrationUrl(branch.id, session.id), '_blank')}
                             className="shrink-0"
+                            title="Open link"
                           >
                             <ExternalLink className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSendLink(branch.id, session.id, branch.name, session.name)}
+                            className="shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Send via WhatsApp"
+                          >
+                            <Send className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -280,6 +330,22 @@ function SettingsPageContent() {
           <p className="text-gray-600">Additional settings will be implemented here.</p>
         </CardContent>
       </Card>
+
+      {/* Send Registration Link Modal */}
+      {selectedLinkData && (
+        <SendRegistrationLinkModal
+          isOpen={sendModalOpen}
+          onClose={() => {
+            setSendModalOpen(false);
+            setSelectedLinkData(null);
+          }}
+          registrationUrl={selectedLinkData.registrationUrl}
+          branchName={selectedLinkData.branchName}
+          sessionName={selectedLinkData.sessionName}
+          branchId={selectedLinkData.branchId}
+          sessionId={selectedLinkData.sessionId}
+        />
+      )}
     </div>
   );
 }
