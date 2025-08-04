@@ -55,9 +55,8 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
     }
 
     try {
-      // Ensure we have the latest session token for RLS
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      // Use existing session instead of fetching new one
+      if (!session) {
         console.error('❌ No current session for database access');
         setConnectionError('No authenticated session');
         return false;
@@ -99,8 +98,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
       return null;
     }
 
-    // Force Supabase to use the current session for realtime
-    await supabase.auth.getSession();
+    // Session is already available from auth provider
     
     // For Postgres Changes, use simple channel names (no branch filtering in channel name)
     // RLS policies on tables will handle access control
@@ -163,7 +161,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
       });
 
     return conversationSubscription;
-  }, [branchId, utils, session, testDatabaseAccess, isSuperAdmin]);
+  }, [branchId, utils, session, isSuperAdmin]);
 
   // Subscribe to new messages for unread count updates
   const subscribeToNewMessages = useCallback(async () => {
@@ -171,8 +169,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
       return null;
     }
 
-    // Force Supabase to use the current session for realtime
-    await supabase.auth.getSession();
+    // Session is already available from auth provider
     
     // Simple channel name - RLS handles access control
     const messageChannelName = `new-messages:${session.user.id}`;
@@ -248,7 +245,7 @@ export function useRealtimeConversationList({ branchId }: RealtimeConversationLi
       conversationSubscription?.unsubscribe();
       messageSubscription?.unsubscribe();
     };
-  }, [branchId, subscribeToConversations, subscribeToNewMessages, session, loading]);
+  }, [branchId, session?.user?.id, loading]); // Only depend on stable values
 
   return {
     isConnected,

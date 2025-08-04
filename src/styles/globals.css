@@ -3,6 +3,182 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer utilities {
+  /* Liquid Glass Animations */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+    }
+    25% {
+      transform: translateY(-20px) translateX(10px);
+    }
+    50% {
+      transform: translateY(-10px) translateX(-10px);
+    }
+    75% {
+      transform: translateY(-30px) translateX(5px);
+    }
+  }
+
+  @keyframes float-delayed {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+    }
+    25% {
+      transform: translateY(-30px) translateX(-5px);
+    }
+    50% {
+      transform: translateY(-20px) translateX(10px);
+    }
+    75% {
+      transform: translateY(-10px) translateX(-10px);
+    }
+  }
+  
+  /* Optimized 3D Blob Animation */
+  @keyframes blob {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1) rotateZ(0deg);
+    }
+    25% {
+      transform: translate3d(20px, -20px, 0) scale(1.05) rotateZ(90deg);
+    }
+    50% {
+      transform: translate3d(-15px, 15px, 0) scale(0.95) rotateZ(180deg);
+    }
+    75% {
+      transform: translate3d(15px, 8px, 0) scale(1.02) rotateZ(270deg);
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float-delayed 6s ease-in-out infinite;
+    animation-delay: 3s;
+  }
+  
+  .animate-blob {
+    animation: blob 12s ease-in-out infinite;
+    transform-origin: center;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  
+  /* Animation delays */
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-3000 {
+    animation-delay: 3s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  .animation-delay-5000 {
+    animation-delay: 5s;
+  }
+  
+  .animation-delay-6000 {
+    animation-delay: 6s;
+  }
+
+  /* Radial gradient utility */
+  .gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Animated gradient for liquid glass button */
+  @keyframes gradient-x {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  .animate-gradient-x {
+    animation: gradient-x 4s ease infinite;
+    background-size: 200% 200%;
+  }
+
+  /* Performance optimizations */
+  .gpu-optimized {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .reduce-blur {
+    filter: blur(0.5px);
+  }
+
+  /* Optimized blob gradients */
+  :root {
+    --blob-gradient-green: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%);
+    --blob-gradient-orange: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    --blob-gradient-emerald: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%);
+    --blob-gradient-lime: linear-gradient(135deg, #84cc16 0%, #22c55e 50%, #10b981 100%);
+    --blob-gradient-amber: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    --blob-highlight: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%);
+    --blob-shadow: rgba(0,0,0,0.1);
+  }
+
+  .blob-optimized {
+    background: var(--blob-gradient-green);
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-blob,
+    .animate-float,
+    .animate-float-delayed,
+    .animate-gradient-x {
+      animation: none !important;
+    }
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  /* Glass effect utilities */
+  .glass {
+    @apply bg-background/40 backdrop-blur-xl border border-white/20;
+  }
+
+  .glass-hover {
+    @apply hover:bg-background/50 hover:border-white/30;
+  }
+
+  /* Fluted glass shimmer animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .fluted-shimmer {
+    animation: shimmer 8s linear infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%
+    );
+    background-size: 1000px 100%;
+  }
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

@@ -1,8 +1,10 @@
 import { Montserrat, Lilita_One } from "next/font/google";
 import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { GlobalLoadingProvider } from "@/providers/global-loading-provider";
 import { PopupProvider } from "@/components/ui/custom-popup";
 import { ImprovedToaster } from "@/components/ui/improved-toaster";
+import { GlobalLoadingOverlay } from "@/components/ui/global-loading-overlay";
 import { TRPCProvider } from "@/providers/trpc-provider";
 // import { BackgroundServiceInitializer } from "@/components/startup/background-service-initializer";
 import "@/styles/globals.css";
@@ -49,13 +51,16 @@ export default function RootLayout({
       <body className={`${montserrat.variable} ${lilitaOne.variable} font-sans`} suppressHydrationWarning>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-            <TRPCProvider>
-              <PopupProvider>
-                {/* <BackgroundServiceInitializer /> */}
-                {children}
-                <ImprovedToaster />
-              </PopupProvider>
-            </TRPCProvider>
+            <GlobalLoadingProvider>
+              <TRPCProvider>
+                <PopupProvider>
+                  {/* <BackgroundServiceInitializer /> */}
+                  {children}
+                  <ImprovedToaster />
+                  <GlobalLoadingOverlay />
+                </PopupProvider>
+              </TRPCProvider>
+            </GlobalLoadingProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

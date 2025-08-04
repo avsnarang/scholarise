@@ -48,9 +48,8 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
     }
 
     try {
-      // Ensure we have the latest session token for RLS
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      // Use existing session instead of fetching new one
+      if (!session) {
         console.error('❌ No current session for database access');
         setConnectionError('No authenticated session');
         return false;
@@ -92,8 +91,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
       return null;
     }
 
-    // Force Supabase to use the current session for realtime
-    await supabase.auth.getSession();
+    // Session is already available from auth provider
     
     const messageSubscription = supabase
       .channel(`messages:${conversationId}:${session.user.id}`)
@@ -165,7 +163,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
       });
 
     return messageSubscription;
-  }, [conversationId, branchId, toast, utils, session, testDatabaseAccess]);
+  }, [conversationId, branchId, toast, utils, session]);
 
   // Real-time conversation updates subscription
   const subscribeToConversations = useCallback(async () => {
@@ -179,8 +177,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
       userId: session.user.id
     });
 
-    // Force Supabase to use the current session for realtime
-    await supabase.auth.getSession();
+    // Session is already available from auth provider
     
     const conversationSubscription = supabase
       .channel(`conversations:${branchId}:${session.user.id}`)
@@ -268,7 +265,7 @@ export function useRealtimeChat({ conversationId, branchId }: RealtimeChatHookPr
       messageSubscription?.unsubscribe();
       conversationSubscription?.unsubscribe();
     };
-  }, [conversationId, branchId, subscribeToMessages, subscribeToConversations, session, loading]);
+  }, [conversationId, branchId, session?.user?.id, loading]); // Only depend on stable values
 
   // Reset new message count when conversation is viewed
   const markAsViewed = useCallback(() => {

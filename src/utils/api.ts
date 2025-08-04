@@ -39,30 +39,9 @@ const commonLinks = [
     transformer: superjson,
     headers: async () => {
       try {
-        // Get the current session from Supabase with retries
-        let session = null;
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (!session && attempts < maxAttempts) {
-          const { data } = await supabase.auth.getSession();
-          session = data.session;
-          attempts++;
-          
-          if (!session && attempts < maxAttempts) {
-            console.log(`🔄 Retrying session fetch, attempt ${attempts}/${maxAttempts}`);
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-        }
-        
-        // Debug session state
-        console.log('🔍 tRPC Headers - Session State:', {
-          hasSession: !!session,
-          hasAccessToken: !!session?.access_token,
-          userId: session?.user?.id,
-          tokenLength: session?.access_token?.length || 0,
-          attempts
-        });
+        // Get the current session from Supabase (single attempt)
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
         
         if (session?.access_token) {
           return {
@@ -70,7 +49,6 @@ const commonLinks = [
           };
         }
         
-        console.log('⚠️ No access token found, returning empty headers');
         return {};
       } catch (error) {
         console.error('❌ Error getting session for headers:', error);

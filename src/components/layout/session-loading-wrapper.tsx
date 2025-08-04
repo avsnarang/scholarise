@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
-import { Loader2 } from "lucide-react";
+import { useGlobalLoading } from "@/providers/global-loading-provider";
 
 interface SessionLoadingWrapperProps {
   children: React.ReactNode;
@@ -10,37 +10,31 @@ interface SessionLoadingWrapperProps {
 
 export function SessionLoadingWrapper({ children }: SessionLoadingWrapperProps) {
   const { isLoading, currentSessionId } = useAcademicSessionContext();
+  const globalLoading = useGlobalLoading();
   const [showLoading, setShowLoading] = useState(false);
   const [previousSessionId, setPreviousSessionId] = useState<string | null>(null);
 
-  // Show loading spinner when session changes
+  // Show global loading when session changes
   useEffect(() => {
-    if (previousSessionId && previousSessionId !== currentSessionId) {
-      setShowLoading(true);
+    if (isLoading) {
+      globalLoading.show("Loading session data...");
+    } else if (previousSessionId && previousSessionId !== currentSessionId) {
+      globalLoading.show("Switching session...");
       
-      // Hide loading spinner after a delay
+      // Hide loading after a delay
       const timer = setTimeout(() => {
+        globalLoading.hide();
         setShowLoading(false);
       }, 1000);
       
+      setShowLoading(true);
       return () => clearTimeout(timer);
+    } else if (!showLoading) {
+      globalLoading.hide();
     }
     
     setPreviousSessionId(currentSessionId);
-  }, [currentSessionId, previousSessionId]);
-
-  if (isLoading || showLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center py-12">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-[#00501B]" />
-          <p className="mt-4 text-sm text-gray-600">
-            {isLoading ? "Loading session data..." : "Switching session..."}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  }, [currentSessionId, previousSessionId, isLoading, showLoading, globalLoading]);
 
   return <>{children}</>;
 }

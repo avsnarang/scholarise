@@ -32,16 +32,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     requireAuth();
   }, [requireAuth]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="flex flex-col items-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#00501B] border-t-transparent"></div>
-          <p className="mt-4 text-sm text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Dashboard loading is now handled by global loading overlay
+  // Individual page loading is handled at the component level
 
   return (
     <BranchProvider>

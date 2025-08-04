@@ -264,9 +264,8 @@ export default function TemplatesPage() {
     }
 
     try {
-      // Ensure we have the latest session token
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      // Use existing session instead of fetching new one
+      if (!session) {
         console.error('❌ No current session for real-time subscription');
         setConnectionError('No authenticated session');
         return false;
@@ -299,8 +298,7 @@ export default function TemplatesPage() {
         return;
       }
 
-      // Force Supabase to use the current session for realtime
-      await supabase.auth.getSession();
+      // Session is already available from auth context
       
       // Subscribe to WhatsAppTemplate table changes with user-specific channel
       const subscription = supabase
@@ -398,7 +396,7 @@ export default function TemplatesPage() {
     };
     
     setupSubscription();
-  }, [session, user, refetch, toast, testAuthenticationState]);
+  }, [session?.user?.id, user, refetch, toast]); // Only stable values
 
   // Fallback polling: only when page is visible and has pending templates (reduced frequency)
   React.useEffect(() => {
