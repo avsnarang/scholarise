@@ -155,9 +155,10 @@ export function SendRegistrationLinkModal({
       const templateParameters: Record<string, string> = {};
       
       // Map the values to the correct parameter names
-      if (templateVariables.length >= 2) {
-        templateParameters[templateVariables[0]] = data.parentName; // Parent Name -> variable_1
-        templateParameters[templateVariables[1]] = shortUrl; // Registration Form link -> variable_2
+      const [key1, key2] = templateVariables;
+      if (key1 && key2) {
+        templateParameters[key1] = data.parentName;
+        templateParameters[key2] = shortUrl;
       } else {
         // Fallback to numbered parameters if template variables are not properly set
         templateParameters["1"] = data.parentName;
