@@ -22,6 +22,7 @@ import { useActionPermissions } from "@/utils/permission-utils"
 import { useRouter } from "next/navigation"
 import React from "react"
 import { usePopup } from "@/components/ui/custom-popup"
+import Link from "next/link"
 
 // Define the Student type
 export type Student = {
@@ -34,6 +35,7 @@ export type Student = {
   gender?: string
   isActive: boolean
   dateOfBirth: Date
+  dateOfAdmission?: Date
   class?: {
     name: string
     section?: string
@@ -52,6 +54,10 @@ export type Student = {
   academicSessionId?: string
   academicSession?: {
     id: string
+  }
+  firstJoinedSession?: {
+    id: string
+    name: string
   }
 }
 
@@ -322,9 +328,17 @@ export function StudentDataTable({
           )}
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("admissionNumber")}</div>
-      ),
+      cell: ({ row }) => {
+        const student = row.original
+        return (
+          <Link 
+            href={`/students/${student.id}`}
+            className="font-medium text-secondary hover:text-secondary/80 hover:underline transition-colors"
+          >
+            {row.getValue("admissionNumber")}
+          </Link>
+        )
+      },
     },
     {
       id: "name",
@@ -353,11 +367,28 @@ export function StudentDataTable({
         const student = row.original
         return (
           <div>
-            <div className="font-medium">{student.firstName} {student.lastName}</div>
+            <div className="font-medium">
+              <Link 
+                href={`/students/${student.id}`}
+                className="text-primary hover:text-primary/80 hover:underline transition-colors"
+              >
+                {student.firstName} {student.lastName}
+              </Link>
+            </div>
             <div className="text-xs text-muted-foreground">
               {student.gender || ""}
               {student.dateOfBirth && `, ${calculateAge(student.dateOfBirth)} years`}
             </div>
+            {student.email && (
+              <div className="text-xs">
+                <a 
+                  href={`mailto:${student.email}`} 
+                  className="text-secondary hover:text-secondary/80 hover:underline transition-colors"
+                >
+                  {student.email}
+                </a>
+              </div>
+            )}
           </div>
         )
       },
@@ -413,6 +444,31 @@ export function StudentDataTable({
       },
     },
     {
+      id: "admission",
+      header: "Date of Admission",
+      cell: ({ row }) => {
+        const student = row.original
+        return (
+          <div className="text-sm">
+            {student.dateOfAdmission ? (
+              <div>
+                <div className="font-medium">
+                  {formatDate(student.dateOfAdmission)}
+                </div>
+                {student.firstJoinedSession && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {student.firstJoinedSession.name}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">-</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       id: "contact",
       header: "Contact",
       cell: ({ row }) => {
@@ -421,10 +477,10 @@ export function StudentDataTable({
           <div className="text-sm space-y-1">
             {student.phone && (
               <div className="flex items-center gap-1">
-                <svg className="w-3 h-3 flex-shrink-0 dark:text-[#7aad8c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="w-3 h-3 flex-shrink-0 text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
                 </svg>
-                <a href={`tel:${student.phone}`} className="text-blue-600 hover:underline dark:text-[#7aad8c]">
+                <a href={`tel:${student.phone}`} className="text-secondary hover:text-secondary/80 hover:underline transition-colors">
                   {student.phone}
                 </a>
               </div>
@@ -434,7 +490,7 @@ export function StudentDataTable({
                 <svg className="w-3 h-3 flex-shrink-0 dark:text-[#e2bd8c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
-                <a href={`mailto:${student.email}`} className="text-blue-600 hover:underline truncate max-w-[180px] dark:text-[#e2bd8c]">
+                <a href={`mailto:${student.email}`} className="text-primary hover:text-primary/80 hover:underline transition-colors truncate max-w-[180px]">
                   {student.email}
                 </a>
               </div>
@@ -458,7 +514,7 @@ export function StudentDataTable({
                     <span className="text-xs text-gray-500 min-w-[15px]">F:</span>
                     <span>{student.parent.fatherName}</span>
                     {student.parent.fatherMobile && (
-                      <a href={`tel:${student.parent.fatherMobile}`} className="text-blue-600 hover:underline ml-1 dark:text-[#7aad8c]">
+                      <a href={`tel:${student.parent.fatherMobile}`} className="text-secondary hover:text-secondary/80 hover:underline transition-colors ml-1">
                         {student.parent.fatherMobile}
                       </a>
                     )}
@@ -469,7 +525,7 @@ export function StudentDataTable({
                     <svg className="w-3 h-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                     </svg>
-                    <a href={`mailto:${student.parent.fatherEmail}`} className="text-blue-600 hover:underline text-xs truncate max-w-[150px] dark:text-[#e2bd8c]">
+                    <a href={`mailto:${student.parent.fatherEmail}`} className="text-secondary hover:text-secondary/80 hover:underline transition-colors text-xs truncate max-w-[150px]">
                       {student.parent.fatherEmail}
                     </a>
                   </div>
@@ -480,7 +536,7 @@ export function StudentDataTable({
                     <span className="text-xs text-gray-500 min-w-[15px]">M:</span>
                     <span>{student.parent.motherName}</span>
                     {student.parent.motherMobile && (
-                      <a href={`tel:${student.parent.motherMobile}`} className="text-blue-600 hover:underline ml-1 dark:text-[#7aad8c]">
+                      <a href={`tel:${student.parent.motherMobile}`} className="text-primary hover:text-primary/80 hover:underline transition-colors ml-1">
                         {student.parent.motherMobile}
                       </a>
                     )}
@@ -491,7 +547,7 @@ export function StudentDataTable({
                     <svg className="w-3 h-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                     </svg>
-                    <a href={`mailto:${student.parent.motherEmail}`} className="text-blue-600 hover:underline text-xs truncate max-w-[150px] dark:text-[#e2bd8c]">
+                    <a href={`mailto:${student.parent.motherEmail}`} className="text-primary hover:text-primary/80 hover:underline transition-colors text-xs truncate max-w-[150px]">
                       {student.parent.motherEmail}
                     </a>
                   </div>
@@ -508,7 +564,7 @@ export function StudentDataTable({
                     <svg className="w-3 h-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                     </svg>
-                    <a href={`mailto:${student.parent.guardianEmail}`} className="text-blue-600 hover:underline text-xs truncate max-w-[150px] dark:text-[#e2bd8c]">
+                    <a href={`mailto:${student.parent.guardianEmail}`} className="text-primary hover:text-primary/80 hover:underline transition-colors text-xs truncate max-w-[150px]">
                       {student.parent.guardianEmail}
                     </a>
                   </div>
@@ -524,12 +580,76 @@ export function StudentDataTable({
       accessorKey: "isActive",
       header: "Status",
       cell: ({ row }) => {
-        const isActive = row.original.isActive
+        const student = row.original
+        const isActive = student.isActive
+        
+        // If the student has a status field, use that; otherwise fall back to isActive
+        const status = (student as any).status || (isActive ? "ACTIVE" : "INACTIVE")
+        
+        const getStatusConfig = (status: string) => {
+          switch (status) {
+            case "ACTIVE":
+              return {
+                variant: "outline" as const,
+                className: "bg-green-50 text-green-700 hover:bg-green-50 dark:bg-[#7aad8c]/10 dark:text-[#7aad8c] dark:border-[#7aad8c]/30 dark:hover:bg-[#7aad8c]/20",
+                label: "Active"
+              }
+            case "INACTIVE":
+              return {
+                variant: "secondary" as const,
+                className: "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040] dark:hover:bg-[#353535]",
+                label: "Inactive"
+              }
+            case "EXPELLED":
+              return {
+                variant: "destructive" as const,
+                className: "bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400",
+                label: "Expelled"
+              }
+            case "WITHDRAWN":
+              return {
+                variant: "secondary" as const,
+                className: "bg-orange-50 text-orange-700 hover:bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400",
+                label: "Withdrawn"
+              }
+            case "REPEAT":
+              return {
+                variant: "outline" as const,
+                className: "bg-yellow-50 text-yellow-700 hover:bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400",
+                label: "Repeat"
+              }
+            case "TRANSFERRED":
+              return {
+                variant: "outline" as const,
+                className: "bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400",
+                label: "Transferred"
+              }
+            case "GRADUATED":
+              return {
+                variant: "outline" as const,
+                className: "bg-purple-50 text-purple-700 hover:bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400",
+                label: "Graduated"
+              }
+            case "SUSPENDED":
+              return {
+                variant: "destructive" as const,
+                className: "bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400",
+                label: "Suspended"
+              }
+            default:
+              return {
+                variant: "secondary" as const,
+                className: "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040] dark:hover:bg-[#353535]",
+                label: status
+              }
+          }
+        }
+        
+        const config = getStatusConfig(status)
+        
         return (
-          <Badge variant={isActive ? "outline" : "secondary"} className={isActive
-            ? "bg-green-50 text-green-700 hover:bg-green-50 dark:bg-[#7aad8c]/10 dark:text-[#7aad8c] dark:border-[#7aad8c]/30 dark:hover:bg-[#7aad8c]/20"
-            : "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040] dark:hover:bg-[#353535]"}>
-            {isActive ? "Active" : "Inactive"}
+          <Badge variant={config.variant} className={config.className}>
+            {config.label}
           </Badge>
         )
       },

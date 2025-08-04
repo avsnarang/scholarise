@@ -6,6 +6,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import type { DateRange } from 'react-day-picker';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { 
   Card, 
@@ -27,6 +28,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { DateRangeSelector } from '@/components/ui/date-range-selector';
 import { 
   Download, 
   Calendar,
@@ -942,6 +944,7 @@ function PaymentHistoryPageContent() {
   const [paymentModeFilter, setPaymentModeFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [gatewayFilter, setGatewayFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedPayment, setSelectedPayment] = useState<PaymentHistoryItem | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -954,13 +957,15 @@ function PaymentHistoryPageContent() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, paymentModeFilter, typeFilter, gatewayFilter, pageSize]);
+  }, [searchTerm, statusFilter, paymentModeFilter, typeFilter, gatewayFilter, dateRange, pageSize]);
 
   // Get payment history
   const { data: paymentHistory, isLoading, error: historyError, refetch: refetchHistory } = api.paymentGateway.getPaymentHistory.useQuery(
     {
       branchId: currentBranchId!,
       sessionId: currentSessionId!,
+      ...(dateRange?.from && { startDate: dateRange.from }),
+      ...(dateRange?.to && { endDate: dateRange.to }),
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
@@ -972,6 +977,8 @@ function PaymentHistoryPageContent() {
     {
       branchId: currentBranchId!,
       sessionId: currentSessionId!,
+      ...(dateRange?.from && { startDate: dateRange.from }),
+      ...(dateRange?.to && { endDate: dateRange.to }),
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
@@ -1307,7 +1314,7 @@ function PaymentHistoryPageContent() {
             </div>
             
             {/* Filters */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-medium">Status</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1365,6 +1372,29 @@ function PaymentHistoryPageContent() {
                     ))}
                     </SelectContent>
                   </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Date Range</Label>
+                <div className="flex gap-2">
+                  <DateRangeSelector
+                    value={dateRange}
+                    onChange={setDateRange}
+                    placeholder="Select date range"
+                    className="h-9 flex-1"
+                  />
+                  {dateRange?.from && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDateRange(undefined)}
+                      className="h-9 px-2"
+                      title="Clear date range"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-2">

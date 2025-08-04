@@ -222,7 +222,16 @@ export const studentRouter = createTRPCRouter({
           ...(filters && Object.keys(filters).length > 0
             ? Object.entries(filters).map(([field, value]) => {
                 if (field === "isActive") {
-                  return { [field]: value === "true" || value === true };
+                  // Handle both legacy boolean and new status enum values
+                  if (value === "true" || value === true) {
+                    return { status: "ACTIVE" as const };
+                  } else if (value === "false" || value === false) {
+                    return { status: { not: "ACTIVE" as const } };
+                  } else if (typeof value === "string" && ["ACTIVE", "INACTIVE", "EXPELLED", "WITHDRAWN", "REPEAT", "TRANSFERRED", "GRADUATED", "SUSPENDED"].includes(value)) {
+                    return { status: value as any };
+                  } else {
+                    return { status: { not: "ACTIVE" as const } };
+                  }
                 }
                 if (typeof value === "string") {
                   return { [field]: { contains: value, mode: "insensitive" } };
@@ -276,6 +285,7 @@ export const studentRouter = createTRPCRouter({
               },
             },
             parent: true,
+            firstJoinedSession: true,
             academicRecords: {
               where: {
                 sessionId:
@@ -1168,7 +1178,11 @@ export const studentRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return ctx.db.student.updateMany({
         where: { id: { in: input.ids } },
-        data: { isActive: input.isActive },
+        data: { 
+          status: input.isActive ? "ACTIVE" : "INACTIVE",
+          // Also update legacy field for backward compatibility during transition
+          isActive: input.isActive 
+        },
       });
     }),
 
@@ -1196,7 +1210,7 @@ export const studentRouter = createTRPCRouter({
         ],
         ...(excludeStudentId ? { NOT: { id: excludeStudentId } } : {}),
         ...(branchId ? { branchId } : {}),
-        isActive: true,
+        status: "ACTIVE",
       };
 
       const students = await ctx.db.student.findMany({
@@ -2102,7 +2116,7 @@ export const studentRouter = createTRPCRouter({
 
       const whereClause: Prisma.StudentWhereInput = {
         branchId,
-        isActive: true,
+        status: "ACTIVE",
         ...(sectionId && sectionId !== "all" ? { sectionId } : {}),
         ...(sessionId
           ? {

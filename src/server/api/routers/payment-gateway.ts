@@ -520,26 +520,35 @@ export const paymentGatewayRouter = createTRPCRouter({
       const limit = input.limit || 999999; // Use a very large number if no limit specified
       const cursor = input.cursor;
 
-      // Build base where clause
+      // Build base where clause for common fields
       const baseWhere = {
         branchId: input.branchId,
         sessionId: input.sessionId,
         ...(input.studentId && { studentId: input.studentId }),
         ...(input.feeTermId && { feeTermId: input.feeTermId }),
-        ...(input.startDate && input.endDate && {
-          paymentDate: {
-            gte: input.startDate,
-            lte: input.endDate,
-          },
-        }),
       };
 
+      // Build date filter for FeeCollection (uses paymentDate)
+      const manualDateFilter = input.startDate && input.endDate ? {
+        paymentDate: {
+          gte: input.startDate,
+          lte: input.endDate,
+        },
+      } : {};
 
+      // Build date filter for PaymentGatewayTransaction (uses createdAt)
+      const gatewayDateFilter = input.startDate && input.endDate ? {
+        createdAt: {
+          gte: input.startDate,
+          lte: input.endDate,
+        },
+      } : {};
 
       // Get manual payments (FeeCollection)
       const manualPaymentsPromise = ctx.db.feeCollection.findMany({
         where: {
           ...baseWhere,
+          ...manualDateFilter,
           ...(input.paymentMode && { paymentMode: input.paymentMode }),
           ...(input.status && { status: input.status }),
           gatewayTransactionId: null, // Only manual payments
@@ -571,6 +580,7 @@ export const paymentGatewayRouter = createTRPCRouter({
       const gatewayPaymentsPromise = ctx.db.paymentGatewayTransaction.findMany({
         where: {
           ...baseWhere,
+          ...gatewayDateFilter,
           ...(input.gateway && { gateway: input.gateway }),
           // If no status filter is provided, default to SUCCESS. If provided, use the input status
           status: (input.status || 'SUCCESS') as PaymentStatus,
@@ -690,23 +700,33 @@ export const paymentGatewayRouter = createTRPCRouter({
       endDate: z.date().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const dateFilter = input.startDate && input.endDate ? {
+      // Base where clause for common fields
+      const baseWhere = {
+        branchId: input.branchId,
+        sessionId: input.sessionId,
+      };
+
+      // Date filter for FeeCollection (uses paymentDate)
+      const manualDateFilter = input.startDate && input.endDate ? {
+        paymentDate: {
+          gte: input.startDate,
+          lte: input.endDate,
+        },
+      } : {};
+
+      // Date filter for PaymentGatewayTransaction (uses createdAt)
+      const gatewayDateFilter = input.startDate && input.endDate ? {
         createdAt: {
           gte: input.startDate,
           lte: input.endDate,
         },
       } : {};
 
-      const baseWhere = {
-        branchId: input.branchId,
-        sessionId: input.sessionId,
-        ...dateFilter,
-      };
-
       // Get manual payment stats
       const manualStats = await ctx.db.feeCollection.aggregate({
         where: {
           ...baseWhere,
+          ...manualDateFilter,
           gatewayTransactionId: null,
         },
         _sum: {
@@ -718,7 +738,10 @@ export const paymentGatewayRouter = createTRPCRouter({
       // Get gateway payment stats
       const gatewayStats = await ctx.db.paymentGatewayTransaction.groupBy({
         by: ['gateway', 'status'],
-        where: baseWhere,
+        where: {
+          ...baseWhere,
+          ...gatewayDateFilter,
+        },
         _sum: {
           amount: true,
         },

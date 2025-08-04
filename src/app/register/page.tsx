@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Phone, Mail, MapPin, Loader2, ArrowRight, CheckCircle2, Calendar } from "lucide-react";
+import Image from "next/image";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -34,9 +35,13 @@ export default function BranchSessionSelectionPage() {
         <div className="mx-auto max-w-full px-4 py-6 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="mb-4 flex items-center justify-center gap-3">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#00501B] to-[#007B2D] shadow-lg dark:bg-[#101010]">
-                <GraduationCap className="h-10 w-10 text-white dark:text-white" />
-              </div>
+              <Image
+                src="/mobile_logo.png"
+                alt="The Scholars' Home Logo"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
             </div>
             <h1 className="mb-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
               The Scholars' Home
@@ -102,9 +107,18 @@ export default function BranchSessionSelectionPage() {
 
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D] dark:bg-[#101010]">
-                            <GraduationCap className="h-6 w-6 text-white dark:text-white" />
-                          </div>
+                          <Image
+                            src={branch.logoUrl || "/mobile_logo.png"}
+                            alt={`The Scholars' Home ${branch.name} Logo`}
+                            width={45}
+                            height={45}
+                            className="object-contain"
+                            onError={(e) => {
+                              // Fallback to static logo if branch logo fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/mobile_logo.png";
+                            }}
+                          />
                           <div>
                             <h4 className="font-semibold text-gray-900 dark:text-white">
                               The Scholars' Home
@@ -290,9 +304,13 @@ export default function BranchSessionSelectionPage() {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="mb-4 flex items-center justify-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00501B] to-[#007B2D]">
-                <GraduationCap className="h-5 w-5 text-white dark:text-white" />
-              </div>
+              <Image
+                src="/mobile_logo.png"
+                alt="The Scholars' Home Logo"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                 The Scholars' Home
               </h3>

@@ -40,6 +40,7 @@ import {
   type StudentExportData 
 } from "@/utils/student-export"
 import { StudentFilters, type StudentFilters as StudentFiltersType } from "@/components/students/student-filters"
+import { MultiStepSort, type SortStep } from "@/components/students/multi-step-sort"
 
 // Define the Student type
 export type Student = {
@@ -52,6 +53,8 @@ export type Student = {
   gender?: string
   isActive: boolean
   dateOfBirth: Date
+  dateOfAdmission?: Date
+  status?: string
   class?: {
     name: string
     section?: string
@@ -61,6 +64,10 @@ export type Student = {
     name: string
     phone: string
     email: string
+  }
+  firstJoinedSession?: {
+    id: string
+    name: string
   }
   rollNumber?: string | null
 }
@@ -102,6 +109,24 @@ function StudentsPageContent() {
   const [sortBy, setSortBy] = useState<string | undefined>("class");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | undefined>("asc"); // Use desc for class to show nursery first
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Multi-step sorting state
+  const [multiStepSortEnabled, setMultiStepSortEnabled] = useState(false);
+  const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
+  
+  // Available fields for sorting
+  const availableSortFields = [
+    { value: "admissionNumber", label: "Admission Number" },
+    { value: "rollNumber", label: "Roll Number" },
+    { value: "firstName", label: "First Name" },
+    { value: "lastName", label: "Last Name" },
+    { value: "class", label: "Class" },
+    { value: "dateOfAdmission", label: "Date of Admission" },
+    { value: "dateOfBirth", label: "Date of Birth" },
+    { value: "phone", label: "Phone Number" },
+    { value: "email", label: "Email" },
+    { value: "status", label: "Status" }
+  ];
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [allStudentsSelected, setAllStudentsSelected] = useState(false);
   const [allStudentIds, setAllStudentIds] = useState<string[]>([]);
@@ -119,7 +144,7 @@ function StudentsPageContent() {
 
   // Filter state
   const [filters, setFilters] = useState<StudentFiltersType>({
-    isActive: "true" // Default to active students
+    isActive: "ACTIVE" // Default to ACTIVE status students only
   });
 
   const { getBranchFilterParam } = useGlobalBranchFilter();
@@ -169,7 +194,7 @@ function StudentsPageContent() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: filters.isActive !== undefined ? filters.isActive : "true", // Use filter state with proper fallback
+      isActive: filters.isActive !== undefined ? filters.isActive : "ACTIVE", // Use filter state with proper fallback
       classId: filters.classId,
       sectionId: filters.sectionId,
       gender: filters.gender,
@@ -187,7 +212,7 @@ function StudentsPageContent() {
     sortOrder,
     search: debouncedSearchTerm || undefined,
     filters: {
-      isActive: filters.isActive !== undefined ? filters.isActive : "true",
+      isActive: filters.isActive !== undefined ? filters.isActive : "ACTIVE",
       classId: filters.classId,
       sectionId: filters.sectionId,
       gender: filters.gender,
@@ -210,6 +235,36 @@ function StudentsPageContent() {
     enabled: isExportModalOpen || needsExportData, // Fetch when export modal is open or quick export is triggered
   });
 
+  // User preferences API
+  const { data: savedPreferences } = api.userPreferences.getPreferences.useQuery({
+    module: "STUDENT_LIST"
+  });
+
+  const savePreferencesMutation = api.userPreferences.savePreferences.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Sort Configuration Saved",
+        description: "Your sorting preferences have been saved.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to save sorting preferences: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deletePreferencesMutation = api.userPreferences.deletePreferences.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Preferences Reset",
+        description: "Your sorting preferences have been reset to default.",
+      });
+    },
+  });
+
   // Calculate pagination parameters
   const currentTotalPages = Math.ceil((studentsData?.totalCount || 0) / pageSize);
   const totalPages = isPaginating && lastKnownTotalPages > 1 ? lastKnownTotalPages : currentTotalPages;
@@ -227,6 +282,8 @@ function StudentsPageContent() {
         phone: student.phone || undefined,
         gender: student.gender || undefined,
         dateOfBirth: student.dateOfBirth || new Date(),
+        dateOfAdmission: student.dateOfAdmission || undefined,
+        status: student.status || undefined,
         isActive: student.isActive !== undefined ? student.isActive : true,
         class: student?.section?.class ? {
           name: student.section.class.name || '',
@@ -237,6 +294,10 @@ function StudentsPageContent() {
           name: student.parent.fatherName || student.parent.motherName || student.parent.guardianName || '',
           phone: student.parent.fatherMobile || student.parent.motherMobile || student.parent.guardianMobile || '',
           email: student.parent.fatherEmail || student.parent.motherEmail || student.parent.guardianEmail || ''
+        } : undefined,
+        firstJoinedSession: student?.firstJoinedSession ? {
+          id: student.firstJoinedSession.id,
+          name: student.firstJoinedSession.name
         } : undefined,
         rollNumber: student.rollNumber?.toString() || null,
       };
@@ -258,7 +319,8 @@ function StudentsPageContent() {
   useEffect(() => {
     if (studentsData?.items) {
       const transformedStudents = studentsData.items.map(transformStudentData);
-      setCurrentStudents(transformedStudents);
+      const sortedStudents = applyMultiStepSort(transformedStudents);
+      setCurrentStudents(sortedStudents);
       
       // Store next cursor for pagination
       if (studentsData.nextCursor) {
@@ -279,7 +341,7 @@ function StudentsPageContent() {
       setIsPaginating(false);
       setPaginatingDirection(null);
     }
-  }, [studentsData?.items, studentsData?.nextCursor, studentsData?.totalCount, currentPage, pageSize]);
+  }, [studentsData?.items, studentsData?.nextCursor, studentsData?.totalCount, currentPage, pageSize, sortSteps, multiStepSortEnabled]);
 
   // Update all student IDs when data loads
   useEffect(() => {
@@ -305,6 +367,31 @@ function StudentsPageContent() {
     setPaginatingDirection(null); // Reset pagination direction
     setLastKnownTotalPages(0); // Reset last known total pages
   }, [sortBy, sortOrder, debouncedSearchTerm, currentSessionId, getBranchFilterParam, pageSize]);
+
+  // Load saved preferences on component mount
+  useEffect(() => {
+    if (savedPreferences) {
+      const prefs = savedPreferences as {
+        sortSteps?: SortStep[];
+        multiStepSortEnabled?: boolean;
+        sortBy?: string;
+        sortOrder?: "asc" | "desc";
+      };
+
+      if (prefs.sortSteps) {
+        setSortSteps(prefs.sortSteps);
+      }
+      if (prefs.multiStepSortEnabled !== undefined) {
+        setMultiStepSortEnabled(prefs.multiStepSortEnabled);
+      }
+      if (prefs.sortBy) {
+        setSortBy(prefs.sortBy);
+      }
+      if (prefs.sortOrder) {
+        setSortOrder(prefs.sortOrder);
+      }
+    }
+  }, [savedPreferences]);
 
   // API mutations
   const deleteStudentMutation = api.student.delete.useMutation({
@@ -371,6 +458,117 @@ function StudentsPageContent() {
       return "desc"; // Use desc for class to show nursery classes first
     }
     return "asc"; // Use asc for all other fields
+  };
+
+  // Multi-step sorting functions
+  const handleSortStepsChange = (steps: SortStep[]) => {
+    setSortSteps(steps);
+    setMultiStepSortEnabled(steps.length > 0);
+    
+    // If multi-step sorting is enabled, use the first step as the primary sort
+    if (steps.length > 0 && steps[0]) {
+      setSortBy(steps[0].field);
+      setSortOrder(steps[0].direction);
+    }
+  };
+
+  const handleSaveSortConfiguration = () => {
+    const preferences = {
+      sortSteps,
+      multiStepSortEnabled,
+      sortBy,
+      sortOrder,
+    };
+
+    savePreferencesMutation.mutate({
+      module: "STUDENT_LIST",
+      preferences,
+    });
+  };
+
+  const handleResetSort = () => {
+    setSortSteps([]);
+    setMultiStepSortEnabled(false);
+    setSortBy("class");
+    setSortOrder("asc");
+    
+    // Clear saved preferences
+    deletePreferencesMutation.mutate({
+      module: "STUDENT_LIST"
+    });
+  };
+
+  // Apply multi-step sorting to data
+  const applyMultiStepSort = (data: Student[]) => {
+    if (!multiStepSortEnabled || sortSteps.length === 0) {
+      return data;
+    }
+
+    return [...data].sort((a, b) => {
+      for (const step of sortSteps) {
+        let aValue: any;
+        let bValue: any;
+
+        // Get values based on field
+        switch (step.field) {
+          case "admissionNumber":
+            aValue = a.admissionNumber || "";
+            bValue = b.admissionNumber || "";
+            break;
+          case "rollNumber":
+            aValue = a.rollNumber || "";
+            bValue = b.rollNumber || "";
+            break;
+          case "firstName":
+            aValue = a.firstName || "";
+            bValue = b.firstName || "";
+            break;
+          case "lastName":
+            aValue = a.lastName || "";
+            bValue = b.lastName || "";
+            break;
+          case "class":
+            aValue = a.class?.displayOrder || 999;
+            bValue = b.class?.displayOrder || 999;
+            break;
+          case "dateOfAdmission":
+            aValue = a.dateOfAdmission ? new Date(a.dateOfAdmission) : new Date(0);
+            bValue = b.dateOfAdmission ? new Date(b.dateOfAdmission) : new Date(0);
+            break;
+          case "dateOfBirth":
+            aValue = a.dateOfBirth ? new Date(a.dateOfBirth) : new Date(0);
+            bValue = b.dateOfBirth ? new Date(b.dateOfBirth) : new Date(0);
+            break;
+          case "phone":
+            aValue = a.phone || "";
+            bValue = b.phone || "";
+            break;
+          case "email":
+            aValue = a.email || "";
+            bValue = b.email || "";
+            break;
+          case "status":
+            aValue = a.status || "";
+            bValue = b.status || "";
+            break;
+          default:
+            continue;
+        }
+
+        // Compare values
+        let comparison = 0;
+        if (aValue < bValue) comparison = -1;
+        if (aValue > bValue) comparison = 1;
+
+        // Apply direction
+        if (step.direction === "desc") comparison *= -1;
+
+        // If this step produces a non-zero comparison, return it
+        if (comparison !== 0) return comparison;
+      }
+
+      return 0;
+    });
   };
 
   // Handle search
@@ -790,20 +988,45 @@ function StudentsPageContent() {
         aria-label={`Select ${student.firstName} ${student.lastName}`}
       />
       
-      <div className="flex-1 grid grid-cols-6 gap-4 items-center">
+      <div className="flex-1 grid grid-cols-7 gap-4 items-center">
+        {/* Admission Number - Clickable */}
         <div className="font-medium text-sm">
-          {student.admissionNumber}
+          <Link 
+            href={`/students/${student.id}`}
+            className="text-secondary hover:text-secondary/80 hover:underline transition-colors"
+          >
+            {student.admissionNumber}
+          </Link>
         </div>
         
+        {/* Roll Number */}
+        <div className="text-sm">
+          {student.rollNumber || <span className="text-muted-foreground">-</span>}
+        </div>
+        
+        {/* Name - Clickable with Email */}
         <div className="flex flex-col">
           <div className="font-medium text-sm">
-            {student.firstName} {student.lastName}
+            <Link 
+              href={`/students/${student.id}`}
+              className="text-primary hover:text-primary/80 hover:underline transition-colors"
+            >
+              {student.firstName} {student.lastName}
+            </Link>
           </div>
           {student.email && (
-            <div className="text-xs text-muted-foreground">{student.email}</div>
+            <div className="text-xs">
+              <a 
+                href={`mailto:${student.email}`} 
+                className="text-secondary hover:text-secondary/80 hover:underline transition-colors"
+              >
+                {student.email}
+              </a>
+            </div>
           )}
         </div>
         
+        {/* Class */}
         <div className="text-sm">
           {student.class ? (
             <div className="font-medium">
@@ -814,26 +1037,134 @@ function StudentsPageContent() {
             <span className="text-muted-foreground">-</span>
           )}
         </div>
-        
+
+        {/* Date of Admission */}
         <div className="text-sm">
-          {student.rollNumber || <span className="text-muted-foreground">-</span>}
+          {student.dateOfAdmission ? (
+            <div>
+              <div className="font-medium">
+                {new Date(student.dateOfAdmission).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </div>
+              {student.firstJoinedSession && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {student.firstJoinedSession.name}
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
         </div>
         
+        {/* Contact - Clickable */}
         <div className="text-sm">
           {student.phone && (
-            <div>{student.phone}</div>
+            <div>
+              <a 
+                href={`tel:${student.phone}`} 
+                className="text-secondary hover:text-secondary/80 hover:underline transition-colors"
+              >
+                {student.phone}
+              </a>
+            </div>
           )}
           {student.parent?.phone && (
             <div className="text-xs text-muted-foreground">
-              Parent: {student.parent.phone}
+              Parent: <a 
+                href={`tel:${student.parent.phone}`} 
+                className="text-primary hover:text-primary/80 hover:underline transition-colors"
+              >
+                {student.parent.phone}
+              </a>
+            </div>
+          )}
+          {student.parent?.email && (
+            <div className="text-xs text-muted-foreground">
+              <a 
+                href={`mailto:${student.parent.email}`} 
+                className="text-secondary hover:text-secondary/80 hover:underline transition-colors"
+              >
+                {student.parent.email}
+              </a>
             </div>
           )}
         </div>
         
+        {/* Status - Enhanced */}
         <div className="flex items-center space-x-2">
-          <Badge variant={student.isActive ? "success" : "secondary"}>
-            {student.isActive ? "Active" : "Inactive"}
-          </Badge>
+          {(() => {
+            const status = student.status || (student.isActive ? "ACTIVE" : "INACTIVE");
+            const getStatusConfig = (status: string) => {
+              switch (status) {
+                case "ACTIVE":
+                  return {
+                    variant: "outline" as const,
+                    className: "bg-green-50 text-green-700 hover:bg-green-50 dark:bg-[#7aad8c]/10 dark:text-[#7aad8c] dark:border-[#7aad8c]/30",
+                    label: "Active"
+                  }
+                case "INACTIVE":
+                  return {
+                    variant: "secondary" as const,
+                    className: "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040]",
+                    label: "Inactive"
+                  }
+                case "EXPELLED":
+                  return {
+                    variant: "destructive" as const,
+                    className: "bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400",
+                    label: "Expelled"
+                  }
+                case "WITHDRAWN":
+                  return {
+                    variant: "secondary" as const,
+                    className: "bg-orange-50 text-orange-700 hover:bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400",
+                    label: "Withdrawn"
+                  }
+                case "REPEAT":
+                  return {
+                    variant: "outline" as const,
+                    className: "bg-yellow-50 text-yellow-700 hover:bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400",
+                    label: "Repeat"
+                  }
+                case "TRANSFERRED":
+                  return {
+                    variant: "outline" as const,
+                    className: "bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400",
+                    label: "Transferred"
+                  }
+                case "GRADUATED":
+                  return {
+                    variant: "outline" as const,
+                    className: "bg-purple-50 text-purple-700 hover:bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400",
+                    label: "Graduated"
+                  }
+                case "SUSPENDED":
+                  return {
+                    variant: "destructive" as const,
+                    className: "bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400",
+                    label: "Suspended"
+                  }
+                default:
+                  return {
+                    variant: "secondary" as const,
+                    className: "bg-gray-100 text-gray-500 hover:bg-gray-100 dark:bg-[#303030] dark:text-[#808080] dark:border-[#404040]",
+                    label: status
+                  }
+              }
+            }
+            
+            const config = getStatusConfig(status);
+            
+            return (
+              <Badge variant={config.variant} className={config.className}>
+                {config.label}
+              </Badge>
+            );
+          })()}
           {student.gender && (
             <Badge variant="outline">{student.gender}</Badge>
           )}
@@ -935,73 +1266,64 @@ function StudentsPageContent() {
         </div>
 
         {/* Filter Component */}
-        <StudentFilters
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          onSearchChange={handleSearchChange}
-          searchTerm={searchTerm}
-          totalCount={totalCount}
-        />
-
         <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex flex-col sm:flex-row gap-2">
-                
-            <div className="flex items-center gap-2">
-                  <Select
-                    value={sortBy}
-                    onValueChange={(value) => {
-                      setSortBy(value);
-                      setSortOrder(getDefaultSortOrder(value));
-                    }}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="firstName">Name</SelectItem>
-                      <SelectItem value="class">Class</SelectItem>
-                      <SelectItem value="admissionNumber">Admission</SelectItem>
-                      <SelectItem value="rollNumber">Roll No.</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    disabled={isPaginating}
-                  >
-                    <ArrowUpDown className="h-4 w-4" />
-                    {sortBy === 'class' 
-                      ? (sortOrder === 'asc' ? 'Low-High' : 'High-Low')
-                      : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')
-                    }
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Page Size Controls */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium whitespace-nowrap">Show:</label>
+          <div className="flex-1">
+            <StudentFilters
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onSearchChange={handleSearchChange}
+              searchTerm={searchTerm}
+              totalCount={totalCount}
+            />
+          </div>
+          
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            {/* Multi-Step Sort */}
+            <MultiStepSort
+              sortSteps={sortSteps}
+              onSortStepsChange={handleSortStepsChange}
+              availableFields={availableSortFields}
+              onSave={handleSaveSortConfiguration}
+              onReset={handleResetSort}
+            />
+            
+            {/* Traditional Sort Controls (when multi-step is not enabled) */}
+            {!multiStepSortEnabled && (
+              <>
                 <Select
-                  value={pageSize.toString()}
-                  onValueChange={(value) => setPageSize(parseInt(value))}
+                  value={sortBy}
+                  onValueChange={(value) => {
+                    setSortBy(value);
+                    setSortOrder(getDefaultSortOrder(value));
+                  }}
                 >
-                  <SelectTrigger className="w-20 bg-background">
+                  <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border">
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="200">200</SelectItem>
-                    <SelectItem value="500">500</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="firstName">Name</SelectItem>
+                    <SelectItem value="class">Class</SelectItem>
+                    <SelectItem value="admissionNumber">Admission</SelectItem>
+                    <SelectItem value="rollNumber">Roll No.</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
-              </div>
-            </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  disabled={isPaginating}
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                  {sortBy === 'class' 
+                    ? (sortOrder === 'asc' ? 'Low-High' : 'High-Low')
+                    : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')
+                  }
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Bulk Actions */}
@@ -1100,7 +1422,7 @@ function StudentsPageContent() {
         )}
 
         {/* Students List */}
-        <div className="space-y-2">
+        <div className="space-y-2 mt-6">
           {/* Header Row */}
           <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg font-medium text-sm">
             <div className="w-4">
@@ -1121,11 +1443,12 @@ function StudentsPageContent() {
                 aria-label="Select all students on this page"
               />
             </div>
-            <div className="flex-1 grid grid-cols-6 gap-4">
+            <div className="flex-1 grid grid-cols-7 gap-4">
               <div>Admission No.</div>
+              <div>Roll No.</div>
               <div>Name</div>
               <div>Class</div>
-              <div>Roll No.</div>
+              <div>Date of Admission</div>
               <div>Contact</div>
               <div>Status</div>
             </div>
@@ -1174,44 +1497,70 @@ function StudentsPageContent() {
               )}
             </div>
             
-            {/* Pagination Buttons */}
-            {totalPages > 1 && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1 || isLoading || isPaginating}
-                  className="min-w-28"
+            {/* Page Size Controls & Pagination Buttons */}
+            <div className="flex items-center gap-4">
+              {/* Page Size Controls */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium whitespace-nowrap">Show:</label>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => setPageSize(parseInt(value))}
                 >
-                  {isPaginating && paginatingDirection === 'previous' ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Previous
-                    </>
-                  ) : (
-                    'Previous'
-                  )}
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages || isLoading || isPaginating}
-                  className="min-w-28"
-                >
-                  {isPaginating && paginatingDirection === 'next' ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Next
-                    </>
-                  ) : (
-                    'Next'
-                  )}
-                </Button>
+                  <SelectTrigger className="w-20 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border">
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground whitespace-nowrap">per page</span>
               </div>
-            )}
+              
+              {/* Pagination Buttons */}
+              {totalPages > 1 && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1 || isLoading || isPaginating}
+                    className="min-w-28"
+                  >
+                    {isPaginating && paginatingDirection === 'previous' ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Previous
+                      </>
+                    ) : (
+                      'Previous'
+                    )}
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages || isLoading || isPaginating}
+                    className="min-w-28"
+                  >
+                    {isPaginating && paginatingDirection === 'next' ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Next
+                      </>
+                    ) : (
+                      'Next'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
           </div>
 
           {/* No Students Found */}

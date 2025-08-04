@@ -43,6 +43,7 @@ import { transportationRouter } from "./routers/transportation";
 import { staffMoveRouter } from "@/server/api/routers/staffMove";
 import { paymentGatewayRouter } from "./routers/payment-gateway";
 import { shortUrlRouter } from "./routers/shortUrl";
+import { userPreferencesRouter } from "./routers/user-preferences";
 
 /**
  * This is the primary router for your server.
@@ -94,6 +95,7 @@ export const appRouter = createTRPCRouter({
   staffMove: staffMoveRouter,
   paymentGateway: paymentGatewayRouter,
   shortUrl: shortUrlRouter,
+  userPreferences: userPreferencesRouter,
 });
 
 // export type definition of API

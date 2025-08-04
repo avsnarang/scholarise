@@ -115,7 +115,19 @@ export function StudentFilters({
     }
     
     if (filters.isActive && filters.isActive !== 'all') {
-      const statusLabel = filters.isActive === 'true' ? 'Active' : 'Inactive'
+      const statusLabels = {
+        'true': 'Active',
+        'false': 'Inactive',
+        'ACTIVE': 'Active',
+        'INACTIVE': 'Inactive',
+        'EXPELLED': 'Expelled',
+        'WITHDRAWN': 'Withdrawn',
+        'REPEAT': 'Repeat',
+        'TRANSFERRED': 'Transferred',
+        'GRADUATED': 'Graduated',
+        'SUSPENDED': 'Suspended'
+      }
+      const statusLabel = statusLabels[filters.isActive as keyof typeof statusLabels] || filters.isActive
       active.push({ key: 'isActive', label: `Status: ${statusLabel}` })
     }
     
@@ -240,9 +252,15 @@ export function StudentFilters({
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent className="z-50">
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="EXPELLED">Expelled</SelectItem>
+                  <SelectItem value="WITHDRAWN">Withdrawn</SelectItem>
+                  <SelectItem value="REPEAT">Repeat</SelectItem>
+                  <SelectItem value="TRANSFERRED">Transferred</SelectItem>
+                  <SelectItem value="GRADUATED">Graduated</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -7,9 +7,9 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
-  // Add image domains configuration to allow Unsplash images
+  // Add image domains configuration to allow Unsplash images and Supabase storage
   images: {
-    domains: ['images.unsplash.com'],
+    domains: ['images.unsplash.com', 'dkgorxvkwdkxvvjhupyk.supabase.co'],
   },
   // Configure redirects from old Pages to new App Router paths
   async redirects() {

@@ -66,7 +66,7 @@ function StudentsDashboardContent() {
       branchId: currentBranchId || "",
       limit: 10,
       filters: {
-        isActive: "true"
+        isActive: "true" // Legacy field - filters for ACTIVE status only
       }
     },
     { 

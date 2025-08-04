@@ -105,11 +105,26 @@ model User {
   student        Student?
   teacher        Teacher?
   userRoles      UserRole[]
+  userPreferences UserPreferences[]
 
   @@index([authIdentifier])
   @@index([email])
   @@index([userType])
   @@index([isActive])
+}
+
+model UserPreferences {
+  id          String   @id @default(cuid())
+  userId      String   
+  module      String   // e.g., "STUDENT_LIST", "TEACHER_LIST"
+  preferences Json     // Store sort steps and other UI preferences
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, module])
+  @@index([userId])
 }
 
 model Student {
@@ -133,7 +148,8 @@ model Student {
   dateOfAdmission         DateTime?
   firstJoinedSessionId    String?
   rollNumber              Int?                     @db.SmallInt
-  isActive                Boolean                  @default(true)
+  isActive                Boolean                  @default(true) // TODO: Remove in future migration
+  status                  StudentStatus            @default(ACTIVE)
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   branchId                String
@@ -208,7 +224,8 @@ model Student {
   @@index([sectionId])
   @@index([userId])
   @@index([rollNumber, branchId])
-  @@index([isActive])
+  @@index([isActive]) // TODO: Remove in future migration
+  @@index([status])
   @@index([firstJoinedSessionId])
 }
 
@@ -1936,6 +1953,17 @@ enum PaymentGateway {
   RAZORPAY
   PAYTM
   STRIPE
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  EXPELLED
+  WITHDRAWN
+  REPEAT
+  TRANSFERRED
+  GRADUATED
+  SUSPENDED
 }
 
 enum PaymentStatus {
