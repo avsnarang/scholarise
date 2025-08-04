@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
@@ -49,7 +50,7 @@ function StatCard({ title, value, description, icon, className }: StatCardProps)
   );
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   
@@ -180,4 +181,13 @@ export default function ChatPage() {
         </div>
       </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicChatPageContent = dynamic(() => Promise.resolve(ChatPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ChatPage() {
+  return <DynamicChatPageContent />;
 } 

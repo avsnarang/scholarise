@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { EnhancedEmployeeForm } from "@/components/employees/enhanced-employee-form";
 import { Card } from "@/components/ui/card";
+import { Suspense } from "react";
 
 export default function CreateEmployeePage() {
   return (
@@ -29,7 +30,9 @@ export default function CreateEmployeePage() {
         </div>
         
         {/* Employee Form */}
-        <EnhancedEmployeeForm />
+        <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+          <EnhancedEmployeeForm />
+        </Suspense>
       </div>
   );
 } 

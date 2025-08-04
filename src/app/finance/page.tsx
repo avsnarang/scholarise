@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import dynamic from "next/dynamic";
 import Link from 'next/link';
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import {
@@ -77,7 +78,7 @@ const quickActions = [
   },
 ];
 
-export default function FinancePage() {
+function FinancePageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const [selectedDays, setSelectedDays] = React.useState<number | undefined>(undefined); // Default to "All time"
@@ -1094,4 +1095,13 @@ export default function FinancePage() {
       {/* Modal removed - now using direct print */}
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicFinancePageContent = dynamic(() => Promise.resolve(FinancePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function FinancePage() {
+  return <DynamicFinancePageContent />;
 } 

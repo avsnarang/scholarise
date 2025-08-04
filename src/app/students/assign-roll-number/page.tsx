@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { PageWrapper } from "@/components/layout/page-wrapper";
@@ -300,15 +301,15 @@ function AssignRollNumberPageContent() {
     </PageWrapper>
   );
 }
+// Dynamically import to disable SSR completely
+const DynamicAssignRollNumberPageContent = dynamic(() => Promise.resolve(AssignRollNumberPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
 
 export default function AssignRollNumberPage() {
-  return (
-    <PageGuard
-      permissions={[Permission.EDIT_STUDENT]}
-      title="Roll Number Assignment Access Required"
-      message="You need student editing permissions to assign roll numbers. Contact your administrator to request 'Edit Student' permission."
-    >
-      <AssignRollNumberPageContent />
-    </PageGuard>
-  );
-} 
+  return <DynamicAssignRollNumberPageContent />;
+}
+
+
+ 

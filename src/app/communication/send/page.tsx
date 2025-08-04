@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1370,15 +1371,12 @@ function SendMessagePageContent() {
     </PageGuard>
   );
 }
+// Dynamically import to disable SSR completely
+const DynamicSendMessagePageContent = dynamic(() => Promise.resolve(SendMessagePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
 
 export default function SendMessagePage() {
-  return (
-    <PageGuard
-      permissions={[Permission.CREATE_COMMUNICATION_MESSAGE]}
-      title="Send Message Access Required"
-      message="You need message sending permissions to access this page. Contact your administrator to request 'Create Communication Message' permission."
-    >
-      <SendMessagePageContent />
-    </PageGuard>
-  );
+  return <DynamicSendMessagePageContent />;
 } 

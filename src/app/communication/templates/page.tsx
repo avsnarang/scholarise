@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
+import dynamic from "next/dynamic";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase/client";
@@ -222,7 +223,7 @@ function TemplateStatsCards({ templates }: { templates: WhatsAppTemplate[] | und
   );
 }
 
-export default function TemplatesPage() {
+function TemplatesPageContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
@@ -1220,4 +1221,14 @@ export default function TemplatesPage() {
       </AlertDialog>
     </div>
   );
+}
+
+// Dynamically import to disable SSR completely
+const DynamicTemplatesPageContent = dynamic(() => Promise.resolve(TemplatesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading templates...</div>
+});
+
+export default function TemplatesPage() {
+  return <DynamicTemplatesPageContent />;
 } 

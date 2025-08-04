@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
@@ -73,7 +74,7 @@ function SortableItem({ id, classData }: { id: string; classData: ClassForOrderi
   );
 }
 
-export default function ClassOrderPage() {
+function ClassOrderPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentSessionId } = useAcademicSessionContext();
@@ -440,4 +441,13 @@ export default function ClassOrderPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicClassOrderPageContent = dynamic(() => Promise.resolve(ClassOrderPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ClassOrderPage() {
+  return <DynamicClassOrderPageContent />;
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,7 +172,7 @@ function TermFormDialog({ open, onOpenChange, term, sessionId, onSubmit, isSubmi
   );
 }
 
-export default function TermConfigPage() {
+function TermConfigPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -489,4 +490,13 @@ export default function TermConfigPage() {
       </AlertDialog>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicTermConfigPageContent = dynamic(() => Promise.resolve(TermConfigPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function TermConfigPage() {
+  return <DynamicTermConfigPageContent />;
 } 

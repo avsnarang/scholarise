@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ interface ConfigurationData {
   maintenanceAlertDays: number;
 }
 
-export default function TransportationConfigurationPage() {
+function TransportationConfigurationPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -533,4 +534,13 @@ export default function TransportationConfigurationPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicTransportationConfigurationPageContent = dynamic(() => Promise.resolve(TransportationConfigurationPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function TransportationConfigurationPage() {
+  return <DynamicTransportationConfigurationPageContent />;
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
   Info
 } from "lucide-react";
 
-export default function TestBulkMessagePage() {
+function TestBulkMessagePageContent() {
   const { currentBranchId } = useBranchContext();
   const { toast } = useToast();
   
@@ -232,4 +233,13 @@ export default function TestBulkMessagePage() {
       </Card>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicTestBulkMessagePageContent = dynamic(() => Promise.resolve(TestBulkMessagePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function TestBulkMessagePage() {
+  return <DynamicTestBulkMessagePageContent />;
 } 

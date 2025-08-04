@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ import { CourtesyCallsStatsCards } from "@/components/courtesy-calls/courtesy-ca
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/types/permissions";
 
-export default function HeadCourtesyCallsPage() {
+function HeadCourtesyCallsPageContent() {
   const { user } = useAuth();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -426,4 +427,13 @@ export default function HeadCourtesyCallsPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicHeadCourtesyCallsPageContent = dynamic(() => Promise.resolve(HeadCourtesyCallsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function HeadCourtesyCallsPage() {
+  return <DynamicHeadCourtesyCallsPageContent />;
 } 

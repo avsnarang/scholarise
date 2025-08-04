@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,7 +49,7 @@ const metaConfigSchema = z.object({
 
 type MetaConfigFormData = z.infer<typeof metaConfigSchema>;
 
-export default function CommunicationSettingsPage() {
+function CommunicationSettingsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
@@ -479,4 +480,13 @@ export default function CommunicationSettingsPage() {
       )}
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicCommunicationSettingsPageContent = dynamic(() => Promise.resolve(CommunicationSettingsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function CommunicationSettingsPage() {
+  return <DynamicCommunicationSettingsPageContent />;
 } 

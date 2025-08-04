@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Plus, Eye, Edit, Trash2, Search, Filter, MoreVertical, FileText, Users, Calendar, BookOpen, Target, Calculator, Hash, AlertCircle, Loader2, Lock, Shield, FileCheck, FilePen, Snowflake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/components/ui/use-toast';
 import { useExaminationRefresh } from '@/hooks/useExaminationRefresh';
 
-export default function AssessmentSchemasPage() {
+function AssessmentSchemasPageContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -963,4 +964,13 @@ export default function AssessmentSchemasPage() {
       )}
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicAssessmentSchemasPageContent = dynamic(() => Promise.resolve(AssessmentSchemasPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function AssessmentSchemasPage() {
+  return <DynamicAssessmentSchemasPageContent />;
 }

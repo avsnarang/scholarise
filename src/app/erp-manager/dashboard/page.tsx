@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/utils/api";
 import { useUserRole } from "@/hooks/useUserRole";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -36,63 +37,11 @@ import {
 import Link from "next/link";
 import { formatIndianNumber, formatIndianCurrency } from "@/lib/utils";
 import { VerticalBarChart } from "@/components/ui/vertical-bar-chart";
+import { LoadingSkeleton, StatsCard } from "@/components/dashboard/shared-components";
 
-interface StatsCardProps {
-  title: string;
-  value: number | string;
-  description: string;
-  icon: React.ReactNode;
-  color?: string;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-}
+// LoadingSkeleton and StatsCard are now imported from shared components
 
-function StatsCard({ title, value, description, icon, color = "text-[#00501B]", trend }: StatsCardProps) {
-  return (
-    <Card className="shadow-sm border border-[#00501B]/10 hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <div className="flex items-center space-x-2 mt-1">
-              <p className="text-xs text-muted-foreground">{description}</p>
-              {trend && (
-                <div className={`flex items-center text-xs ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {trend.isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                  {Math.abs(trend.value)}%
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={`${color} opacity-80`}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function ERPManagerDashboard() {
+function ERPManagerDashboardContent() {
   const { isAdmin, isSuperAdmin } = useUserRole();
   const { isSuperAdmin: isPermissionsSuperAdmin, hasRole } = usePermissions();
   const { currentSessionId } = useAcademicSessionContext();
@@ -612,4 +561,13 @@ export default function ERPManagerDashboard() {
       </div>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicERPManagerDashboardContent = dynamic(() => Promise.resolve(ERPManagerDashboardContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ERPManagerDashboardPage() {
+  return <DynamicERPManagerDashboardContent />;
 } 

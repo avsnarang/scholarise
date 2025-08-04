@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,7 @@ import { api } from '@/utils/api';
 import { formatIndianCurrency } from '@/lib/utils';
 import { PaymentStatusBadge } from '@/components/finance/payment-status-indicator';
 
-export default function PaymentFailurePage() {
+function PaymentFailureContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -194,5 +194,22 @@ export default function PaymentFailurePage() {
         </Card>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function PaymentFailurePage() {
+  return (
+    <Suspense fallback={
+      <PageWrapper>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading payment details...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    }>
+      <PaymentFailureContent />
+    </Suspense>
   );
 } 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { api } from '@/utils/api';
 import { formatIndianCurrency } from '@/lib/utils';
 import { PaymentStatusBadge } from '@/components/finance/payment-status-indicator';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isVerifying, setIsVerifying] = useState(true);
@@ -237,5 +237,22 @@ export default function PaymentSuccessPage() {
         </Card>
       </div>
     </PageWrapper>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <PageWrapper>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <CheckCircle className="h-8 w-8 animate-pulse mx-auto mb-4 text-green-500" />
+            <p className="text-gray-600">Loading payment details...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 } 

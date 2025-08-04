@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
 import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 import { ExaminationNav } from "@/components/examination-nav";
 
-export default function ExaminationDashboard() {
+function ExaminationDashboardContent() {
   const { currentBranchId } = useBranchContext();
   
   // Auto-refresh examination data for live updates
@@ -445,4 +446,13 @@ export default function ExaminationDashboard() {
       </Tabs>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicExaminationDashboardContent = dynamic(() => Promise.resolve(ExaminationDashboardContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ExaminationDashboardPage() {
+  return <DynamicExaminationDashboardContent />;
 } 

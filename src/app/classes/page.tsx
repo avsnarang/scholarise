@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,7 +64,7 @@ interface DashboardStats {
   utilizationRate: number;
 }
 
-export default function ClassesDashboard() {
+function ClassesDashboard() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -540,4 +541,13 @@ export default function ClassesDashboard() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicClassesDashboardContent = dynamic(() => Promise.resolve(ClassesDashboard), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ClassesDashboardPage() {
+  return <DynamicClassesDashboardContent />;
 } 

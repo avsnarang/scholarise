@@ -91,6 +91,7 @@ const StudentSkeleton = () => (
     </div>
   </div>
 );
+import dynamic from "next/dynamic";
 
 function StudentsPageContent() {
   // State management
@@ -1238,11 +1239,14 @@ function StudentsPageContent() {
     </PageWrapper>
   )
 }
+// Dynamically import to disable SSR completely
+const DynamicStudentsPageContent = dynamic(() => Promise.resolve(StudentsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
 
 export default function StudentsPage() {
-  return (
-    <StudentManagementPageGuard>
-      <StudentsPageContent />
-    </StudentManagementPageGuard>
-  );
+  return <DynamicStudentsPageContent />;
 }
+
+

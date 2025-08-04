@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, Suspense } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
@@ -26,7 +26,7 @@ const BranchContext = createContext<BranchContextType>({
 
 export const useBranchContext = () => useContext(BranchContext);
 
-export function BranchProvider({ children }: { children: ReactNode }) {
+function BranchProviderContent({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,4 +117,12 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     },
     children
   });
+}
+
+export function BranchProvider({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading branch data...</div>}>
+      <BranchProviderContent>{children}</BranchProviderContent>
+    </Suspense>
+  );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+
+import dynamic from "next/dynamic";
 import React, { useState } from "react";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -595,7 +597,7 @@ function BulkAssignmentDialog({
   );
 }
 
-export default function StudentAssignmentsPage() {
+function StudentAssignmentsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -1023,4 +1025,13 @@ export default function StudentAssignmentsPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicStudentAssignmentsPageContent = dynamic(() => Promise.resolve(StudentAssignmentsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function StudentAssignmentsPage() {
+  return <DynamicStudentAssignmentsPageContent />;
 } 

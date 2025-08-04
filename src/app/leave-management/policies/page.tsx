@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -11,7 +12,7 @@ import { Loader2, Settings, AlertCircle, RefreshCw, ArrowLeft } from "lucide-rea
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
-export default function LeavePoliciesPage() {
+function LeavePoliciesPageContent() {
   const { isAdmin, isSuperAdmin } = useUserRole();
   const { currentBranchId, isLoading: isLoadingBranch } = useBranchContext();
 
@@ -131,4 +132,13 @@ export default function LeavePoliciesPage() {
       </Card>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicLeavePoliciesPageContent = dynamic(() => Promise.resolve(LeavePoliciesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function LeavePoliciesPage() {
+  return <DynamicLeavePoliciesPageContent />;
 } 

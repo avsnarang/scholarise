@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,7 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
 import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 
-export default function ExaminationReportsPage() {
+function ExaminationReportsPageContent() {
   const { currentBranchId } = useBranchContext();
   const [selectedSchema, setSelectedSchema] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
@@ -456,4 +457,13 @@ export default function ExaminationReportsPage() {
       </Tabs>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicExaminationReportsPageContent = dynamic(() => Promise.resolve(ExaminationReportsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ExaminationReportsPage() {
+  return <DynamicExaminationReportsPageContent />;
 } 

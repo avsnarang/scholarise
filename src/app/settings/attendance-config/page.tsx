@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import {
@@ -65,7 +66,7 @@ import { AttendanceWindowFormModal } from "@/components/settings/attendance-wind
 import { AttendanceTypeFormModal } from "@/components/settings/attendance-type-form-modal";
 import { AttendanceLocationFormModal } from "@/components/settings/attendance-location-form-modal";
 
-export default function AttendanceConfigPage() {
+function AttendanceConfigPageContent() {
   const { toast } = useToast();
   const { currentBranchId } = useBranchContext();
 
@@ -985,4 +986,13 @@ export default function AttendanceConfigPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicAttendanceConfigPageContent = dynamic(() => Promise.resolve(AttendanceConfigPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function AttendanceConfigPage() {
+  return <DynamicAttendanceConfigPageContent />;
 } 

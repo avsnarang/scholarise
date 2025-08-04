@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FeeRemindersSystem } from "@/components/finance/fee-reminders-system";
@@ -11,7 +12,7 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function FeeRemindersPage() {
+function FeeRemindersPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -217,4 +218,13 @@ export default function FeeRemindersPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicFeeRemindersPageContent = dynamic(() => Promise.resolve(FeeRemindersPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function FeeRemindersPage() {
+  return <DynamicFeeRemindersPageContent />;
 } 

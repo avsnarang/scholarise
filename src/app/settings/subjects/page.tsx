@@ -1,8 +1,8 @@
-export default function SubjectsPage() {
+export default function SubjectsSettingsPage() {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold">Subjects</h1>
-      <p>Subjects management will be implemented here.</p>
+      <h1 className="text-2xl font-bold">Subjects Settings</h1>
+      <p>Subject configuration and settings will be implemented here.</p>
     </div>
   );
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -101,7 +102,7 @@ type AttendanceRecord = {
 // Define a type that combines Location and AttendanceLocation
 type CombinedLocation = Location & Partial<AttendanceLocation>;
 
-export default function MarkAttendancePage() {
+function MarkAttendancePageContent() {
   const router = useRouter();
   const { currentBranchId } = useBranchContext();
   const { user, session } = useAuth();
@@ -746,4 +747,13 @@ export default function MarkAttendancePage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicMarkAttendancePageContent = dynamic(() => Promise.resolve(MarkAttendancePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function MarkAttendancePage() {
+  return <DynamicMarkAttendancePageContent />;
 }

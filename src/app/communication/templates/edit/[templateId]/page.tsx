@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -11,7 +12,7 @@ import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function EditTemplatePage() {
+function EditTemplatePageContent() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
@@ -224,4 +225,13 @@ export default function EditTemplatePage() {
       )}
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicEditTemplatePageContent = dynamic(() => Promise.resolve(EditTemplatePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function EditTemplatePage() {
+  return <DynamicEditTemplatePageContent />;
 } 

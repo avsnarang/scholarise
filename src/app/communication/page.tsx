@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -403,10 +404,19 @@ function CommunicationDashboardContent() {
     );
 }
 
-export default function CommunicationDashboard() {
+function CommunicationDashboard() {
   return (
     <CommunicationPageGuard>
       <CommunicationDashboardContent />
     </CommunicationPageGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicCommunicationDashboardContent = dynamic(() => Promise.resolve(CommunicationDashboard), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function CommunicationDashboardPage() {
+  return <DynamicCommunicationDashboardContent />;
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Loader2, ArrowLeft, GraduationCap, BookOpen, Users } from "lucide-react
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function NewClassPage() {
+function NewClassPageContent() {
   const router = useRouter();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -116,4 +117,13 @@ export default function NewClassPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicNewClassPageContent = dynamic(() => Promise.resolve(NewClassPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function NewClassPage() {
+  return <DynamicNewClassPageContent />;
 } 

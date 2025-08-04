@@ -11,30 +11,37 @@ interface SessionLoadingWrapperProps {
 export function SessionLoadingWrapper({ children }: SessionLoadingWrapperProps) {
   const { isLoading, currentSessionId } = useAcademicSessionContext();
   const globalLoading = useGlobalLoading();
-  const [showLoading, setShowLoading] = useState(false);
   const [previousSessionId, setPreviousSessionId] = useState<string | null>(null);
+
+  // Track previous session ID separately to avoid effect dependency issues
+  useEffect(() => {
+    setPreviousSessionId(currentSessionId);
+  }, [currentSessionId]);
 
   // Show global loading when session changes
   useEffect(() => {
     if (isLoading) {
       globalLoading.show("Loading session data...");
-    } else if (previousSessionId && previousSessionId !== currentSessionId) {
+      return;
+    }
+
+    // Check if session has actually changed
+    const sessionChanged = previousSessionId !== null && previousSessionId !== currentSessionId;
+    
+    if (sessionChanged) {
       globalLoading.show("Switching session...");
       
       // Hide loading after a delay
       const timer = setTimeout(() => {
         globalLoading.hide();
-        setShowLoading(false);
-      }, 1000);
+      }, 800);
       
-      setShowLoading(true);
       return () => clearTimeout(timer);
-    } else if (!showLoading) {
+    } else {
+      // Normal case - just hide loading
       globalLoading.hide();
     }
-    
-    setPreviousSessionId(currentSessionId);
-  }, [currentSessionId, previousSessionId, isLoading, showLoading, globalLoading]);
+  }, [currentSessionId, isLoading, previousSessionId]); // Removed globalLoading from dependencies
 
   return <>{children}</>;
 }

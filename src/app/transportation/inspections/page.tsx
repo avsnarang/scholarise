@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { PageWrapper } from "@/components/layout/page-wrapper";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -792,7 +793,7 @@ function InspectionAnalytics() {
   );
 }
 
-export default function BusInspectionsPage() {
+function BusInspectionsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { toast } = useToast();
   
@@ -1147,4 +1148,14 @@ export default function BusInspectionsPage() {
       />
     </PageWrapper>
   );
+}
+
+// Dynamically import to disable SSR completely
+const DynamicBusInspectionsPageContent = dynamic(() => Promise.resolve(BusInspectionsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading bus inspections...</div>
+});
+
+export default function BusInspectionsPage() {
+  return <DynamicBusInspectionsPageContent />;
 } 

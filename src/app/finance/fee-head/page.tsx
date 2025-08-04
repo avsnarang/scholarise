@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function FeeHeadPage() {
+function FeeHeadPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -315,4 +316,13 @@ export default function FeeHeadPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicFeeHeadPageContent = dynamic(() => Promise.resolve(FeeHeadPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function FeeHeadPage() {
+  return <DynamicFeeHeadPageContent />;
 } 

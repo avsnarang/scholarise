@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -3366,11 +3367,14 @@ function InquiriesPageContent() {
     </PageWrapper>
   );
 }
+// Dynamically import to disable SSR completely
+const DynamicInquiriesPageContent = dynamic(() => Promise.resolve(InquiriesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
 
 export default function InquiriesPage() {
-  return (
-    <AdmissionsPageGuard>
-      <InquiriesPageContent />
-    </AdmissionsPageGuard>
-  );
-} 
+  return <DynamicInquiriesPageContent />;
+}
+
+ 

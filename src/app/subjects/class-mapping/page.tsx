@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +47,7 @@ interface Subject {
   isOptional: boolean;
 }
 
-export default function ClassSubjectMappingPage() {
+function ClassSubjectMappingPageContent() {
   const { toast } = useToast();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -403,4 +404,13 @@ export default function ClassSubjectMappingPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicClassSubjectMappingPageContent = dynamic(() => Promise.resolve(ClassSubjectMappingPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ClassSubjectMappingPage() {
+  return <DynamicClassSubjectMappingPageContent />;
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -13,7 +14,7 @@ import { Loader2, Plus, Calendar, ClipboardList, Settings, AlertCircle, RefreshC
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
-export default function LeaveApplicationsPage() {
+function LeaveApplicationsPageContent() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, teacherId, employeeId } = useUserRole();
   const { currentBranchId, isLoading: isLoadingBranch } = useBranchContext();
@@ -273,4 +274,13 @@ export default function LeaveApplicationsPage() {
       </div>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicLeaveApplicationsPageContent = dynamic(() => Promise.resolve(LeaveApplicationsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function LeaveApplicationsPage() {
+  return <DynamicLeaveApplicationsPageContent />;
 } 

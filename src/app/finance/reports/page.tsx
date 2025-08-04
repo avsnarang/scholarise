@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -2384,7 +2385,7 @@ function ConcessionReport() {
   );
 }
 
-export default function FinanceReportsPage() {
+function FinanceReportsPageContent() {
   const [activeTab, setActiveTab] = useState('fee-defaulters');
 
   // Detect dark mode for theme-aware colors
@@ -2507,4 +2508,13 @@ export default function FinanceReportsPage() {
       </Tabs>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicFinanceReportsPageContent = dynamic(() => Promise.resolve(FinanceReportsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function FinanceReportsPage() {
+  return <DynamicFinanceReportsPageContent />;
 } 

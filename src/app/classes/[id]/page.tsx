@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -22,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { StudentDataTable } from "@/components/classes/student-data-table";
 
-export default function ClassDetailPage() {
+function ClassDetailPageContent() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -403,4 +404,13 @@ export default function ClassDetailPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicClassDetailPageContent = dynamic(() => Promise.resolve(ClassDetailPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ClassDetailPage() {
+  return <DynamicClassDetailPageContent />;
 }

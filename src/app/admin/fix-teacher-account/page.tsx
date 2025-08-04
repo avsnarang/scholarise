@@ -2,7 +2,7 @@
 
 // TODO: Migrate from admin/fix-teacher-account.tsx
 
-export default function Page() {
+export default function FixTeacherAccountPage() {
   return (
     <div>
       <h1>This page needs to be migrated from Pages Router</h1>

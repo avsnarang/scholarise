@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -33,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function LeaveDashboardPage() {
+function LeaveDashboardPageContent() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin, teacherId, employeeId } = useUserRole();
   const { currentBranchId, isLoading: isLoadingBranch } = useBranchContext();
@@ -471,4 +472,13 @@ export default function LeaveDashboardPage() {
       </div>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicLeaveDashboardPageContent = dynamic(() => Promise.resolve(LeaveDashboardPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function LeaveDashboardPage() {
+  return <DynamicLeaveDashboardPageContent />;
 } 

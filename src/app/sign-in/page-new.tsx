@@ -319,6 +319,6 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
   );
 };
 
-export default function SignInPage() {
+export default function NewSignInPage() {
   return <SignInForm />;
 }

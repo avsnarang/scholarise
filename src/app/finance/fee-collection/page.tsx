@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -53,7 +54,7 @@ interface Student {
   } | null;
 }
 
-export default function FeeCollectionPage() {
+function FeeCollectionPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -731,4 +732,13 @@ export default function FeeCollectionPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicFeeCollectionPageContent = dynamic(() => Promise.resolve(FeeCollectionPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function FeeCollectionPage() {
+  return <DynamicFeeCollectionPageContent />;
 } 

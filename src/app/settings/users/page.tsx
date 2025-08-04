@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,7 @@ const getRoleBadgeColor = (role: string) => {
   return roleBadgeColors[role] || "bg-gray-100 text-gray-800 border-gray-200";
 };
 
-export default function UsersPage() {
+function UsersPageContent() {
   return (
     <RouteGuard requiredPermissions={[Permission.MANAGE_ROLES]}>
       <PageWrapper>
@@ -101,6 +102,15 @@ export default function UsersPage() {
       </PageWrapper>
     </RouteGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicUsersPageContent = dynamic(() => Promise.resolve(UsersPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function UsersPage() {
+  return <DynamicUsersPageContent />;
 }
 
 function UserManagement() {

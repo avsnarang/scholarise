@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ import { ReportCardPDFGenerator } from "@/components/examination/ReportCardPDFGe
 import { StudentSelector } from "@/components/examination/StudentSelector";
 import { ClassSectionSelector } from "@/components/examination/ClassSectionSelector";
 
-export default function ReportCardsPage() {
+function ReportCardsPageContent() {
   return (
     <RouteGuard requiredPermissions={[Permission.VIEW_EXAMINATIONS]}>
       <PageWrapper>
@@ -45,6 +46,15 @@ export default function ReportCardsPage() {
       </PageWrapper>
     </RouteGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicReportCardsPageContent = dynamic(() => Promise.resolve(ReportCardsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ReportCardsPage() {
+  return <DynamicReportCardsPageContent />;
 }
 
 function ReportCardsContent() {

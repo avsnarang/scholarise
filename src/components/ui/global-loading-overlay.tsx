@@ -24,7 +24,7 @@ export function GlobalLoadingOverlay() {
         />
 
         {/* Loading content with enhanced backdrop */}
-        <div className="relative z-10 flex flex-col items-center gap-4 rounded-2xl px-8 py-10 backdrop-blur-md bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 shadow-2xl">
+        <div className="relative z-999999 flex flex-col items-center gap-4 rounded-2xl px-8 py-10 backdrop-blur-md bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 shadow-2xl">
           {/* Enhanced loading circle with glow effect */}
           <div className="relative">
             {/* Glow effect behind the spinner */}

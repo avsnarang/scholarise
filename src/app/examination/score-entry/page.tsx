@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ import { ComponentScoreEntry } from "@/components/assessment/ComponentScoreEntry
 import { useAssessmentSchemas } from "@/hooks/useAssessmentSchemas";
 import { useExaminationAutoRefresh } from "@/hooks/useExaminationRefresh";
 
-export default function ScoreEntryPage() {
+function ScoreEntryPageContent() {
   return (
     <RouteGuard requiredPermissions={[Permission.VIEW_EXAMINATIONS]}>
       <PageWrapper>
@@ -43,6 +44,15 @@ export default function ScoreEntryPage() {
       </PageWrapper>
     </RouteGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicScoreEntryPageContent = dynamic(() => Promise.resolve(ScoreEntryPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ScoreEntryPage() {
+  return <DynamicScoreEntryPageContent />;
 }
 
 function ScoreEntryContent() {

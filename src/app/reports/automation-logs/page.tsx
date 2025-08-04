@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -93,7 +94,7 @@ const getAutomationTypeLabel = (type: string) => {
   return labels[type as keyof typeof labels] || type;
 };
 
-export default function AutomationLogsPage() {
+function AutomationLogsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
@@ -313,4 +314,13 @@ export default function AutomationLogsPage() {
       </div>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicAutomationLogsPageContent = dynamic(() => Promise.resolve(AutomationLogsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function AutomationLogsPage() {
+  return <DynamicAutomationLogsPageContent />;
 } 

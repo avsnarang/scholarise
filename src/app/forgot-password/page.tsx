@@ -2,7 +2,7 @@
 
 // TODO: Migrate from forgot-password.tsx
 
-export default function Page() {
+export default function ForgotPasswordPage() {
   return (
     <div>
       <h1>This page needs to be migrated from Pages Router</h1>

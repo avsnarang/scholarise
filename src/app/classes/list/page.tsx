@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { 
   Plus, 
@@ -63,7 +64,7 @@ import { CreateClassModal } from "@/components/classes/create-class-modal";
 import { SectionDataTable } from "@/components/classes/class-data-table";
 import type { SectionTableData } from "@/components/classes/class-data-table";
 
-export default function ClassesPage() {
+function ClassesPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentSessionId } = useAcademicSessionContext();
@@ -543,4 +544,13 @@ export default function ClassesPage() {
       )}
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicClassesPageContent = dynamic(() => Promise.resolve(ClassesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ClassesPage() {
+  return <DynamicClassesPageContent />;
 }

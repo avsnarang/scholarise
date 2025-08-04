@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,7 +82,7 @@ const isFeeHeadInTerm = (feeHeadId: string, feeTerm: any): boolean => {
   return feeTerm.feeHeads.some((fh: any) => fh.feeHead?.id === feeHeadId);
 };
 
-export default function EnhancedClasswiseFeePage() {
+function EnhancedClasswiseFeePageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -952,4 +953,13 @@ export default function EnhancedClasswiseFeePage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicEnhancedClasswiseFeePageContent = dynamic(() => Promise.resolve(EnhancedClasswiseFeePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function EnhancedClasswiseFeePage() {
+  return <DynamicEnhancedClasswiseFeePageContent />;
 } 

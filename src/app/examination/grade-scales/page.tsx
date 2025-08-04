@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ import { CreateGradeScaleDialog } from "@/components/assessment/CreateGradeScale
 import { EditGradeScaleDialog } from "@/components/assessment/EditGradeScaleDialog";
 import { GradeRangesTable } from "@/components/assessment/GradeRangesTable";
 
-export default function GradeScalesPage() {
+function GradeScalesPageContent() {
   return (
     <RouteGuard requiredPermissions={[Permission.VIEW_EXAMINATIONS]}>
       <PageWrapper>
@@ -54,6 +55,15 @@ export default function GradeScalesPage() {
       </PageWrapper>
     </RouteGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicGradeScalesPageContent = dynamic(() => Promise.resolve(GradeScalesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function GradeScalesPage() {
+  return <DynamicGradeScalesPageContent />;
 }
 
 function GradeScalesContent() {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { WhatsAppChatLayout } from "@/components/chat/whatsapp-chat-layout";
 import { WhatsAppChat } from "@/components/chat/whatsapp-chat";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function ChatPage() {
+function SimpleChatPageContent() {
   const { hasPermission } = usePermissions();
   const { currentBranchId } = useBranchContext();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -86,4 +87,13 @@ export default function ChatPage() {
       />
     </WhatsAppChatLayout>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicSimpleChatPageContent = dynamic(() => Promise.resolve(SimpleChatPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function SimpleChatPage() {
+  return <DynamicSimpleChatPageContent />;
 } 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,7 +54,7 @@ const TIME_PERIODS = [
   { value: "custom", label: "Custom Range" },
 ];
 
-export default function CourtesyCallsDashboardPage() {
+function DetailedCourtesyCallsDashboardPageContent() {
   const { user } = useAuth();
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
@@ -559,4 +560,13 @@ export default function CourtesyCallsDashboardPage() {
       </div>
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicDetailedCourtesyCallsDashboardPageContent = dynamic(() => Promise.resolve(DetailedCourtesyCallsDashboardPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function DetailedCourtesyCallsDashboardPage() {
+  return <DynamicDetailedCourtesyCallsDashboardPageContent />;
 } 

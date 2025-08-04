@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -605,7 +606,7 @@ function TripAnalytics() {
   );
 }
 
-export default function TripManagerPage() {
+function TripManagerPageContent() {
   const { currentBranchId } = useBranchContext();
   const { toast } = useToast();
   
@@ -889,4 +890,13 @@ export default function TripManagerPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicTripManagerPageContent = dynamic(() => Promise.resolve(TripManagerPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function TripManagerPage() {
+  return <DynamicTripManagerPageContent />;
 } 

@@ -1,5 +1,7 @@
 "use client";
 
+
+import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -920,7 +922,7 @@ function PaymentDetailsModal({
 }
 
 // Main Component
-export default function PaymentHistoryPage() {
+function PaymentHistoryPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   
@@ -1522,4 +1524,13 @@ export default function PaymentHistoryPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicPaymentHistoryPageContent = dynamic(() => Promise.resolve(PaymentHistoryPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function PaymentHistoryPage() {
+  return <DynamicPaymentHistoryPageContent />;
 } 

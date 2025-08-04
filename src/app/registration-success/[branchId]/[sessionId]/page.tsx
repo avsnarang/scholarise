@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, CheckCircle2, Phone, Mail, MapPin, Calendar, FileText, Clock } from "lucide-react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/utils/api";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 
-export default function BranchSessionRegistrationSuccessPage() {
+function BranchSessionRegistrationSuccessContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -237,5 +237,20 @@ export default function BranchSessionRegistrationSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BranchSessionRegistrationSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="h-16 w-16 bg-gradient-to-br from-[#00501B] to-[#007B2D] rounded-xl flex items-center justify-center shadow-lg mx-auto mb-4">
+          <GraduationCap className="h-10 w-10 text-white animate-pulse" />
+        </div>
+        <p className="text-gray-600">Loading registration details...</p>
+      </div>
+    </div>}>
+      <BranchSessionRegistrationSuccessContent />
+    </Suspense>
   );
 } 

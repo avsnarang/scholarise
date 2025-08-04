@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +75,7 @@ interface ConcessionType {
   };
 }
 
-export default function ConcessionTypesPage() {
+function ConcessionTypesPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -583,4 +584,13 @@ export default function ConcessionTypesPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicConcessionTypesPageContent = dynamic(() => Promise.resolve(ConcessionTypesPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function ConcessionTypesPage() {
+  return <DynamicConcessionTypesPageContent />;
 } 

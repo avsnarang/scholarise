@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/utils/api";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import {
   Card,
@@ -32,6 +33,7 @@ import { PieChart as PieChartCustom } from "@/components/ui/pie-chart-custom";
 import TabbedVerticalBarChart from "@/components/ui/tabbed-vertical-bar-chart";
 import { FeeCollectionLineChart } from "@/components/ui/fee-collection-line-chart";
 import { formatIndianCurrency } from "@/lib/utils";
+import { LoadingSkeleton } from "@/components/dashboard/shared-components";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -39,21 +41,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-          </div>
-        ))}
-        </div>
-        </div>
-  );
-}
+// LoadingSkeleton imported from shared components
 
 function DashboardContent() {
   const { data: branchesStats, isLoading } = api.dashboard.getAllBranchesStats.useQuery();
@@ -735,7 +723,7 @@ function DashboardContent() {
   );
 }
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   return (
     <div className="w-full p-6">
       <style dangerouslySetInnerHTML={{
@@ -854,4 +842,13 @@ export default function DashboardPage() {
       </Suspense>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicDashboardPageContent = dynamic(() => Promise.resolve(DashboardPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function DashboardPage() {
+  return <DynamicDashboardPageContent />;
 }

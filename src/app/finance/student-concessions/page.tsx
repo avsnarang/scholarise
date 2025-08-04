@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -169,7 +170,7 @@ const formatValue = (type: 'PERCENTAGE' | 'FIXED', value: number) => {
   return type === 'PERCENTAGE' ? `${value}%` : formatIndianCurrency(value);
 };
 
-export default function StudentConcessionsPage() {
+function StudentConcessionsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { toast } = useToast();
@@ -589,4 +590,13 @@ export default function StudentConcessionsPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicStudentConcessionsPageContent = dynamic(() => Promise.resolve(StudentConcessionsPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function StudentConcessionsPage() {
+  return <DynamicStudentConcessionsPageContent />;
 }

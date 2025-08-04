@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { PageWrapper } from "@/components/layout/page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -820,7 +821,7 @@ function BusDetailsDialog({
   );
 }
 
-export default function BusManagementPage() {
+function BusManagementPageContent() {
   const { currentBranchId } = useBranchContext();
   const { toast } = useToast();
   
@@ -1167,4 +1168,13 @@ export default function BusManagementPage() {
       />
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicBusManagementPageContent = dynamic(() => Promise.resolve(BusManagementPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function BusManagementPage() {
+  return <DynamicBusManagementPageContent />;
 } 

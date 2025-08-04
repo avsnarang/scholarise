@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -86,7 +87,7 @@ interface CommunicationMessage {
   };
 }
 
-export default function MessageHistoryPage() {
+function MessageHistoryPageContent() {
   const { currentBranchId } = useBranchContext();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
@@ -737,4 +738,13 @@ export default function MessageHistoryPage() {
       </AlertDialog>
     </div>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicMessageHistoryPageContent = dynamic(() => Promise.resolve(MessageHistoryPageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function MessageHistoryPage() {
+  return <DynamicMessageHistoryPageContent />;
 } 

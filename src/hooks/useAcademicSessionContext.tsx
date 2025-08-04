@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext, Suspense } from "react";
 import type { ReactNode } from "react";
 import React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -30,7 +30,7 @@ const AcademicSessionContext = createContext<AcademicSessionContextType>({
   isLoading: true,
 });
 
-export const AcademicSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AcademicSessionProviderContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -92,7 +92,7 @@ export const AcademicSessionProvider: React.FC<{ children: React.ReactNode }> = 
       }
       setIsLoading(false);
     }
-  }, [sessions, isSessionsLoading, sessionsError]);
+  }, [sessionsData, isSessionsLoading, sessionsError]);
 
   // Initialize from localStorage
   useEffect(() => {
@@ -144,6 +144,14 @@ export const AcademicSessionProvider: React.FC<{ children: React.ReactNode }> = 
     >
       {children}
     </AcademicSessionContext.Provider>
+  );
+};
+
+export const AcademicSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center p-8">Loading session data...</div>}>
+      <AcademicSessionProviderContent>{children}</AcademicSessionProviderContent>
+    </Suspense>
   );
 };
 

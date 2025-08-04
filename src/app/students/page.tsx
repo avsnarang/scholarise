@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -756,10 +757,19 @@ function StudentsDashboardContent() {
   );
 }
 
-export default function StudentsDashboard() {
+function StudentsDashboard() {
   return (
     <StudentManagementPageGuard>
       <StudentsDashboardContent />
     </StudentManagementPageGuard>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicStudentsDashboardContent = dynamic(() => Promise.resolve(StudentsDashboardContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function StudentsDashboardPage() {
+  return <DynamicStudentsDashboardContent />;
 } 

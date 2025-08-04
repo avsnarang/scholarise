@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -10,7 +11,7 @@ import { EnhancedTemplateBuilder } from "@/components/communication/enhanced-tem
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
 
-export default function CreateTemplatePage() {
+function CreateTemplatePageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
@@ -90,4 +91,13 @@ export default function CreateTemplatePage() {
       showHeader={true}
     />
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicCreateTemplatePageContent = dynamic(() => Promise.resolve(CreateTemplatePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function CreateTemplatePage() {
+  return <DynamicCreateTemplatePageContent />;
 } 

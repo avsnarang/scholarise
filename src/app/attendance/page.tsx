@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { PageWrapper } from "@/components/layout/page-wrapper";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import {
   Clock,
   UserCheck,
@@ -111,7 +113,7 @@ const attendanceGroups = [
   },
 ];
 
-export default function AttendancePage() {
+function AttendancePageContent() {
   const { isTeacher, isEmployee, isAdmin, isSuperAdmin } = useUserRole();
   
   console.log("Attendance Dashboard - Role checks:", { 
@@ -304,4 +306,14 @@ export default function AttendancePage() {
       </div>
     </PageWrapper>
   );
+}
+
+// Dynamically import to disable SSR completely
+const DynamicAttendancePageContent = dynamic(() => Promise.resolve(AttendancePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading attendance dashboard...</div>
+});
+
+export default function AttendancePage() {
+  return <DynamicAttendancePageContent />;
 } 

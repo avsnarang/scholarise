@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { format, subDays, isToday, isYesterday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameMonth, isSameDay } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -362,7 +363,7 @@ const ImprovedDatePicker = ({ value, onChange, disabled }: ImprovedDatePickerPro
 };
 
 // Main component
-export default function StudentAttendancePage() {
+function StudentAttendancePageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
   const { withBranchFilter } = useGlobalBranchFilter();
@@ -1431,4 +1432,13 @@ export default function StudentAttendancePage() {
       )}
     </PageWrapper>
   );
+}
+// Dynamically import to disable SSR completely
+const DynamicStudentAttendancePageContent = dynamic(() => Promise.resolve(StudentAttendancePageContent), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-8">Loading...</div>
+});
+
+export default function StudentAttendancePage() {
+  return <DynamicStudentAttendancePageContent />;
 }
