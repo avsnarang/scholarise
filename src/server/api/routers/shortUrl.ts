@@ -23,7 +23,10 @@ export const shortUrlRouter = createTRPCRouter({
           },
         });
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || // Vercel's production URL
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : false) || // Vercel's preview URL
+          "http://localhost:3000"; // Development fallback
         return {
           shortUrl: `${baseUrl}/r/${newShortUrl.shortId}`,
         };
