@@ -2077,6 +2077,18 @@ model PaymentWebhookLog {
   @@index([createdAt])
 }
 
+model ShortUrl {
+  id          String   @id @default(cuid())
+  shortId     String   @unique
+  originalUrl String   @db.Text
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+  clicks      Int      @default(0)
+
+  @@index([shortId])
+  @@index([createdAt])
+}
+
 model FeeCollectionItem {
   id              String        @id @default(cuid())
   feeCollectionId String

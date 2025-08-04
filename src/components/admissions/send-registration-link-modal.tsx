@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { api } from "@/utils/api";
-import { shortenRegistrationUrl } from "@/utils/url-shortener";
 import { Send, Loader2, MessageSquare } from "lucide-react";
 
 // Form validation schema
@@ -81,6 +80,7 @@ export function SendRegistrationLinkModal({
     return phone;
   };
 
+  const createShortUrl = api.shortUrl.createShortUrl.useMutation();
   const sendRegistrationLink = api.communication.sendMessage.useMutation({
     onSuccess: (result) => {
       toast({
@@ -106,8 +106,12 @@ export function SendRegistrationLinkModal({
     try {
       setIsLoading(true);
 
-      // Create shortened URL
-      const shortUrl = shortenRegistrationUrl(branchId, sessionId);
+      // Create a persistent short URL via the API
+      const shortUrlResult = await createShortUrl.mutateAsync({
+        originalUrl: registrationUrl,
+      });
+
+      const shortUrl = shortUrlResult.shortUrl;
       
       // Format phone number for API
       let formattedPhone = data.phoneNumber.replace(/\D/g, "");
