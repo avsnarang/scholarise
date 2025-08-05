@@ -13,7 +13,6 @@ import {
   Bell,
   LayoutDashboard,
   School,
-  ChevronsUpDown,
   ChevronRight,
   AlertCircle,
   Clock,
@@ -36,6 +35,7 @@ import {
   ListTodo,
 } from "lucide-react"
 import { type Prisma } from "@prisma/client"
+
 import { useBranchContext } from "@/hooks/useBranchContext"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -157,7 +157,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Fetch user-specific branches from API
   const { data: branches = [], isLoading: isLoadingBranches } = api.branch.getUserBranches.useQuery();
-  const { currentBranchId, setCurrentBranchId } = useBranchContext();
+  const { currentBranchId } = useBranchContext();
+
   const { canAccess, isSuperAdmin, can } = usePermissions();
   const { isTeacher, isEmployee, isERPManager } = useUserRole();
 
@@ -169,6 +170,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     logoUrl?: string | null;
   };
 
+  // Find the selected branch using currentBranchId
+  const selectedBranch = React.useMemo(() => {
+    // Ensure branches is an array before using find on it
+    const branchesArray = Array.isArray(branches) ? branches : [];
+    return branchesArray.find((branch: Branch) => branch.id === currentBranchId);
+  }, [branches, currentBranchId]);
+
   // Define navigation item types
   interface NavItem {
     title: string;
@@ -178,13 +186,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     children?: NavItem[];
     target?: string;
   }
-
-  // Find the selected branch using currentBranchId
-  const selectedBranch = React.useMemo(() => {
-    // Ensure branches is an array before using find on it
-    const branchesArray = Array.isArray(branches) ? branches : [];
-    return branchesArray.find((branch: Branch) => branch.id === currentBranchId);
-  }, [branches, currentBranchId]);
 
   // Add usePathname hook
   const pathname = usePathname();
@@ -401,18 +402,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Teachers",
           href: "/staff/teachers",
           permissions: [Permission.VIEW_TEACHERS],
-          children: [
-            {
-              title: "Dashboard",
-              href: "/teachers/dashboard",
-              permissions: [Permission.VIEW_TEACHERS],
-            },
-            {
-              title: "All Teachers",
-              href: "/staff/teachers",
-              permissions: [Permission.VIEW_TEACHERS],
-            },
-          ],
         },
         {
           title: "Add Teacher",
@@ -423,18 +412,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Employees",
           href: "/staff/employees",
           permissions: [Permission.VIEW_EMPLOYEES],
-          children: [
-            {
-              title: "Dashboard",
-              href: "/staff/employees/dashboard",
-              permissions: [Permission.VIEW_EMPLOYEES],
-            },
-            {
-              title: "All Employees",
-              href: "/staff/employees",
-              permissions: [Permission.VIEW_EMPLOYEES],
-            },
-          ],
         },
         {
           title: "Add Employee",
@@ -1228,109 +1205,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground dark:hover:bg-sidebar-accent/30"
-                >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
-                    {isLoadingBranches ? (
-                      <Skeleton className="h-4 w-4 rounded-full dark:bg-gray-600" />
-                    ) : selectedBranch?.logoUrl ? (
-                      <img 
-                        src={selectedBranch.logoUrl} 
-                        alt={`${selectedBranch.name} logo`}
-                        className="w-full h-full object-contain rounded-lg"
-                        onError={(e) => {
-                          // Fallback to School icon if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.setAttribute('style', 'display: flex');
-                        }}
-                      />
-                    ) : (
-                      <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg">
-                        <School className="size-4 dark:text-primary" />
-                      </div>
-                    )}
-                    {selectedBranch?.logoUrl && (
-                      <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg" style={{ display: 'none' }}>
-                        <School className="size-4 dark:text-primary" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium dark:text-foreground">ScholaRise</span>
-                    {isLoadingBranches ? (
-                      <Skeleton className="h-3 w-16 dark:bg-gray-600" />
-                    ) : (
-                      <span className="truncate text-xs dark:text-muted-foreground">{selectedBranch?.name || "Select Branch"}</span>
-                    )}
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4 dark:text-muted-foreground" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                align="start"
-                side={isMobile ? "bottom" : "right"}
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="text-gray-500 text-xs">
-                  Select Branch
-                </DropdownMenuLabel>
+            <SidebarMenuButton
+              size="lg"
+              className="pointer-events-none"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
                 {isLoadingBranches ? (
-                  <div className="p-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full mt-1" />
-                  </div>
-                ) : branches.length === 0 ? (
-                  <div className="p-4 text-sm text-center text-muted-foreground">
-                    <AlertCircle className="h-4 w-4 mx-auto mb-2" />
-                    No branches found
-                  </div>
+                  <Skeleton className="h-4 w-4 rounded-full dark:bg-gray-600" />
+                ) : selectedBranch?.logoUrl ? (
+                  <img 
+                    src={selectedBranch.logoUrl} 
+                    alt={`${selectedBranch.name} logo`}
+                    className="w-full h-full object-contain rounded-lg"
+                    onError={(e) => {
+                      // Fallback to School icon if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.setAttribute('style', 'display: flex');
+                    }}
+                  />
                 ) : (
-                  // Ensure branches is an array before using map
-                  (Array.isArray(branches) ? branches : [])
-                    .map((branch: Branch) => (
-                      <DropdownMenuItem
-                        key={branch.id}
-                        onClick={() => setCurrentBranchId(branch.id)}
-                        className={`gap-2 p-2 ${branch.id === 'headquarters' ? 'bg-red-50 hover:bg-red-100' : ''}`}
-                      >
-                        <div className={`flex size-6 items-center justify-center rounded-md overflow-hidden ${branch.logoUrl ? '' : 'border border-gray-200'} ${branch.id === 'headquarters' && !branch.logoUrl ? 'border-red-200 bg-red-100' : ''}`}>
-                          {branch.logoUrl ? (
-                            <img 
-                              src={branch.logoUrl} 
-                              alt={`${branch.name} logo`}
-                              className="w-full h-full object-contain rounded-md"
-                              onError={(e) => {
-                                // Fallback to School icon if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.setAttribute('style', 'display: flex');
-                              }}
-                            />
-                          ) : (
-                            <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
-                          )}
-                          {branch.logoUrl && (
-                            <div className={`flex size-6 items-center justify-center border border-gray-200 rounded-md ${branch.id === 'headquarters' ? 'border-red-200 bg-red-100' : ''}`} style={{ display: 'none' }}>
-                              <School className={`size-3.5 shrink-0 ${branch.id === 'headquarters' ? 'text-red-800' : ''}`} />
-                            </div>
-                          )}
-                        </div>
-                        <span className={`font-medium ${branch.id === 'headquarters' ? 'text-red-800' : ''}`}>{branch.code}</span>
-                        <span className={`flex-1 ${branch.id === 'headquarters' ? 'text-red-800' : 'text-gray-500'}`}>{branch.name}</span>
-                        {currentBranchId === branch.id && (
-                          <DropdownMenuShortcut>✓</DropdownMenuShortcut>
-                        )}
-                      </DropdownMenuItem>
-                    ))
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <School className="size-4 dark:text-primary" />
+                  </div>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {selectedBranch?.logoUrl && (
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground dark:bg-primary/20 flex aspect-square size-8 items-center justify-center rounded-lg" style={{ display: 'none' }}>
+                    <School className="size-4 dark:text-primary" />
+                  </div>
+                )}
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium dark:text-foreground">ScholaRise</span>
+                {isLoadingBranches ? (
+                  <Skeleton className="h-3 w-16 dark:bg-gray-600" />
+                ) : (
+                  <span className="truncate text-xs dark:text-muted-foreground">{selectedBranch?.name || "Select Branch"}</span>
+                )}
+              </div>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -1354,6 +1267,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   )}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>Dashboard</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {/* MD Dashboard - for Super Admins */}
+        {effectiveIsSuperAdmin && (
+          <SidebarGroup>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Link href="/md-dashboard" className="flex-1">
+                  <SidebarMenuButton isActive={isActive("/md-dashboard")}>
+                    <BarChart3 className="h-4 w-4" />
+                    <span>MD Dashboard</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -1468,7 +1397,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <span className="truncate font-medium">{user.name || "User"}</span>
                         <span className="truncate text-xs text-muted-foreground">{user.email || ""}</span>
                       </div>
-                      <ChevronsUpDown className="ml-auto size-4" />
+                      <ChevronRight className="ml-auto size-4" />
                     </>
                   ) : (
                     <>
@@ -1477,7 +1406,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-3 w-16" />
                       </div>
-                      <ChevronsUpDown className="ml-auto size-4 opacity-30" />
+                      <ChevronRight className="ml-auto size-4 opacity-30" />
                     </>
                   )}
                 </SidebarMenuButton>

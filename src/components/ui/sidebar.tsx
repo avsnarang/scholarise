@@ -73,22 +73,20 @@ function SidebarProvider({
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(() => {
-    // Initialize with cookie value if available, otherwise use defaultOpen
-    if (typeof window !== 'undefined') {
-      const cookieValue = document.cookie
-        .split('; ')
-        .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
-        ?.split('=')[1]
-      
-      if (cookieValue !== undefined) {
-        console.log('Reading sidebar state from cookie:', cookieValue)
-        return cookieValue === 'true'
-      }
+  const [_open, _setOpen] = React.useState(defaultOpen)
+  
+  // Read cookie after mount to avoid hydration mismatch
+  React.useEffect(() => {
+    const cookieValue = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+      ?.split('=')[1]
+    
+    if (cookieValue !== undefined && openProp === undefined) {
+      console.log('Restoring sidebar state from cookie:', cookieValue)
+      _setOpen(cookieValue === 'true')
     }
-    console.log('Using defaultOpen for sidebar:', defaultOpen)
-    return defaultOpen
-  })
+  }, [openProp])
   
   const open = openProp ?? _open
   const setOpen = React.useCallback(
@@ -331,7 +329,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
       data-slot="sidebar-inset"
       className={cn(
         "bg-background relative flex w-full flex-1 flex-col",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm",
         className
       )}
       {...props}

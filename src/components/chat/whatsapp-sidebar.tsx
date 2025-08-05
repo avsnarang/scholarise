@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Removed Sidebar imports since we're using ResizablePanel now
-import { EnhancedAcademicSessionSelector } from "@/components/enhanced-academic-session-selector";
+import { MinimalAcademicSessionSelector } from "@/components/minimal-academic-session-selector";
+import { MinimalBranchSelector } from "@/components/minimal-branch-selector";
 import { ThemeSelector } from "@/components/theme-selector";
 import { 
   Search, 
@@ -62,93 +63,7 @@ interface WhatsAppSidebarProps {
   onMetadataRefresh?: () => void; // Add callback for coordinated refresh
 }
 
-function StyledBranchSelector() {
-  const { currentBranchId, setCurrentBranchId } = useBranchContext();
-  const [searchQuery, setSearchQuery] = useState("");
-  const { data: branches = [], isLoading } = api.branch.getUserBranches.useQuery();
 
-  // Get current branch display data
-  const currentBranch = branches.find((branch) => branch.id === currentBranchId);
-  const branchName = currentBranch?.name || "Select Branch";
-  const branchCode = currentBranch?.code || "BR";
-
-  // Filter branches based on search
-  const filteredBranches = branches.filter((branch) =>
-    branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    branch.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (isLoading) {
-    return (
-      <div className="flex h-8 items-center gap-2 rounded-lg bg-muted/50 px-3 py-1">
-        <Building className="h-3 w-3 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Loading...</span>
-      </div>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 w-full items-center gap-2 rounded-lg bg-muted/30 hover:bg-muted/50 px-3 py-1 transition-colors">
-        <Building className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="text-xs font-medium truncate">{branchName}</span>
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
-            {branchCode}
-          </span>
-        </div>
-        <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-      </DropdownMenuTrigger>
-      
-      <DropdownMenuContent className="w-[280px]" align="start">
-        <div className="flex items-center border-b px-3 py-2">
-          <Search size={12} className="mr-2 opacity-50" />
-          <Input
-            placeholder="Search branches..."
-            className="h-6 border-0 bg-transparent p-0 text-xs focus-visible:ring-0"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div className="max-h-48 overflow-y-auto">
-          {filteredBranches.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              No branches found
-            </div>
-          ) : (
-            filteredBranches.map((branch) => (
-              <DropdownMenuItem
-                key={branch.id}
-                onClick={() => setCurrentBranchId(branch.id)}
-                className="flex items-center justify-between px-3 py-2 cursor-pointer hover:cursor-pointer"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium text-xs">{branch.name}</span>
-                  {branch.city && (
-                    <span className="text-xs text-muted-foreground">
-                      {branch.city}, {branch.state}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {branch.code && (
-                    <span className="rounded bg-muted px-1 py-0.5 text-[9px]">
-                      {branch.code}
-                    </span>
-                  )}
-                  {currentBranchId === branch.id && (
-                    <Check size={12} className="text-primary" />
-                  )}
-                </div>
-              </DropdownMenuItem>
-            ))
-          )}
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 export function WhatsAppSidebar({ 
   selectedConversationId, 
@@ -391,7 +306,7 @@ export function WhatsAppSidebar({
                   <Building className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground font-medium">Branch</span>
                 </div>
-                <StyledBranchSelector />
+                <MinimalBranchSelector />
               </div>
               
               <div>
@@ -399,7 +314,7 @@ export function WhatsAppSidebar({
                   <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground font-medium">Academic Session</span>
                 </div>
-                <EnhancedAcademicSessionSelector />
+                <MinimalAcademicSessionSelector />
               </div>
               
               <div>

@@ -10,7 +10,7 @@ import { useGlobalLoading } from "@/providers/global-loading-provider";
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { isTeacher, isEmployee, isAdmin, isSuperAdmin: isUserRoleSuperAdmin, isERPManager } = useUserRole();
+  const { isTeacher, isEmployee, isAdmin, isSuperAdmin: isUserRoleSuperAdmin, isERPManager, employee } = useUserRole();
   const { isSuperAdmin } = usePermissions();
   const globalLoading = useGlobalLoading();
 
@@ -36,6 +36,13 @@ export default function Home() {
       if (isTeacher) {
         globalLoading.show("Loading teacher dashboard...");
         router.push("/staff/teachers/dashboard");
+        return;
+      }
+      
+      // Check if employee has Managing Director designation (prioritize over role)
+      if (employee && employee.designation === "Managing Director") {
+        globalLoading.show("Loading Managing Director dashboard...");
+        router.push("/md-dashboard");
         return;
       }
       
@@ -73,7 +80,7 @@ export default function Home() {
 
     // If we get here, hide loading
     globalLoading.hide();
-  }, [isAuthenticated, isLoading, user?.id, router, globalLoading]);
+  }, [isAuthenticated, isLoading, user?.id, router, globalLoading, employee]);
 
   return null; // All redirects handled above
 } 
