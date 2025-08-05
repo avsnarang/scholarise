@@ -93,6 +93,12 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
       return;
     }
 
+    // Check if transaction is already processed (idempotency protection)
+    if (transaction.status === PaymentStatus.SUCCESS) {
+      console.log(`Transaction ${transaction.id} already processed as SUCCESS, skipping`);
+      return;
+    }
+
     // Update the payment gateway transaction
     await db.paymentGatewayTransaction.update({
       where: { id: transaction.id },
@@ -113,6 +119,18 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
           status: PaymentStatus.SUCCESS,
         },
       });
+    }
+
+    // Check if fee collection already exists (idempotency protection)
+    const existingFeeCollection = await db.feeCollection.findFirst({
+      where: {
+        gatewayTransactionId: transaction.id
+      }
+    });
+
+    if (existingFeeCollection) {
+      console.log(`Fee collection already exists for transaction ${transaction.id}, skipping creation`);
+      return; // Don't create duplicate receipt
     }
 
     // Create fee collection record

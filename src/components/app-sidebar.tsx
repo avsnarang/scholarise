@@ -563,6 +563,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           permissions: [Permission.VIEW_FINANCE_MODULE],
         },
         {
+          title: "Payment Gateway Monitor",
+          href: "/finance/payment-gateway-monitor",
+          permissions: [Permission.VIEW_FINANCE_MODULE],
+        },
+        {
           title: "Concession Types",
           href: "/finance/concession-types",
           permissions: [Permission.MANAGE_CONCESSION_TYPES],

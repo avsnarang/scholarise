@@ -63,6 +63,8 @@ const gatewayLabels = {
   [PaymentGateway.RAZORPAY]: 'Razorpay',
   [PaymentGateway.PAYTM]: 'Paytm',
   [PaymentGateway.STRIPE]: 'Stripe',
+  [PaymentGateway.EASEBUZZ]: 'Easebuzz',
+  [PaymentGateway.MANUAL]: 'Manual',
 };
 
 export function PaymentStatusIndicator({

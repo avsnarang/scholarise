@@ -57,7 +57,9 @@ import {
   Trash2,
   Save,
   X,
-  IndianRupee
+  IndianRupee,
+  MessageSquare,
+  Share
 } from 'lucide-react';
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { api } from '@/utils/api';
@@ -73,6 +75,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { printFeeReceiptDirectly } from '@/utils/receipt-print';
+import { paymentToReceiptShareData, shareReceiptViaWhatsApp, copyReceiptToClipboard } from '@/utils/receipt-sharing';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/components/ui/use-toast";
 
@@ -156,13 +159,15 @@ function PaymentCard({
   onViewDetails, 
   onEdit, 
   onDelete, 
-  onPrint 
+  onPrint,
+  onShare 
 }: { 
   payment: PaymentHistoryItem; 
   onViewDetails: (payment: PaymentHistoryItem) => void;
   onEdit: (payment: PaymentHistoryItem) => void;
   onDelete: (payment: PaymentHistoryItem) => void;
   onPrint: (payment: PaymentHistoryItem) => void;
+  onShare: (payment: PaymentHistoryItem) => void;
 }) {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -257,6 +262,17 @@ function PaymentCard({
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => onShare(payment)}
+                  disabled={!payment.receiptNumber}
+                  className="h-7 px-2 text-xs text-green-600 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                  title="Share receipt via WhatsApp"
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Share
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => onPrint(payment)}
                   disabled={!payment.receiptNumber}
                   className="h-7 px-2 text-xs"
@@ -288,13 +304,15 @@ function PaymentTable({
   onViewDetails, 
   onEdit, 
   onDelete, 
-  onPrint 
+  onPrint,
+  onShare 
 }: { 
   payments: PaymentHistoryItem[]; 
   onViewDetails: (payment: PaymentHistoryItem) => void;
   onEdit: (payment: PaymentHistoryItem) => void;
   onDelete: (payment: PaymentHistoryItem) => void;
   onPrint: (payment: PaymentHistoryItem) => void;
+  onShare: (payment: PaymentHistoryItem) => void;
 }) {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -423,6 +441,16 @@ function PaymentTable({
                     className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/5"
                   >
                     <Trash2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onShare(payment)}
+                    disabled={!payment.receiptNumber}
+                    className="h-7 px-2 text-xs text-green-600 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                    title="Share receipt via WhatsApp"
+                  >
+                    <MessageSquare className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="outline"
@@ -952,7 +980,7 @@ function PaymentHistoryPageContent() {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(102);
+  const [pageSize, setPageSize] = useState(20);
   
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -966,19 +994,49 @@ function PaymentHistoryPageContent() {
       sessionId: currentSessionId!,
       ...(dateRange?.from && { startDate: dateRange.from }),
       ...(dateRange?.to && { endDate: dateRange.to }),
+      ...(statusFilter && statusFilter !== 'all' && statusFilter !== 'All' && { status: statusFilter }),
+      ...(gatewayFilter && gatewayFilter !== 'all' && gatewayFilter !== 'All' && { gateway: gatewayFilter as any }),
+      ...(paymentModeFilter && paymentModeFilter !== 'all' && paymentModeFilter !== 'All' && { paymentMode: paymentModeFilter }),
+      // No limit - show all transactions
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
     }
   );
 
-  // Get payment statistics
-  // TODO: Replace with actual statistics query when available
-  const { data: statistics, error: statsError, refetch: refetchStats } = { 
-    data: null, 
-    error: null, 
-    refetch: () => {} 
-  } as any;
+  // Calculate statistics from payment history data
+  const statistics = useMemo(() => {
+    if (!paymentHistory?.items) return null;
+
+    const items = paymentHistory.items;
+    
+    const totalAmount = items.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalTransactions = items.length;
+    
+    const manualPayments = items.filter(p => p.type === 'manual');
+    const gatewayPayments = items.filter(p => p.type === 'gateway');
+    
+    const manualAmount = manualPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const gatewayAmount = gatewayPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const successfulPayments = items.filter(p => p.status === 'SUCCESS' || p.status === 'COMPLETED' as any);
+    const failedPayments = items.filter(p => p.status === 'FAILED');
+    
+    return {
+      totalAmount,
+      totalTransactions,
+      manualTransactions: manualPayments.length,
+      gatewayTransactions: gatewayPayments.length,
+      manualAmount,
+      gatewayAmount,
+      successfulTransactions: successfulPayments.length,
+      failedTransactions: failedPayments.length,
+      successRate: totalTransactions > 0 ? (successfulPayments.length / totalTransactions) * 100 : 0
+    };
+  }, [paymentHistory?.items]);
+
+  const statsError = null;
+  const refetchStats = () => refetchHistory();
 
   // Handle payment updates (refetch data)
   const handlePaymentUpdated = async () => {
@@ -1000,10 +1058,10 @@ function PaymentHistoryPageContent() {
         payment.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-      const matchesMode = paymentModeFilter === 'all' || payment.paymentMode === paymentModeFilter;
+      const matchesStatus = statusFilter === 'all' || statusFilter === 'All' || payment.status === statusFilter;
+      const matchesMode = paymentModeFilter === 'all' || paymentModeFilter === 'All' || payment.paymentMode === paymentModeFilter;
       const matchesType = typeFilter === 'all' || payment.type === typeFilter;
-      const matchesGateway = gatewayFilter === 'all' || payment.gateway === gatewayFilter;
+      const matchesGateway = gatewayFilter === 'all' || gatewayFilter === 'All' || payment.gateway === gatewayFilter || (gatewayFilter === 'MANUAL' && payment.type === 'manual');
 
       return matchesSearch && matchesStatus && matchesMode && matchesType && matchesGateway;
     });
@@ -1033,10 +1091,10 @@ function PaymentHistoryPageContent() {
         payment.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-      const matchesMode = paymentModeFilter === 'all' || payment.paymentMode === paymentModeFilter;
+      const matchesStatus = statusFilter === 'all' || statusFilter === 'All' || payment.status === statusFilter;
+      const matchesMode = paymentModeFilter === 'all' || paymentModeFilter === 'All' || payment.paymentMode === paymentModeFilter;
       const matchesType = typeFilter === 'all' || payment.type === typeFilter;
-      const matchesGateway = gatewayFilter === 'all' || payment.gateway === gatewayFilter;
+      const matchesGateway = gatewayFilter === 'all' || gatewayFilter === 'All' || payment.gateway === gatewayFilter || (gatewayFilter === 'MANUAL' && payment.type === 'manual');
 
       return matchesSearch && matchesStatus && matchesMode && matchesType && matchesGateway;
     });
@@ -1200,13 +1258,61 @@ function PaymentHistoryPageContent() {
     }
   };
 
+  // Handle share receipt via WhatsApp
+  const handleShareReceipt = async (payment: PaymentHistoryItem) => {
+    if (!payment.receiptNumber) {
+      toast({
+        title: "Share Error",
+        description: "No receipt number available for sharing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Convert payment to receipt share data
+      const receiptData = paymentToReceiptShareData(payment);
+      
+      // For now, open WhatsApp with a generic message
+      // In a real implementation, you might want to:
+      // 1. Get the parent/guardian's phone number from the student data
+      // 2. Use the WhatsApp API to send automatically
+      // 3. Show a dialog to enter phone number
+      
+      // Prompt user for phone number
+      const phoneNumber = prompt("Enter phone number to share receipt via WhatsApp:");
+      
+      if (phoneNumber) {
+        shareReceiptViaWhatsApp(phoneNumber, receiptData);
+        toast({
+          title: "Success",
+          description: "Receipt sharing opened in WhatsApp",
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to share receipt:', error);
+      toast({
+        title: "Share Error",
+        description: "Failed to share receipt",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Get unique filter options
   const getFilterOptions = () => {
     const items = paymentHistory?.items || [];
+    
+    // Get unique values from data
+    const dataStatuses = items.map(p => p.status).filter(Boolean);
+    const dataModes = items.map(p => p.paymentMode).filter(Boolean);
+    const dataGateways = items.map(p => p.gateway).filter(Boolean);
+    
     return {
-      statuses: [...new Set(items.map(p => p.status).filter(Boolean))] as string[],
-      modes: [...new Set(items.map(p => p.paymentMode).filter(Boolean))] as string[],
-      gateways: [...new Set(items.map(p => p.gateway).filter(Boolean))] as string[]
+      statuses: [...new Set(['All', 'SUCCESS', 'PENDING', 'FAILED', ...dataStatuses])] as string[],
+      modes: [...new Set(['All', 'Cash', 'Card', 'Online', 'Cheque', 'DD', 'Bank Transfer', ...dataModes])] as string[],
+      gateways: [...new Set(['All', 'MANUAL', 'RAZORPAY', 'PAYTM', 'STRIPE', ...dataGateways])] as string[]
     };
   };
 
@@ -1220,7 +1326,7 @@ function PaymentHistoryPageContent() {
           <div className="text-center">
             <div className="text-red-600 mb-4">
               <p className="font-medium">Error loading payment data</p>
-              <p className="text-sm">{historyError?.message || statsError?.message}</p>
+              <p className="text-sm">{(historyError as any)?.message || (statsError as any)?.message}</p>
             </div>
             <Button onClick={() => window.location.reload()} variant="outline">
               Retry
@@ -1470,6 +1576,7 @@ function PaymentHistoryPageContent() {
                   onEdit={handleEditPayment}
                   onDelete={handleDeletePayment}
                   onPrint={handlePrintReceipt}
+                  onShare={handleShareReceipt}
                 />
               ))}
             </div>
@@ -1480,6 +1587,7 @@ function PaymentHistoryPageContent() {
               onEdit={handleEditPayment}
               onDelete={handleDeletePayment}
               onPrint={handlePrintReceipt}
+              onShare={handleShareReceipt}
             />
           )}
 

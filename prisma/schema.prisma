@@ -1952,6 +1952,8 @@ enum PaymentGateway {
   RAZORPAY
   PAYTM
   STRIPE
+  EASEBUZZ
+  MANUAL
 }
 
 enum StudentStatus {

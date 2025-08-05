@@ -40,7 +40,7 @@ const paymentHistoryFilterSchema = z.object({
   studentId: z.string().optional(),
   feeTermId: z.string().optional(),
   paymentMode: z.string().optional(),
-  gateway: z.enum(['RAZORPAY', 'PAYTM', 'STRIPE']).optional(),
+  gateway: z.enum(['RAZORPAY', 'PAYTM', 'STRIPE', 'MANUAL', 'all']).optional(),
   status: z.string().optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
@@ -432,116 +432,151 @@ export const paymentGatewayRouter = createTRPCRouter({
       }
     }),
 
-  // Get payment history with filters
+  // Get payment history - shows all successful payments with receipts (both manual and gateway)
   getPaymentHistory: protectedProcedure
     .input(paymentHistoryFilterSchema)
     .query(async ({ ctx, input }): Promise<PaymentHistoryResponse> => {
       try {
-        // Build where clause based on filters
+        // Build where clause for fee collections (both manual and gateway payments create fee collections)
         const whereClause: any = {
           branchId: input.branchId,
           sessionId: input.sessionId,
+          status: 'COMPLETED', // Only show completed/successful payments
         };
 
+        // Apply student filter
         if (input.studentId) {
           whereClause.studentId = input.studentId;
         }
 
-        if (input.feeTermId) {
-          whereClause.feeTermId = input.feeTermId;
-        }
-
-        if (input.gateway) {
-          whereClause.gateway = input.gateway;
-        }
-
-        if (input.status) {
-          whereClause.status = input.status;
-        }
-
+        // Apply date filters to paymentDate
         if (input.startDate || input.endDate) {
-          whereClause.createdAt = {};
+          whereClause.paymentDate = {};
           if (input.startDate) {
-            whereClause.createdAt.gte = input.startDate;
+            whereClause.paymentDate.gte = input.startDate;
           }
           if (input.endDate) {
-            whereClause.createdAt.lte = input.endDate;
+            whereClause.paymentDate.lte = input.endDate;
           }
         }
 
-        // Build pagination
-        const paginationOptions: any = {
-          orderBy: { createdAt: 'desc' },
-        };
-
-        if (input.limit !== undefined) {
-          paginationOptions.take = input.limit + 1; // Take one extra to determine if there's a next page
+        // Apply payment mode filter
+        if (input.paymentMode && input.paymentMode !== 'all') {
+          whereClause.paymentMode = input.paymentMode;
         }
 
-        if (input.cursor) {
-          paginationOptions.cursor = { id: input.cursor };
-          paginationOptions.skip = 1; // Skip the cursor item
+        // Apply gateway filter (distinguishes between manual and gateway payments)
+        if (input.gateway && input.gateway !== 'all') {
+          if (input.gateway === 'MANUAL') {
+            whereClause.gateway = null; // Manual payments have null gateway
+          } else {
+            whereClause.gateway = input.gateway;
+          }
         }
 
-        // Query gateway transactions
-        const transactions = await ctx.db.paymentGatewayTransaction.findMany({
+        // Query fee collections (includes both manual and gateway payments)
+        const feeCollections = await ctx.db.feeCollection.findMany({
           where: whereClause,
-          ...paginationOptions,
+          include: {
+            student: {
+              select: {
+                firstName: true,
+                lastName: true,
+                admissionNumber: true,
+              },
+            },
+            items: {
+              include: {
+                feeHead: {
+                  select: {
+                    name: true,
+                  },
+                },
+                feeTerm: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+            branch: {
+              select: {
+                name: true,
+              },
+            },
+            session: {
+              select: {
+                name: true,
+              },
+            },
+            gatewayTransaction: {
+              select: {
+                gatewayTransactionId: true,
+                gatewayOrderId: true,
+                status: true,
+                failureReason: true,
+                gatewayResponse: true,
+              },
+            },
+          },
+          orderBy: { paymentDate: 'desc' },
         });
 
-        let hasNextPage = false;
-        let returnedTransactions = transactions;
-
-        // Check if we have a next page
-        if (input.limit !== undefined && transactions.length > input.limit) {
-          hasNextPage = true;
-          returnedTransactions = transactions.slice(0, -1); // Remove the extra item
-        }
-
-        // Map to PaymentHistoryItem format
-        const items: PaymentHistoryItem[] = returnedTransactions.map((txn): PaymentHistoryItem => ({
-          id: txn.id,
-          transactionId: txn.gatewayTransactionId || '',
-          orderId: txn.gatewayOrderId || undefined,
-          gateway: txn.gateway as PaymentGateway,
-          amount: txn.amount,
-          currency: txn.currency,
-          status: txn.status as PaymentStatus,
-          type: 'gateway' as const,
-          studentId: txn.studentId,
-          studentName: '',
-          studentAdmissionNumber: '',
-          branchId: txn.branchId,
-          branchName: '',
-          sessionId: txn.sessionId,
-          sessionName: '',
-          feeTermId: txn.feeTermId,
-          feeTermName: undefined,
-          paymentRequestId: txn.paymentRequestId || undefined,
-          moneyCollectionId: undefined,
-          receiptNumber: undefined,
-          paymentMode: 'ONLINE',
-          paymentDate: txn.createdAt,
-          feesBreakdown: [],
-          failureReason: txn.failureReason || undefined,
-          gatewayResponse: txn.gatewayResponse || undefined,
-          createdAt: txn.createdAt,
-          updatedAt: txn.updatedAt,
-        }));
-
-        const lastTransaction = returnedTransactions[returnedTransactions.length - 1];
-        const nextCursor = hasNextPage && lastTransaction
-          ? lastTransaction.id
-          : undefined;
+        // Convert fee collections to PaymentHistoryItem format
+        const paymentItems: PaymentHistoryItem[] = feeCollections.map((fee: any): PaymentHistoryItem => {
+          // Get fee term names from items
+          const feeTermNames = fee.items?.map((item: any) => item.feeTerm?.name).filter(Boolean) || [];
+          const uniqueFeeTermNames = [...new Set(feeTermNames)];
+          
+          // Determine payment type based on gateway field
+          const isGatewayPayment = fee.gateway !== null;
+          
+          return {
+            id: fee.id,
+            transactionId: isGatewayPayment 
+              ? fee.gatewayTransaction?.gatewayTransactionId || fee.transactionReference || fee.receiptNumber
+              : fee.receiptNumber,
+            orderId: fee.gatewayTransaction?.gatewayOrderId || undefined,
+            gateway: fee.gateway || 'RAZORPAY' as PaymentGateway, // Required by interface, actual payment type determined by type field
+            amount: fee.totalAmount,
+            currency: 'INR',
+            status: 'SUCCESS' as PaymentStatus, // All fee collections are successful
+            type: isGatewayPayment ? 'gateway' as const : 'manual' as const,
+            studentId: fee.studentId,
+            studentName: `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.trim(),
+            studentAdmissionNumber: fee.student?.admissionNumber || '',
+            branchId: fee.branchId,
+            branchName: fee.branch?.name || '',
+            sessionId: fee.sessionId,
+            sessionName: fee.session?.name || '',
+            feeTermId: fee.items?.[0]?.feeTermId || '',
+            feeTermName: uniqueFeeTermNames.length > 0 ? uniqueFeeTermNames.join(', ') : undefined,
+            paymentRequestId: fee.paymentRequestId || undefined,
+            moneyCollectionId: fee.id,
+            receiptNumber: fee.receiptNumber,
+            paymentMode: fee.paymentMode,
+            paymentDate: fee.paymentDate,
+            feesBreakdown: fee.items?.map((item: any) => ({
+              feeHeadName: item.feeHead?.name || '',
+              feeTermName: item.feeTerm?.name || '',
+              amount: item.amount,
+            })) || [],
+            failureReason: fee.gatewayTransaction?.failureReason || undefined,
+            gatewayResponse: fee.gatewayTransaction?.gatewayResponse || undefined,
+            createdAt: fee.createdAt,
+            updatedAt: fee.updatedAt,
+          };
+        });
 
         return {
-          items,
-          nextCursor,
+          items: paymentItems,
+          nextCursor: undefined,
         };
       } catch (error) {
+        console.error('Payment history error:', error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch payment history",
+          message: `Failed to fetch payment history: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),
@@ -747,6 +782,238 @@ export const paymentGatewayRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to verify payment",
+        });
+      }
+    }),
+
+  // Get all payment gateway requests for monitoring
+  getPaymentGatewayRequests: protectedProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+      status: z.enum(['PENDING', 'INITIATED', 'SUCCESS', 'FAILED', 'CANCELLED', 'REFUNDED', 'EXPIRED', 'all']).optional(),
+      gateway: z.enum(['RAZORPAY', 'PAYTM', 'STRIPE', 'all']).optional(),
+      studentId: z.string().optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
+      limit: z.number().min(1).max(1000).default(100),
+      cursor: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        // Build where clause for payment requests
+        const requestWhereClause: any = {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        };
+
+        if (input.studentId) {
+          requestWhereClause.studentId = input.studentId;
+        }
+
+        if (input.gateway && input.gateway !== 'all') {
+          requestWhereClause.gateway = input.gateway;
+        }
+
+        if (input.status && input.status !== 'all') {
+          requestWhereClause.status = input.status;
+        }
+
+        if (input.startDate || input.endDate) {
+          requestWhereClause.createdAt = {};
+          if (input.startDate) {
+            requestWhereClause.createdAt.gte = input.startDate;
+          }
+          if (input.endDate) {
+            requestWhereClause.createdAt.lte = input.endDate;
+          }
+        }
+
+        // Add cursor for pagination
+        if (input.cursor) {
+          requestWhereClause.id = {
+            lt: input.cursor,
+          };
+        }
+
+        // Build where clause for transactions
+        const transactionWhereClause: any = {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        };
+
+        if (input.studentId) {
+          transactionWhereClause.studentId = input.studentId;
+        }
+
+        if (input.gateway && input.gateway !== 'all') {
+          transactionWhereClause.gateway = input.gateway;
+        }
+
+        if (input.status && input.status !== 'all') {
+          transactionWhereClause.status = input.status;
+        }
+
+        if (input.startDate || input.endDate) {
+          transactionWhereClause.createdAt = {};
+          if (input.startDate) {
+            transactionWhereClause.createdAt.gte = input.startDate;
+          }
+          if (input.endDate) {
+            transactionWhereClause.createdAt.lte = input.endDate;
+          }
+        }
+
+        // Fetch payment requests and transactions
+        const [paymentRequests, transactions, webhookLogs] = await Promise.all([
+          ctx.db.paymentRequest.findMany({
+            where: requestWhereClause,
+            include: {
+              student: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  admissionNumber: true,
+                },
+              },
+              feeTerm: {
+                select: {
+                  name: true,
+                },
+              },
+              transactions: {
+                select: {
+                  id: true,
+                  status: true,
+                  gatewayTransactionId: true,
+                  failureReason: true,
+                  paidAt: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1, // Latest transaction
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: input.limit + 1, // Take one extra to check if there are more
+          }),
+
+          ctx.db.paymentGatewayTransaction.findMany({
+            where: transactionWhereClause,
+            include: {
+              student: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  admissionNumber: true,
+                },
+              },
+              feeTerm: {
+                select: {
+                  name: true,
+                },
+              },
+              paymentRequest: {
+                select: {
+                  id: true,
+                  purpose: true,
+                  buyerName: true,
+                  buyerPhone: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: input.limit,
+          }),
+
+          // Get recent webhook logs for debugging
+          ctx.db.paymentWebhookLog.findMany({
+            where: {
+              createdAt: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+          }),
+        ]);
+
+        // Check if there are more payment requests
+        const hasMore = paymentRequests.length > input.limit;
+        const limitedRequests = hasMore ? paymentRequests.slice(0, input.limit) : paymentRequests;
+
+        // Get next cursor
+        const nextCursor = hasMore ? limitedRequests[limitedRequests.length - 1]?.id : undefined;
+
+        return {
+          paymentRequests: limitedRequests.map((req: any) => ({
+            id: req.id,
+            gateway: req.gateway,
+            amount: req.amount,
+            currency: req.currency,
+            status: req.status,
+            studentId: req.studentId,
+            studentName: `${req.student?.firstName || ''} ${req.student?.lastName || ''}`.trim(),
+            studentAdmissionNumber: req.student?.admissionNumber || '',
+            feeTermName: req.feeTerm?.name || '',
+            purpose: req.purpose,
+            description: req.description,
+            buyerName: req.buyerName,
+            buyerPhone: req.buyerPhone,
+            buyerEmail: req.buyerEmail,
+            gatewayRequestId: req.gatewayRequestId,
+            paymentUrl: req.paymentUrl,
+            shortUrl: req.shortUrl,
+            expiresAt: req.expiresAt,
+            completedAt: req.completedAt,
+            createdAt: req.createdAt,
+            updatedAt: req.updatedAt,
+            latestTransaction: req.transactions?.[0] || null,
+            fees: req.fees,
+          })),
+          transactions: transactions.map((txn: any) => ({
+            id: txn.id,
+            gatewayTransactionId: txn.gatewayTransactionId,
+            gateway: txn.gateway,
+            amount: txn.amount,
+            currency: txn.currency,
+            status: txn.status,
+            studentId: txn.studentId,
+            studentName: `${txn.student?.firstName || ''} ${txn.student?.lastName || ''}`.trim(),
+            studentAdmissionNumber: txn.student?.admissionNumber || '',
+            feeTermName: txn.feeTerm?.name || '',
+            paymentRequestId: txn.paymentRequestId,
+            gatewayOrderId: txn.gatewayOrderId,
+            gatewayPaymentId: txn.gatewayPaymentId,
+            failureReason: txn.failureReason,
+            gatewayResponse: txn.gatewayResponse,
+            webhookData: txn.webhookData,
+            expiresAt: txn.expiresAt,
+            paidAt: txn.paidAt,
+            createdAt: txn.createdAt,
+            updatedAt: txn.updatedAt,
+            paymentRequest: txn.paymentRequest,
+          })),
+          webhookLogs: webhookLogs.map((log: any) => ({
+            id: log.id,
+            gateway: log.gateway,
+            event: log.event,
+            transactionId: log.transactionId,
+            requestId: log.requestId,
+            processed: log.processed,
+            processingError: log.processingError,
+            createdAt: log.createdAt,
+            payload: log.payload,
+          })),
+          pagination: {
+            hasMore,
+            nextCursor,
+          },
+        };
+      } catch (error) {
+        console.error('Payment gateway requests error:', error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to fetch payment gateway requests: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),

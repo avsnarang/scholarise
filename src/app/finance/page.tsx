@@ -44,7 +44,8 @@ import {
   AlertTriangle,
   MoreVertical,
   Download,
-  Edit
+  Edit,
+  Monitor
 } from 'lucide-react';
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -60,12 +61,20 @@ import {
 import { printFeeReceiptDirectly } from '@/utils/receipt-print';
 import { toast } from '@/components/ui/use-toast';
 
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 const quickActions = [
   { title: "Manage Fee Heads", href: "/finance/fee-head", icon: <Settings /> },
   { title: "Manage Fee Terms", href: "/finance/fee-term", icon: <Calendar /> },
   { title: "Classwise Fees", href: "/finance/classwise-fee", icon: <Users /> },
   { title: "Fee Collection", href: "/finance/fee-collection", icon: <DollarSign /> },
   { title: "Payment History", href: "/finance/payment-history", icon: <Activity /> },
+  { title: "Payment Gateway Monitor", href: "/finance/payment-gateway-monitor", icon: <Monitor /> },
   { title: "Concession Types", href: "/finance/concession-types", icon: <Star /> },
   { title: "Student Concessions", href: "/finance/student-concessions", icon: <Shield /> },
   { title: "Fee Reminders", href: "/finance/reminders", icon: <Bell /> },
@@ -84,7 +93,86 @@ function FinancePageContent() {
   const { currentSessionId } = useAcademicSessionContext();
   const [selectedDays, setSelectedDays] = React.useState<number | undefined>(undefined); // Default to "All time"
   const [isCreatingTestPayment, setIsCreatingTestPayment] = React.useState(false);
+  const [scriptLoaded, setScriptLoaded] = React.useState(false);
   // Removed modal state - now using direct print
+
+  // Load Razorpay script
+  React.useEffect(() => {
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        if (window.Razorpay) {
+          setScriptLoaded(true);
+          resolve(true);
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => {
+          setScriptLoaded(true);
+          resolve(true);
+        };
+        script.onerror = () => {
+          console.error('Failed to load Razorpay script');
+          resolve(false);
+        };
+        document.body.appendChild(script);
+      });
+    };
+
+    loadRazorpayScript();
+
+    return () => {
+      // Cleanup script on unmount
+      const script = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (script) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  // Open Razorpay checkout
+  const openRazorpayCheckout = (paymentData: any) => {
+    if (!window.Razorpay) {
+      alert('Razorpay script not loaded. Please try again.');
+      return;
+    }
+
+    const options = {
+      key: paymentData.checkoutData.key,
+      amount: paymentData.checkoutData.amount,
+      currency: paymentData.checkoutData.currency,
+      order_id: paymentData.checkoutData.orderId,
+      name: paymentData.checkoutData.name,
+      description: paymentData.checkoutData.description,
+      prefill: paymentData.checkoutData.prefill,
+      theme: paymentData.checkoutData.theme,
+      handler: (response: any) => {
+        console.log('Payment successful:', response);
+        toast({
+          title: "Payment Successful!",
+          description: `Payment ID: ${response.razorpay_payment_id}`,
+        });
+        
+        // Navigate to success page
+        window.location.href = `${paymentData.successUrl}?txnid=${paymentData.transactionId}&payment_id=${response.razorpay_payment_id}`;
+      },
+      modal: {
+        ondismiss: () => {
+          console.log('Payment modal closed by user');
+          toast({
+            title: "Payment Cancelled",
+            description: "Payment was cancelled by user.",
+            variant: "destructive",
+          });
+        },
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
+  };
 
   // Test payment mutation
   const createTestPayment = api.paymentGateway.testPayment.useMutation({
@@ -94,6 +182,9 @@ function FinancePageContent() {
         title: "Test Payment Created",
         description: "Complete the payment in the Razorpay checkout window.",
       });
+      
+      // Open Razorpay checkout
+      openRazorpayCheckout(data);
       setIsCreatingTestPayment(false);
     },
     onError: (error: any) => {
