@@ -369,9 +369,9 @@ export function RegistrationForm({ onSuccess, className, isInternalRegistration 
                           Date of Birth <span className="text-red-500">*</span>
                         </FormLabel>
                         <DatePicker
-                          value={field.value}
-                          onChange={(date: Date) => {
-                            field.onChange(date);
+                          value={field.value ? new Date(field.value) : undefined}
+                          onChange={(date) => {
+                            field.onChange(date?.toISOString().split("T")[0] || "");
 
                             // Auto-select the most appropriate class when date changes
                             if (date) {

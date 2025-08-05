@@ -79,7 +79,7 @@ export function EmploymentTab() {
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date?.toISOString().split('T')[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select date of joining"
@@ -245,7 +245,7 @@ export function EmploymentTab() {
                 <DatePicker
                   value={field.value ? new Date(field.value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date?.toISOString().split('T')[0];
                     field.onChange(dateStr);
                   }}
                   placeholder="Select date of confirmation"

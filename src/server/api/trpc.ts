@@ -107,6 +107,17 @@ export const createTRPCContext = async (
         }
       } catch (authError) {
         console.error('Error verifying Supabase token:', authError);
+        // If JWT is invalid, try to refresh the session
+        if (authError instanceof Error && authError.message.includes('InvalidJWTToken')) {
+          try {
+            const { data: { session } } = await supabase.auth.refreshSession();
+            if (session?.user) {
+              userId = session.user.id;
+            }
+          } catch (refreshError) {
+            console.error('Failed to refresh session:', refreshError);
+          }
+        }
       }
       }
       

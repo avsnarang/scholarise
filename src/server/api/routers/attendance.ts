@@ -9,14 +9,12 @@ const AttendanceStatus = {
   LEAVE: "LEAVE",
   ABSENT: "ABSENT",
   HALF_DAY: "HALF_DAY",
-  LATE: "LATE",
 } as const;
 
 // Create a zod schema for this type
 const studentAttendanceStatusSchema = z.enum([
   "PRESENT",
   "ABSENT",
-  "LATE",
   "HALF_DAY",
   "LEAVE",
 ]);
@@ -573,7 +571,7 @@ export const attendanceRouter = createTRPCRouter({
         // Update existing attendance
         return ctx.db.studentAttendance.update({
           where: { id: existingAttendance.id },
-          data: { status, reason, notes, markedById },
+          data: { status: status as AttendanceStatus, reason, notes, markedById },
         });
       } else {
         // Create new attendance record
@@ -582,7 +580,7 @@ export const attendanceRouter = createTRPCRouter({
             student: { connect: { id: studentId } },
             section: { connect: { id: classId } },
             date: new Date(date.setHours(0, 0, 0, 0)),
-            status,
+            status: status as AttendanceStatus,
             reason,
             notes,
             markedById,
@@ -772,6 +770,40 @@ export const attendanceRouter = createTRPCRouter({
         },
       });
 
+      // Get unique markedBy user IDs
+      const markedByIds = [...new Set(attendanceRecords.map(r => r.markedById).filter((id): id is string => Boolean(id)))];
+      
+
+      // Fetch user details for markedBy IDs (try both User and Teacher tables)
+      const [markedByUsers, markedByTeachers] = await Promise.all([
+        ctx.db.user.findMany({
+          where: {
+            id: { in: markedByIds },
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        }),
+        ctx.db.teacher.findMany({
+          where: {
+            id: { in: markedByIds },
+          },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        })
+      ]);
+
+      // Combine users and teachers
+      const allMarkedByData = [...markedByUsers, ...markedByTeachers];
+
+      // Create a map for quick lookup
+      const markedByMap = new Map(allMarkedByData.map(person => [person.id, person]));
+
       // Create a map of student IDs to their attendance records
       const attendanceMap = new Map<string, typeof attendanceRecords[0]>();
       attendanceRecords.forEach((record: typeof attendanceRecords[0]) => {
@@ -795,10 +827,16 @@ export const attendanceRouter = createTRPCRouter({
             status: attendanceRecord.status,
             reason: attendanceRecord.reason,
             notes: attendanceRecord.notes,
+            markedBy: attendanceRecord.markedById ? markedByMap.get(attendanceRecord.markedById) : null,
+            createdAt: attendanceRecord.createdAt,
+            updatedAt: attendanceRecord.updatedAt,
           } : {
             status: AttendanceStatus.PRESENT,
             reason: null,
             notes: null,
+            markedBy: null,
+            createdAt: null,
+            updatedAt: null,
           },
         };
       });
@@ -813,7 +851,7 @@ export const attendanceRouter = createTRPCRouter({
         totalStudents: studentAttendance.length,
         presentCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.PRESENT).length,
         absentCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.ABSENT).length,
-        lateCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LATE).length,
+        leaveCount: attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LEAVE).length,
       };
     }),
 
@@ -848,12 +886,12 @@ export const attendanceRouter = createTRPCRouter({
       // Count days by status
       const presentDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.PRESENT).length;
       const absentDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.ABSENT).length;
-      const lateDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LATE).length;
+      const leaveDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LEAVE).length;
       const halfDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.HALF_DAY).length;
       const excusedDays = attendanceRecords.filter((a: { status: string }) => a.status === AttendanceStatus.LEAVE).length;
 
       // Calculate attendance rate
-      const attendedDays = presentDays + (lateDays * 0.75) + (halfDays * 0.5);
+      const attendedDays = presentDays + (leaveDays * 0.75) + (halfDays * 0.5);
       const attendanceRate = (attendedDays / totalDays) * 100;
 
       return {
@@ -866,7 +904,7 @@ export const attendanceRouter = createTRPCRouter({
         attendance: {
           present: presentDays,
           absent: absentDays,
-          late: lateDays,
+          leave: leaveDays,
           halfDay: halfDays,
           excused: excusedDays,
         },

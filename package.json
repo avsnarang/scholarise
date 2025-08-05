@@ -30,6 +30,7 @@
     "fix:clerk-accounts": "tsx src/scripts/fix-missing-clerk-accounts.ts",
     "diagnose:import": "tsx src/scripts/diagnose-import-issues.ts",
     "seed:permissions": "tsx src/scripts/seed-permissions.ts",
+    "add:override-permission": "tsx src/scripts/add-override-attendance-permission.ts",
     "migrate:clerk-to-supabase": "tsx scripts/migrate-clerk-to-supabase.ts",
     "migrate:update-rbac": "tsx scripts/update-rbac-after-migration.ts",
     "verify:migration": "tsx scripts/verify-migration.ts",

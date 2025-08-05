@@ -2868,10 +2868,9 @@ enum AttendanceType {
 
 enum AttendanceStatus {
   PRESENT
-  LEAVE
   ABSENT
+  LEAVE
   HALF_DAY
-  LATE
 }
 
 enum QuestionType {

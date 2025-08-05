@@ -63,7 +63,18 @@ async function handleRequest(req: NextRequest) {
           userId = tokenUser.id;
         }
       } catch (error: unknown) {
-        // Ignore token validation errors
+        // Handle JWT validation errors by attempting refresh
+        if (error instanceof Error && error.message.includes('InvalidJWTToken')) {
+          try {
+            const { data: { session } } = await supabase.auth.refreshSession();
+            if (session?.user) {
+              user = session.user;
+              userId = session.user.id;
+            }
+          } catch (refreshError) {
+            console.error('Failed to refresh session after JWT error:', refreshError);
+          }
+        }
       }
     }
   }

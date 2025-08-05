@@ -271,7 +271,7 @@ function TeacherDashboardContent() {
   const attendanceChartData = studentAttendanceSummary ? [
     { name: "Present", value: studentAttendanceSummary.PRESENT || 0 },
     { name: "Absent", value: studentAttendanceSummary.ABSENT || 0 },
-    { name: "Late", value: studentAttendanceSummary.LATE || 0 },
+    { name: "Leave", value: studentAttendanceSummary.LEAVE || 0 },
     { name: "Half Day", value: studentAttendanceSummary.HALF_DAY || 0 },
   ].filter(item => item.value > 0) : [];
 

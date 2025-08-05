@@ -64,6 +64,7 @@ export enum Permission {
   VIEW_ATTENDANCE = "view_attendance",
   MARK_ATTENDANCE = "mark_attendance",
   MARK_ATTENDANCE_ANY_DATE = "mark_attendance_any_date",
+  OVERRIDE_MARKED_ATTENDANCE = "override_marked_attendance",
   MARK_SELF_ATTENDANCE = "mark_self_attendance",
   MARK_ALL_STAFF_ATTENDANCE = "mark_all_staff_attendance",
   VIEW_ATTENDANCE_REPORTS = "view_attendance_reports",

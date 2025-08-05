@@ -224,7 +224,7 @@ export function getStatusColor(status: AttendanceStatus) {
         text: "text-orange-700 dark:text-orange-400",
         border: "border-orange-200 dark:border-orange-800"
       };
-    case AttendanceStatus.LATE:
+    case AttendanceStatus.LEAVE:
       return {
         bg: "bg-yellow-50 dark:bg-yellow-900/20",
         text: "text-yellow-700 dark:text-yellow-400",
@@ -250,8 +250,8 @@ export function getStatusName(status: AttendanceStatus): string {
       return "Absent";
     case AttendanceStatus.HALF_DAY:
       return "Half Day";
-    case AttendanceStatus.LATE:
-      return "Late";
+    case AttendanceStatus.LEAVE:
+      return "Leave";
     default:
       return status;
   }

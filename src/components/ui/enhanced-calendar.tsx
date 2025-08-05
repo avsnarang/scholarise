@@ -17,6 +17,7 @@ interface EnhancedCalendarProps {
   onChange?: (date: Date) => void
   disabled?: boolean
   className?: string
+  disableDate?: (date: Date) => boolean
 }
 
 export function EnhancedCalendar({
@@ -24,6 +25,7 @@ export function EnhancedCalendar({
   onChange,
   disabled,
   className,
+  disableDate,
 }: EnhancedCalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState(() => {
     return value ? new Date(value.getFullYear(), value.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -84,7 +86,7 @@ export function EnhancedCalendar({
 
   // Handle date selection
   const handleDateClick = (day: number) => {
-    if (disabled) return
+    if (disabled || isDateDisabled(day)) return
     
     // Create the date at noon to avoid timezone issues
     const selectedDate = new Date(year, month, day, 12, 0, 0)
@@ -109,6 +111,13 @@ export function EnhancedCalendar({
       today.getMonth() === month &&
       today.getFullYear() === year
     )
+  }
+
+  // Check if a date should be disabled
+  const isDateDisabled = (day: number) => {
+    if (!disableDate) return false
+    const date = new Date(year, month, day)
+    return disableDate(date)
   }
 
   return (
@@ -198,10 +207,11 @@ export function EnhancedCalendar({
                   "h-10 w-full p-0 font-normal text-sm",
                   isSelected(day) && "bg-[#00501B] text-white hover:bg-[#00501B] hover:text-white",
                   isToday(day) && !isSelected(day) && "bg-gray-100 text-gray-900",
-                  disabled && "opacity-50 cursor-not-allowed"
+                  (disabled || isDateDisabled(day)) && "opacity-50 cursor-not-allowed text-gray-400",
+                  isDateDisabled(day) && "hover:bg-transparent"
                 )}
                 onClick={() => handleDateClick(day)}
-                disabled={disabled}
+                disabled={disabled || isDateDisabled(day)}
               >
                 {day}
               </Button>

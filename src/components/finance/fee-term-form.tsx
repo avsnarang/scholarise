@@ -244,7 +244,7 @@ export function FeeTermForm({
             <Label htmlFor="dueDate">Due Date *</Label>
             <DatePicker
               value={formData.dueDate || undefined}
-              onChange={(date) => handleDateChange('dueDate', date)}
+              onChange={(date) => handleDateChange('dueDate', date!)}
               placeholder="Select due date"
               disabled={isLoading}
             />

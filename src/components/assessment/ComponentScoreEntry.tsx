@@ -1301,12 +1301,6 @@ export function ComponentScoreEntry({
                               <span className="text-xs">Leave</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="LATE" className="cursor-pointer hover:bg-accent">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-amber-500" />
-                              <span className="text-xs">Late</span>
-                            </div>
-                          </SelectItem>
                           <SelectItem value="HALF_DAY" className="cursor-pointer hover:bg-accent">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3 text-orange-500" />

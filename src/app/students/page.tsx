@@ -144,7 +144,7 @@ function StudentsDashboardContent() {
   const attendanceData = [
     { name: "Present", value: 85 },
     { name: "Absent", value: 10 },
-    { name: "Late", value: 5 }
+    { name: "Leave", value: 5 }
   ];
   
   // Class distribution data from student stats

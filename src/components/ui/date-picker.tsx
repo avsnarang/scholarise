@@ -15,10 +15,11 @@ import {
 
 interface DatePickerProps {
   value?: Date
-  onChange: (date: Date) => void
+  onChange: (date: Date | undefined) => void
   placeholder?: string
   disabled?: boolean
   className?: string
+  disableDate?: (date: Date) => boolean
 }
 
 export function DatePicker({
@@ -27,6 +28,7 @@ export function DatePicker({
   placeholder = "Select date",
   disabled = false,
   className,
+  disableDate,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -77,6 +79,7 @@ export function DatePicker({
             setOpen(false);
           }}
           disabled={disabled}
+          disableDate={disableDate}
         />
       </PopoverContent>
     </Popover>

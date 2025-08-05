@@ -178,7 +178,7 @@ export function StudentInfoTab({ branch, sections, generateSchoolEmail }: Studen
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date?.toISOString().split('T')[0];
                     onChange(dateStr);
                     // Validate age for selected class
                     const classId = watch("classId");
@@ -207,12 +207,12 @@ export function StudentInfoTab({ branch, sections, generateSchoolEmail }: Studen
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date?.toISOString().split('T')[0];
                     onChange(dateStr);
                     
                     // Also update the joining date if it's not set or is before admission date
                     const joiningDateStr = watch("dateOfJoining");
-                    if (!joiningDateStr || joiningDateStr === "" || new Date(joiningDateStr) < date) {
+                    if (!joiningDateStr || joiningDateStr === "" || new Date(joiningDateStr) < date!) {
                       setValue("dateOfJoining", dateStr);
                     }
                   }}
@@ -237,7 +237,7 @@ export function StudentInfoTab({ branch, sections, generateSchoolEmail }: Studen
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                    const dateStr = date?.toISOString().split('T')[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select date of joining"

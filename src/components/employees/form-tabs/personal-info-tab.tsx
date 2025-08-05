@@ -90,7 +90,7 @@ export function PersonalInfoTab({ branches }: PersonalInfoTabProps) {
                 <DatePicker
                   value={value ? new Date(value) : undefined}
                   onChange={(date) => {
-                    const dateStr = date.toISOString().split("T")[0];
+                    const dateStr = date?.toISOString().split("T")[0];
                     onChange(dateStr);
                   }}
                   placeholder="Select date of birth"

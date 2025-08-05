@@ -14,7 +14,7 @@ export function PageWrapper({
   action
 }: PageWrapperProps) {
   return (
-    <div className="px-4 lg:px-6">
+    <div className="px-1 lg:px-1">
       {/* Page header with title and optional action button */}
       {(title || action) && (
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">

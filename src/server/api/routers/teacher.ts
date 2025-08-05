@@ -180,7 +180,11 @@ export const teacherRouter = createTRPCRouter({
         cursor: cursor ? { id: cursor } : undefined,
         orderBy: { lastName: "asc" },
         include: {
-          sections: true,
+          sections: {
+            include: {
+              class: true
+            }
+          },
           // user model no longer exists, so we don't include it
         },
       });
@@ -210,7 +214,11 @@ export const teacherRouter = createTRPCRouter({
           ...(input.branchId ? { branchId: input.branchId } : {})
         },
         include: {
-          sections: true,
+          sections: {
+            include: {
+              class: true
+            }
+          },
           userRoles: {
             include: {
               role: true

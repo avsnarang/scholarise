@@ -279,7 +279,7 @@ function InspectionForm({
             <Label htmlFor="nextInspectionDue">Next Inspection Due</Label>
             <DatePicker
               value={formData.nextInspectionDue}
-              onChange={(date: Date) => setFormData({...formData, nextInspectionDue: date})}
+              onChange={(date) => setFormData({...formData, nextInspectionDue: date!})}
               placeholder="Select next inspection date"
             />
           </div>

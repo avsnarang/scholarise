@@ -1315,8 +1315,8 @@ function DailyCollectionReport() {
             <div>
               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Date</Label>
               <DatePicker
-                value={new Date(selectedDate)}
-                onChange={(date) => setSelectedDate(date.toISOString().split('T')[0]!)}
+                value={selectedDate ? new Date(selectedDate) : undefined}
+                onChange={(date) => setSelectedDate(date?.toISOString().split('T')[0] || "")}
                 placeholder="Select date"
                 disabled={reportQuery.isLoading}
               />
