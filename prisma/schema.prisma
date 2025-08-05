@@ -1949,7 +1949,6 @@ model ConcessionApprovalSettings {
 }
 
 enum PaymentGateway {
-  EASEBUZZ
   RAZORPAY
   PAYTM
   STRIPE
@@ -2010,7 +2009,7 @@ model FeeCollection {
 model PaymentGatewayTransaction {
   id                   String         @id @default(cuid())
   gatewayTransactionId String?
-  gateway              PaymentGateway @default(EASEBUZZ)
+  gateway              PaymentGateway
   amount               Float
   currency             String         @default("INR")
   status               PaymentStatus  @default(PENDING)
@@ -2048,7 +2047,7 @@ model PaymentGatewayTransaction {
 
 model PaymentRequest {
   id                 String         @id @default(cuid())
-  gateway            PaymentGateway @default(EASEBUZZ)
+  gateway            PaymentGateway
   amount             Float
   currency           String         @default("INR")
   status             PaymentStatus  @default(PENDING)
@@ -2089,7 +2088,7 @@ model PaymentRequest {
 
 model PaymentWebhookLog {
   id               String         @id @default(cuid())
-  gateway          PaymentGateway @default(EASEBUZZ)
+  gateway          PaymentGateway
   event            String
   transactionId    String?
   requestId        String?

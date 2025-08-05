@@ -116,13 +116,27 @@ export interface CreatePaymentRequestData {
 
 export interface CreatePaymentRequestResponse {
   success: boolean;
-  data?: {
-    paymentRequestId: string;
-    paymentUrl: string;
-    transactionId: string;
-    expiresAt: Date;
+  transactionId: string;
+  checkoutData: {
+    key: string;
+    amount: number;
+    currency: string;
+    orderId: string;
+    name: string;
+    description: string;
+    prefill: {
+      name: string;
+      email: string;
+      contact: string;
+    };
+    notes?: Record<string, any>;
+    theme?: {
+      color?: string;
+    };
   };
-  error?: string;
+  successUrl: string;
+  failureUrl: string;
+  message: string;
 }
 
 export interface ProcessPaymentWebhookData {
@@ -156,30 +170,37 @@ export interface PaymentHistoryFilter {
 
 export interface PaymentHistoryItem {
   id: string;
-  receiptNumber?: string; // For manual payments
-  transactionId?: string; // For gateway payments
+  transactionId: string;
+  orderId?: string;
+  gateway: PaymentGateway;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  type: 'manual' | 'gateway';
+  studentId: string;
   studentName: string;
   studentAdmissionNumber: string;
-  className?: string;
-  sectionName?: string;
-  feeTermName: string;
-  amount: number;
-  paymentMode: string;
-  gateway?: PaymentGateway;
-  status: PaymentStatus | string;
+  branchId: string;
+  branchName: string;
+  sessionId: string;
+  sessionName: string;
+  feeTermId: string;
+  feeTermName?: string;
+  paymentRequestId?: string;
+  moneyCollectionId?: string;
+  receiptNumber?: string;
+  paymentMode?: string;
   paymentDate: Date;
-  transactionReference?: string;
-  gatewayTransactionId?: string;
-  type: 'manual' | 'gateway';
-  notes?: string;
+  feesBreakdown?: PaymentRequestFee[];
+  failureReason?: string;
+  gatewayResponse?: any;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PaymentHistoryResponse {
   items: PaymentHistoryItem[];
   nextCursor?: string;
-  hasMore: boolean;
-  totalCount?: number;
 }
 
 // Real-time payment update types
@@ -259,12 +280,6 @@ export interface PaymentSummary {
 }
 
 export interface GatewayPaymentStats {
-  [PaymentGateway.EASEBUZZ]?: {
-    totalAmount: number;
-    successfulTransactions: number;
-    failedTransactions: number;
-    pendingTransactions: number;
-  };
   [PaymentGateway.RAZORPAY]?: {
     totalAmount: number;
     successfulTransactions: number;

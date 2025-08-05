@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { printFeeReceiptDirectly } from '@/utils/receipt-print';
+import { toast } from '@/components/ui/use-toast';
 
 const quickActions = [
   { title: "Manage Fee Heads", href: "/finance/fee-head", icon: <Settings /> },
@@ -86,15 +87,16 @@ function FinancePageContent() {
   // Removed modal state - now using direct print
 
   // Test payment mutation
-  const createTestPayment = api.paymentGateway.createTestPaymentLink.useMutation({
+  const createTestPayment = api.paymentGateway.testPayment.useMutation({
     onSuccess: (data) => {
-      // Redirect to the payment URL
-      if (data.success && data.data?.paymentUrl) {
-        window.open(data.data.paymentUrl, '_blank');
-      }
+      // Handle test payment creation
+      toast({
+        title: "Test Payment Created",
+        description: "Complete the payment in the Razorpay checkout window.",
+      });
       setIsCreatingTestPayment(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Test payment creation failed:', error);
       alert(`Test payment creation failed: ${error.message}`);
       setIsCreatingTestPayment(false);

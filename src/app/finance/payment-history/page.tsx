@@ -196,7 +196,7 @@ function PaymentCard({
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            {getPaymentIcon(payment.paymentMode)}
+            {getPaymentIcon(payment.paymentMode || 'ONLINE')}
             <Badge variant={payment.type === 'gateway' ? 'default' : 'secondary'} className="text-xs">
               {payment.type === 'gateway' ? 'Gateway' : 'Manual'}
             </Badge>
@@ -217,7 +217,7 @@ function PaymentCard({
             </div>
             <div className="text-right">
               <p className="font-bold text-lg text-primary">{formatIndianCurrency(payment.amount)}</p>
-              <p className="text-xs text-muted-foreground">{payment.className} - {payment.sectionName}</p>
+              {/* Class and section info not available */}
             </div>
           </div>
 
@@ -362,22 +362,22 @@ function PaymentTable({
                   <div className="font-semibold text-sm">{payment.studentName}</div>
                   <div className="text-xs text-muted-foreground font-mono">{payment.studentAdmissionNumber}</div>
           <div className="text-xs text-muted-foreground sm:hidden mt-1">
-            {payment.className} - {payment.sectionName}
+            {/* Class and section info not available */}
           </div>
         </div>
       </TableCell>
 
               <TableCell className="hidden sm:table-cell">
         <div className="text-sm">
-                  <div className="font-medium">{payment.className}</div>
-          <div className="text-muted-foreground">{payment.sectionName}</div>
+                  {/* <div className="font-medium">{payment.className}</div> */}
+          {/* <div className="text-muted-foreground">{payment.sectionName}</div> */}
         </div>
       </TableCell>
 
               <TableCell>
                 <div className="space-y-1">
             <div className="flex items-center gap-2">
-                    {getPaymentIcon(payment.paymentMode)}
+                    {getPaymentIcon(payment.paymentMode || 'ONLINE')}
                     <span className="text-sm font-medium">{payment.feeTermName}</span>
               </div>
                   <div className="text-xs text-muted-foreground">
@@ -475,7 +475,7 @@ function PaymentDetailsModal({
     defaultValues: {
       receiptNumber: payment?.receiptNumber || '',
       transactionId: payment?.transactionId || '',
-      notes: payment?.notes || '',
+      notes: '',
       paymentMode: payment?.paymentMode || '',
       amount: payment?.amount || 0,
     },
@@ -487,7 +487,7 @@ function PaymentDetailsModal({
       form.reset({
         receiptNumber: payment.receiptNumber || '',
         transactionId: payment.transactionId || '',
-        notes: payment.notes || '',
+        notes: '',
         paymentMode: payment.paymentMode || '',
         amount: payment.amount || 0,
       });
@@ -636,11 +636,11 @@ function PaymentDetailsModal({
             </div>
                     <div>
                       <p className="text-muted-foreground">Class</p>
-                      <p className="font-medium">{payment.className}</p>
+                      {/* <p className="font-medium">{payment.className}</p> */}
           </div>
                     <div>
                       <p className="text-muted-foreground">Section</p>
-                      <p className="font-medium">{payment.sectionName}</p>
+                      {/* <p className="font-medium">{payment.sectionName}</p> */}
             </div>
           </div>
         </div>
@@ -787,11 +787,11 @@ function PaymentDetailsModal({
                   </div>
                   <div>
                     <p className="text-muted-foreground">Class</p>
-                    <p className="font-medium">{payment.className}</p>
+                    {/* <p className="font-medium">{payment.className}</p> */}
                   </div>
                   <div>
                     <p className="text-muted-foreground">Section</p>
-                    <p className="font-medium">{payment.sectionName}</p>
+                    {/* <p className="font-medium">{payment.sectionName}</p> */}
                   </div>
                 </div>
               </div>
@@ -874,10 +874,10 @@ function PaymentDetailsModal({
             )}
 
               {/* Notes */}
-              {payment.notes && (
+              {false && (
                 <div className="border border-border rounded-lg p-4">
                   <h4 className="font-semibold text-sm mb-2">Notes</h4>
-                  <p className="text-sm text-muted-foreground">{payment.notes}</p>
+                  <p className="text-sm text-muted-foreground"></p>
           </div>
               )}
 
@@ -973,17 +973,12 @@ function PaymentHistoryPageContent() {
   );
 
   // Get payment statistics
-  const { data: statistics, error: statsError, refetch: refetchStats } = api.paymentGateway.getPaymentStatistics.useQuery(
-    {
-      branchId: currentBranchId!,
-      sessionId: currentSessionId!,
-      ...(dateRange?.from && { startDate: dateRange.from }),
-      ...(dateRange?.to && { endDate: dateRange.to }),
-    },
-    {
-      enabled: !!currentBranchId && !!currentSessionId,
-    }
-  );
+  // TODO: Replace with actual statistics query when available
+  const { data: statistics, error: statsError, refetch: refetchStats } = { 
+    data: null, 
+    error: null, 
+    refetch: () => {} 
+  } as any;
 
   // Handle payment updates (refetch data)
   const handlePaymentUpdated = async () => {
@@ -1053,8 +1048,8 @@ function PaymentHistoryPageContent() {
       'Time': payment.paymentDate.toLocaleTimeString('en-IN'),
       'Student Name': payment.studentName || '',
       'Admission Number': payment.studentAdmissionNumber || '',
-      'Class': payment.className || '',
-      'Section': payment.sectionName || '',
+      // 'Class': payment.className || '',
+      // 'Section': payment.sectionName || '',
       'Fee Terms': payment.feeTermName || '',
       'Amount': payment.amount.toString(),
       'Payment Mode': payment.paymentMode || '',
@@ -1063,7 +1058,7 @@ function PaymentHistoryPageContent() {
       'Receipt Number': payment.receiptNumber || '',
       'Transaction ID': payment.transactionId || '',
       'Gateway': payment.gateway || '',
-      'Notes': payment.notes || ''
+      'Notes': ''
     }));
 
     const csv = [

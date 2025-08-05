@@ -31,7 +31,7 @@ function PaymentFailureContent() {
   const errorMessage = searchParams.get('error_Message');
 
   // Get transaction details if we have the txnid
-  const { data: transaction, isLoading } = api.paymentGateway.getPaymentStatus.useQuery(
+  const { data: transaction, isLoading } = api.paymentGateway.checkPaymentStatus.useQuery(
     { transactionId: txnid || '' },
     { enabled: !!txnid }
   );
@@ -177,7 +177,7 @@ function PaymentFailureContent() {
                 </div>
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                   <CreditCard className="h-4 w-4" />
-                  <span>Payment gateway powered by Easebuzz</span>
+                  <span>Secure payment gateway</span>
                 </div>
               </div>
             </div>

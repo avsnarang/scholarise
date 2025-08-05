@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { easebuzzService } from "@/utils/easebuzz-service";
+import { razorpayService } from "@/utils/razorpay-service";
 import type { 
   PaymentGateway, 
   PaymentStatus, 
@@ -40,7 +40,7 @@ const paymentHistoryFilterSchema = z.object({
   studentId: z.string().optional(),
   feeTermId: z.string().optional(),
   paymentMode: z.string().optional(),
-  gateway: z.enum(['EASEBUZZ', 'RAZORPAY', 'PAYTM', 'STRIPE']).optional(),
+  gateway: z.enum(['RAZORPAY', 'PAYTM', 'STRIPE']).optional(),
   status: z.string().optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
@@ -49,35 +49,34 @@ const paymentHistoryFilterSchema = z.object({
 });
 
 export const paymentGatewayRouter = createTRPCRouter({
-  // Test payment link creation (1 Rupee)
-  createTestPaymentLink: protectedProcedure
+  // Test payment gateway integration
+  testPayment: protectedProcedure
     .input(z.object({
       branchId: z.string(),
       sessionId: z.string(),
     }))
-    .mutation(async ({ ctx, input }): Promise<CreatePaymentRequestResponse> => {
-      // Declare variables outside try block for cleanup access
+    .mutation(async ({ ctx, input }) => {
       let testPaymentRequest: any = null;
       let testGatewayTransaction: any = null;
       
       try {
-        // Verify Easebuzz is configured
-        if (!easebuzzService.isConfigured()) {
+        // Verify Razorpay is configured
+        if (!razorpayService.isConfigured()) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: "Payment gateway is not configured. Please contact administrator.",
           });
         }
 
-        // Generate test transaction ID and expiry date
-        const txnid = easebuzzService.generateTransactionId('TEST');
+        // Generate test receipt ID and expiry date
+        const receiptId = razorpayService.generateReceiptId('TEST');
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 2); // 2 hours expiry for test
 
         // Create success and failure URLs
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const successUrl = `${baseUrl}/finance/payment-success?txnid=${txnid}`;
-        const failureUrl = `${baseUrl}/finance/payment-failure?txnid=${txnid}`;
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const successUrl = `${baseUrl}/finance/payment-success`;
+        const failureUrl = `${baseUrl}/finance/payment-failure`;
 
         // Try to find a real student and fee term for testing, or use dummy values
         let testStudentId = 'test-student-id';
@@ -108,10 +107,22 @@ export const paymentGatewayRouter = createTRPCRouter({
           console.log('Using dummy values for test payment');
         }
 
+        // Create Razorpay order
+        const razorpayOrder = await razorpayService.createOrder({
+          amount: 1.0, // 1 Rupee test payment
+          receipt: receiptId,
+          notes: {
+            purpose: 'Test Payment Gateway Integration',
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            environment: 'test',
+          },
+        });
+
         // Create test payment request in database
         testPaymentRequest = await ctx.db.paymentRequest.create({
           data: {
-            gateway: 'EASEBUZZ',
+            gateway: 'RAZORPAY',
             amount: 1.0, // 1 Rupee test payment
             currency: 'INR',
             status: 'PENDING',
@@ -120,121 +131,86 @@ export const paymentGatewayRouter = createTRPCRouter({
             sessionId: input.sessionId,
             feeTermId: testFeeTermId,
             purpose: 'Test Payment Gateway Integration',
-            description: 'This is a test payment of ₹1 to verify Easebuzz integration',
+            description: 'This is a test payment of ₹1 to verify Razorpay integration',
             fees: [{ feeHeadId: 'test-fee-head', feeHeadName: 'Test Fee', amount: 1.0 }],
             buyerName: 'Test User',
             buyerEmail: 'test@school.edu',
             buyerPhone: '9999999999',
             redirectUrl: successUrl,
-            webhookUrl: `${baseUrl}/api/webhooks/easebuzz`,
+            webhookUrl: `${baseUrl}/api/webhooks/razorpay`,
             expiresAt,
             createdBy: ctx.user?.id || "",
+            gatewayRequestId: razorpayOrder.id,
           },
         });
 
         // Create test payment gateway transaction
         testGatewayTransaction = await ctx.db.paymentGatewayTransaction.create({
           data: {
-            gatewayTransactionId: txnid,
-            gateway: 'EASEBUZZ',
+            gatewayTransactionId: receiptId,
+            gateway: 'RAZORPAY',
             amount: 1.0,
             currency: 'INR',
-            status: 'PENDING',
+            status: 'INITIATED',
             studentId: testStudentId,
             branchId: input.branchId,
             sessionId: input.sessionId,
             feeTermId: testFeeTermId,
             paymentRequestId: testPaymentRequest.id,
-            gatewayOrderId: txnid,
+            gatewayOrderId: razorpayOrder.id,
             expiresAt,
           },
         });
 
-        // Create payment link with Easebuzz
-        const paymentLinkResponse = await easebuzzService.createPaymentLink({
-          txnid,
-          amount: 1.0,
-          firstname: 'Test User',
-          email: 'test@school.edu',
-          phone: '9999999999',
-          productinfo: 'Test Payment Gateway Integration',
-          surl: successUrl,
-          furl: failureUrl,
-          udf1: testPaymentRequest.id,
-          udf2: testGatewayTransaction.id,
-          udf3: testStudentId,
-          udf4: input.branchId,
-          udf5: input.sessionId,
-          expiryDate: expiresAt,
-        });
-
-        if (paymentLinkResponse.status === 0) {
-          // Payment link creation failed
-          await ctx.db.paymentRequest.update({
-            where: { id: testPaymentRequest.id },
-            data: { status: 'FAILED' },
-          });
-
-          await ctx.db.paymentGatewayTransaction.update({
-            where: { id: testGatewayTransaction.id },
-            data: { 
-              status: 'FAILED',
-              failureReason: paymentLinkResponse.msg || 'Payment link creation failed',
-            },
-          });
-
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Test payment link creation failed: ${paymentLinkResponse.msg || 'Unknown error from Easebuzz'}`,
-          });
-        }
-
-        // Update payment request with gateway response
+        // Update payment request with initiated status
         await ctx.db.paymentRequest.update({
           where: { id: testPaymentRequest.id },
           data: {
             status: 'INITIATED',
-            paymentUrl: paymentLinkResponse.data,
-            gatewayRequestId: txnid,
           },
         });
 
-        await ctx.db.paymentGatewayTransaction.update({
-          where: { id: testGatewayTransaction.id },
-          data: {
-            status: 'INITIATED',
-            gatewayResponse: paymentLinkResponse as any,
-          },
-        });
-
+        // Return checkout information
         return {
           success: true,
-          data: {
-            paymentRequestId: testPaymentRequest.id,
-            paymentUrl: paymentLinkResponse.data,
-            transactionId: testGatewayTransaction.id,
-            expiresAt: expiresAt,
+          paymentRequestId: testPaymentRequest.id,
+          transactionId: testGatewayTransaction.id,
+          checkoutData: {
+            key: razorpayService.getConfig().keyId,
+            amount: razorpayOrder.amount, // Amount in paise
+            currency: razorpayOrder.currency,
+            orderId: razorpayOrder.id,
+            name: 'Test Payment',
+            description: 'Test payment of ₹1',
+            prefill: {
+              name: 'Test User',
+              email: 'test@school.edu',
+              contact: '9999999999',
+            },
+            theme: {
+              color: '#3B82F6', // Blue color
+            },
+            modal: {
+              ondismiss: () => {
+                console.log('Payment modal closed');
+              }
+            }
           },
+          successUrl,
+          failureUrl,
+          message: 'Test payment order created successfully. Please complete the payment.',
         };
-
       } catch (error) {
-        console.error('Test payment creation error:', error);
-        
-        // Clean up created records in case of error (if they were created)
+        // Clean up if something goes wrong
         try {
-          if (testPaymentRequest?.id) {
-            await ctx.db.paymentRequest.update({
-              where: { id: testPaymentRequest.id },
-              data: { status: 'FAILED' },
+          if (testGatewayTransaction) {
+            await ctx.db.paymentGatewayTransaction.delete({
+              where: { id: testGatewayTransaction.id },
             });
           }
-          if (testGatewayTransaction?.id) {
-            await ctx.db.paymentGatewayTransaction.update({
-              where: { id: testGatewayTransaction.id },
-              data: { 
-                status: 'FAILED',
-                failureReason: error instanceof Error ? error.message : 'Unknown error',
-              },
+          if (testPaymentRequest) {
+            await ctx.db.paymentRequest.delete({
+              where: { id: testPaymentRequest.id },
             });
           }
         } catch (cleanupError) {
@@ -245,20 +221,10 @@ export const paymentGatewayRouter = createTRPCRouter({
           throw error;
         }
 
-        // Check for configuration issues
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        if (errorMessage.includes('Easebuzz configuration is incomplete') || 
-            errorMessage.includes('EASEBUZZ_MERCHANT_KEY') ||
-            errorMessage.includes('EASEBUZZ_MERCHANT_SALT')) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Easebuzz payment gateway is not properly configured. Please contact system administrator to configure EASEBUZZ_MERCHANT_KEY and EASEBUZZ_MERCHANT_SALT environment variables.",
-          });
-        }
-
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to create test payment link: ${errorMessage}`,
+          message: `Failed to create test payment: ${errorMessage}`,
         });
       }
     }),
@@ -267,11 +233,18 @@ export const paymentGatewayRouter = createTRPCRouter({
   getGatewayConfig: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        easebuzz: {
-          isConfigured: easebuzzService.isConfigured(),
-          config: easebuzzService.getConfig(),
+        razorpay: {
+          isConfigured: razorpayService.isConfigured(),
+          config: razorpayService.getConfig(),
         },
-        // Add other gateways here as needed
+        paytm: {
+          isConfigured: false,
+          config: {},
+        },
+        stripe: {
+          isConfigured: false,
+          config: {},
+        },
       };
     }),
 
@@ -280,8 +253,8 @@ export const paymentGatewayRouter = createTRPCRouter({
     .input(createPaymentRequestSchema)
     .mutation(async ({ ctx, input }): Promise<CreatePaymentRequestResponse> => {
       try {
-        // Verify Easebuzz is configured
-        if (!easebuzzService.isConfigured()) {
+        // Verify Razorpay is configured
+        if (!razorpayService.isConfigured()) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: "Payment gateway is not configured. Please contact administrator.",
@@ -303,64 +276,65 @@ export const paymentGatewayRouter = createTRPCRouter({
 
         if (!student || student.branchId !== input.branchId) {
           throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid student for the specified branch",
+            code: "NOT_FOUND",
+            message: "Student not found or does not belong to this branch",
           });
         }
 
-        if (!student.section?.class || student.section.class.sessionId !== input.sessionId) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Student is not enrolled in the specified academic session",
-          });
-        }
-
-        // Verify fee term
+        // Verify fee term exists and belongs to the branch/session
         const feeTerm = await ctx.db.feeTerm.findUnique({
           where: { id: input.feeTermId },
         });
 
         if (!feeTerm || feeTerm.branchId !== input.branchId || feeTerm.sessionId !== input.sessionId) {
           throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid fee term for the specified branch and session",
+            code: "NOT_FOUND",
+            message: "Fee term not found or does not belong to this branch/session",
           });
         }
 
-        // Verify fee heads exist
-        const feeHeadIds = input.fees.map(fee => fee.feeHeadId);
-        const validFeeHeads = await ctx.db.feeHead.findMany({
-          where: {
-            id: { in: feeHeadIds },
-            branchId: input.branchId,
-            sessionId: input.sessionId,
-            isActive: true,
-          },
-        });
-
-        if (validFeeHeads.length !== feeHeadIds.length) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Some fee heads are invalid or inactive",
-          });
-        }
-
+        // Calculate total amount
         const totalAmount = input.fees.reduce((sum, fee) => sum + fee.amount, 0);
 
-        // Generate transaction ID and expiry date
-        const txnid = easebuzzService.generateTransactionId('SCHOLAR');
+        if (totalAmount <= 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Total amount must be greater than zero",
+          });
+        }
+
+        // Generate receipt ID and expiry date
+        const receiptId = razorpayService.generateReceiptId('SCHOLAR');
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + input.expiryHours);
 
         // Create success and failure URLs
-        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        const successUrl = `${baseUrl}/finance/payment-success?txnid=${txnid}`;
-        const failureUrl = `${baseUrl}/finance/payment-failure?txnid=${txnid}`;
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const successUrl = `${baseUrl}/finance/payment-success`;
+        const failureUrl = `${baseUrl}/finance/payment-failure`;
+
+        // Create Razorpay order
+        const razorpayOrder = await razorpayService.createOrder({
+          amount: totalAmount,
+          receipt: receiptId,
+          notes: {
+            studentId: input.studentId,
+            studentName: `${student.firstName} ${student.lastName}`,
+            admissionNumber: student.admissionNumber,
+            className: student.section?.class.name,
+            sectionName: student.section?.name,
+            feeTermId: input.feeTermId,
+            feeTermName: feeTerm.name,
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            purpose: input.purpose,
+          },
+        });
 
         // Create payment request in database first
         const paymentRequest = await ctx.db.paymentRequest.create({
           data: {
-            gateway: 'EASEBUZZ',
+            gateway: 'RAZORPAY',
             amount: totalAmount,
             currency: 'INR',
             status: 'PENDING',
@@ -375,464 +349,405 @@ export const paymentGatewayRouter = createTRPCRouter({
             buyerEmail: input.buyerEmail,
             buyerPhone: input.buyerPhone,
             redirectUrl: successUrl,
-            webhookUrl: `${baseUrl}/api/webhooks/easebuzz`,
+            webhookUrl: `${baseUrl}/api/webhooks/razorpay`,
             expiresAt,
             createdBy: ctx.user?.id || "",
+            gatewayRequestId: razorpayOrder.id,
           },
         });
 
         // Create payment gateway transaction
         const gatewayTransaction = await ctx.db.paymentGatewayTransaction.create({
           data: {
-            gatewayTransactionId: txnid,
-            gateway: 'EASEBUZZ',
+            gatewayTransactionId: receiptId,
+            gateway: 'RAZORPAY',
             amount: totalAmount,
             currency: 'INR',
-            status: 'PENDING',
+            status: 'INITIATED',
             studentId: input.studentId,
             branchId: input.branchId,
             sessionId: input.sessionId,
             feeTermId: input.feeTermId,
             paymentRequestId: paymentRequest.id,
-            gatewayOrderId: txnid,
+            gatewayOrderId: razorpayOrder.id,
             expiresAt,
           },
         });
 
-        // Create payment link with Easebuzz
-        const paymentLinkResponse = await easebuzzService.createPaymentLink({
-          txnid,
-          amount: totalAmount,
-          firstname: input.buyerName,
-          email: input.buyerEmail || student.email || `${student.admissionNumber}@school.edu`,
-          phone: input.buyerPhone,
-          productinfo: input.purpose,
-          surl: successUrl,
-          furl: failureUrl,
-          udf1: paymentRequest.id, // Payment request ID
-          udf2: gatewayTransaction.id, // Transaction ID
-          udf3: input.studentId, // Student ID
-          udf4: input.branchId, // Branch ID
-          udf5: input.sessionId, // Session ID
-          expiryDate: expiresAt,
-        });
-
-        if (paymentLinkResponse.status === 0) {
-          // Payment link creation failed
-          await ctx.db.paymentRequest.update({
-            where: { id: paymentRequest.id },
-            data: { status: 'FAILED' },
-          });
-
-          await ctx.db.paymentGatewayTransaction.update({
-            where: { id: gatewayTransaction.id },
-            data: { 
-              status: 'FAILED',
-              failureReason: paymentLinkResponse.msg,
-            },
-          });
-
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Payment link creation failed: ${paymentLinkResponse.msg}`,
-          });
-        }
-
-        // Update payment request with gateway response
+        // Update payment request with initiated status
         await ctx.db.paymentRequest.update({
           where: { id: paymentRequest.id },
           data: {
             status: 'INITIATED',
-            paymentUrl: paymentLinkResponse.data,
-            gatewayRequestId: txnid,
           },
         });
 
-        await ctx.db.paymentGatewayTransaction.update({
-          where: { id: gatewayTransaction.id },
-          data: {
-            status: 'INITIATED',
-            gatewayResponse: paymentLinkResponse as any,
-          },
-        });
-
+        // Return checkout information
         return {
           success: true,
-          data: {
-            paymentRequestId: paymentRequest.id,
-            paymentUrl: paymentLinkResponse.data,
-            transactionId: gatewayTransaction.id,
-            expiresAt,
+          transactionId: gatewayTransaction.id,
+          checkoutData: {
+            key: razorpayService.getConfig().keyId,
+            amount: razorpayOrder.amount, // Amount in paise
+            currency: razorpayOrder.currency,
+            orderId: razorpayOrder.id,
+            name: `${student.section?.class.name || 'School'} Fee Payment`,
+            description: input.purpose,
+            prefill: {
+              name: input.buyerName,
+              email: input.buyerEmail || student.email || '',
+              contact: input.buyerPhone,
+            },
+            notes: {
+              paymentRequestId: paymentRequest.id,
+              transactionId: gatewayTransaction.id,
+            },
+            theme: {
+              color: '#3B82F6', // Blue color matching the app theme
+            },
           },
+          successUrl,
+          failureUrl,
+          message: 'Payment order created successfully. Redirecting to payment gateway...',
         };
-
       } catch (error) {
-        console.error('Error creating payment request:', error);
-        
         if (error instanceof TRPCError) {
           throw error;
         }
 
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Check for Razorpay configuration issues
+        if (errorMessage.includes('Razorpay') && errorMessage.includes('not configured')) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Razorpay payment gateway is not properly configured. Please contact system administrator.",
+          });
+        }
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create payment request. Please try again.",
+          message: `Failed to create payment request: ${errorMessage}`,
         });
       }
     }),
 
-  // Get payment status
-  getPaymentStatus: protectedProcedure
+  // Get payment history with filters
+  getPaymentHistory: protectedProcedure
+    .input(paymentHistoryFilterSchema)
+    .query(async ({ ctx, input }): Promise<PaymentHistoryResponse> => {
+      try {
+        // Build where clause based on filters
+        const whereClause: any = {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+        };
+
+        if (input.studentId) {
+          whereClause.studentId = input.studentId;
+        }
+
+        if (input.feeTermId) {
+          whereClause.feeTermId = input.feeTermId;
+        }
+
+        if (input.gateway) {
+          whereClause.gateway = input.gateway;
+        }
+
+        if (input.status) {
+          whereClause.status = input.status;
+        }
+
+        if (input.startDate || input.endDate) {
+          whereClause.createdAt = {};
+          if (input.startDate) {
+            whereClause.createdAt.gte = input.startDate;
+          }
+          if (input.endDate) {
+            whereClause.createdAt.lte = input.endDate;
+          }
+        }
+
+        // Build pagination
+        const paginationOptions: any = {
+          orderBy: { createdAt: 'desc' },
+        };
+
+        if (input.limit !== undefined) {
+          paginationOptions.take = input.limit + 1; // Take one extra to determine if there's a next page
+        }
+
+        if (input.cursor) {
+          paginationOptions.cursor = { id: input.cursor };
+          paginationOptions.skip = 1; // Skip the cursor item
+        }
+
+        // Query gateway transactions
+        const transactions = await ctx.db.paymentGatewayTransaction.findMany({
+          where: whereClause,
+          ...paginationOptions,
+        });
+
+        let hasNextPage = false;
+        let returnedTransactions = transactions;
+
+        // Check if we have a next page
+        if (input.limit !== undefined && transactions.length > input.limit) {
+          hasNextPage = true;
+          returnedTransactions = transactions.slice(0, -1); // Remove the extra item
+        }
+
+        // Map to PaymentHistoryItem format
+        const items: PaymentHistoryItem[] = returnedTransactions.map((txn): PaymentHistoryItem => ({
+          id: txn.id,
+          transactionId: txn.gatewayTransactionId || '',
+          orderId: txn.gatewayOrderId || undefined,
+          gateway: txn.gateway as PaymentGateway,
+          amount: txn.amount,
+          currency: txn.currency,
+          status: txn.status as PaymentStatus,
+          type: 'gateway' as const,
+          studentId: txn.studentId,
+          studentName: '',
+          studentAdmissionNumber: '',
+          branchId: txn.branchId,
+          branchName: '',
+          sessionId: txn.sessionId,
+          sessionName: '',
+          feeTermId: txn.feeTermId,
+          feeTermName: undefined,
+          paymentRequestId: txn.paymentRequestId || undefined,
+          moneyCollectionId: undefined,
+          receiptNumber: undefined,
+          paymentMode: 'ONLINE',
+          paymentDate: txn.createdAt,
+          feesBreakdown: [],
+          failureReason: txn.failureReason || undefined,
+          gatewayResponse: txn.gatewayResponse || undefined,
+          createdAt: txn.createdAt,
+          updatedAt: txn.updatedAt,
+        }));
+
+        const lastTransaction = returnedTransactions[returnedTransactions.length - 1];
+        const nextCursor = hasNextPage && lastTransaction
+          ? lastTransaction.id
+          : undefined;
+
+        return {
+          items,
+          nextCursor,
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch payment history",
+        });
+      }
+    }),
+
+  // Get payment details by transaction ID
+  getPaymentByTransactionId: publicProcedure
     .input(z.object({
       transactionId: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-      const transaction = await ctx.db.paymentGatewayTransaction.findUnique({
-        where: { id: input.transactionId },
+      const transaction = await ctx.db.paymentGatewayTransaction.findFirst({
+        where: { gatewayTransactionId: input.transactionId },
         include: {
-          paymentRequest: true,
           student: {
-            include: {
-              section: {
-                include: {
-                  class: true,
-                },
-              },
+            select: {
+              id: true,
+              admissionNumber: true,
+              firstName: true,
+              lastName: true,
             },
           },
-          feeTerm: true,
+          branch: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          session: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          feeTerm: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          feeCollections: {
+            select: {
+              id: true,
+              receiptNumber: true,
+              paymentMode: true,
+              paymentDate: true,
+              totalAmount: true,
+
+            },
+          },
+          paymentRequest: {
+            select: {
+              id: true,
+              purpose: true,
+              description: true,
+              buyerName: true,
+              buyerEmail: true,
+              buyerPhone: true,
+              fees: true,
+              expiresAt: true,
+            },
+          },
         },
       });
 
       if (!transaction) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Transaction not found",
+          message: "Payment transaction not found",
         });
       }
 
       return transaction;
     }),
 
-  // Get payment history (combined manual and gateway)
-  getPaymentHistory: protectedProcedure
-    .input(paymentHistoryFilterSchema)
-    .query(async ({ ctx, input }): Promise<PaymentHistoryResponse> => {
-      const limit = input.limit || 999999; // Use a very large number if no limit specified
-      const cursor = input.cursor;
-
-      // Build base where clause for common fields
-      const baseWhere = {
-        branchId: input.branchId,
-        sessionId: input.sessionId,
-        ...(input.studentId && { studentId: input.studentId }),
-        ...(input.feeTermId && { feeTermId: input.feeTermId }),
-      };
-
-      // Build date filter for FeeCollection (uses paymentDate)
-      const manualDateFilter = input.startDate && input.endDate ? {
-        paymentDate: {
-          gte: input.startDate,
-          lte: input.endDate,
-        },
-      } : {};
-
-      // Build date filter for PaymentGatewayTransaction (uses createdAt)
-      const gatewayDateFilter = input.startDate && input.endDate ? {
-        createdAt: {
-          gte: input.startDate,
-          lte: input.endDate,
-        },
-      } : {};
-
-      // Get manual payments (FeeCollection)
-      const manualPaymentsPromise = ctx.db.feeCollection.findMany({
-        where: {
-          ...baseWhere,
-          ...manualDateFilter,
-          ...(input.paymentMode && { paymentMode: input.paymentMode }),
-          ...(input.status && { status: input.status }),
-          gatewayTransactionId: null, // Only manual payments
-        },
-        include: {
-          student: {
-            include: {
-              section: {
-                include: {
-                  class: true,
-                },
-              },
-            },
-          },
-          items: {
-            include: {
-              feeHead: true,
-              feeTerm: true,
-            },
-          },
-          branch: true,
-          session: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit, // Get full limit from manual payments
-      });
-
-      // Get gateway payments (PaymentGatewayTransaction)
-      const gatewayPaymentsPromise = ctx.db.paymentGatewayTransaction.findMany({
-        where: {
-          ...baseWhere,
-          ...gatewayDateFilter,
-          ...(input.gateway && { gateway: input.gateway }),
-          // If no status filter is provided, default to SUCCESS. If provided, use the input status
-          status: (input.status || 'SUCCESS') as PaymentStatus,
-        },
-        include: {
-          student: {
-            include: {
-              section: {
-                include: {
-                  class: true,
-                },
-              },
-            },
-          },
-          feeTerm: true,
-          feeCollections: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit, // Get full limit from gateway payments
-      });
-
-      const [manualPayments, gatewayPayments] = await Promise.all([
-        manualPaymentsPromise,
-        gatewayPaymentsPromise,
-      ]);
-
-
-
-      // Transform to unified format
-      const items: PaymentHistoryItem[] = [];
-
-      // Add manual payments
-      manualPayments.forEach((payment) => {
-        // Get unique fee term names from payment items
-        const feeTermNames = [...new Set(payment.items.map(item => item.feeTerm.name))];
-        const feeTermName = feeTermNames.join(', ') || 'Unknown';
-        
-        items.push({
-          id: payment.id,
-          receiptNumber: payment.receiptNumber,
-          studentName: `${payment.student.firstName} ${payment.student.lastName}`,
-          studentAdmissionNumber: payment.student.admissionNumber,
-          className: payment.student.section?.class?.name,
-          sectionName: payment.student.section?.name,
-          feeTermName: feeTermName,
-          amount: payment.totalAmount,
-          paymentMode: payment.paymentMode,
-          status: payment.status,
-          paymentDate: payment.paymentDate,
-          transactionReference: payment.transactionReference || undefined,
-          type: 'manual',
-          notes: payment.notes || undefined,
-          createdAt: payment.createdAt,
-        });
-      });
-
-      // Add gateway payments
-      gatewayPayments.forEach((transaction) => {
-        const feeCollection = (transaction as any).feeCollections?.[0]; // Should have one fee collection for successful payments
-        const student = (transaction as any).student;
-        const feeTerm = (transaction as any).feeTerm;
-        
-        items.push({
-          id: transaction.id,
-          transactionId: transaction.id,
-          studentName: `${student?.firstName || ''} ${student?.lastName || ''}`,
-          studentAdmissionNumber: student?.admissionNumber || '',
-          className: student?.section?.class?.name || '',
-          sectionName: student?.section?.name || '',
-          feeTermName: feeTerm?.name || '',
-          amount: transaction.amount,
-          paymentMode: 'Online',
-          gateway: transaction.gateway as any,
-          status: transaction.status,
-          paymentDate: transaction.paidAt || transaction.createdAt,
-          gatewayTransactionId: transaction.gatewayTransactionId || undefined,
-          type: 'gateway',
-          receiptNumber: feeCollection?.receiptNumber,
-          createdAt: transaction.createdAt,
-        });
-      });
-
-      // Sort by payment date/created date
-      items.sort((a, b) => {
-        const dateA = a.paymentDate || a.createdAt;
-        const dateB = b.paymentDate || b.createdAt;
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      // Apply cursor-based pagination
-      let paginatedItems = items;
-      if (cursor) {
-        const cursorIndex = items.findIndex(item => item.id === cursor);
-        if (cursorIndex >= 0) {
-          paginatedItems = items.slice(cursorIndex + 1);
-        }
-      }
-
-      const resultItems = paginatedItems.slice(0, limit);
-      const hasMore = paginatedItems.length > limit;
-      const nextCursor = hasMore ? resultItems[resultItems.length - 1]?.id : undefined;
-
-      return {
-        items: resultItems,
-        nextCursor,
-        hasMore,
-        totalCount: items.length,
-      };
-    }),
-
-  // Get payment statistics
-  getPaymentStatistics: protectedProcedure
+  // Check payment status
+  checkPaymentStatus: publicProcedure
     .input(z.object({
-      branchId: z.string(),
-      sessionId: z.string(),
-      startDate: z.date().optional(),
-      endDate: z.date().optional(),
+      transactionId: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-      // Base where clause for common fields
-      const baseWhere = {
-        branchId: input.branchId,
-        sessionId: input.sessionId,
-      };
-
-      // Date filter for FeeCollection (uses paymentDate)
-      const manualDateFilter = input.startDate && input.endDate ? {
-        paymentDate: {
-          gte: input.startDate,
-          lte: input.endDate,
-        },
-      } : {};
-
-      // Date filter for PaymentGatewayTransaction (uses createdAt)
-      const gatewayDateFilter = input.startDate && input.endDate ? {
-        createdAt: {
-          gte: input.startDate,
-          lte: input.endDate,
-        },
-      } : {};
-
-      // Get manual payment stats
-      const manualStats = await ctx.db.feeCollection.aggregate({
-        where: {
-          ...baseWhere,
-          ...manualDateFilter,
-          gatewayTransactionId: null,
-        },
-        _sum: {
-          totalAmount: true,
-        },
-        _count: true,
-      });
-
-      // Get gateway payment stats
-      const gatewayStats = await ctx.db.paymentGatewayTransaction.groupBy({
-        by: ['gateway', 'status'],
-        where: {
-          ...baseWhere,
-          ...gatewayDateFilter,
-        },
-        _sum: {
-          amount: true,
-        },
-        _count: true,
-      });
-
-      // Process gateway stats
-      const gatewayStatsByGateway: any = {};
-      gatewayStats.forEach(stat => {
-        if (!gatewayStatsByGateway[stat.gateway]) {
-          gatewayStatsByGateway[stat.gateway] = {
-            totalAmount: 0,
-            successfulTransactions: 0,
-            failedTransactions: 0,
-            pendingTransactions: 0,
-          };
-        }
-
-        const amount = stat._sum.amount || 0;
-        const count = stat._count;
-
-        if (stat.status === 'SUCCESS') {
-          gatewayStatsByGateway[stat.gateway].totalAmount += amount;
-          gatewayStatsByGateway[stat.gateway].successfulTransactions += count;
-        } else if (stat.status === 'FAILED') {
-          gatewayStatsByGateway[stat.gateway].failedTransactions += count;
-        } else {
-          gatewayStatsByGateway[stat.gateway].pendingTransactions += count;
-        }
-      });
-
-      const totalGatewayAmount = Object.values(gatewayStatsByGateway).reduce(
-        (sum: number, gateway: any) => sum + gateway.totalAmount, 0
-      );
-
-      const totalGatewayTransactions = Object.values(gatewayStatsByGateway).reduce(
-        (sum: number, gateway: any) => sum + gateway.successfulTransactions, 0
-      );
-
-      return {
-        totalAmount: (manualStats._sum.totalAmount || 0) + totalGatewayAmount,
-        manualAmount: manualStats._sum.totalAmount || 0,
-        gatewayAmount: totalGatewayAmount,
-        totalTransactions: (manualStats._count || 0) + totalGatewayTransactions,
-        manualTransactions: manualStats._count || 0,
-        gatewayTransactions: totalGatewayTransactions,
-        gatewayStats: gatewayStatsByGateway,
-      };
-    }),
-
-  // Cancel payment request
-  cancelPaymentRequest: protectedProcedure
-    .input(z.object({
-      paymentRequestId: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const paymentRequest = await ctx.db.paymentRequest.findUnique({
-        where: { id: input.paymentRequestId },
+      const transaction = await ctx.db.paymentGatewayTransaction.findFirst({
+        where: { gatewayTransactionId: input.transactionId },
         include: {
-          transactions: true,
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              admissionNumber: true,
+              section: {
+                include: {
+                  class: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          feeTerm: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          branch: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          session: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          feeCollections: {
+            select: {
+              id: true,
+              receiptNumber: true,
+            },
+            take: 1,
+          },
         },
       });
 
-      if (!paymentRequest) {
+      if (!transaction) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Payment request not found",
+          message: "Payment transaction not found",
         });
       }
 
-      if (paymentRequest.status === 'SUCCESS') {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot cancel a successful payment",
-        });
-      }
-
-      // Update payment request and transactions
-      await ctx.db.$transaction([
-        ctx.db.paymentRequest.update({
-          where: { id: input.paymentRequestId },
-          data: { status: 'CANCELLED' },
-        }),
-        ...paymentRequest.transactions.map(transaction =>
-          ctx.db.paymentGatewayTransaction.update({
-            where: { id: transaction.id },
-            data: { status: 'CANCELLED' },
-          })
-        ),
-      ]);
-
-      return { success: true };
+      return {
+        transactionId: transaction.gatewayTransactionId,
+        gateway: transaction.gateway,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: transaction.status,
+        isSuccess: transaction.status === 'SUCCESS',
+        isPending: transaction.status === 'PENDING' || transaction.status === 'INITIATED',
+        isFailed: transaction.status === 'FAILED',
+        moneyCollectionId: transaction.feeCollections?.[0]?.id || null,
+        failureReason: transaction.failureReason,
+        lastUpdated: transaction.updatedAt,
+        student: transaction.student,
+        feeTerm: transaction.feeTerm,
+        branch: transaction.branch,
+        session: transaction.session,
+      };
     }),
-}); 
+
+  // Verify payment after redirect (for client-side verification)
+  verifyPayment: publicProcedure
+    .input(z.object({
+      razorpay_order_id: z.string(),
+      razorpay_payment_id: z.string(),
+      razorpay_signature: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Verify the payment signature
+        const isValid = razorpayService.verifyPaymentSignature({
+          orderId: input.razorpay_order_id,
+          paymentId: input.razorpay_payment_id,
+          signature: input.razorpay_signature,
+        });
+
+        if (!isValid) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid payment signature",
+          });
+        }
+
+        // Find the transaction by order ID
+        const transaction = await ctx.db.paymentGatewayTransaction.findFirst({
+          where: { gatewayOrderId: input.razorpay_order_id },
+        });
+
+        if (!transaction) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Transaction not found",
+          });
+        }
+
+        // The webhook will handle the actual status update
+        // This endpoint just verifies the signature for the client
+        return {
+          success: true,
+          transactionId: transaction.gatewayTransactionId,
+          message: "Payment verified successfully",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to verify payment",
+        });
+      }
+    }),
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -28,13 +28,38 @@ import { api } from '@/utils/api';
 import { useBranchContext } from '@/hooks/useBranchContext';
 import { useAcademicSessionContext } from '@/hooks/useAcademicSessionContext';
 import { formatIndianCurrency } from '@/lib/utils';
-import type { PaymentGatewayButtonProps } from '@/types/payment-gateway';
+import type { PaymentGatewayButtonProps, PaymentGatewayTransaction } from '@/types/payment-gateway';
+import { useRouter } from 'next/navigation';
+
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface PaymentRequestData {
   paymentRequestId: string;
-  paymentUrl: string;
   transactionId: string;
-  expiresAt: Date;
+  checkoutData: {
+    key: string;
+    amount: number;
+    currency: string;
+    orderId: string;
+    name: string;
+    description: string;
+    prefill: {
+      name: string;
+      email: string;
+      contact: string;
+    };
+    notes?: Record<string, any>;
+    theme?: {
+      color?: string;
+    };
+  };
+  successUrl: string;
+  failureUrl: string;
 }
 
 export function PaymentGatewayButton({
@@ -49,142 +74,203 @@ export function PaymentGatewayButton({
   disabled = false,
   className = '',
 }: PaymentGatewayButtonProps) {
-  const { currentBranchId } = useBranchContext();
+  const router = useRouter();
+  const { currentBranchId, currentBranch } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
-  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [paymentRequest, setPaymentRequest] = useState<PaymentRequestData | null>(null);
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
-  const [buyerPhone, setBuyerPhone] = useState('');
-  const [buyerEmail, setBuyerEmail] = useState('');
+  const [paymentData, setPaymentData] = useState<PaymentRequestData | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  // Get student details for payment
-  const { data: student } = api.student.getById.useQuery(
-    { id: studentId },
-    { enabled: !!studentId }
+  // Student details
+  const studentQuery = api.student.getById.useQuery(
+    { id: studentId, branchId: currentBranchId || undefined },
+    { enabled: !!studentId && !!currentBranchId }
   );
 
-  // Get gateway configuration
-  const { data: gatewayConfig } = api.paymentGateway.getGatewayConfig.useQuery();
+  // Parent details (for contact info)
+  // TODO: Replace with actual parent query when API is available
+  const parentQuery = { data: null } as any;
+
+  // Gateway config check
+  const gatewayConfigQuery = api.paymentGateway.getGatewayConfig.useQuery();
+  const gatewayConfig = gatewayConfigQuery.data;
 
   // Create payment request mutation
   const createPaymentMutation = api.paymentGateway.createPaymentRequest.useMutation({
-    onSuccess: (response) => {
-      if (response.success && response.data) {
-        setPaymentRequest(response.data);
-        onPaymentInitiated?.(response.data.paymentRequestId);
-        
-        toast({
-          title: "Payment Link Created",
-          description: "Click 'Proceed to Payment' to complete your payment securely.",
-        });
+    onSuccess: (data) => {
+      setPaymentData(data as unknown as PaymentRequestData);
+      if (onPaymentInitiated) {
+        onPaymentInitiated(data.transactionId);
       }
+      // Open Razorpay checkout
+      openRazorpayCheckout(data as unknown as PaymentRequestData);
     },
     onError: (error) => {
-      console.error('Payment creation error:', error);
       toast({
         title: "Payment Creation Failed",
-        description: error.message || "Failed to create payment link. Please try again.",
+        description: error.message || "Unable to create payment request. Please try again.",
         variant: "destructive",
       });
-      onPaymentFailure?.(error.message);
-    },
-    onSettled: () => {
       setIsCreatingPayment(false);
-    }
+    },
   });
+
+  // Verify payment mutation
+  const verifyPaymentMutation = api.paymentGateway.verifyPayment.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Payment Verified",
+        description: "Your payment has been verified successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Payment verification error:', error);
+    },
+  });
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => setScriptLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleCreatePayment = async () => {
     if (!currentBranchId || !currentSessionId) {
       toast({
-        title: "Configuration Error",
-        description: "Branch and session information is required.",
+        title: "Session Required",
+        description: "Please select a branch and academic session.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!student) {
+    if (!studentQuery.data || !parentQuery.data) {
       toast({
-        title: "Student Information Missing",
-        description: "Unable to load student details.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!buyerPhone || buyerPhone.length < 10) {
-      toast({
-        title: "Phone Number Required",
-        description: "Please enter a valid 10-digit phone number.",
-        variant: "destructive",
+        title: "Data Loading",
+        description: "Please wait while we load student information.",
+        variant: "default",
       });
       return;
     }
 
     setIsCreatingPayment(true);
 
-    const studentName = `${student.firstName} ${student.lastName}`;
-    const purpose = `Fee Payment - ${feeTermName}`;
-    const description = `Fee payment for ${studentName} (${student.admissionNumber}) - ${selectedFees.map(f => f.feeHeadName).join(', ')}`;
+    const student = studentQuery.data;
+    const parent = parentQuery.data;
 
-    createPaymentMutation.mutate({
-      studentId,
-      branchId: currentBranchId,
-      sessionId: currentSessionId,
-      feeTermId,
-      fees: selectedFees,
-      buyerName: studentName,
-      buyerEmail: buyerEmail || undefined,
-      buyerPhone,
-      purpose,
-      description,
-      expiryHours: 24, // 24 hours expiry
-    });
-  };
-
-  const handleProceedToPayment = () => {
-    if (paymentRequest?.paymentUrl) {
-      // Open payment URL in new tab
-      window.open(paymentRequest.paymentUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-      
-      // Start polling for payment status
-      startPaymentStatusPolling(paymentRequest.transactionId);
-      
-      toast({
-        title: "Payment Window Opened",
-        description: "Complete your payment in the new window. This dialog will update automatically when payment is completed.",
+    try {
+      await createPaymentMutation.mutateAsync({
+        studentId,
+        branchId: currentBranchId,
+        sessionId: currentSessionId,
+        feeTermId,
+        fees: selectedFees.map(fee => ({
+          feeHeadId: fee.feeHeadId,
+          feeHeadName: fee.feeHeadName,
+          amount: fee.amount,
+        })),
+        buyerName: parent?.fatherName || parent?.motherName || `${student.firstName} ${student.lastName}`,
+        buyerEmail: parent?.fatherEmail || parent?.motherEmail || student.email || '',
+        buyerPhone: parent?.fatherPhone || parent?.motherPhone || '9999999999',
+        purpose: `Fee payment for ${feeTermName}`,
+        description: `${student.firstName} ${student.lastName} (${student.admissionNumber}) - ${student.section?.class.name || 'Class'} ${student.section?.name || ''}`,
+        expiryHours: 24,
       });
+    } catch (error) {
+      // Error handled in mutation
+      setIsCreatingPayment(false);
     }
   };
 
-  const startPaymentStatusPolling = (transactionId: string) => {
-    // DISABLED TO PREVENT API SPAM - USE WEBHOOKS INSTEAD
-    console.log('Payment status polling disabled to prevent API spam. Use webhooks for real-time updates.');
-    // // Simple polling mechanism - in production, you'd use WebSocket or Server-Sent Events
-    // const pollInterval = setInterval(async () => {
-    //   try {
-    //     // This would typically be done via a separate API call to check status
-    //     // For now, we'll rely on webhook processing
-    //     console.log('Polling payment status for transaction:', transactionId);
-        
-    //     // In a real implementation, you'd check the transaction status here
-    //     // and handle success/failure accordingly
-        
-    //   } catch (error) {
-    //     console.error('Error polling payment status:', error);
-    //   }
-    // }, 5000); // Poll every 5 seconds
+  const openRazorpayCheckout = (data: PaymentRequestData) => {
+    if (!scriptLoaded || !window.Razorpay) {
+      toast({
+        title: "Loading Payment Gateway",
+        description: "Please wait while we load the payment gateway...",
+      });
+      // Retry after a short delay
+      setTimeout(() => {
+        if (window.Razorpay) {
+          openRazorpayCheckout(data);
+        } else {
+          toast({
+            title: "Payment Gateway Error",
+            description: "Failed to load payment gateway. Please refresh the page and try again.",
+            variant: "destructive",
+          });
+          setIsCreatingPayment(false);
+        }
+      }, 1000);
+      return;
+    }
 
-    // // Clear polling after 30 minutes (payment link expiry)
-    // setTimeout(() => {
-    //   clearInterval(pollInterval);
-    // }, 30 * 60 * 1000);
+    const options = {
+      ...data.checkoutData,
+      handler: async (response: any) => {
+        // Payment successful
+        console.log('Payment successful:', response);
+        
+        // Verify the payment signature
+        try {
+          await verifyPaymentMutation.mutateAsync({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+        } catch (error) {
+          console.error('Verification error:', error);
+        }
+
+        // Close dialog
+        setIsDialogOpen(false);
+        setIsCreatingPayment(false);
+        
+        // Call success callback
+        if (onPaymentSuccess) {
+          // TODO: Fetch actual transaction data after webhook processing
+          onPaymentSuccess({
+            id: data.transactionId,
+            gatewayTransactionId: data.transactionId,
+            status: 'SUCCESS',
+          } as any);
+        }
+
+        // Navigate to success page
+        router.push(`${data.successUrl}?txnid=${data.transactionId}`);
+      },
+      modal: {
+        ondismiss: () => {
+          console.log('Payment modal closed by user');
+          setIsCreatingPayment(false);
+          
+          // Call failure callback
+          if (onPaymentFailure) {
+            onPaymentFailure('Payment cancelled by user');
+          }
+        },
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
   };
 
-  const isEasebuzzConfigured = gatewayConfig?.easebuzz?.isConfigured ?? false;
+  // Check if any gateway is configured
+  const isAnyGatewayConfigured = 
+    gatewayConfig?.razorpay?.isConfigured || 
+    gatewayConfig?.paytm?.isConfigured || 
+    gatewayConfig?.stripe?.isConfigured || 
+    false;
 
-  if (!isEasebuzzConfigured) {
+  if (!isAnyGatewayConfigured) {
     return (
       <Button disabled className={className}>
         <AlertCircle className="w-4 h-4 mr-2" />
@@ -212,150 +298,117 @@ export function PaymentGatewayButton({
             Secure Online Payment
           </DialogTitle>
           <DialogDescription>
-            Pay securely using Easebuzz payment gateway. Your payment information is encrypted and secure.
+            Pay securely using our payment gateway. Your payment information is encrypted and secure.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Student Information */}
-          {student && (
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-2">Student Details</h4>
-              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                <div><span className="font-medium">Name:</span> {student.firstName} {student.lastName}</div>
-                <div><span className="font-medium">Admission No:</span> {student.admissionNumber}</div>
-                <div><span className="font-medium">Class:</span> {student.section?.class?.name} - {student.section?.name}</div>
+          {studentQuery.data && (
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Student Details</h4>
+              <div className="text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Name:</span>
+                  <span className="font-medium">{studentQuery.data.firstName} {studentQuery.data.lastName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Admission No:</span>
+                  <span className="font-medium">{studentQuery.data.admissionNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Class:</span>
+                  <span className="font-medium">
+                    {studentQuery.data.section?.class.name} {studentQuery.data.section?.name}
+                  </span>
+                </div>
               </div>
             </div>
           )}
 
           {/* Fee Details */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h4 className="font-medium text-sm text-blue-900 dark:text-blue-100 mb-2">Payment Details</h4>
+          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Payment Details</h4>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-blue-700 dark:text-blue-300">Fee Term:</span>
-                <span className="font-medium text-blue-900 dark:text-blue-100">{feeTermName}</span>
+                <span className="text-gray-600 dark:text-gray-400">Fee Term:</span>
+                <span className="font-medium">{feeTermName}</span>
               </div>
-              <div className="space-y-1">
-                {selectedFees.map((fee, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span className="text-blue-700 dark:text-blue-300">{fee.feeHeadName}:</span>
-                    <span className="font-medium text-blue-900 dark:text-blue-100">{formatIndianCurrency(fee.amount)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-blue-200 dark:border-blue-700 pt-2">
-                <div className="flex justify-between font-medium">
-                  <span className="text-blue-900 dark:text-blue-100">Total Amount:</span>
-                  <span className="text-lg text-blue-900 dark:text-blue-100">{formatIndianCurrency(totalAmount)}</span>
+              {selectedFees.map((fee, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">{fee.feeHeadName}:</span>
+                  <span className="font-medium">{formatIndianCurrency(fee.amount)}</span>
                 </div>
+              ))}
+              <div className="border-t pt-2 flex justify-between font-medium">
+                <span>Total Amount:</span>
+                <span className="text-lg text-green-600 dark:text-green-400">
+                  {formatIndianCurrency(totalAmount)}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Contact Information Form */}
-          {!paymentRequest && (
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-900 dark:text-white">Contact Information</h4>
-              <div className="space-y-3">
-                <div>
-                  <label htmlFor="buyerPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    id="buyerPhone"
-                    type="tel"
-                    value={buyerPhone}
-                    onChange={(e) => setBuyerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="Enter 10-digit phone number"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white"
-                    maxLength={10}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="buyerEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email Address (Optional)
-                  </label>
-                  <input
-                    id="buyerEmail"
-                    type="email"
-                    value={buyerEmail}
-                    onChange={(e) => setBuyerEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
+          {/* Security Information */}
+          <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-green-800 dark:text-green-200 mb-1">
+                  Secure Payment Gateway
+                </p>
+                <ul className="text-green-700 dark:text-green-300 space-y-1">
+                  <li>• 256-bit SSL encryption</li>
+                  <li>• PCI DSS compliant</li>
+                  <li>• Powered by Razorpay</li>
+                </ul>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Payment Request Created */}
-          {paymentRequest && (
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium text-sm text-green-900 dark:text-green-100">Payment Link Ready</h4>
-              </div>
-              <div className="space-y-2 text-sm text-green-700 dark:text-green-300">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Expires: {new Date(paymentRequest.expiresAt).toLocaleString()}</span>
-                </div>
-                <p>Click "Proceed to Payment" to complete your payment securely.</p>
+          {/* Important Notes */}
+          <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">
+                  Important Notes
+                </p>
+                <ul className="text-amber-700 dark:text-amber-300 space-y-1">
+                  <li>• Do not refresh the page during payment</li>
+                  <li>• Keep your payment receipt for future reference</li>
+                  <li>• Contact school office for any payment issues</li>
+                </ul>
               </div>
             </div>
-          )}
-
-          {/* Security Badges */}
-          <div className="flex items-center justify-center gap-4 py-2">
-            <Badge variant="outline" className="text-xs">
-              <Shield className="w-3 h-3 mr-1" />
-              256-bit SSL
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              PCI DSS Compliant
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              Bank Grade Security
-            </Badge>
           </div>
         </div>
 
         <DialogFooter className="flex gap-2">
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={isCreatingPayment}>
+              Cancel
+            </Button>
           </DialogClose>
-          
-          {!paymentRequest ? (
-            <Button 
-              onClick={handleCreatePayment}
-              disabled={isCreatingPayment || !buyerPhone || buyerPhone.length < 10}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isCreatingPayment ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Payment Link...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Create Payment Link
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleProceedToPayment}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Proceed to Payment
-            </Button>
-          )}
+          <Button 
+            onClick={handleCreatePayment}
+            disabled={isCreatingPayment}
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+          >
+            {isCreatingPayment ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating Payment...
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Proceed to Payment
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}

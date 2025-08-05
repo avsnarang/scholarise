@@ -30,7 +30,7 @@ function PaymentSuccessContent() {
   const mihpayid = searchParams.get('mihpayid');
 
   // Get transaction details if we have the txnid
-  const { data: transaction, isLoading, error } = api.paymentGateway.getPaymentStatus.useQuery(
+  const { data: transaction, isLoading, error } = api.paymentGateway.checkPaymentStatus.useQuery(
     { transactionId: txnid || '' },
     { 
       enabled: !!txnid,
@@ -230,7 +230,7 @@ function PaymentSuccessContent() {
             <div className="text-center pt-4 border-t">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <CreditCard className="h-4 w-4" />
-                <span>Payment processed securely by Easebuzz</span>
+                <span>Payment processed securely</span>
               </div>
             </div>
           </CardContent>

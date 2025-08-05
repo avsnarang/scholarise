@@ -60,7 +60,6 @@ const statusConfig = {
 };
 
 const gatewayLabels = {
-  [PaymentGateway.EASEBUZZ]: 'Easebuzz',
   [PaymentGateway.RAZORPAY]: 'Razorpay',
   [PaymentGateway.PAYTM]: 'Paytm',
   [PaymentGateway.STRIPE]: 'Stripe',
