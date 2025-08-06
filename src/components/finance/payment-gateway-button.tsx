@@ -1,66 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
-import { 
-  CreditCard, 
-  ExternalLink, 
-  Clock, 
-  Shield, 
   AlertCircle,
-  CheckCircle,
-  XCircle,
   Loader2
 } from 'lucide-react';
 import { api } from '@/utils/api';
 import { useBranchContext } from '@/hooks/useBranchContext';
 import { useAcademicSessionContext } from '@/hooks/useAcademicSessionContext';
 import { formatIndianCurrency } from '@/lib/utils';
-import type { PaymentGatewayButtonProps, PaymentGatewayTransaction } from '@/types/payment-gateway';
-import { useRouter } from 'next/navigation';
-
-// Razorpay types
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
-interface PaymentRequestData {
-  paymentRequestId: string;
-  transactionId: string;
-  checkoutData: {
-    key: string;
-    amount: number;
-    currency: string;
-    orderId: string;
-    name: string;
-    description: string;
-    prefill: {
-      name: string;
-      email: string;
-      contact: string;
-    };
-    notes?: Record<string, any>;
-    theme?: {
-      color?: string;
-    };
-  };
-  successUrl: string;
-  failureUrl: string;
-}
+import type { PaymentGatewayButtonProps } from '@/types/payment-gateway';
+import { WhatsAppService } from '@/utils/whatsapp-service';
 
 export function PaymentGatewayButton({
   studentId,
@@ -74,13 +26,9 @@ export function PaymentGatewayButton({
   disabled = false,
   className = '',
 }: PaymentGatewayButtonProps) {
-  const router = useRouter();
   const { currentBranchId, currentBranch } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
-  const [paymentData, setPaymentData] = useState<PaymentRequestData | null>(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   // Student details
   const studentQuery = api.student.getById.useQuery(
@@ -88,179 +36,113 @@ export function PaymentGatewayButton({
     { enabled: !!studentId && !!currentBranchId }
   );
 
-  // Parent details (for contact info)
-  // TODO: Replace with actual parent query when API is available
-  const parentQuery = { data: null } as any;
-
   // Gateway config check
   const gatewayConfigQuery = api.paymentGateway.getGatewayConfig.useQuery();
   const gatewayConfig = gatewayConfigQuery.data;
 
-  // Create payment request mutation
-  const createPaymentMutation = api.paymentGateway.createPaymentRequest.useMutation({
+  // Generate payment link mutation
+  const generatePaymentLinkMutation = api.paymentGateway.generatePaymentLink.useMutation({
     onSuccess: (data) => {
-      setPaymentData(data as unknown as PaymentRequestData);
-      if (onPaymentInitiated) {
-        onPaymentInitiated(data.transactionId);
-      }
-      // Open Razorpay checkout
-      openRazorpayCheckout(data as unknown as PaymentRequestData);
+      // Send WhatsApp messages to parents
+      handleWhatsAppSending(data);
     },
     onError: (error) => {
       toast({
-        title: "Payment Creation Failed",
-        description: error.message || "Unable to create payment request. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to generate payment link",
         variant: "destructive",
       });
-      setIsCreatingPayment(false);
-    },
+      setIsGeneratingLink(false);
+    }
   });
 
-  // Verify payment mutation
-  const verifyPaymentMutation = api.paymentGateway.verifyPayment.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Payment Verified",
-        description: "Your payment has been verified successfully.",
-      });
-    },
-    onError: (error) => {
-      console.error('Payment verification error:', error);
-    },
-  });
-
-  // Load Razorpay script
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  const handleCreatePayment = async () => {
-    if (!currentBranchId || !currentSessionId) {
-      toast({
-        title: "Session Required",
-        description: "Please select a branch and academic session.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!studentQuery.data || !parentQuery.data) {
-      toast({
-        title: "Data Loading",
-        description: "Please wait while we load student information.",
-        variant: "default",
-      });
-      return;
-    }
-
-    setIsCreatingPayment(true);
-
-    const student = studentQuery.data;
-    const parent = parentQuery.data;
-
+  // Handle WhatsApp sending
+  const handleWhatsAppSending = async (paymentLinkData: any) => {
     try {
-      await createPaymentMutation.mutateAsync({
-        studentId,
-        branchId: currentBranchId,
-        sessionId: currentSessionId,
-        feeTermId,
-        fees: selectedFees.map(fee => ({
-          feeHeadId: fee.feeHeadId,
-          feeHeadName: fee.feeHeadName,
-          amount: fee.amount,
-        })),
-        buyerName: parent?.fatherName || parent?.motherName || `${student.firstName} ${student.lastName}`,
-        buyerEmail: parent?.fatherEmail || parent?.motherEmail || student.email || '',
-        buyerPhone: parent?.fatherPhone || parent?.motherPhone || '9999999999',
-        purpose: `Fee payment for ${feeTermName}`,
-        description: `${student.firstName} ${student.lastName} (${student.admissionNumber}) - ${student.section?.class.name || 'Class'} ${student.section?.name || ''}`,
-        expiryHours: 24,
+      const whatsappData = {
+        studentName: paymentLinkData.studentName,
+        paymentUrl: paymentLinkData.paymentUrl,
+        feeTermsCount: paymentLinkData.totalTerms,
+        expiryHours: 24, // Default to 24 hours
+        schoolName: currentBranch?.name || "The Scholars' Home"
+      };
+
+      const whatsappResult = await WhatsAppService.sendPaymentLinkToParents({
+        fatherMobile: paymentLinkData.parentContacts.fatherMobile,
+        motherMobile: paymentLinkData.parentContacts.motherMobile,
+        fatherName: paymentLinkData.parentContacts.fatherName,
+        motherName: paymentLinkData.parentContacts.motherName,
+        paymentLinkData: whatsappData
       });
+
+      // Open WhatsApp URLs
+      if (whatsappResult.fatherUrl || whatsappResult.motherUrl) {
+        WhatsAppService.openWhatsAppLinks({
+          fatherUrl: whatsappResult.fatherUrl,
+          motherUrl: whatsappResult.motherUrl
+        });
+
+        toast({
+          title: "Payment Link Sent!",
+          description: `${WhatsAppService.getWhatsAppDisplayText(whatsappResult.sentTo)} using approved school template`,
+          variant: "default",
+        });
+
+        // Call the success callback
+        if (onPaymentInitiated) {
+          onPaymentInitiated(paymentLinkData.paymentLinkId);
+        }
+      } else {
+        toast({
+          title: "No Contact Numbers",
+          description: "No valid parent contact numbers found for WhatsApp.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      // Error handled in mutation
-      setIsCreatingPayment(false);
+      console.error('WhatsApp sending error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send WhatsApp message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingLink(false);
     }
   };
 
-  const openRazorpayCheckout = (data: PaymentRequestData) => {
-    if (!scriptLoaded || !window.Razorpay) {
+  const handleGeneratePaymentLink = async () => {
+    if (!currentBranchId || !currentSessionId) {
       toast({
-        title: "Loading Payment Gateway",
-        description: "Please wait while we load the payment gateway...",
+        title: "Error",
+        description: "Branch or session information is missing.",
+        variant: "destructive",
       });
-      // Retry after a short delay
-      setTimeout(() => {
-        if (window.Razorpay) {
-          openRazorpayCheckout(data);
-        } else {
-          toast({
-            title: "Payment Gateway Error",
-            description: "Failed to load payment gateway. Please refresh the page and try again.",
-            variant: "destructive",
-          });
-          setIsCreatingPayment(false);
-        }
-      }, 1000);
       return;
     }
 
-    const options = {
-      ...data.checkoutData,
-      handler: async (response: any) => {
-        // Payment successful
-        console.log('Payment successful:', response);
-        
-        // Verify the payment signature
-        try {
-          await verifyPaymentMutation.mutateAsync({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-          });
-        } catch (error) {
-          console.error('Verification error:', error);
-        }
+    if (!studentQuery.data?.parent?.fatherMobile && !studentQuery.data?.parent?.motherMobile) {
+      toast({
+        title: "No Contact Numbers",
+        description: "No parent contact numbers found for WhatsApp messaging.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-        // Close dialog
-        setIsDialogOpen(false);
-        setIsCreatingPayment(false);
-        
-        // Call success callback
-        if (onPaymentSuccess) {
-          // TODO: Fetch actual transaction data after webhook processing
-          onPaymentSuccess({
-            id: data.transactionId,
-            gatewayTransactionId: data.transactionId,
-            status: 'SUCCESS',
-          } as any);
-        }
+    setIsGeneratingLink(true);
 
-        // Navigate to success page
-        router.push(`${data.successUrl}?txnid=${data.transactionId}`);
-      },
-      modal: {
-        ondismiss: () => {
-          console.log('Payment modal closed by user');
-          setIsCreatingPayment(false);
-          
-          // Call failure callback
-          if (onPaymentFailure) {
-            onPaymentFailure('Payment cancelled by user');
-          }
-        },
-      },
-    };
-
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
+    try {
+      await generatePaymentLinkMutation.mutateAsync({
+        studentId,
+        branchId: currentBranchId,
+        sessionId: currentSessionId,
+        feeTermIds: [feeTermId], // For now, single fee term
+        expiryHours: 24,
+      });
+    } catch (error) {
+      // Error handling is done in the mutation onError callback
+    }
   };
 
   // Check if any gateway is configured
@@ -280,135 +162,24 @@ export function PaymentGatewayButton({
   }
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          disabled={disabled || selectedFees.length === 0}
-          className={`bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white ${className}`}
-        >
-          <CreditCard className="w-4 h-4 mr-2" />
-          Pay Online - {formatIndianCurrency(totalAmount)}
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-green-600" />
-            Secure Online Payment
-          </DialogTitle>
-          <DialogDescription>
-            Pay securely using our payment gateway. Your payment information is encrypted and secure.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Student Information */}
-          {studentQuery.data && (
-            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Student Details</h4>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Name:</span>
-                  <span className="font-medium">{studentQuery.data.firstName} {studentQuery.data.lastName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Admission No:</span>
-                  <span className="font-medium">{studentQuery.data.admissionNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Class:</span>
-                  <span className="font-medium">
-                    {studentQuery.data.section?.class.name} {studentQuery.data.section?.name}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Fee Details */}
-          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Payment Details</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Fee Term:</span>
-                <span className="font-medium">{feeTermName}</span>
-              </div>
-              {selectedFees.map((fee, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{fee.feeHeadName}:</span>
-                  <span className="font-medium">{formatIndianCurrency(fee.amount)}</span>
-                </div>
-              ))}
-              <div className="border-t pt-2 flex justify-between font-medium">
-                <span>Total Amount:</span>
-                <span className="text-lg text-green-600 dark:text-green-400">
-                  {formatIndianCurrency(totalAmount)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Security Information */}
-          <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
-            <div className="flex items-start gap-3">
-              <Shield className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-green-800 dark:text-green-200 mb-1">
-                  Secure Payment Gateway
-                </p>
-                <ul className="text-green-700 dark:text-green-300 space-y-1">
-                  <li>• 256-bit SSL encryption</li>
-                  <li>• PCI DSS compliant</li>
-                  <li>• Powered by Razorpay</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Important Notes */}
-          <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">
-                  Important Notes
-                </p>
-                <ul className="text-amber-700 dark:text-amber-300 space-y-1">
-                  <li>• Do not refresh the page during payment</li>
-                  <li>• Keep your payment receipt for future reference</li>
-                  <li>• Contact school office for any payment issues</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="flex gap-2">
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isCreatingPayment}>
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button 
-            onClick={handleCreatePayment}
-            disabled={isCreatingPayment}
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-          >
-            {isCreatingPayment ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating Payment...
-              </>
-            ) : (
-              <>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Proceed to Payment
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Button 
+      onClick={handleGeneratePaymentLink}
+      disabled={disabled || selectedFees.length === 0 || isGeneratingLink}
+      className={`bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white ${className}`}
+    >
+      {isGeneratingLink ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Sending WhatsApp...
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+          </svg>
+          Send Payment Link - {formatIndianCurrency(totalAmount)}
+        </>
+      )}
+    </Button>
   );
 }

@@ -495,7 +495,7 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
         console.log(`🔍 Fallback: searching by metaTemplateId [${updateId}]:`, message_template_id);
         template = await db.whatsAppTemplate.findFirst({
           where: {
-            metaTemplateId: message_template_id,
+            metaTemplateId: String(message_template_id),
           }
         });
         
@@ -607,7 +607,7 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       where: { id: template.id },
       data: {
         metaTemplateStatus: status,
-        metaTemplateId: message_template_id || template.metaTemplateId,
+        metaTemplateId: message_template_id ? String(message_template_id) : template.metaTemplateId,
         metaRejectionReason: rejectionReason,
         metaApprovedAt: approvedAt,
         updatedAt: new Date()

@@ -81,6 +81,7 @@ model Branch {
   automationLogs               AutomationLog[]
   paymentGatewayTransactions   PaymentGatewayTransaction[]
   paymentRequests              PaymentRequest[]
+  paymentLinks                 PaymentLink[]
   actionItems                  ActionItem[]
 }
 
@@ -216,6 +217,7 @@ model Student {
   transportAssignments    TransportAssignment[]
   paymentGatewayTransactions PaymentGatewayTransaction[]
   paymentRequests         PaymentRequest[]
+  paymentLinks            PaymentLink[]
   actionItems             ActionItem[]
 
   @@index([admissionNumber])
@@ -592,6 +594,7 @@ model AcademicSession {
   firstJoinedStudents     Student[]                @relation("StudentFirstJoinedSession")
   paymentGatewayTransactions PaymentGatewayTransaction[] @relation("PaymentGatewayTransactionSession")
   paymentRequests         PaymentRequest[]         @relation("PaymentRequestSession")
+  paymentLinks            PaymentLink[]            @relation("PaymentLinkSession")
 }
 
 model Term {
@@ -2103,6 +2106,32 @@ model PaymentWebhookLog {
   @@index([gateway, event])
   @@index([transactionId])
   @@index([processed])
+  @@index([createdAt])
+}
+
+model PaymentLink {
+  id                String    @id @default(cuid())
+  token             String    @unique
+  studentId         String
+  branchId          String
+  sessionId         String
+  feeTermsData      Json      // Stores student, branch, session, and fee terms data
+  shortUrl          String?   // Short URL for WhatsApp sharing
+  expiresAt         DateTime
+  isActive          Boolean   @default(true)
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  student           Student           @relation(fields: [studentId], references: [id])
+  branch            Branch            @relation(fields: [branchId], references: [id])
+  session           AcademicSession   @relation("PaymentLinkSession", fields: [sessionId], references: [id])
+
+  @@index([token])
+  @@index([studentId])
+  @@index([branchId, sessionId])
+  @@index([expiresAt])
+  @@index([isActive])
   @@index([createdAt])
 }
 

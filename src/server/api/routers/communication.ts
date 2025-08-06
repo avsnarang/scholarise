@@ -495,9 +495,37 @@ export const communicationRouter = createTRPCRouter({
 
         if (!response.result || !response.data) {
           console.error('Meta API submission failed:', response);
+          
+          // Parse Meta API error for better user feedback
+          let errorMessage = 'Failed to submit template to Meta';
+          let errorDetails = '';
+          
+          if (response.error && typeof response.error === 'string') {
+            // Try to parse the error if it contains structured information
+            if (response.error.includes('2388072')) {
+              errorMessage = 'Template header format error';
+              errorDetails = 'The message header cannot contain new lines, formatting characters, emojis, or asterisks (*). Please use plain text only.';
+            } else if (response.error.includes('2388073')) {
+              errorMessage = 'Template body format error';
+              errorDetails = 'The message body contains invalid formatting. Please check for unsupported characters or formatting.';
+            } else if (response.error.includes('2388074')) {
+              errorMessage = 'Template variable error';
+              errorDetails = 'There are issues with template variables. Check variable names and formatting.';
+            } else if (response.error.includes('Invalid parameter')) {
+              errorMessage = 'Template content validation failed';
+              errorDetails = 'Please check your template content for invalid characters, formatting, or structure.';
+            } else {
+              errorMessage = response.error;
+            }
+          }
+          
+          // Include both user-friendly message and technical details
+          const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
+          
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: response.error || 'Failed to submit template to Meta',
+            code: 'BAD_REQUEST',
+            message: fullMessage,
+            cause: response.error,
           });
         }
 

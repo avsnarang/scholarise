@@ -456,10 +456,30 @@ function TemplatesPageContent() {
       if (context?.previousTemplates) {
         utils.communication.getTemplates.setData({ category: searchTerm || undefined }, context.previousTemplates);
       }
+      
+      // Parse error for better user experience
+      let title = "Template submission failed";
+      let description = error.message;
+      
+      if (error.message.includes('header format error')) {
+        title = "Header Format Error";
+        description = "The template header contains invalid characters. Please remove any line breaks, emojis, asterisks (*), or formatting from the header and try again.";
+      } else if (error.message.includes('body format error')) {
+        title = "Body Format Error";  
+        description = "The template body contains invalid formatting. Please check for unsupported characters and remove any special formatting.";
+      } else if (error.message.includes('variable error')) {
+        title = "Template Variable Error";
+        description = "There's an issue with your template variables. Please check variable names use only letters, numbers, and underscores.";
+      } else if (error.message.includes('content validation failed')) {
+        title = "Content Validation Failed";
+        description = "Your template content doesn't meet Meta's requirements. Please check for invalid characters, emojis, or formatting.";
+      }
+      
       toast({
-        title: "Submission failed",
-        description: error.message,
+        title,
+        description,
         variant: "destructive",
+        duration: 8000, // Show longer for complex errors
       });
     },
   });

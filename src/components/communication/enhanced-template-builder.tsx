@@ -52,6 +52,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 
 import { WhatsAppMediaUpload } from "@/components/ui/whatsapp-media-upload";
+import { TemplateValidationHelper } from "./template-validation-helper";
 import { 
   ERP_VARIABLES, 
   TEMPLATE_EXAMPLES,
@@ -1010,6 +1011,13 @@ export function EnhancedTemplateBuilder({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Template Validation */}
+            <TemplateValidationHelper
+              templateHeader={headerType === "TEXT" ? form.getValues("headerContent") : undefined}
+              templateBody={templateContent}
+              templateVariables={selectedVariables}
+            />
 
             {/* Variables Used */}
             {selectedVariables.length > 0 && (

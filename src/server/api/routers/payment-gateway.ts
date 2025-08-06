@@ -1029,6 +1029,279 @@ export const paymentGatewayRouter = createTRPCRouter({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to fetch payment gateway requests: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
+          }
+  }),
+
+  // Generate payment link for WhatsApp sharing
+  generatePaymentLink: protectedProcedure
+    .input(z.object({
+      studentId: z.string(),
+      branchId: z.string(),
+      sessionId: z.string(),
+      feeTermIds: z.array(z.string()).min(1, "At least one fee term is required"),
+      expiryHours: z.number().min(1).max(72).default(24), // 1-72 hours
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Verify student exists and belongs to the branch
+        const student = await ctx.db.student.findFirst({
+          where: {
+            id: input.studentId,
+            branchId: input.branchId,
+            status: 'ACTIVE'
+          },
+          include: {
+            parent: true,
+            section: {
+              include: {
+                class: true
+              }
+            }
+          }
+        });
+
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student not found or inactive",
+          });
+        }
+
+        // Get branch and session details
+        const [branch, session] = await Promise.all([
+          ctx.db.branch.findUnique({
+            where: { id: input.branchId }
+          }),
+          ctx.db.academicSession.findUnique({
+            where: { id: input.sessionId }
+          })
+        ]);
+
+        if (!branch || !session) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Branch or session not found",
+          });
+        }
+
+        // Get fee terms and their outstanding amounts
+        const feeTermsData = await Promise.all(
+          input.feeTermIds.map(async (feeTermId) => {
+            // Get fee term details
+            const feeTerm = await ctx.db.feeTerm.findUnique({
+              where: { id: feeTermId }
+            });
+
+            if (!feeTerm) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: `Fee term not found: ${feeTermId}`,
+              });
+            }
+
+            // Get fee structure for this class and fee term from ClasswiseFee
+            const classwiseFees = await ctx.db.classwiseFee.findMany({
+              where: {
+                classId: student.section?.classId,
+                feeTermId: feeTermId,
+                sessionId: input.sessionId
+              },
+              include: {
+                feeHead: true
+              }
+            });
+
+            const feeHeads = classwiseFees.map(fee => ({
+              id: fee.feeHead.id,
+              name: fee.feeHead.name,
+              amount: fee.amount
+            }));
+            const totalAmount = feeHeads.reduce((sum: number, head: typeof feeHeads[0]) => sum + head.amount, 0);
+
+            return {
+              id: feeTerm.id,
+              name: feeTerm.name,
+              totalAmount,
+              feeHeads
+            };
+          })
+        );
+
+        // Filter out fee terms with no outstanding amounts
+        const validFeeTerms = feeTermsData.filter(term => term.totalAmount > 0);
+
+        if (validFeeTerms.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No outstanding fees found for the selected terms",
+          });
+        }
+
+        // Generate secure token
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+
+        // Calculate expiry time
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + input.expiryHours);
+
+        // Create payment link record
+        const paymentLink = await ctx.db.paymentLink.create({
+          data: {
+            token,
+            studentId: input.studentId,
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+            feeTermsData: JSON.stringify({
+              student: {
+                firstName: student.firstName,
+                lastName: student.lastName,
+                admissionNumber: student.admissionNumber,
+                section: {
+                  name: student.section?.name || 'Unknown Section',
+                  class: {
+                    name: student.section?.class?.name || 'Unknown Class'
+                  }
+                },
+                parent: student.parent ? {
+                  fatherName: student.parent.fatherName,
+                  motherName: student.parent.motherName,
+                  fatherMobile: student.parent.fatherMobile,
+                  motherMobile: student.parent.motherMobile,
+                  fatherEmail: student.parent.fatherEmail,
+                  motherEmail: student.parent.motherEmail
+                } : null
+              },
+              branch: {
+                name: branch.name,
+                address: branch.address,
+                city: branch.city,
+                state: branch.state
+              },
+              session: {
+                name: session.name
+              },
+              feeTerms: validFeeTerms
+            }),
+            expiresAt,
+            isActive: true,
+            createdBy: ctx.userId || 'system'
+          }
+        });
+
+        // Generate payment link URL
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const originalPaymentUrl = `${baseUrl}/pay/${token}`;
+
+        // Create short URL for WhatsApp sharing using the shortUrl service directly
+        const { customAlphabet } = await import('nanoid');
+        const nanoid = customAlphabet("23456789ABCDEFGHJKLMNPQRSTUVWXYZ", 8);
+        const shortId = nanoid();
+        
+        let shortUrl = originalPaymentUrl; // Fallback to original URL
+        try {
+          const newShortUrl = await ctx.db.shortUrl.create({
+            data: {
+              shortId,
+              originalUrl: originalPaymentUrl,
+            },
+          });
+
+          shortUrl = `${baseUrl}/r/${newShortUrl.shortId}`;
+
+          // Update the payment link with the short URL
+          await ctx.db.paymentLink.update({
+            where: { id: paymentLink.id },
+            data: { shortUrl }
+          });
+        } catch (error) {
+          console.warn('Failed to create short URL, using original URL:', error);
+        }
+
+        return {
+          paymentLinkId: paymentLink.id,
+          paymentUrl: shortUrl, // Use short URL for WhatsApp
+          originalUrl: originalPaymentUrl,
+          token,
+          expiresAt,
+          studentName: `${student.firstName} ${student.lastName}`,
+          totalTerms: validFeeTerms.length,
+          parentContacts: {
+            fatherMobile: student.parent?.fatherMobile,
+            motherMobile: student.parent?.motherMobile,
+            fatherName: student.parent?.fatherName,
+            motherName: student.parent?.motherName
+          }
+        };
+
+      } catch (error) {
+        console.error('Error generating payment link:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate payment link",
+        });
       }
     }),
+
+  // Get payment link data (public endpoint)
+  getPaymentLinkData: publicProcedure
+    .input(z.object({
+      token: z.string()
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const paymentLink = await ctx.db.paymentLink.findUnique({
+          where: { token: input.token }
+        });
+
+        if (!paymentLink) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Payment link not found",
+          });
+        }
+
+        // Check if link has expired
+        const now = new Date();
+        const isExpired = paymentLink.expiresAt < now;
+
+        if (isExpired || !paymentLink.isActive) {
+          return {
+            ...paymentLink,
+            isActive: false,
+            feeTermsData: null
+          };
+        }
+
+        // Parse and return the stored data from the database
+        const feeTermsData = JSON.parse(paymentLink.feeTermsData as string);
+
+        return {
+          id: paymentLink.id,
+          studentId: paymentLink.studentId,
+          student: feeTermsData.student,
+          branch: feeTermsData.branch,
+          session: feeTermsData.session,
+          feeTerms: feeTermsData.feeTerms,
+          expiresAt: paymentLink.expiresAt.toISOString(),
+          isActive: paymentLink.isActive
+        };
+
+      } catch (error) {
+        console.error('Error fetching payment link data:', error);
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch payment link data",
+        });
+      }
+    }),
+
+
+
 });
