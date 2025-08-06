@@ -534,6 +534,25 @@ const SignInForm = ({ onSubmit }: SignInFormProps) => {
                 </button>
               </div>
             </form>
+
+            {/* Footer Links */}
+            <div className="mt-8 pt-6 border-t border-white/20">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-xs">
+                <a 
+                  href="/privacy-policy" 
+                  className="text-white/70 hover:text-white transition-colors underline decoration-white/30 hover:decoration-white"
+                >
+                  Privacy Policy
+                </a>
+                <span className="hidden sm:inline text-white/40">•</span>
+                <a 
+                  href="/terms-and-conditions" 
+                  className="text-white/70 hover:text-white transition-colors underline decoration-white/30 hover:decoration-white"
+                >
+                  Terms and Conditions
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
