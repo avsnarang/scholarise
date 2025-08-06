@@ -486,7 +486,11 @@ export const paymentGatewayRouter = createTRPCRouter({
               },
             },
             items: {
-              include: {
+              select: {
+                id: true,
+                amount: true,
+                originalAmount: true,
+                concessionAmount: true,
                 feeHead: {
                   select: {
                     name: true,
@@ -502,6 +506,10 @@ export const paymentGatewayRouter = createTRPCRouter({
             branch: {
               select: {
                 name: true,
+                address: true,
+                city: true,
+                state: true,
+                logoUrl: true,
               },
             },
             session: {
@@ -547,6 +555,10 @@ export const paymentGatewayRouter = createTRPCRouter({
             studentAdmissionNumber: fee.student?.admissionNumber || '',
             branchId: fee.branchId,
             branchName: fee.branch?.name || '',
+            branchAddress: fee.branch?.address,
+            branchCity: fee.branch?.city,
+            branchState: fee.branch?.state,
+            branchLogoUrl: fee.branch?.logoUrl,
             sessionId: fee.sessionId,
             sessionName: fee.session?.name || '',
             feeTermId: fee.items?.[0]?.feeTermId || '',
@@ -560,6 +572,8 @@ export const paymentGatewayRouter = createTRPCRouter({
               feeHeadName: item.feeHead?.name || '',
               feeTermName: item.feeTerm?.name || '',
               amount: item.amount,
+              originalAmount: item.originalAmount || item.amount,
+              concessionAmount: item.concessionAmount || 0,
             })) || [],
             failureReason: fee.gatewayTransaction?.failureReason || undefined,
             gatewayResponse: fee.gatewayTransaction?.gatewayResponse || undefined,

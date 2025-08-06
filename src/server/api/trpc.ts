@@ -15,6 +15,7 @@ import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
 import { db } from "@/server/db";
 import { withBranchFilter } from "@/utils/branch-filter";
+import { safeJWTValidation } from "@/utils/jwt-error-handler";
 
 /**
  * 1. CONTEXT
@@ -92,33 +93,31 @@ export const createTRPCContext = async (
           env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         );
         
-              try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        console.log('🔍 tRPC Context (App Router) - Token Verification:', {
-          hasToken: !!token,
-          tokenLength: token?.length || 0,
-          hasUser: !!user,
-          userId: user?.id,
-          hasError: !!error,
-          errorMessage: error?.message
-        });
-        if (!error && user) {
-          userId = user.id;
-        }
-      } catch (authError) {
-        console.error('Error verifying Supabase token:', authError);
-        // If JWT is invalid, try to refresh the session
-        if (authError instanceof Error && authError.message.includes('InvalidJWTToken')) {
-          try {
-            const { data: { session } } = await supabase.auth.refreshSession();
-            if (session?.user) {
-              userId = session.user.id;
+        // Use safe JWT validation that handles errors properly
+        const result = await safeJWTValidation(
+          async () => {
+            const { data: { user }, error } = await supabase.auth.getUser(token);
+            console.log('🔍 tRPC Context (Pages Router) - Token Verification:', {
+              hasToken: !!token,
+              tokenLength: token?.length || 0,
+              hasUser: !!user,
+              userId: user?.id,
+              hasError: !!error,
+              errorMessage: error?.message
+            });
+            
+            if (!error && user) {
+              return user;
             }
-          } catch (refreshError) {
-            console.error('Failed to refresh session:', refreshError);
-          }
+            return null;
+          },
+          supabase,
+          { redirectToSignIn: false, logError: true }
+        );
+        
+        if (result) {
+          userId = result.id;
         }
-      }
       }
       
       return createInnerTRPCContext({
@@ -155,21 +154,30 @@ export const createTRPCContext = async (
         env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       );
       
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        console.log('🔍 tRPC Context - Token Verification:', {
-          hasToken: !!token,
-          tokenLength: token?.length || 0,
-          hasUser: !!user,
-          userId: user?.id,
-          hasError: !!error,
-          errorMessage: error?.message
-        });
-        if (!error && user) {
-          userId = user.id;
-        }
-      } catch (authError) {
-        console.error('Error verifying Supabase token:', authError);
+      // Use safe JWT validation that handles errors properly
+      const result = await safeJWTValidation(
+        async () => {
+          const { data: { user }, error } = await supabase.auth.getUser(token);
+          console.log('🔍 tRPC Context (App Router) - Token Verification:', {
+            hasToken: !!token,
+            tokenLength: token?.length || 0,
+            hasUser: !!user,
+            userId: user?.id,
+            hasError: !!error,
+            errorMessage: error?.message
+          });
+          
+          if (!error && user) {
+            return user;
+          }
+          return null;
+        },
+        supabase,
+        { redirectToSignIn: false, logError: true }
+      );
+      
+      if (result) {
+        userId = result.id;
       }
     }
     

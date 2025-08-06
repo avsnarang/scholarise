@@ -63,6 +63,8 @@ export function ConcessionStatsCards({
     approvedConcessions: stats?.approvedConcessions ?? 0,
     pendingConcessions: stats?.pendingConcessions ?? 0,
     totalConcessionAmount: stats?.totalConcessionAmount ?? 0,
+    totalFixedAmount: stats?.totalFixedAmount ?? 0,
+    totalPercentageAmount: stats?.totalPercentageAmount ?? 0,
     rejectedConcessions: 0, // TODO: Add to API response
     expiredConcessions: 0, // TODO: Add to API response
     averageValue: 0, // TODO: Add to API response
@@ -150,14 +152,34 @@ export function ConcessionStatsCards({
           <CardTitle className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
             {formatIndianCurrency(displayStats.totalConcessionAmount)}
           </CardTitle>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <IndianRupee className="h-4 w-4 text-emerald-500" />
-              <span className="text-sm text-emerald-700 dark:text-emerald-300">Approved value</span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <IndianRupee className="h-4 w-4 text-emerald-500" />
+                <span className="text-sm text-emerald-700 dark:text-emerald-300">Approved value</span>
+              </div>
+              {displayStats.approvedConcessions > 0 && (
+                <div className="text-xs text-emerald-600 dark:text-emerald-400">
+                  {displayStats.approvedConcessions} approved
+                </div>
+              )}
             </div>
-            {displayStats.approvedConcessions > 0 && (
-              <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                {displayStats.approvedConcessions} approved
+            
+            {/* Breakdown of fixed vs percentage */}
+            {(displayStats.totalFixedAmount > 0 || displayStats.totalPercentageAmount > 0) && (
+              <div className="text-xs space-y-1 text-emerald-600 dark:text-emerald-400">
+                {displayStats.totalFixedAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Fixed:</span>
+                    <span className="font-mono">{formatIndianCurrency(displayStats.totalFixedAmount)}</span>
+                  </div>
+                )}
+                {displayStats.totalPercentageAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Percentage:</span>
+                    <span className="font-mono">{formatIndianCurrency(displayStats.totalPercentageAmount)}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

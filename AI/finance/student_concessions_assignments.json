@@ -1,0 +1,3216 @@
+{
+  "studentConcessions": [
+    {
+      "admissionNumber": 10000818,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000818,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10000842,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10000842,
+      "concessionTypeName": "SCHOOL CONCESSION 30%"
+    },
+    {
+      "admissionNumber": 10000846,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000905,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10000907,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000907,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000907,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10000924,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000933,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000938,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10000951,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000951,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10000951,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000963,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000965,
+      "concessionTypeName": "School Concession 25% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000970,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000970,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10000974,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10000974,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10000975,
+      "concessionTypeName": "School Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001005,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001006,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001016,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001016,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001017,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001075,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001075,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001096,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10001110,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001118,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001136,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001136,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001145,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001149,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001166,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001173,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001191,
+      "concessionTypeName": "SCHOOL CONCESSION 30%"
+    },
+    {
+      "admissionNumber": 10001193,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001210,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001219,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001219,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001228,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001229,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001229,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001229,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001234,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001239,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001248,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001257,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001267,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001268,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001269,
+      "concessionTypeName": "School Concession"
+    },
+    {
+      "admissionNumber": 10001269,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001269,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001290,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001290,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001295,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001300,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001303,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10001304,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001307,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001309,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001310,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001314,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10001322,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001322,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001337,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001339,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10001340,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001359,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001365,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001365,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001368,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001375,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001377,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001401,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001401,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001451,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001452,
+      "concessionTypeName": "School Concession 25% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001453,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001453,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001454,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001457,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10001457,
+      "concessionTypeName": "Annual Charges 5000"
+    },
+    {
+      "admissionNumber": 10001464,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001464,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001465,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001470,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001470,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001473,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001474,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10001476,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10001479,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001481,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001483,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001489,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001509,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001512,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001514,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001515,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001525,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001526,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001530,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001536,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001536,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001537,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001557,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001563,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001566,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001568,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001574,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001576,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001578,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001582,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001584,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001594,
+      "concessionTypeName": "Annual Charges 5000"
+    },
+    {
+      "admissionNumber": 10001594,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001602,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001604,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001606,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001606,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001612,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001612,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001619,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001619,
+      "concessionTypeName": "Woner Skill Collected refund 1000"
+    },
+    {
+      "admissionNumber": 10001622,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001623,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001628,
+      "concessionTypeName": "School Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001628,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001628,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001630,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001638,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001639,
+      "concessionTypeName": "School Concession 20%"
+    },
+    {
+      "admissionNumber": 10001639,
+      "concessionTypeName": "School Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001641,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001643,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001645,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001646,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001667,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001669,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001669,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001693,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001694,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001698,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001701,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001703,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001703,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001714,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001720,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001722,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001722,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001729,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001736,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001737,
+      "concessionTypeName": "1500 school concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001737,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001737,
+      "concessionTypeName": "Sh. Nanak Chand Khurana Memorial Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10001743,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001743,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001765,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001789,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001789,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001790,
+      "concessionTypeName": "School Concession 25%"
+    },
+    {
+      "admissionNumber": 10001790,
+      "concessionTypeName": "School Concession 25% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001792,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001813,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001816,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001828,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001833,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001837,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001850,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001850,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10001855,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10001866,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001866,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001867,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001872,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001872,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001899,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001925,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001928,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001928,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10001929,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10001929,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001934,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001936,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001948,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001966,
+      "concessionTypeName": "X class Board Exam Scholarship 1000 pm"
+    },
+    {
+      "admissionNumber": 10001967,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001967,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001975,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001982,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10001991,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001994,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10001994,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002006,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002006,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10002007,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002010,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002010,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002010,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002011,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002012,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002013,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002016,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002016,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002018,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002018,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002024,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002028,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002031,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002037,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002038,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002038,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002040,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002040,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002044,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002045,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002045,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002046,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002046,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002051,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002052,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002053,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002055,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002055,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002055,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002059,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002060,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002061,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002068,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002068,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002069,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002072,
+      "concessionTypeName": "Sports Scholarship (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002075,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002077,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002081,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002089,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002091,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002099,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002102,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10002104,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002105,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002107,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002110,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002112,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002117,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002117,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002119,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10002120,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002120,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002120,
+      "concessionTypeName": "Staff Concession 1500 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002121,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002124,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002124,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002124,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002128,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002130,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002144,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002144,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002150,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002150,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002150,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002151,
+      "concessionTypeName": "Annual Charges 5000"
+    },
+    {
+      "admissionNumber": 10002151,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002151,
+      "concessionTypeName": "Term Charges 4600"
+    },
+    {
+      "admissionNumber": 10002151,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10002156,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002156,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002157,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002165,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002173,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002173,
+      "concessionTypeName": "School Concession 40%"
+    },
+    {
+      "admissionNumber": 10002174,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002186,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002187,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002187,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002212,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002213,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002225,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002226,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002229,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002229,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002232,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002237,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002238,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002240,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002240,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002241,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002245,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002249,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002251,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002253,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002254,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002256,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002256,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002261,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002261,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002275,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002277,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002283,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002284,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002289,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002292,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002296,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002297,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002297,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002298,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002300,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002301,
+      "concessionTypeName": "Janab Abdul Rehman Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10002301,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002302,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002303,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002305,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002310,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002316,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002322,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002328,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002329,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002333,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002335,
+      "concessionTypeName": "X class Board Exam Scholarship 500 pm"
+    },
+    {
+      "admissionNumber": 10002339,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002339,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002340,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002340,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002340,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002341,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002341,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002341,
+      "concessionTypeName": "Sibling Concession 20%"
+    },
+    {
+      "admissionNumber": 10002347,
+      "concessionTypeName": "School Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002348,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002350,
+      "concessionTypeName": "Annual Charges 5000"
+    },
+    {
+      "admissionNumber": 10002350,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002353,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002365,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002372,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002380,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002382,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002382,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002384,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002390,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002396,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002396,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002400,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002412,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002416,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002417,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002421,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10002424,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002426,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002427,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002429,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002434,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002438,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002444,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002444,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002451,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002453,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002459,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002463,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002463,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002465,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002467,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002469,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002480,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002481,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002481,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002482,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002482,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002500,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002507,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002512,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002512,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002554,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002557,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002565,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002565,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002578,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002580,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002583,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002583,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002587,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002588,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002596,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002596,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002605,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002608,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002608,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002610,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002616,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002638,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002640,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002641,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002643,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002657,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002657,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002657,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002661,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002662,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002680,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002680,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002680,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002691,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002693,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002696,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002696,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002704,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002705,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002706,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002710,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002710,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002724,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002730,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002731,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002736,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002740,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002741,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002745,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002747,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002752,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002754,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002756,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002757,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002761,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002761,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002762,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002768,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002768,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002773,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002773,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002779,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002781,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002787,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002789,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002791,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002791,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002794,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002797,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002797,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002800,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002800,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002801,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002801,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002801,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002807,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002807,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002810,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002810,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002811,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002813,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002813,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002815,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002817,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002817,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002818,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002819,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002821,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002823,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002826,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002833,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002836,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10002836,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002839,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002839,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002843,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002844,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002847,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10002847,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002848,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002849,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002851,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002851,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002852,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002859,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002859,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002861,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002871,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002875,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002877,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002878,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10002878,
+      "concessionTypeName": "Annual Charges 5000"
+    },
+    {
+      "admissionNumber": 10002878,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002880,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002881,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002882,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002882,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002883,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002889,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002892,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002892,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002898,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002898,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002900,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002923,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002931,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002941,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002943,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002947,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002948,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002951,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002951,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002955,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002957,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002957,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002958,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002959,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10002959,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002964,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002966,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002966,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002975,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002981,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002986,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002986,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10002987,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002987,
+      "concessionTypeName": "Sibling Concession 20% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002990,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10002994,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10002994,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003004,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003004,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003010,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003013,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003015,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003020,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003020,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003021,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003021,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003022,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003024,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003026,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003031,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003034,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003036,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003039,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003040,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003042,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003042,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003046,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003048,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003049,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003054,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003054,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003055,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003057,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003058,
+      "concessionTypeName": "School Concession"
+    },
+    {
+      "admissionNumber": 10003058,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003059,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003059,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003059,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003061,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003064,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003066,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003071,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003071,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003072,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003084,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003085,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003085,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003087,
+      "concessionTypeName": "School Concession"
+    },
+    {
+      "admissionNumber": 10003087,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003090,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003092,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003093,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003097,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003099,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003107,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003110,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003110,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003118,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003119,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003121,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003128,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003129,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003134,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003140,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003142,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003143,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003144,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003147,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003150,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003150,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003154,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003156,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003159,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003162,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003165,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003165,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003168,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003173,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003175,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003177,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003179,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003181,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003186,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003190,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003191,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003193,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003194,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003200,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003200,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003205,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003205,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003207,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003208,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003214,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003216,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003217,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003217,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003220,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003221,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003222,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003224,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003225,
+      "concessionTypeName": "1500 school concession"
+    },
+    {
+      "admissionNumber": 10003225,
+      "concessionTypeName": "1500 school concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003225,
+      "concessionTypeName": "School Concession 500"
+    },
+    {
+      "admissionNumber": 10003228,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003231,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003233,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003235,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10003235,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003235,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003237,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003237,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003241,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003241,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003243,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003243,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003245,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003247,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003250,
+      "concessionTypeName": "school concession 50%"
+    },
+    {
+      "admissionNumber": 10003255,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003257,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003258,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003259,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003263,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003272,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003272,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003277,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003282,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003282,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003283,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003283,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003293,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003299,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003299,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003302,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003304,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003304,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "2625 sibling"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "term charges advance paid 1900"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "tuition fee 2500"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "tuition fee 500"
+    },
+    {
+      "admissionNumber": 10003307,
+      "concessionTypeName": "tuition fee 5000"
+    },
+    {
+      "admissionNumber": 10003308,
+      "concessionTypeName": "5000 Security Discount"
+    },
+    {
+      "admissionNumber": 10003308,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003309,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003310,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003311,
+      "concessionTypeName": "Bus Fee Adjustment"
+    },
+    {
+      "admissionNumber": 10003313,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003315,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003316,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003316,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003319,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003319,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003320,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003325,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003326,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003327,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003330,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003333,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003337,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003338,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003339,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003339,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003340,
+      "concessionTypeName": "5000 Security Discount"
+    },
+    {
+      "admissionNumber": 10003341,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003345,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003347,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003349,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003350,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003352,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003353,
+      "concessionTypeName": "300 Term charges Diff"
+    },
+    {
+      "admissionNumber": 10003353,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003354,
+      "concessionTypeName": "Merit Scholarship Above 90% 11000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003355,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003360,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003362,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003362,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003364,
+      "concessionTypeName": "300 Term charges Diff"
+    },
+    {
+      "admissionNumber": 10003364,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003366,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003367,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003369,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003372,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003373,
+      "concessionTypeName": "Juniors Admission fee Con 4000"
+    },
+    {
+      "admissionNumber": 10003373,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003375,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003376,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee"
+    },
+    {
+      "admissionNumber": 10003376,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003379,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003382,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003382,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003383,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003384,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003384,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003385,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003385,
+      "concessionTypeName": "Juniors Admission fee Con 2000"
+    },
+    {
+      "admissionNumber": 10003386,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003386,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003387,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003389,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003390,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003390,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003391,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003391,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003391,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003393,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003394,
+      "concessionTypeName": "Juniors Admission fee Con 2000"
+    },
+    {
+      "admissionNumber": 10003395,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003395,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003396,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003398,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003400,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000"
+    },
+    {
+      "admissionNumber": 10003400,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003401,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003401,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003403,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003404,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003405,
+      "concessionTypeName": "Merit Scholarship Above 90% 11000"
+    },
+    {
+      "admissionNumber": 10003407,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003408,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003409,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003410,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003410,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003411,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003412,
+      "concessionTypeName": "Majra Branch Concession 4000 in Adm fee"
+    },
+    {
+      "admissionNumber": 10003415,
+      "concessionTypeName": "Juniors Admission fee Con 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003415,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003416,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003417,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003419,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003420,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003421,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003422,
+      "concessionTypeName": "Admission Fee 12000"
+    },
+    {
+      "admissionNumber": 10003422,
+      "concessionTypeName": "security 5000"
+    },
+    {
+      "admissionNumber": 10003423,
+      "concessionTypeName": "Admission Fee 12000"
+    },
+    {
+      "admissionNumber": 10003423,
+      "concessionTypeName": "security 5000"
+    },
+    {
+      "admissionNumber": 10003425,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003426,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003427,
+      "concessionTypeName": "Majra Branch Concession 4000 in Adm fee"
+    },
+    {
+      "admissionNumber": 10003427,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003428,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003430,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003430,
+      "concessionTypeName": "School Concession 6000 Adm Fee"
+    },
+    {
+      "admissionNumber": 10003430,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003432,
+      "concessionTypeName": "Staff Concession 1500"
+    },
+    {
+      "admissionNumber": 10003433,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003434,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003436,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003438,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003439,
+      "concessionTypeName": "Bright Foundation 8000 adm fee"
+    },
+    {
+      "admissionNumber": 10003439,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003439,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003441,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003441,
+      "concessionTypeName": "Super 30 Discount 8000"
+    },
+    {
+      "admissionNumber": 10003442,
+      "concessionTypeName": "Merit Scholarship Above 90% 11000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003444,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003446,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003447,
+      "concessionTypeName": "Merit Scholarship Above 90% 11000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003447,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10003449,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003449,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003449,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003450,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003454,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003455,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003455,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003459,
+      "concessionTypeName": "Advance Fee Deposit Discount 4000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003460,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003463,
+      "concessionTypeName": "School Concession"
+    },
+    {
+      "admissionNumber": 10003463,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003464,
+      "concessionTypeName": "Sibling Concession 15%"
+    },
+    {
+      "admissionNumber": 10003468,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003469,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003472,
+      "concessionTypeName": "Merit Scholarship Above 90% 11000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003472,
+      "concessionTypeName": "Orientation 1000"
+    },
+    {
+      "admissionNumber": 10003474,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003474,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003476,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003477,
+      "concessionTypeName": "Orientation 1000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003477,
+      "concessionTypeName": "School Concession (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003477,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003477,
+      "concessionTypeName": "Sibling Concession 15% (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003484,
+      "concessionTypeName": "Merit Scholarship-8000 in Adm. Fee (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003487,
+      "concessionTypeName": "School Concession 100%"
+    },
+    {
+      "admissionNumber": 10003487,
+      "concessionTypeName": "School Concession on Annual Charges 5000 (Custom Fixed)"
+    },
+    {
+      "admissionNumber": 10003488,
+      "concessionTypeName": "School Concession 100% (Custom Fixed)"
+    }
+  ],
+  "meta": {
+    "generatedAt": "2025-08-05T19:12:44.612557",
+    "notes": "Assignments without per-student custom values or term overrides; terms are defined at the ConcessionType level."
+  }
+}

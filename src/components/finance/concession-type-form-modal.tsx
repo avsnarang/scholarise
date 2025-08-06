@@ -40,7 +40,7 @@ interface ConcessionType {
   eligibilityCriteria?: string;
   requiredDocuments: string[];
   autoApproval: boolean;
-  appliedFeeHeads?: string[];
+  appliedFeeHeads?: string[]; // Keep as array for backward compatibility but use only first element
   appliedFeeTerms?: string[];
   feeTermAmounts?: Record<string, number>; // For FIXED type: feeTermId -> amount
 }
@@ -107,10 +107,16 @@ export function ConcessionTypeFormModal({
     
     if (formData.name.trim()) progress += 20;
     if (formData.type) progress += 15;
-    if (formData.value > 0) progress += 15;
+    
+    // Value validation for PERCENTAGE type only
+    if (formData.type === 'PERCENTAGE' && formData.value > 0) progress += 15;
+    if (formData.type === 'FIXED') progress += 15; // No value needed for FIXED
+    
     if (formData.appliedFeeHeads.length > 0 || formData.appliedFeeTerms.length > 0) progress += 20;
-    if (formData.type === 'FIXED' && Object.keys(formData.feeTermAmounts).length > 0) progress += 15;
-    if (formData.type === 'PERCENTAGE') progress += 15; // Auto-complete for percentage since no individual amounts needed
+    
+    // Fee term amounts for FIXED type
+    if (formData.type === 'FIXED' && Object.values(formData.feeTermAmounts).some(amount => amount > 0)) progress += 15;
+    if (formData.type === 'PERCENTAGE') progress += 15; // Auto-complete for percentage
     
     return Math.min(progress, 100);
   };
@@ -168,20 +174,31 @@ export function ConcessionTypeFormModal({
       newErrors.name = 'Name is required';
     }
 
-    if (formData.value <= 0) {
-      newErrors.value = 'Value must be greater than 0';
+    // Only validate value for PERCENTAGE type
+    if (formData.type === 'PERCENTAGE') {
+      if (formData.value <= 0) {
+        newErrors.value = 'Percentage must be greater than 0';
+      }
+
+      if (formData.value > 100) {
+        newErrors.value = 'Percentage cannot exceed 100%';
+      }
+
+      if (formData.maxValue && formData.maxValue < formData.value) {
+        newErrors.maxValue = 'Maximum value cannot be less than value';
+      }
+
+      if (formData.maxValue && formData.maxValue > 100) {
+        newErrors.maxValue = 'Maximum percentage cannot exceed 100%';
+      }
     }
 
-    if (formData.type === 'PERCENTAGE' && formData.value > 100) {
-      newErrors.value = 'Percentage cannot exceed 100%';
-    }
-
-    if (formData.maxValue && formData.maxValue < formData.value) {
-      newErrors.maxValue = 'Maximum value cannot be less than value';
-    }
-
-    if (formData.type === 'PERCENTAGE' && formData.maxValue && formData.maxValue > 100) {
-      newErrors.maxValue = 'Maximum percentage cannot exceed 100%';
+    // For FIXED type, validate that at least one fee term has an amount
+    if (formData.type === 'FIXED') {
+      const hasValidAmounts = Object.values(formData.feeTermAmounts).some(amount => amount > 0);
+      if (formData.appliedFeeTerms.length > 0 && !hasValidAmounts) {
+        newErrors.feeTermAmounts = 'At least one fee term must have an amount greater than 0';
+      }
     }
 
     setErrors(newErrors);
@@ -223,15 +240,7 @@ export function ConcessionTypeFormModal({
     }));
   };
 
-  // Fee head toggle handler
-  const handleFeeHeadToggle = (feeHeadId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      appliedFeeHeads: prev.appliedFeeHeads.includes(feeHeadId)
-        ? prev.appliedFeeHeads.filter(id => id !== feeHeadId)
-        : [...prev.appliedFeeHeads, feeHeadId]
-    }));
-  };
+  // Fee head toggle handler - removed since we now use single selection
 
   // Fee term toggle handler
   const handleFeeTermToggle = (feeTermId: string) => {
@@ -275,6 +284,7 @@ export function ConcessionTypeFormModal({
       ...prev,
       type: newType,
       feeTermAmounts: newType === 'PERCENTAGE' ? {} : prev.feeTermAmounts,
+      value: newType === 'FIXED' ? 0 : prev.value, // Reset value for FIXED type
       maxValue: undefined, // Reset max value when changing type
     }));
   };
@@ -411,35 +421,56 @@ export function ConcessionTypeFormModal({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="value" className="text-sm font-medium">
-                          {formData.type === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount (₹)'} *
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="value"
-                            type="number"
-                            min="0"
-                            max={formData.type === 'PERCENTAGE' ? "100" : undefined}
-                            step={formData.type === 'PERCENTAGE' ? "0.1" : "1"}
-                            value={formData.value}
-                            onChange={(e) => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
-                            className={cn(
-                              "h-10 pr-8",
-                              errors.value ? "border-red-500 focus-visible:ring-red-500" : ""
-                            )}
-                            placeholder={formData.type === 'PERCENTAGE' ? "e.g., 25" : "e.g., 5000"}
-                            disabled={isLoading}
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            {formData.type === 'PERCENTAGE' ? '%' : '₹'}
+                      {/* Only show the value field for PERCENTAGE type */}
+                      {formData.type === 'PERCENTAGE' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="value" className="text-sm font-medium">
+                            Percentage (%) *
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="value"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={formData.value}
+                              onChange={(e) => setFormData(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                              className={cn(
+                                "h-10 pr-8",
+                                errors.value ? "border-red-500 focus-visible:ring-red-500" : ""
+                              )}
+                              placeholder="e.g., 25"
+                              disabled={isLoading}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              %
+                            </div>
+                          </div>
+                          {errors.value && <p className="text-xs text-red-600 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {errors.value}
+                          </p>}
+                        </div>
+                      )}
+                      
+                      {/* For FIXED type, show info about fee term wise amounts */}
+                      {formData.type === 'FIXED' && (
+                        <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="p-1 bg-yellow-600 rounded-full">
+                              <Info className="h-3 w-3 text-white" />
+                            </div>
+                            <div className="text-sm flex-1">
+                              <p className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">Fixed Amount Configuration</p>
+                              <p className="text-yellow-800 dark:text-yellow-200 text-xs">
+                                For Fixed Amount concessions, you'll configure individual amounts for each fee term below. 
+                                No single amount value is needed here.
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        {errors.value && <p className="text-xs text-red-600 flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {errors.value}
-                        </p>}
-                      </div>
+                      )}
 
                       <div className="space-y-2">
                         <Label htmlFor="maxValue" className="text-sm font-medium">
@@ -511,36 +542,71 @@ export function ConcessionTypeFormModal({
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Fee Heads Selection */}
+                    {/* Fee Head Selection */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4 text-orange-600" />
-                        <Label className="text-sm font-medium">Applicable Fee Heads</Label>
+                        <Label className="text-sm font-medium">Applicable Fee Head</Label>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Select which fee heads this concession applies to
+                        Select which fee head this concession applies to
                       </p>
-                      <div className="border rounded-lg p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                        <div className="grid grid-cols-1 gap-3 max-h-40 overflow-y-auto">
-                          {feeHeads.map((feeHead) => (
-                            <div key={feeHead.id} className="flex items-center space-x-3 p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors">
-                              <Checkbox
-                                id={`feeHead-${feeHead.id}`}
-                                checked={formData.appliedFeeHeads.includes(feeHead.id)}
-                                onCheckedChange={() => handleFeeHeadToggle(feeHead.id)}
-                                disabled={isLoading}
-                                className="data-[state=checked]:bg-orange-600"
-                              />
-                              <Label 
-                                htmlFor={`feeHead-${feeHead.id}`} 
-                                className="text-sm cursor-pointer font-medium"
-                              >
-                                {feeHead.name}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="space-y-2">
+                        <Select
+                          value={formData.appliedFeeHeads[0] || undefined}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              appliedFeeHeads: value ? [value] : []
+                            }));
+                          }}
+                          disabled={isLoading}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select a fee head" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {feeHeads.map((feeHead) => (
+                              <SelectItem key={feeHead.id} value={feeHead.id}>
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-3 w-3 text-orange-600" />
+                                  {feeHead.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {formData.appliedFeeHeads[0] && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  appliedFeeHeads: []
+                                }));
+                              }}
+                              className="h-8 px-3 text-xs"
+                              disabled={isLoading}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Clear Selection
+                            </Button>
+                          </div>
+                        )}
                       </div>
+                      {formData.appliedFeeHeads[0] && (
+                        <div className="p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border border-orange-200 dark:border-orange-800 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Shield className="h-4 w-4 text-orange-600" />
+                            <span className="font-medium text-orange-900 dark:text-orange-100">
+                              Selected: {feeHeads.find(fh => fh.id === formData.appliedFeeHeads[0])?.name}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Fee Terms Selection */}
@@ -616,6 +682,12 @@ export function ConcessionTypeFormModal({
                           ))}
                         </div>
                       )}
+                      {errors.feeTermAmounts && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {errors.feeTermAmounts}
+                        </p>
+                      )}
                     </div>
 
                     {/* Fee Application Summary */}
@@ -629,7 +701,7 @@ export function ConcessionTypeFormModal({
                             <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">Application Summary</p>
                             <div className="space-y-1">
                               <p className="text-blue-800 dark:text-blue-200">
-                                • {formData.appliedFeeHeads.length} fee head(s) selected
+                                • {formData.appliedFeeHeads.length > 0 ? '1 fee head selected' : 'No fee head selected'}
                               </p>
                               <p className="text-blue-800 dark:text-blue-200">
                                 • {formData.appliedFeeTerms.length} fee term(s) selected

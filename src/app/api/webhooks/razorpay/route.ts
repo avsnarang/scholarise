@@ -156,6 +156,26 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
       },
     });
 
+    // Create fee collection items from payment request fee breakdown
+    if (transaction.paymentRequest?.fees) {
+      const fees = Array.isArray(transaction.paymentRequest.fees) 
+        ? transaction.paymentRequest.fees 
+        : [];
+      
+      if (fees.length > 0) {
+        await db.feeCollectionItem.createMany({
+          data: fees.map((fee: any) => ({
+            feeCollectionId: feeCollection.id,
+            feeHeadId: fee.feeHeadId,
+            feeTermId: transaction.feeTermId,
+            amount: fee.amount,
+            originalAmount: fee.originalAmount || fee.amount,
+            concessionAmount: fee.concessionAmount || 0,
+          })),
+        });
+      }
+    }
+
     // Link fee collection to the transaction
     await db.paymentGatewayTransaction.update({
       where: { id: transaction.id },

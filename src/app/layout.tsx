@@ -1,5 +1,5 @@
 import { Montserrat, Lilita_One } from "next/font/google";
-import { AuthProvider } from "@/providers/auth-provider";
+import { ActivityAwareAuthProvider } from "@/providers/activity-aware-auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { GlobalLoadingProvider } from "@/providers/global-loading-provider";
 import { PopupProvider } from "@/components/ui/custom-popup";
@@ -49,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${montserrat.variable} ${lilitaOne.variable} font-sans`} suppressHydrationWarning>
-        <AuthProvider>
+        <ActivityAwareAuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <GlobalLoadingProvider>
               <TRPCProvider>
@@ -62,7 +62,7 @@ export default function RootLayout({
               </TRPCProvider>
             </GlobalLoadingProvider>
           </ThemeProvider>
-        </AuthProvider>
+        </ActivityAwareAuthProvider>
       </body>
     </html>
   );

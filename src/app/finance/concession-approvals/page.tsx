@@ -30,6 +30,7 @@ import { DataTable, type DataTableFilter } from "@/components/ui/data-table";
 import { ConcessionApprovalModal } from "@/components/finance/concession-approval-modal";
 import { ConcessionRejectionModal } from "@/components/finance/concession-rejection-modal";
 import { ConcessionApprovalSettings } from "@/components/finance/concession-approval-settings";
+import { ConcessionAmountDisplay } from "@/components/finance/concession-amount-display";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
@@ -44,7 +45,8 @@ interface PendingConcession {
   id: string;
   studentId: string;
   concessionTypeId: string;
-  customValue?: number | null;
+  createdBy?: string | null;
+
   reason?: string | null;
   validFrom: Date;
   validUntil?: Date | null;
@@ -123,6 +125,46 @@ export default function ConcessionApprovalsPage() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("");
 
+  // Helper function to check if a concession applies to a specific fee head/term
+  const shouldConcessionApply = (concession: any, feeDetail: any) => {
+    // Check if concession applies to this fee head (empty array means all fee heads)
+    if (concession.concessionType.appliedFeeHeads?.length > 0 && 
+        !concession.concessionType.appliedFeeHeads.includes(feeDetail.feeHeadId)) {
+      return false;
+    }
+    
+    // Check if concession applies to this fee term (empty array means all fee terms)
+    if (concession.concessionType.appliedFeeTerms?.length > 0 && 
+        !concession.concessionType.appliedFeeTerms.includes(feeDetail.feeTermId)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Helper function to calculate concession amount for a specific fee
+  const calculateConcessionAmount = (concession: any, feeDetail: any) => {
+    const concessionValue = concession.concessionType.value;
+    let concessionAmount = 0;
+    
+    if (concession.concessionType.type === 'PERCENTAGE') {
+      concessionAmount = feeDetail.originalAmount * (concessionValue / 100);
+    } else {
+      // For FIXED concessions, check if there are per-term amounts configured
+      if (concession.concessionType.feeTermAmounts && 
+          typeof concession.concessionType.feeTermAmounts === 'object' &&
+          concession.concessionType.feeTermAmounts[feeDetail.feeTermId]) {
+        // Use the specific amount for this fee term
+        concessionAmount = concession.concessionType.feeTermAmounts[feeDetail.feeTermId];
+      } else {
+        // Fallback to the base value (for backward compatibility)
+        concessionAmount = concessionValue;
+      }
+    }
+    
+    return concessionAmount;
+  };
+
   // API queries
   const { data: concessions, isLoading, refetch, error } = api.finance.getStudentConcessions.useQuery({
     branchId: currentBranchId!,
@@ -140,42 +182,226 @@ export default function ConcessionApprovalsPage() {
     enabled: !!currentBranchId && !!currentSessionId,
   });
 
+  // Get user's approval permissions
+  const { data: userPermissions, isLoading: permissionsLoading } = api.finance.checkApprovalPermissions.useQuery({
+    branchId: currentBranchId!,
+    sessionId: currentSessionId!,
+    userId: user?.id || '',
+    userEmail: user?.email || '',
+  }, {
+    enabled: !!currentBranchId && !!currentSessionId && !!user?.id,
+  });
+
   // API mutations
+    const utils = api.useContext();
   const approveConcessionMutation = api.finance.approveConcession.useMutation({
+    onMutate: async (approval) => {
+      // Cancel outgoing queries to prevent race conditions
+      await utils.finance.getStudentConcessions.cancel({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+        status: statusFilter as any,
+      });
+
+      // Find the concession being approved
+      const previousConcessions = utils.finance.getStudentConcessions.getData({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+        status: statusFilter as any,
+      });
+
+      const concessionToApprove = previousConcessions?.find(c => c.id === approval.concessionId);
+
+      // Optimistically remove the concession from the pending list
+      if (previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+            status: statusFilter as any,
+          },
+          previousConcessions.filter((c) => c.id !== approval.concessionId)
+        );
+      }
+
+      // Optimistically update the student's fee details if concession is being approved
+      if (concessionToApprove) {
+        await utils.finance.getStudentFeeDetails.cancel({
+          studentId: concessionToApprove.studentId,
+          branchId: currentBranchId!,
+          sessionId: currentSessionId!,
+        });
+
+        const previousFeeDetails = utils.finance.getStudentFeeDetails.getData({
+          studentId: concessionToApprove.studentId,
+          branchId: currentBranchId!,
+          sessionId: currentSessionId!,
+        });
+
+        if (previousFeeDetails) {
+          // Calculate the new fee details with the approved concession
+          const updatedFeeDetails = previousFeeDetails.map(feeDetail => {
+            // Check if this concession applies to this fee head and term
+            const appliesTo = shouldConcessionApply(concessionToApprove, feeDetail);
+            
+            if (appliesTo) {
+              // Calculate the concession amount for this fee
+              const concessionAmount = calculateConcessionAmount(concessionToApprove, feeDetail);
+              
+              // Add this concession to the applied concessions
+              const newAppliedConcessions = [
+                ...(feeDetail.appliedConcessions || []),
+                {
+                  id: concessionToApprove.id,
+                  name: concessionToApprove.concessionType.name,
+                  type: concessionToApprove.concessionType.type,
+                  value: concessionToApprove.concessionType.value,
+                  amount: concessionAmount,
+                  reason: concessionToApprove.reason,
+                }
+              ];
+
+              // Recalculate totals
+              const newTotalConcessionAmount = (feeDetail.concessionAmount || 0) + concessionAmount;
+              const newTotalAmount = Math.max(0, feeDetail.originalAmount - newTotalConcessionAmount);
+              const newOutstandingAmount = Math.max(0, newTotalAmount - feeDetail.paidAmount);
+
+              return {
+                ...feeDetail,
+                concessionAmount: newTotalConcessionAmount,
+                totalAmount: newTotalAmount,
+                outstandingAmount: newOutstandingAmount,
+                appliedConcessions: newAppliedConcessions,
+              };
+            }
+            
+            return feeDetail;
+          });
+
+          // Set the optimistically updated fee details
+          utils.finance.getStudentFeeDetails.setData(
+            {
+              studentId: concessionToApprove.studentId,
+              branchId: currentBranchId!,
+              sessionId: currentSessionId!,
+            },
+            updatedFeeDetails
+          );
+        }
+      }
+
+      return { previousConcessions, concessionToApprove };
+    },
+    onError: (err, approval, context) => {
+      // Restore the previous concessions list
+      if (context?.previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+            status: statusFilter as any,
+          },
+          context.previousConcessions
+        );
+      }
+
+      // Restore the previous fee details if they were optimistically updated
+      if (context?.concessionToApprove) {
+        // This will trigger a refetch of the fee details to restore the original state
+        utils.finance.getStudentFeeDetails.invalidate({
+          studentId: context.concessionToApprove.studentId,
+          branchId: currentBranchId!,
+          sessionId: currentSessionId!,
+        });
+      }
+
+      toast({
+        title: "Error",
+        description: err.message || "Failed to approve concession",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+      utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Concession approved successfully",
       });
-      refetch();
       setIsApprovalModalOpen(false);
       setSelectedConcession(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to approve concession",
-        variant: "destructive",
-      });
     },
   });
 
   const rejectConcessionMutation = api.finance.rejectConcession.useMutation({
+    onMutate: async (rejection) => {
+      await utils.finance.getStudentConcessions.cancel({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+        status: statusFilter as any,
+      });
+
+      const previousConcessions = utils.finance.getStudentConcessions.getData({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+        status: statusFilter as any,
+      });
+
+      if (previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+            status: statusFilter as any,
+          },
+          previousConcessions.filter((c) => c.id !== rejection.concessionId)
+        );
+      }
+
+      return { previousConcessions };
+    },
+    onError: (err, rejection, context) => {
+      if (context?.previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+            status: statusFilter as any,
+          },
+          context.previousConcessions
+        );
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to reject concession",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+       utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Concession rejected successfully",
       });
-      refetch();
       setIsRejectionModalOpen(false);
       setSelectedConcession(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reject concession",
-        variant: "destructive",
-      });
     },
   });
 
@@ -186,6 +412,18 @@ export default function ConcessionApprovalsPage() {
         description: "Approval settings saved successfully",
       });
       setIsSettingsModalOpen(false);
+      
+      // Invalidate approval settings and user permissions to reflect changes
+      utils.finance.getApprovalSettings.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+      utils.finance.checkApprovalPermissions.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+        userId: user?.id || '',
+        userEmail: user?.email || '',
+      });
     },
     onError: (error) => {
       toast({
@@ -247,11 +485,19 @@ export default function ConcessionApprovalsPage() {
 
   // Check if user can approve/reject specific concession
   const checkConcessionPermissions = (concession: PendingConcession) => {
-    if (!user?.id || !approvalSettings) {
+    if (!user?.id) {
+      return { canApprove: false, canReject: false, message: "User not authenticated" };
+    }
+    
+    if (settingsLoading || permissionsLoading) {
       return { canApprove: false, canReject: false, message: "Loading permissions..." };
     }
+    
+    if (!approvalSettings || !userPermissions) {
+      return { canApprove: false, canReject: false, message: "No approval settings configured" };
+    }
 
-    const concessionAmount = concession.customValue ?? concession.concessionType.value;
+    const concessionAmount = concession.concessionType.value;
     
     // Check if amount exceeds maximum
     if (concessionAmount > approvalSettings.maxApprovalAmount) {
@@ -263,22 +509,47 @@ export default function ConcessionApprovalsPage() {
       return { canApprove: false, canReject: false, message: "Should be auto-approved" };
     }
 
-    // For role-based authorization, we'd need user roles from API
-    // For now, assume user has permissions if settings exist
-    const hasPermissions = true; // This would be replaced with actual permission check
+    // Self-approval check - users should not approve their own concessions
+    const isOwnConcession = concession.createdBy === user?.id;
+    if (isOwnConcession) {
+      return { canApprove: false, canReject: false, message: "Cannot approve own concession" };
+    }
 
+    let canApprove = false;
+    let canReject = false;
     let message = "";
-    if (approvalSettings.approvalType === '2_PERSON') {
-      if (concession.status === 'PENDING_FIRST' || concession.status === 'PENDING') {
-        message = "First approval required";
+
+    // Determine approval stage based on concession status and settings
+    if (approvalSettings.approvalType === '1_PERSON') {
+      // Single approval system
+      canApprove = userPermissions.canApprove;
+      canReject = userPermissions.canApprove; // Same permission for reject
+      message = canApprove ? "Ready for approval" : "No approval permission";
+    } else if (approvalSettings.approvalType === '2_PERSON') {
+      // Two-person approval system
+      const requiresSecondApproval = concessionAmount > approvalSettings.escalationThreshold;
+      
+      if (concession.status === 'PENDING' || concession.status === 'PENDING_FIRST') {
+        // First approval stage
+        canApprove = userPermissions.canApprove;
+        canReject = userPermissions.canApprove;
+        message = canApprove ? "First approval required" : "No first approval permission";
       } else if (concession.status === 'PENDING_SECOND') {
-        message = "Second approval required";
+        // Second approval stage
+        canApprove = userPermissions.canSecondApprove;
+        canReject = userPermissions.canSecondApprove;
+        message = canApprove ? "Second approval required" : "No second approval permission";
+      }
+      
+      if (!requiresSecondApproval && concession.status === 'PENDING') {
+        // For amounts below escalation threshold, single approval is sufficient
+        message = canApprove ? "Single approval sufficient for this amount" : "No approval permission";
       }
     }
 
     return { 
-      canApprove: hasPermissions, 
-      canReject: hasPermissions, 
+      canApprove, 
+      canReject, 
       message 
     };
   };
@@ -359,29 +630,24 @@ export default function ConcessionApprovalsPage() {
       ),
     },
     {
-      accessorKey: "customValue",
-      header: "Amount",
+      accessorKey: "value",
+      header: "Concession Amount",
       cell: ({ row }) => {
-        const customValue = row.original.customValue;
-        const baseValue = row.original.concessionType?.value || 0;
-        const type = row.original.concessionType?.type;
+        const concessionType = row.original.concessionType;
+        const studentId = row.original.studentId;
         
-        if (type === 'PERCENTAGE') {
-          return (
-            <div className="text-center">
-              <div className="font-medium">{customValue ?? baseValue}%</div>
-            </div>
-          );
-        } else {
-          return (
-            <div className="text-center">
-              <div className="font-medium flex items-center gap-1">
-                <IndianRupee className="w-3 h-3" />
-                {formatIndianCurrency(customValue ?? baseValue)}
-              </div>
-            </div>
-          );
+        if (!concessionType) {
+          return <span className="text-muted-foreground">N/A</span>;
         }
+        
+        return (
+          <ConcessionAmountDisplay
+            studentId={studentId}
+            concessionType={concessionType}
+            sessionId={currentSessionId || undefined}
+            compact={true}
+          />
+        );
       },
     },
     {
@@ -544,6 +810,54 @@ export default function ConcessionApprovalsPage() {
             </div>
           </div>
         </div>
+
+        {/* Approval Settings Summary */}
+        {approvalSettings && !settingsLoading && (
+          <div className="p-4 bg-muted/20 rounded-lg border">
+            <div className="flex items-center gap-2 mb-2">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Current Approval Settings</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Approval Type:</span>
+                <div className="font-medium">
+                  {approvalSettings.approvalType === '1_PERSON' ? 'Single Person' : 'Two Person'}
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Auto-approve below:</span>
+                <div className="font-medium">₹{approvalSettings.autoApproveBelow.toLocaleString()}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Max amount:</span>
+                <div className="font-medium">₹{approvalSettings.maxApprovalAmount.toLocaleString()}</div>
+              </div>
+              {approvalSettings.approvalType === '2_PERSON' && (
+                <div>
+                  <span className="text-muted-foreground">Escalation at:</span>
+                  <div className="font-medium">₹{approvalSettings.escalationThreshold.toLocaleString()}</div>
+                </div>
+              )}
+            </div>
+            {userPermissions && (
+              <div className="mt-3 pt-3 border-t">
+                <span className="text-xs text-muted-foreground">Your permissions: </span>
+                <div className="flex gap-2 mt-1">
+                  {userPermissions.canApprove && (
+                    <Badge variant="secondary" className="text-xs">First Approval</Badge>
+                  )}
+                  {userPermissions.canSecondApprove && (
+                    <Badge variant="secondary" className="text-xs">Second Approval</Badge>
+                  )}
+                  {!userPermissions.canApprove && !userPermissions.canSecondApprove && (
+                    <Badge variant="outline" className="text-xs">No Approval Permission</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Data Table */}
         {error ? (

@@ -35,14 +35,17 @@ export interface StudentConcession {
   concessionTypeName: string;
   type: 'PERCENTAGE' | 'FIXED';
   value: number;
-  customValue?: number;
+
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
   validFrom: Date;
   validUntil?: Date;
   reason?: string;
   concessionType?: {
+    type: 'PERCENTAGE' | 'FIXED';
+    value: number;
     appliedFeeHeads: string[];
     appliedFeeTerms: string[];
+    feeTermAmounts?: Record<string, number> | null;
   };
 }
 
@@ -217,13 +220,15 @@ export function calculateConcessions(
   
   // Calculate concession amounts
   applicableConcessions.forEach(concession => {
-    const concessionValue = concession.customValue ?? concession.value;
     let concessionAmount = 0;
     
-    if (concession.type === 'PERCENTAGE') {
+    if (concession.concessionType?.type === 'PERCENTAGE') {
+      const concessionValue = concession.concessionType.value;
       concessionAmount = baseAmount * (concessionValue / 100);
-    } else {
-      concessionAmount = concessionValue;
+    } else if (concession.concessionType?.type === 'FIXED') {
+      // For FIXED type, get the specific amount for this fee term
+      const feeTermAmounts = concession.concessionType.feeTermAmounts as Record<string, number> || {};
+      concessionAmount = feeTermAmounts[feeTermId] || 0;
     }
     
     totalConcessionAmount += concessionAmount;
@@ -287,13 +292,15 @@ export function calculateConcessionAmount(
   let totalConcessionAmount = 0;
   
   applicableConcessions.forEach(concession => {
-    const value = concession.customValue ?? concession.value;
     let concessionAmount = 0;
     
-    if (concession.type === 'PERCENTAGE') {
+    if (concession.concessionType?.type === 'PERCENTAGE') {
+      const value = concession.concessionType.value;
       concessionAmount = baseAmount * (value / 100);
-    } else {
-      concessionAmount = value;
+    } else if (concession.concessionType?.type === 'FIXED') {
+      // For FIXED type, get the specific amount for this fee term
+      const feeTermAmounts = concession.concessionType.feeTermAmounts as Record<string, number> || {};
+      concessionAmount = feeTermAmounts[feeTermId] || 0;
     }
     
     totalConcessionAmount += concessionAmount;

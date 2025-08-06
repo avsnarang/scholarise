@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseClient as supabase } from "@/lib/supabase/activity-aware-client";
 import type { User, Session, AuthError } from "@supabase/supabase-js";
 
 interface AuthContextType {

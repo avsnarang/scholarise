@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilter } from "@/components/ui/data-table";
 import { ConcessionTypeFormModal } from "@/components/finance/concession-type-form-modal";
+import { ConcessionUsageModal } from "@/components/finance/concession-usage-modal";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,7 +59,7 @@ interface ConcessionType {
   id: string;
   name: string;
   description: string | null;
-  type: string;
+  type: 'PERCENTAGE' | 'FIXED';
   value: number;
   maxValue: number | null;
   isActive: boolean;
@@ -70,6 +71,8 @@ interface ConcessionType {
   sessionId: string;
   createdAt: Date;
   updatedAt: Date;
+  feeTermAmounts?: any;
+  appliedFeeHeads?: any;
   _count: {
     studentConcessions: number;
   };
@@ -82,8 +85,10 @@ function ConcessionTypesPageContent() {
   
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUsageModalOpen, setIsUsageModalOpen] = useState(false);
   const [selectedConcessionType, setSelectedConcessionType] = useState<ConcessionType | null>(null);
   const [concessionTypeToDelete, setConcessionTypeToDelete] = useState<ConcessionType | null>(null);
+  const [concessionTypeForUsage, setConcessionTypeForUsage] = useState<ConcessionType | null>(null);
 
   const {
     data: concessionTypes = [],
@@ -124,6 +129,19 @@ function ConcessionTypesPageContent() {
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
+    }
+  );
+
+  // Fetch concession usage data
+  const {
+    data: concessionUsageData = [],
+    isLoading: isUsageLoading,
+  } = api.finance.getConcessionTypeUsage.useQuery(
+    {
+      concessionTypeId: concessionTypeForUsage?.id ?? "",
+    },
+    {
+      enabled: !!concessionTypeForUsage?.id,
     }
   );
 
@@ -209,6 +227,11 @@ function ConcessionTypesPageContent() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleViewUsage = (concessionType: ConcessionType) => {
+    setConcessionTypeForUsage(concessionType);
+    setIsUsageModalOpen(true);
+  };
+
   const confirmDelete = () => {
     if (concessionTypeToDelete) {
       deleteConcessionTypeMutation.mutate({ id: concessionTypeToDelete.id });
@@ -268,6 +291,7 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "name",
       header: "Concession Details",
+      enableSorting: true,
       cell: ({ row }) => {
         const concessionType = row.original;
         return (
@@ -290,17 +314,65 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "type",
       header: "Type & Value",
+      enableSorting: true,
+      filterFn: (row, id, value) => {
+        return value.includes(row.getValue(id));
+      },
       cell: ({ row }) => {
         const concessionType = row.original;
         return (
           <div className="space-y-2">
             {getTypeBadge(concessionType.type)}
             <div className="font-mono text-sm font-semibold">
-              {formatValue(concessionType.type, concessionType.value)}
+              {concessionType.type === 'FIXED' && Object.keys(concessionType.feeTermAmounts || {}).length > 0
+                ? `Fee Term Wise` // Show "Fee Term Wise" for Fixed Amount with term-specific amounts
+                : formatValue(concessionType.type, concessionType.value)
+              }
             </div>
             {concessionType.maxValue && (
               <div className="text-xs text-muted-foreground">
                 Max: {formatValue(concessionType.type, concessionType.maxValue)}
+              </div>
+            )}
+            {concessionType.type === 'FIXED' && concessionType.feeTermAmounts && Object.keys(concessionType.feeTermAmounts).length > 0 && (
+              <div className="text-xs text-green-600 dark:text-green-400">
+                {Object.keys(concessionType.feeTermAmounts).length} term(s) configured
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "appliedFeeHeads",
+      header: "Fee Heads",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const concessionType = row.original;
+        const appliedFeeHeads = concessionType.appliedFeeHeads || [];
+        
+        if (appliedFeeHeads.length === 0) {
+          return (
+            <div className="text-xs text-muted-foreground">No fee heads selected</div>
+          );
+        }
+
+        // Find fee head names from the feeHeads list
+        const feeHeadNames = appliedFeeHeads.map((feeHeadId: any) => {
+          const feeHead = feeHeads.find(fh => fh.id === feeHeadId);
+          return feeHead ? feeHead.name : 'Unknown';
+        });
+
+        return (
+          <div className="space-y-1">
+            {feeHeadNames.slice(0, 2).map((name: any, index: number) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {name}
+              </Badge>
+            ))}
+            {feeHeadNames.length > 2 && (
+              <div className="text-xs text-muted-foreground">
+                +{feeHeadNames.length - 2} more
               </div>
             )}
           </div>
@@ -310,6 +382,7 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "applicableStudentTypes",
       header: "Applicable To",
+      enableSorting: false,
       cell: ({ row }) => {
         const types = row.original.applicableStudentTypes;
         return (
@@ -327,6 +400,7 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "_count.studentConcessions",
       header: "Usage",
+      enableSorting: true,
       cell: ({ row }) => {
         const count = row.original._count.studentConcessions;
         return (
@@ -341,6 +415,11 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "isActive",
       header: "Status & Settings",
+      enableSorting: true,
+      filterFn: (row, id, value) => {
+        const rowValue = row.getValue(id);
+        return value.includes(String(rowValue));
+      },
       cell: ({ row }) => {
         const concessionType = row.original;
         return (
@@ -358,6 +437,7 @@ function ConcessionTypesPageContent() {
     {
       accessorKey: "createdAt",
       header: "Created",
+      enableSorting: true,
       cell: ({ row }) => {
         return (
           <div className="text-xs text-muted-foreground">
@@ -369,6 +449,7 @@ function ConcessionTypesPageContent() {
     {
       id: "actions",
       header: "Actions",
+      enableSorting: false,
       cell: ({ row }) => {
         const concessionType = row.original;
         return (
@@ -385,7 +466,7 @@ function ConcessionTypesPageContent() {
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Details
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleViewUsage(concessionType)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Usage
               </DropdownMenuItem>
@@ -547,7 +628,7 @@ function ConcessionTypesPageContent() {
           <div className="p-6">
             <DataTable
               columns={columns}
-              data={concessionTypes}
+              data={concessionTypes as any}
               searchKey="name"
               searchPlaceholder="Search concession types..."
               filters={filters}
@@ -569,6 +650,17 @@ function ConcessionTypesPageContent() {
         isLoading={createConcessionTypeMutation.isPending || updateConcessionTypeMutation.isPending}
         feeHeads={feeHeads}
         feeTerms={feeTerms}
+      />
+
+      <ConcessionUsageModal
+        isOpen={isUsageModalOpen}
+        onClose={() => {
+          setIsUsageModalOpen(false);
+          setConcessionTypeForUsage(null);
+        }}
+        concessionType={concessionTypeForUsage}
+        students={concessionUsageData as any}
+        isLoading={isUsageLoading}
       />
 
       <DeleteConfirmationDialog

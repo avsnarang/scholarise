@@ -1,0 +1,1101 @@
+{
+  "concessionTypes": [
+    {
+      "name": "1500 school concession",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 2000.0,
+        "December + January": 5000.0,
+        "February + March": 5000.0,
+        "July + August": 5000.0,
+        "May + June": 5000.0,
+        "November": 2500.0,
+        "September + October": 5000.0
+      }
+    },
+    {
+      "name": "2625 sibling",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 52.5,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "September + October"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "300 Term charges Diff",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 6.98,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Term Charges"
+      ],
+      "appliedFeeTerms": [
+        "April"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "5000 Security Discount",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Security"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Admission Fee 12000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Advance Fee Deposit Discount 4000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Term Charges",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "July + August",
+        "May + June",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 4015.0,
+        "July + August": 4000.0,
+        "May + June": 4000.0,
+        "September + October": 0.0
+      }
+    },
+    {
+      "name": "Annual Charges 5000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Bright Foundation 8000 adm fee",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 66.67,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Bus Fee Adjustment",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 18.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "May + June"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Janab Abdul Rehman Scholarship 500 pm",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees",
+        "WonderSkill Workshop"
+      ],
+      "appliedFeeTerms": [
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "December + January": 1000.0,
+        "February + March": 1000.0,
+        "July + August": 1000.0,
+        "May + June": 1500.0,
+        "November": 500.0,
+        "September + October": 1000.0
+      }
+    },
+    {
+      "name": "Juniors Admission fee Con 2000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 16.67,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Juniors Admission fee Con 4000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "May + June"
+      ],
+      "feeTermAmounts": {
+        "May + June": 4000.0
+      }
+    },
+    {
+      "name": "Majra Branch Concession 4000 in Adm fee",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Merit Scholarship Above 90% 11000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "July + August",
+        "May + June"
+      ],
+      "feeTermAmounts": {
+        "July + August": 1600.0,
+        "May + June": 7600.0
+      }
+    },
+    {
+      "name": "Merit Scholarship-8000 in Adm. Fee",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "September + October": 6200.0
+      }
+    },
+    {
+      "name": "Orientation 1000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "CAPS Workshop",
+        "Parent Orientation",
+        "Tuition Fees",
+        "WonderSkill Workshop"
+      ],
+      "appliedFeeTerms": [
+        "July + August",
+        "May + June"
+      ],
+      "feeTermAmounts": {
+        "July + August": 1000.0,
+        "May + June": 1000.0
+      }
+    },
+    {
+      "name": "SCHOOL CONCESSION 30%",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 30.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "School Concession",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee",
+        "Annual Fund",
+        "CAPS Workshop",
+        "Parent Orientation",
+        "Term Charges",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 3500.0,
+        "December + January": 1200.0,
+        "February + March": 1050.0,
+        "July + August": 1350.0,
+        "May + June": 1050.0,
+        "November": 2500.0,
+        "September + October": 1200.0
+      }
+    },
+    {
+      "name": "School Concession 100%",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Parent Orientation",
+        "Term Charges",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 4000.0,
+        "December + January": 4200.0,
+        "February + March": 4200.0,
+        "July + August": 4200.0,
+        "May + June": 4200.0,
+        "November": 3900.0,
+        "September + October": 4200.0
+      }
+    },
+    {
+      "name": "School Concession 20%",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 760.0,
+        "December + January": 1520.0,
+        "February + March": 1520.0,
+        "July + August": 1520.0,
+        "May + June": 1620.0,
+        "November": 760.0,
+        "September + October": 1520.0
+      }
+    },
+    {
+      "name": "School Concession 25%",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 950.0,
+        "December + January": 1950.0,
+        "February + March": 1950.0,
+        "July + August": 1950.0,
+        "May + June": 1950.0,
+        "November": 975.0,
+        "September + October": 1950.0
+      }
+    },
+    {
+      "name": "School Concession 40%",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 40.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "School Concession 500",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 63.2,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "School Concession 6000 Adm Fee",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 50.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "School Concession on Annual Charges 5000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Parent Orientation",
+        "Term Charges",
+        "Tuition Fees",
+        "WonderSkill Workshop"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 0.0,
+        "December + January": 0.0,
+        "February + March": 0.0,
+        "July + August": 0.0,
+        "May + June": 0.0,
+        "November": 0.0,
+        "September + October": 0.0
+      }
+    },
+    {
+      "name": "Sh. Nanak Chand Khurana Memorial Scholarship 500 pm",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "December + January": 1000.0,
+        "February + March": 1000.0,
+        "July + August": 1000.0,
+        "May + June": 1500.0,
+        "November": 500.0,
+        "September + October": 1000.0
+      }
+    },
+    {
+      "name": "Sibling Concession 15%",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 525.0,
+        "December + January": 1050.0,
+        "February + March": 1050.0,
+        "July + August": 1050.0,
+        "May + June": 1050.0,
+        "November": 525.0,
+        "September + October": 1050.0
+      }
+    },
+    {
+      "name": "Sibling Concession 20%",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 760.0,
+        "December + January": 1520.0,
+        "February + March": 1520.0,
+        "July + August": 1520.0,
+        "May + June": 1520.0,
+        "November": 760.0,
+        "September + October": 1520.0
+      }
+    },
+    {
+      "name": "Sports Scholarship",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Term Charges",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "July + August",
+        "May + June"
+      ],
+      "feeTermAmounts": {
+        "April": 3160.0,
+        "July + August": 0.0,
+        "May + June": 0.0
+      }
+    },
+    {
+      "name": "Staff Concession 1500",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Annual Fund",
+        "Term Charges",
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 1500.0,
+        "December + January": 3000.0,
+        "February + March": 3000.0,
+        "July + August": 3000.0,
+        "May + June": 3000.0,
+        "November": 1500.0,
+        "September + October": 3000.0
+      }
+    },
+    {
+      "name": "Super 30 Discount 8000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 66.67,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Admission Fee"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Term Charges 4600",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Term Charges"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "November"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "Woner Skill Collected refund 1000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 50.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "CAPS Workshop"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "X class Board Exam Scholarship 1000 pm",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "April": 1000.0,
+        "December + January": 0.0,
+        "February + March": 0.0,
+        "July + August": 2000.0,
+        "May + June": 3000.0,
+        "November": 0.0,
+        "September + October": 1000.0
+      }
+    },
+    {
+      "name": "X class Board Exam Scholarship 500 pm",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {
+        "December + January": 0.0,
+        "February + March": 0.0,
+        "July + August": 1000.0,
+        "May + June": 1500.0,
+        "November": 0.0,
+        "September + October": 500.0
+      }
+    },
+    {
+      "name": "school concession 50%",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 50.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April",
+        "December + January",
+        "February + March",
+        "July + August",
+        "May + June",
+        "November",
+        "September + October"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "security 5000",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 100.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Security"
+      ],
+      "appliedFeeTerms": [],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "term charges advance paid 1900",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Term Charges"
+      ],
+      "appliedFeeTerms": [
+        "April"
+      ],
+      "feeTermAmounts": {
+        "April": 1900.0
+      }
+    },
+    {
+      "name": "tuition fee 2500",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "April"
+      ],
+      "feeTermAmounts": {
+        "April": 2500.0
+      }
+    },
+    {
+      "name": "tuition fee 500",
+      "description": null,
+      "type": "PERCENTAGE",
+      "value": 10.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "July + August"
+      ],
+      "feeTermAmounts": {}
+    },
+    {
+      "name": "tuition fee 5000",
+      "description": null,
+      "type": "FIXED",
+      "value": 0.0,
+      "maxValue": null,
+      "isActive": true,
+      "applicableStudentTypes": [
+        "BOTH"
+      ],
+      "eligibilityCriteria": null,
+      "requiredDocuments": [],
+      "autoApproval": false,
+      "appliedFeeHeads": [
+        "Tuition Fees"
+      ],
+      "appliedFeeTerms": [
+        "May + June"
+      ],
+      "feeTermAmounts": {
+        "May + June": 5000.0
+      }
+    }
+  ],
+  "meta": {
+    "generatedAt": "2025-08-05T19:09:02.610963",
+    "notes": "Types inferred from legacy data. Use studentConcessions_full.json for per-student assignments by admissionNumber."
+  }
+}

@@ -75,7 +75,7 @@ async function testNewLogicDirectly() {
 
       // NEW LOGIC: Calculate student's total concession amount once (not per fee)
       const studentTotalConcessionValue = studentConcessionsList.reduce((sum, concession) => {
-        return sum + (concession.customValue || concession.concessionType.value);
+        return sum + concession.concessionType.value;
       }, 0);
 
       // Distribute proportionally across fees (this is what the NEW logic does)
@@ -117,7 +117,7 @@ async function testNewLogicDirectly() {
     });
 
     const totalImportedAmount = allConcessions.reduce((sum, c) => 
-      sum + (c.customValue || c.concessionType.value), 0
+                sum + c.concessionType.value, 0
     );
 
     console.log('\n' + '='.repeat(60));

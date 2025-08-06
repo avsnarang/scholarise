@@ -31,7 +31,7 @@ interface PendingConcession {
   id: string;
   studentId: string;
   concessionTypeId: string;
-  customValue?: number | null;
+
   reason?: string | null;
   validFrom: Date;
   validUntil?: Date | null;
@@ -108,7 +108,7 @@ export function ConcessionApprovalModal({
     });
   };
 
-  const concessionAmount = concession.customValue ?? concession.concessionType.value;
+      const concessionAmount = concession.concessionType.value;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

@@ -35,7 +35,7 @@ import { formatIndianCurrency } from "@/lib/utils";
 import { StudentConcessionFormModal } from "./student-concession-form-modal";
 import { PaymentGatewayButton } from './payment-gateway-button';
 import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
-import { FeeReceiptModal } from './fee-receipt-modal';
+import { ReceiptService } from '@/services/receipt-service';
 
 interface FeeItem {
   id: string;
@@ -66,13 +66,14 @@ interface Student {
   lastName: string;
   admissionNumber: string;
   section?: {
+    name?: string;
     class?: {
       name: string;
     };
   };
   parent?: {
-    firstName?: string;
-    lastName?: string;
+    fatherName?: string;
+    motherName?: string;
     fatherMobile?: string;
     motherMobile?: string;
     fatherEmail?: string;
@@ -89,6 +90,8 @@ interface StreamlinedFeeCollectionProps {
       feeHeadId: string;
       feeTermId: string;
       amount: number;
+      originalAmount: number;
+      concessionAmount: number;
     }>;
     paymentMode: string;
     transactionReference?: string;
@@ -121,6 +124,7 @@ interface StreamlinedFeeCollectionProps {
     address?: string;
     city?: string;
     state?: string;
+    logoUrl?: string;
   };
   session?: {
     name: string;
@@ -172,36 +176,9 @@ export function StreamlinedFeeCollection({
   const [transactionReference, setTransactionReference] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(false);
   const [showConcessionModal, setShowConcessionModal] = useState(false);
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [adjustmentMode, setAdjustmentMode] = useState<'auto' | 'manual'>('auto');
-  const [receiptData, setReceiptData] = useState<{
-    receiptNumber: string;
-    paymentDate: Date;
-    paymentMode: string;
-    transactionReference?: string;
-    notes?: string;
-    feeItems: Array<{
-      feeHeadName: string;
-      feeTermName: string;
-      originalAmount: number;
-      concessionAmount: number;
-      finalAmount: number;
-      appliedConcessions?: Array<{
-        name: string;
-        type: 'PERCENTAGE' | 'FIXED';
-        value: number;
-        amount: number;
-      }>;
-    }>;
-    totals: {
-      totalOriginalAmount: number;
-      totalConcessionAmount: number;
-      totalNetAmount: number;
-      totalPaidAmount: number;
-    };
-  } | null>(null);
 
   // Group fee items by term
   const feesByTerm = useMemo(() => {
@@ -332,12 +309,18 @@ export function StreamlinedFeeCollection({
             amount = Math.min(customAmount, item.outstandingAmount);
           }
           
-          return {
-            feeHeadId: item.feeHeadId,
-            feeTermId: item.feeTermId,
-            amount,
-          };
+                  return {
+          feeHeadId: item.feeHeadId,
+          feeTermId: item.feeTermId,
+          amount, // This is the final amount being paid (after concessions)
+          // Ensure originalAmount is ALWAYS the amount before concessions
+          originalAmount: item.originalAmount || item.totalAmount + (item.concessionAmount || 0),
+          // Ensure concessionAmount is properly passed
+          concessionAmount: item.concessionAmount || 0,
+        };
         });
+
+
 
       const result = await onCollectPayment({
         studentId: student.id,
@@ -348,7 +331,7 @@ export function StreamlinedFeeCollection({
         paymentDate: new Date(),
       });
 
-      // Prepare receipt data with concession details
+      // Prepare receipt data using unified service
       const selectedFeeItems = feeItems.filter(item => selectedFeeIds.has(item.id));
       
       const receiptFeeItems = selectedFeeItems.map(item => {
@@ -362,32 +345,58 @@ export function StreamlinedFeeCollection({
         return {
           feeHeadName: item.feeHeadName,
           feeTermName: item.feeTermName,
-          originalAmount: item.originalAmount || item.totalAmount,
+          // Ensure originalAmount is ALWAYS the amount before concessions
+          originalAmount: item.originalAmount || item.totalAmount + (item.concessionAmount || 0),
+          // Ensure concessionAmount is properly passed
           concessionAmount: item.concessionAmount || 0,
           finalAmount: amount,
-          appliedConcessions: item.appliedConcessions || [],
         };
       });
 
-      const totals = {
-        totalOriginalAmount: receiptFeeItems.reduce((sum, item) => sum + item.originalAmount, 0),
-        totalConcessionAmount: receiptFeeItems.reduce((sum, item) => sum + item.concessionAmount, 0),
-        totalNetAmount: receiptFeeItems.reduce((sum, item) => sum + (item.originalAmount - item.concessionAmount), 0),
-        totalPaidAmount: receiptFeeItems.reduce((sum, item) => sum + item.finalAmount, 0),
-      };
-
-      const receiptInfo = {
+      // Create receipt data using the same format as payment history page
+      const receiptData = ReceiptService.createReceiptFromPaymentHistoryData({
         receiptNumber: result.receiptNumber,
         paymentDate: new Date(),
-        paymentMode,
-        transactionReference: transactionReference || undefined,
+        paymentMode: paymentMode,
+        totalAmount: receiptFeeItems.reduce((sum, item) => sum + (item.originalAmount || 0), 0),
+        paidAmount: selectedFeesTotal,
+        transactionReference: transactionReference || result.receiptNumber,
         notes: notes || undefined,
-        feeItems: receiptFeeItems,
-        totals,
-      };
+        student: {
+          firstName: student.firstName,
+          lastName: student.lastName,
+          admissionNumber: student.admissionNumber,
+          section: {
+            name: student.section?.name || 'N/A',
+            class: {
+              name: student.section?.class?.name || 'N/A'
+            }
+          },
+          parent: {
+            fatherName: student.parent?.fatherName || undefined,
+            motherName: student.parent?.motherName || undefined
+          }
+        },
+        branch: {
+          name: branch?.name || 'School',
+          address: branch?.address,
+          city: branch?.city,
+          state: branch?.state,
+          logoUrl: branch?.logoUrl || '/android-chrome-192x192.png'
+        },
+        session: {
+          name: session?.name || 'Academic Session'
+        },
+        items: receiptFeeItems.map(item => ({
+          feeHead: { name: item.feeHeadName },
+          feeTerm: { name: item.feeTermName },
+          amount: item.finalAmount,
+          originalAmount: item.originalAmount,
+          concessionAmount: item.concessionAmount
+        }))
+      });
 
-      setReceiptData(receiptInfo);
-      setShowReceipt(true);
+      ReceiptService.printReceipt(receiptData);
 
       // Reset form
       setSelectedFeeIds(new Set());
@@ -399,7 +408,7 @@ export function StreamlinedFeeCollection({
 
       toast({
         title: "Payment Collected Successfully",
-        description: `Receipt ${result.receiptNumber} generated for ₹${result.totalAmount.toLocaleString()}`,
+        description: `Receipt ${result.receiptNumber} generated and sent to printer`,
       });
     } catch (error) {
       toast({
@@ -441,26 +450,7 @@ export function StreamlinedFeeCollection({
     }
   };
 
-  if (showReceipt && receiptData) {
-    return (
-      <FeeReceiptModal
-        isOpen={showReceipt}
-        onClose={() => setShowReceipt(false)}
-        receiptData={{
-          receiptNumber: receiptData.receiptNumber,
-          paymentDate: receiptData.paymentDate,
-          paymentMode: receiptData.paymentMode,
-          transactionReference: receiptData.transactionReference,
-          notes: receiptData.notes,
-        }}
-        student={student}
-        branch={branch}
-        session={session}
-        feeItems={receiptData.feeItems}
-        totals={receiptData.totals}
-      />
-    );
-  }
+
 
   return (
     <div className="space-y-4">
@@ -932,7 +922,9 @@ export function StreamlinedFeeCollection({
           onSubmit={handleAssignConcession}
           students={[student]}
           concessionTypes={concessionTypes}
-
+          feeTerms={feeTerms}
+          feeHeads={feeHeads}
+          selectedStudentId={student.id}
           isLoading={false}
         />
       )}

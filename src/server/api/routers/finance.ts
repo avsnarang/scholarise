@@ -970,6 +970,8 @@ export const financeRouter = createTRPCRouter({
         feeHeadId: z.string(),
         feeTermId: z.string(),
         amount: z.number().min(0.01, "Amount must be greater than 0"),
+        originalAmount: z.number().optional(),
+        concessionAmount: z.number().optional(),
       })).min(1, "At least one fee item is required"),
       branchId: z.string(),
       sessionId: z.string(),
@@ -1105,13 +1107,19 @@ export const financeRouter = createTRPCRouter({
           },
         });
 
-        // Create fee collection items
+
+
+        // Create fee collection items with original amounts and concessions
         await prisma.feeCollectionItem.createMany({
           data: items.map((item) => ({
             feeCollectionId: feeCollection.id,
             feeHeadId: item.feeHeadId,
             feeTermId: item.feeTermId,
             amount: item.amount,
+            // If originalAmount is not provided, calculate it as amount + concessionAmount
+            // This ensures originalAmount is never less than the final amount
+            originalAmount: item.originalAmount || (item.amount + (item.concessionAmount || 0)),
+            concessionAmount: item.concessionAmount || 0,
           })),
         });
 
@@ -1153,6 +1161,8 @@ export const financeRouter = createTRPCRouter({
         items: z.array(z.object({
           feeHeadId: z.string(),
           amount: z.number().min(0.01),
+          originalAmount: z.number().optional(),
+          concessionAmount: z.number().optional(),
         })).min(1),
       })).min(1, "At least one collection is required").max(50, "Maximum 50 collections allowed per bulk operation"),
       branchId: z.string(),
@@ -1264,13 +1274,19 @@ export const financeRouter = createTRPCRouter({
             },
           });
 
-          // Create fee collection items
+
+
+          // Create fee collection items with original amounts and concessions
           await prisma.feeCollectionItem.createMany({
             data: collection.items.map((item) => ({
               feeCollectionId: feeCollection.id,
               feeHeadId: item.feeHeadId,
               feeTermId: collection.feeTermId,
               amount: item.amount,
+              // If originalAmount is not provided, calculate it as amount + concessionAmount
+              // This ensures originalAmount is never less than the final amount
+              originalAmount: item.originalAmount || (item.amount + (item.concessionAmount || 0)),
+              concessionAmount: item.concessionAmount || 0,
             })),
           });
 
@@ -1359,6 +1375,8 @@ export const financeRouter = createTRPCRouter({
                 feeHeadId: item.feeHeadId,
                 feeTermId,
                 amount: item.amount,
+                originalAmount: item.amount,  // For updates, use the amount as the original
+                concessionAmount: 0,  // For updates, assume no concession if not provided
               };
             }),
           });
@@ -1542,7 +1560,7 @@ export const financeRouter = createTRPCRouter({
         // Calculate concession amount
         let totalConcessionAmount = 0;
         const appliedConcessionDetails = applicableConcessions.map((concession: any) => {
-          const concessionValue = concession.customValue ?? concession.concessionType.value;
+          const concessionValue = concession.concessionType.value;
           let concessionAmount = 0;
           
           if (concession.concessionType.type === 'PERCENTAGE') {
@@ -2367,7 +2385,7 @@ export const financeRouter = createTRPCRouter({
       name: z.string().min(1, "Name is required").max(100, "Name too long"),
       description: z.string().optional(),
       type: z.enum(["PERCENTAGE", "FIXED"]).default("PERCENTAGE"),
-      value: z.number().min(0, "Value cannot be negative"),
+      value: z.number().min(0, "Value cannot be negative").default(0),
       maxValue: z.number().min(0, "Max value cannot be negative").nullish(),
       applicableStudentTypes: z.array(z.enum(["NEW_ADMISSION", "OLD_STUDENT", "BOTH"])).default(["BOTH"]),
       eligibilityCriteria: z.string().optional(),
@@ -2398,31 +2416,46 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      // Validate percentage values
-      if (input.type === "PERCENTAGE" && input.value > 100) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Percentage value cannot exceed 100%",
-        });
-      }
+      // Validate values based on concession type
+      if (input.type === "PERCENTAGE") {
+        // For percentage type, validate the main value field
+        if (input.value <= 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Percentage value must be greater than 0",
+          });
+        }
+        
+        if (input.value > 100) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Percentage value cannot exceed 100%",
+          });
+        }
 
-      if (input.maxValue && input.value > input.maxValue) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Value cannot be greater than max value",
-        });
-      }
+        if (input.maxValue && input.value > input.maxValue) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Value cannot be greater than max value",
+          });
+        }
 
-      // Validate fee application logic
-      if (input.type === "PERCENTAGE" && Object.keys(input.feeTermAmounts).length > 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Individual fee term amounts are not allowed for percentage-based concessions",
-        });
-      }
+        // Fee term amounts not allowed for percentage type
+        if (Object.keys(input.feeTermAmounts).length > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Individual fee term amounts are not allowed for percentage-based concessions",
+          });
+        }
+      } else if (input.type === "FIXED") {
+        // For fixed type, validate fee term amounts and ignore main value field
+        if (input.appliedFeeTerms.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "At least one fee term must be selected for fixed-amount concessions",
+          });
+        }
 
-      // For FIXED type, validate fee term amounts
-      if (input.type === "FIXED" && input.appliedFeeTerms.length > 0) {
         const missingAmounts = input.appliedFeeTerms.filter(termId => 
           !(termId in input.feeTermAmounts) || (input.feeTermAmounts[termId] ?? 0) <= 0
         );
@@ -2439,6 +2472,8 @@ export const financeRouter = createTRPCRouter({
         data: {
           ...input,
           name: sanitizedName,
+          // For FIXED type, ensure value is 0 since we use feeTermAmounts
+          value: input.type === "FIXED" ? 0 : input.value,
         },
         include: {
           branch: true,
@@ -2453,7 +2488,7 @@ export const financeRouter = createTRPCRouter({
       name: z.string().min(1, "Name is required").max(100, "Name too long"),
       description: z.string().optional(),
       type: z.enum(["PERCENTAGE", "FIXED"]),
-      value: z.number().min(0, "Value cannot be negative"),
+      value: z.number().min(0, "Value cannot be negative").default(0),
       maxValue: z.number().min(0, "Max value cannot be negative").nullish(),
       applicableStudentTypes: z.array(z.enum(["NEW_ADMISSION", "OLD_STUDENT", "BOTH"])),
       eligibilityCriteria: z.string().optional(),
@@ -2498,31 +2533,46 @@ export const financeRouter = createTRPCRouter({
         }
       }
 
-      // Validate percentage values
-      if (data.type === "PERCENTAGE" && data.value > 100) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Percentage value cannot exceed 100%",
-        });
-      }
+      // Validate values based on concession type
+      if (data.type === "PERCENTAGE") {
+        // For percentage type, validate the main value field
+        if (data.value <= 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Percentage value must be greater than 0",
+          });
+        }
+        
+        if (data.value > 100) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Percentage value cannot exceed 100%",
+          });
+        }
 
-      if (data.maxValue && data.value > data.maxValue) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Value cannot be greater than max value",
-        });
-      }
+        if (data.maxValue && data.value > data.maxValue) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Value cannot be greater than max value",
+          });
+        }
 
-      // Validate fee application logic
-      if (data.type === "PERCENTAGE" && Object.keys(data.feeTermAmounts).length > 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Individual fee term amounts are not allowed for percentage-based concessions",
-        });
-      }
+        // Fee term amounts not allowed for percentage type
+        if (Object.keys(data.feeTermAmounts).length > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Individual fee term amounts are not allowed for percentage-based concessions",
+          });
+        }
+      } else if (data.type === "FIXED") {
+        // For fixed type, validate fee term amounts and ignore main value field
+        if (data.appliedFeeTerms.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "At least one fee term must be selected for fixed-amount concessions",
+          });
+        }
 
-      // For FIXED type, validate fee term amounts
-      if (data.type === "FIXED" && data.appliedFeeTerms.length > 0) {
         const missingAmounts = data.appliedFeeTerms.filter(termId => 
           !(termId in data.feeTermAmounts) || (data.feeTermAmounts[termId] ?? 0) <= 0
         );
@@ -2540,6 +2590,8 @@ export const financeRouter = createTRPCRouter({
         data: {
           ...data,
           name: sanitizedName,
+          // For FIXED type, ensure value is 0 since we use feeTermAmounts
+          value: data.type === "FIXED" ? 0 : data.value,
         },
         include: {
           branch: true,
@@ -2624,7 +2676,7 @@ export const financeRouter = createTRPCRouter({
     .input(z.object({
       studentId: z.string(),
       concessionTypeId: z.string(),
-      customValue: z.number().min(0, "Custom value cannot be negative").optional(),
+      
       reason: z.string().optional(),
       validFrom: z.date().optional(),
       validUntil: z.date().optional(),
@@ -2693,22 +2745,7 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      // Validate custom value if provided
-      if (input.customValue !== undefined) {
-        if (concessionType.type === "PERCENTAGE" && input.customValue > 100) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Custom percentage value cannot exceed 100%",
-          });
-        }
 
-        if (concessionType.maxValue && input.customValue > concessionType.maxValue) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Custom value cannot exceed the maximum allowed value",
-          });
-        }
-      }
 
       return ctx.db.$transaction(async (prisma) => {
         // Determine initial status
@@ -2719,6 +2756,7 @@ export const financeRouter = createTRPCRouter({
         const studentConcession = await prisma.studentConcession.create({
           data: {
             ...concessionData,
+            createdBy: createdBy || ctx.userId, // Store who created this concession
             status,
             ...(status === "APPROVED" && {
               approvedBy: createdBy,
@@ -2732,7 +2770,7 @@ export const financeRouter = createTRPCRouter({
           data: {
             studentConcessionId: studentConcession.id,
             action: "CREATED",
-            newValue: input.customValue ?? concessionType.value,
+            newValue: concessionType.value,
             reason: input.reason || "Concession assigned",
             performedBy: createdBy || "system",
           },
@@ -2763,7 +2801,7 @@ export const financeRouter = createTRPCRouter({
     .input(z.object({
       studentIds: z.array(z.string()).min(1, "At least one student must be selected"),
       concessionTypeId: z.string(),
-      customValue: z.number().min(0, "Custom value cannot be negative").optional(),
+      
       reason: z.string().min(1, "Reason is required"),
       validFrom: z.date().optional(),
       validUntil: z.date().optional(),
@@ -2790,22 +2828,7 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      // Validate custom value if provided
-      if (input.customValue !== undefined) {
-        if (concessionType.type === "PERCENTAGE" && input.customValue > 100) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Custom percentage value cannot exceed 100%",
-          });
-        }
 
-        if (concessionType.maxValue && input.customValue > concessionType.maxValue) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Custom value cannot exceed the maximum allowed value",
-          });
-        }
-      }
 
       // Validate all students belong to the branch and session
       const students = await ctx.db.student.findMany({
@@ -2881,6 +2904,7 @@ export const financeRouter = createTRPCRouter({
             data: {
               ...concessionData,
               studentId,
+              createdBy: createdBy || ctx.userId, // Store who created this concession
               status,
               ...(status === "APPROVED" && {
                 approvedBy: createdBy,
@@ -2894,7 +2918,7 @@ export const financeRouter = createTRPCRouter({
             data: {
               studentConcessionId: studentConcession.id,
               action: "CREATED",
-              newValue: input.customValue ?? concessionType.value,
+              newValue: concessionType.value,
               reason: input.reason,
               performedBy: createdBy || "system",
             },
@@ -3067,7 +3091,7 @@ export const financeRouter = createTRPCRouter({
       }
 
       // Calculate concession amount
-      const concessionAmount = concession.customValue ?? concession.concessionType.value;
+                const concessionAmount = concession.concessionType.value;
 
       // Check user permissions
       const userEmail = await ctx.db.user.findUnique({
@@ -3209,7 +3233,7 @@ export const financeRouter = createTRPCRouter({
         select: { email: true },
       });
 
-      const concessionAmount = concession.customValue ?? concession.concessionType.value;
+                const concessionAmount = concession.concessionType.value;
       
       // Get approval settings for permission check
       const settings = await ctx.db.concessionApprovalSettings.findUnique({
@@ -3927,7 +3951,7 @@ export const financeRouter = createTRPCRouter({
 
         // Calculate student's total concession amount once (not per fee)
         const studentTotalConcessionValue = studentConcessionsList.reduce((sum, concession) => {
-          return sum + (concession.customValue || concession.concessionType.value);
+          return sum + concession.concessionType.value;
         }, 0);
 
         for (const classwiseFee of studentClasswiseFees) {
@@ -4768,7 +4792,7 @@ export const financeRouter = createTRPCRouter({
         if (concession.concessionType.type === 'PERCENTAGE') {
           // For percentage concessions, we'd need to calculate based on fee structure
           // For now, using custom value or estimated amount
-          concessionAmount = concession.customValue || 0;
+                      concessionAmount = 0;
         } else if (concession.concessionType.type === 'FIXED') {
           // For FIXED concessions, sum up all per-term amounts if available
           if (concession.concessionType.feeTermAmounts && 
@@ -4776,7 +4800,7 @@ export const financeRouter = createTRPCRouter({
             // Sum all per-term amounts
             concessionAmount = Object.values(concession.concessionType.feeTermAmounts).reduce((sum: number, amount: any) => sum + (amount || 0), 0);
           } else {
-            concessionAmount = concession.customValue || concession.concessionType.value;
+                          concessionAmount = concession.concessionType.value;
           }
         }
 
@@ -5431,60 +5455,157 @@ export const financeRouter = createTRPCRouter({
       sessionId: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const whereClause: any = {};
-      
-      if (input.branchId) {
-        whereClause.branchId = input.branchId;
-      }
-      
-      if (input.sessionId) {
-        whereClause.sessionId = input.sessionId;
-      }
+      try {
+        const whereClause: any = {};
+        
+        if (input.branchId) {
+          whereClause.branchId = input.branchId;
+        }
+        
+        if (input.sessionId) {
+          whereClause.sessionId = input.sessionId;
+        }
 
-      // Get total concessions count
-      const totalConcessions = await ctx.db.studentConcession.count({
-        where: whereClause,
-      });
+        // Get total concessions count
+        const totalConcessions = await ctx.db.studentConcession.count({
+          where: whereClause,
+        });
 
-      // Get approved concessions count
-      const approvedConcessions = await ctx.db.studentConcession.count({
-        where: {
-          ...whereClause,
-          status: 'APPROVED',
-        },
-      });
-
-      // Get pending concessions count (all pending statuses)
-      const pendingConcessions = await ctx.db.studentConcession.count({
-        where: {
-          ...whereClause,
-          status: {
-            in: ['PENDING', 'PENDING_FIRST', 'PENDING_SECOND'],
+        // Get approved concessions count
+        const approvedConcessions = await ctx.db.studentConcession.count({
+          where: {
+            ...whereClause,
+            status: 'APPROVED',
           },
+        });
+
+        // Get pending concessions count (all pending statuses)
+        const pendingConcessions = await ctx.db.studentConcession.count({
+          where: {
+            ...whereClause,
+            status: {
+              in: ['PENDING', 'PENDING_FIRST', 'PENDING_SECOND'],
+            },
+          },
+        });
+
+        // Simplified calculation for now to avoid blocking the page
+        const approvedConcessionsWithDetails = await ctx.db.studentConcession.findMany({
+          where: {
+            ...whereClause,
+            status: 'APPROVED',
+          },
+          include: {
+            concessionType: true,
+          },
+        });
+
+        let totalConcessionAmount = 0;
+        let totalFixedAmount = 0;
+        let totalPercentageAmount = 0;
+
+        // Simple calculation without complex fee structure lookups for now
+        for (const concession of approvedConcessionsWithDetails) {
+          const concessionType = concession.concessionType;
+          
+          if (concessionType.type === 'FIXED') {
+            if (concessionType.feeTermAmounts) {
+              const termAmounts = concessionType.feeTermAmounts as Record<string, number>;
+              const termTotal = Object.values(termAmounts).reduce((termSum, amount) => termSum + amount, 0);
+              totalFixedAmount += termTotal;
+              totalConcessionAmount += termTotal;
+            } else {
+              totalFixedAmount += concessionType.value;
+              totalConcessionAmount += concessionType.value;
+            }
+          } else if (concessionType.type === 'PERCENTAGE') {
+            // For now, just use a placeholder calculation to avoid complexity
+            // TODO: Implement proper percentage calculation later
+            totalPercentageAmount += 0; // Skip percentage calculation for now
+          }
+        }
+
+        return {
+          totalConcessions,
+          approvedConcessions,
+          pendingConcessions,
+          totalConcessionAmount,
+          totalFixedAmount,
+          totalPercentageAmount,
+        };
+      } catch (error) {
+        console.error('getConcessionStats error:', error);
+        // Return default values if there's an error
+        return {
+          totalConcessions: 0,
+          approvedConcessions: 0,
+          pendingConcessions: 0,
+          totalConcessionAmount: 0,
+          totalFixedAmount: 0,
+          totalPercentageAmount: 0,
+        };
+      }
+    }),
+
+  updatePayment: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      receiptNumber: z.string().optional(),
+      transactionId: z.string().optional(),
+      notes: z.string().optional(),
+      paymentMode: z.string(),
+      amount: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      // Also update totalAmount on FeeCollection
+      return ctx.db.feeCollection.update({
+        where: { id },
+        data: {
+          ...data,
+          paidAmount: data.amount, // Assuming paidAmount should track the total amount
+          totalAmount: data.amount,
         },
       });
+    }),
 
-      // Calculate total concession amount for approved concessions
-      const approvedConcessionsWithDetails = await ctx.db.studentConcession.findMany({
+  getConcessionTypeUsage: publicProcedure
+    .input(z.object({
+      concessionTypeId: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.studentConcession.findMany({
         where: {
-          ...whereClause,
-          status: 'APPROVED',
+          concessionTypeId: input.concessionTypeId,
         },
         include: {
+          student: {
+            include: {
+              section: {
+                include: {
+                  class: true,
+                },
+              },
+            },
+          },
           concessionType: true,
         },
+        orderBy: [
+          { status: "asc" }, // Show approved first, then pending, etc.
+          { createdAt: "desc" },
+        ],
+      });
+    }),
+
+  deletePayment: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.feeCollectionItem.deleteMany({
+        where: { feeCollectionId: input.id },
       });
 
-      const totalConcessionAmount = approvedConcessionsWithDetails.reduce((sum, concession) => {
-        const amount = concession.customValue ?? concession.concessionType.value;
-        return sum + amount;
-      }, 0);
-
-      return {
-        totalConcessions,
-        approvedConcessions,
-        pendingConcessions,
-        totalConcessionAmount,
-      };
+      return ctx.db.feeCollection.delete({
+        where: { id: input.id },
+      });
     }),
 }); 

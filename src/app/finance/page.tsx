@@ -58,7 +58,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { printFeeReceiptDirectly } from '@/utils/receipt-print';
+// import { printFeeReceiptDirectly } from '@/utils/receipt-print';
 import { toast } from '@/components/ui/use-toast';
 
 // Razorpay types
@@ -175,21 +175,31 @@ function FinancePageContent() {
   };
 
   // Test payment mutation
+    const utils = api.useContext();
   const createTestPayment = api.paymentGateway.testPayment.useMutation({
+    onMutate: async () => {
+      setIsCreatingTestPayment(true);
+      toast({
+        title: "Initiating Test Payment...",
+        description: "Please wait while we create a secure payment link.",
+      });
+    },
     onSuccess: (data) => {
-      // Handle test payment creation
       toast({
         title: "Test Payment Created",
         description: "Complete the payment in the Razorpay checkout window.",
       });
-      
-      // Open Razorpay checkout
       openRazorpayCheckout(data);
-      setIsCreatingTestPayment(false);
     },
     onError: (error: any) => {
       console.error('Test payment creation failed:', error);
-      alert(`Test payment creation failed: ${error.message}`);
+      toast({
+        title: "Test Payment Failed",
+        description: error.message || "Could not create a test payment.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
       setIsCreatingTestPayment(false);
     },
   });
@@ -212,7 +222,7 @@ function FinancePageContent() {
     // Prepare receipt data and directly open print dialog
     const receiptData = prepareReceiptData(transaction);
     if (receiptData) {
-      printFeeReceiptDirectly(receiptData);
+              // printFeeReceiptDirectly(receiptData);
     } else {
       alert('Unable to prepare receipt data. Please try again.');
     }
@@ -225,16 +235,17 @@ function FinancePageContent() {
     const feeItems = transaction.items?.map((item: any) => ({
       feeHeadName: item.feeHead?.name || 'Fee',
       feeTermName: transaction.feeTerm?.name || 'Term',
-      originalAmount: item.amount || 0,
-      concessionAmount: 0, // TODO: Get from concession data if available
-      finalAmount: item.amount || 0,
-      appliedConcessions: [], // TODO: Get from concession data if available
+      originalAmount: item.originalAmount || item.amount || 0,
+      concessionAmount: item.concessionAmount || 0,
+      finalAmount: (item.originalAmount || item.amount || 0) - (item.concessionAmount || 0),
+      paidAmount: item.amount || 0, // Actual amount paid
+      appliedConcessions: [], // TODO: Get concession details from StudentConcession if needed
     })) || [];
 
     const totals = {
-      totalOriginalAmount: transaction.totalAmount || 0,
-      totalConcessionAmount: 0,
-      totalNetAmount: transaction.totalAmount || 0,
+      totalOriginalAmount: feeItems.reduce((sum: number, item: any) => sum + item.originalAmount, 0),
+      totalConcessionAmount: feeItems.reduce((sum: number, item: any) => sum + item.concessionAmount, 0),
+      totalNetAmount: feeItems.reduce((sum: number, item: any) => sum + item.finalAmount, 0),
       totalPaidAmount: transaction.paidAmount || transaction.totalAmount || 0,
     };
 
@@ -251,6 +262,7 @@ function FinancePageContent() {
         lastName: transaction.student?.lastName || '',
         admissionNumber: transaction.student?.admissionNumber || '',
         section: {
+          name: transaction.student?.section?.name,
           class: {
             name: transaction.student?.section?.class?.name || 'N/A',
           },

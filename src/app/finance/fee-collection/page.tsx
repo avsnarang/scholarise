@@ -40,17 +40,18 @@ interface Student {
   lastName: string;
   admissionNumber: string;
   section?: {
+    name?: string;
     class?: {
       name: string;
       id: string;
     };
   } | null;
   parent?: {
-    firstName: string;
-    lastName: string;
+    fatherName?: string;
+    motherName?: string;
     fatherMobile?: string;
     motherMobile?: string;
-    email?: string;
+    fatherEmail?: string;
   } | null;
 }
 
@@ -85,8 +86,82 @@ function FeeCollectionPageContent() {
 
 
 
+  const utils = api.useContext();
   // API calls
   const collectPaymentMutation = api.finance.createFeeCollection.useMutation({
+    onMutate: async (newPayment) => {
+      await utils.finance.getStudentFeeDetails.cancel({
+        studentId: newPayment.studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+
+      const previousFees = utils.finance.getStudentFeeDetails.getData({
+        studentId: newPayment.studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+
+      if (previousFees) {
+        utils.finance.getStudentFeeDetails.setData(
+          {
+            studentId: newPayment.studentId,
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+          },
+          (oldQueryData) => {
+            if (!oldQueryData) return oldQueryData;
+
+            const updatedFees = oldQueryData.map((fee) => {
+              const paidItem = newPayment.items.find(
+                (item) => item.feeHeadId === fee.feeHeadId && item.feeTermId === fee.feeTermId
+              );
+              if (paidItem) {
+                const newPaidAmount = fee.paidAmount + paidItem.amount;
+                const newDueAmount = fee.totalAmount - newPaidAmount;
+                return {
+                  ...fee,
+                  paidAmount: newPaidAmount,
+                  dueAmount: newDueAmount,
+                  status: (newDueAmount <= 0 ? 'Paid' : 'Partially Paid') as "Paid" | "Pending" | "Partially Paid" | "Overdue",
+                };
+              }
+              return fee;
+            });
+            return updatedFees;
+          }
+        );
+      }
+      return { previousFees };
+    },
+    onError: (err, newPayment, context) => {
+      if (context?.previousFees) {
+        utils.finance.getStudentFeeDetails.setData(
+          {
+            studentId: newPayment.studentId,
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+          },
+          context.previousFees
+        );
+      }
+      toast({
+        title: "Payment Collection Failed",
+        description: "There was an error processing the payment. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSettled: (data, error, variables) => {
+      utils.finance.getStudentFeeDetails.invalidate({
+        studentId: variables.studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+      utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Payment Collected Successfully",
@@ -98,19 +173,61 @@ function FeeCollectionPageContent() {
   const bulkCollectPaymentsMutation = api.finance.createBulkFeeCollection.useMutation();
 
   const assignConcessionMutation = api.finance.assignConcession.useMutation({
+    onMutate: async (newConcession) => {
+      const studentId = newConcession.studentId;
+      await utils.finance.getStudentFeeDetails.cancel({
+        studentId: studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+
+      const previousFees = utils.finance.getStudentFeeDetails.getData({
+        studentId: studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+
+      // This is a simplified optimistic update. A more accurate one would
+      // require re-calculating the concession impact on each fee head.
+      // For now, we just refetch on settled.
+      
+      return { previousFees, studentId };
+    },
+    onError: (err, newConcession, context) => {
+      if (context?.previousFees) {
+        utils.finance.getStudentFeeDetails.setData(
+          {
+            studentId: context.studentId,
+            branchId: currentBranchId!,
+            sessionId: currentSessionId!,
+          },
+          context.previousFees
+        );
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to assign concession. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSettled: (data, error, variables) => {
+      const studentId = variables.studentId;
+      utils.finance.getStudentFeeDetails.invalidate({
+        studentId: studentId,
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+      utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Concession Assigned",
         description: "Student concession has been assigned successfully.",
       });
       void getStudentFeesQuery.refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign concession. Please try again.",
-        variant: "destructive",
-      });
     },
   });
   
@@ -144,7 +261,13 @@ function FeeCollectionPageContent() {
 
   const concessionTypesQuery = api.finance.getConcessionTypes.useQuery(
     { branchId: currentBranchId!, sessionId: currentSessionId! },
-    { enabled: !!currentBranchId && !!currentSessionId }
+    { 
+      enabled: !!currentBranchId && !!currentSessionId,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    }
   );
 
   const feeHeadsQuery = api.finance.getFeeHeads.useQuery(
@@ -347,6 +470,8 @@ function FeeCollectionPageContent() {
       feeHeadId: string;
       feeTermId: string;
       amount: number;
+      originalAmount: number;
+      concessionAmount: number;
     }>;
     paymentMode: string;
     transactionReference?: string;
@@ -363,6 +488,8 @@ function FeeCollectionPageContent() {
           feeHeadId: fee.feeHeadId,
           feeTermId: fee.feeTermId,
           amount: fee.amount,
+          originalAmount: fee.originalAmount,
+          concessionAmount: fee.concessionAmount,
         })),
         paymentMode: paymentData.paymentMode as "Cash" | "Card" | "Online" | "Cheque" | "DD" | "Bank Transfer",
         transactionReference: paymentData.transactionReference,
@@ -373,8 +500,6 @@ function FeeCollectionPageContent() {
       });
 
       const totalAmount = paymentData.selectedFees.reduce((sum, fee) => sum + fee.amount, 0);
-
-      await getStudentFeesQuery.refetch();
 
       return {
         receiptNumber: result?.receiptNumber || `RCP-${Date.now()}`,

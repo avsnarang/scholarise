@@ -1875,8 +1875,8 @@ model StudentConcession {
   id               String              @id @default(cuid())
   studentId        String
   concessionTypeId String
-  customValue      Float?
   reason           String?
+  createdBy        String?             // Track who created this concession
   approvedBy       String?
   approvedAt       DateTime?
   status           String              @default("PENDING")
@@ -2124,6 +2124,8 @@ model FeeCollectionItem {
   feeHeadId       String
   feeTermId       String
   amount          Float
+  originalAmount  Float?        // Fee structure amount at time of payment
+  concessionAmount Float?       // Concession applied at time of payment
   createdAt       DateTime      @default(now())
   feeCollection   FeeCollection @relation(fields: [feeCollectionId], references: [id], onDelete: Cascade)
   feeHead         FeeHead       @relation(fields: [feeHeadId], references: [id])

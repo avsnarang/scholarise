@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { env } from "@/env";
 import { appRouter } from "@/server/api/root";
 import { db } from "@/server/db";
+import { safeJWTValidation } from "@/utils/jwt-error-handler";
 
 // We create a simplified version of the context here
 // The actual context creation happens in src/server/api/trpc.ts
@@ -54,27 +55,21 @@ async function handleRequest(req: NextRequest) {
     const projectId = supabaseHostname.split('.')[0];
     const cookieName = `sb-${projectId}-auth-token`;
     
-        const accessToken = req.cookies.get(cookieName)?.value;
+    const accessToken = req.cookies.get(cookieName)?.value;
     if (accessToken) {
-      try {
-        const { data: { user: tokenUser } } = await supabase.auth.getUser(accessToken);
-        if (tokenUser) {
-          user = tokenUser;
-          userId = tokenUser.id;
-        }
-      } catch (error: unknown) {
-        // Handle JWT validation errors by attempting refresh
-        if (error instanceof Error && error.message.includes('InvalidJWTToken')) {
-          try {
-            const { data: { session } } = await supabase.auth.refreshSession();
-            if (session?.user) {
-              user = session.user;
-              userId = session.user.id;
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh session after JWT error:', refreshError);
-          }
-        }
+      // Use safe JWT validation that handles errors properly
+      const result = await safeJWTValidation(
+        async () => {
+          const { data: { user: tokenUser } } = await supabase.auth.getUser(accessToken);
+          return tokenUser;
+        },
+        supabase,
+        { redirectToSignIn: false, logError: true }
+      );
+      
+      if (result) {
+        user = result;
+        userId = result.id;
       }
     }
   }
@@ -84,14 +79,19 @@ async function handleRequest(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
     if (token) {
-      try {
-        const { data: { user: headerUser } } = await supabase.auth.getUser(token);
-        if (headerUser) {
-          user = headerUser;
-          userId = headerUser.id;
-        }
-      } catch (error: unknown) {
-        // Ignore token validation errors
+      // Use safe JWT validation that handles errors properly
+      const result = await safeJWTValidation(
+        async () => {
+          const { data: { user: headerUser } } = await supabase.auth.getUser(token);
+          return headerUser;
+        },
+        supabase,
+        { redirectToSignIn: false, logError: true }
+      );
+      
+      if (result) {
+        user = result;
+        userId = result.id;
       }
     }
   }
@@ -108,15 +108,20 @@ async function handleRequest(req: NextRequest) {
     for (const cookieName of cookieNames) {
       const token = req.cookies.get(cookieName)?.value;
       if (token) {
-        try {
-          const { data: { user: cookieUser } } = await supabase.auth.getUser(token);
-          if (cookieUser) {
-            user = cookieUser;
-            userId = cookieUser.id;
-            break;
-          }
-        } catch (error: unknown) {
-          // Continue to next cookie name
+        // Use safe JWT validation that handles errors properly
+        const result = await safeJWTValidation(
+          async () => {
+            const { data: { user: cookieUser } } = await supabase.auth.getUser(token);
+            return cookieUser;
+          },
+          supabase,
+          { redirectToSignIn: false, logError: true }
+        );
+        
+        if (result) {
+          user = result;
+          userId = result.id;
+          break;
         }
       }
     }

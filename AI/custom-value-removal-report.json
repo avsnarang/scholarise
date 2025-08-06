@@ -1,0 +1,2872 @@
+{
+  "executionDate": "2025-08-05T17:59:52.077Z",
+  "totalRecordsToUpdate": 349,
+  "concessionTypesSummary": [
+    {
+      "id": "cmdxjdavq001t7iblwu5902ct",
+      "name": "School Concession 100%/Term Charges [100%]",
+      "percentageValue": 100,
+      "affectedStudents": 4
+    },
+    {
+      "id": "cmdxjdb7z001v7ibldmdbosdm",
+      "name": "School Concession 100%/Tuition Fees [100%]",
+      "percentageValue": 100,
+      "affectedStudents": 2
+    },
+    {
+      "id": "cmdxjdbk8001x7iblshcpekkw",
+      "name": "School Concession 20%/Tuition Fees [20%]",
+      "percentageValue": 20,
+      "affectedStudents": 4
+    },
+    {
+      "id": "cmdxjdbwf001z7iblixntvq3s",
+      "name": "School Concession 25%/Annual Fund [25%]",
+      "percentageValue": 25,
+      "affectedStudents": 1
+    },
+    {
+      "id": "cmdxjdc8m00217iblb16tyrh6",
+      "name": "School Concession 25%/Tuition Fees [25%]",
+      "percentageValue": 25,
+      "affectedStudents": 3
+    },
+    {
+      "id": "cmdxjdckv00237ibl85lgtgwz",
+      "name": "School Concession 30%/Tuition Fees [30%]",
+      "percentageValue": 30,
+      "affectedStudents": 2
+    },
+    {
+      "id": "cmdxjdcx300257iblq6facmzg",
+      "name": "School Concession 40%/Tuition Fees [40%]",
+      "percentageValue": 40,
+      "affectedStudents": 1
+    },
+    {
+      "id": "cmdxjdd9c00277iblm67qxdkd",
+      "name": "School Concession 50%/Tuition Fees [50%]",
+      "percentageValue": 50,
+      "affectedStudents": 6
+    },
+    {
+      "id": "cmdxjdfzk002n7iblta24pco2",
+      "name": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "percentageValue": 15,
+      "affectedStudents": 287
+    },
+    {
+      "id": "cmdxjdgbr002p7ibl1ezj5x2f",
+      "name": "Sibling Concession 20%/Tuition Fees [20%]",
+      "percentageValue": 20,
+      "affectedStudents": 29
+    },
+    {
+      "id": "cmdxjda75001p7ibl8oi5uyc4",
+      "name": "School Concession 100%/Annual Fund [100%]",
+      "percentageValue": 100,
+      "affectedStudents": 8
+    },
+    {
+      "id": "cmdxjdajh001r7iblkkhca8z4",
+      "name": "School Concession 100%/Parent Orientation [100%]",
+      "percentageValue": 100,
+      "affectedStudents": 2
+    }
+  ],
+  "affectedStudents": [
+    {
+      "studentId": "cmbhkdv5d016al204rwfpna1i",
+      "admissionNumber": "10000818",
+      "studentName": "Jashanpreet Singh",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdx0x01dsl204n3vzed74",
+      "admissionNumber": "10000907",
+      "studentName": "Shrey Bansal",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdsik010bl204d9oi5e30",
+      "admissionNumber": "10001229",
+      "studentName": "Ashish Sansarwal",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rc701yhl204hg6d89g5",
+      "admissionNumber": "10002024",
+      "studentName": "Manas Chaudhary",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8r6p01xil204sts80vrm",
+      "admissionNumber": "10003059",
+      "studentName": "Delisha Agrawal",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hnk018il204wops19hb",
+      "admissionNumber": "10003179",
+      "studentName": "Abhi Choudhary",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk98ah03lxl204t8roerqw",
+      "admissionNumber": "10003454",
+      "studentName": "Jashanpreet Singh",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8d5s00uwl204m6rrt5sz",
+      "admissionNumber": "10003455",
+      "studentName": "Hargunpreet Kaur",
+      "concessionType": "School Concession 100%/Annual Fund [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rc701yhl204hg6d89g5",
+      "admissionNumber": "10002024",
+      "studentName": "Manas Chaudhary",
+      "concessionType": "School Concession 100%/Parent Orientation [100%]",
+      "customValueToRemove": 1000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hnk018il204wops19hb",
+      "admissionNumber": "10003179",
+      "studentName": "Abhi Choudhary",
+      "concessionType": "School Concession 100%/Parent Orientation [100%]",
+      "customValueToRemove": 1000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rc701yhl204hg6d89g5",
+      "admissionNumber": "10002024",
+      "studentName": "Manas Chaudhary",
+      "concessionType": "School Concession 100%/Term Charges [100%]",
+      "customValueToRemove": 8600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hnk018il204wops19hb",
+      "admissionNumber": "10003179",
+      "studentName": "Abhi Choudhary",
+      "concessionType": "School Concession 100%/Term Charges [100%]",
+      "customValueToRemove": 8600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmdxmgp04000c7ivh3g3fljpj",
+      "admissionNumber": "10003487",
+      "studentName": "Kartikey Joshi",
+      "concessionType": "School Concession 100%/Term Charges [100%]",
+      "customValueToRemove": 4000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmdxmgo2y00077ivhtte4p8w0",
+      "admissionNumber": "10003488",
+      "studentName": "Raaisha Chauhan",
+      "concessionType": "School Concession 100%/Term Charges [100%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rc701yhl204hg6d89g5",
+      "admissionNumber": "10002024",
+      "studentName": "Manas Chaudhary",
+      "concessionType": "School Concession 100%/Tuition Fees [100%]",
+      "customValueToRemove": 42000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hnk018il204wops19hb",
+      "admissionNumber": "10003179",
+      "studentName": "Abhi Choudhary",
+      "concessionType": "School Concession 100%/Tuition Fees [100%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdptn00t3l204kaprfl5i",
+      "admissionNumber": "10000975",
+      "studentName": "Ridhima Sareen",
+      "concessionType": "School Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 10320,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zp902sml204pief3pet",
+      "admissionNumber": "10001628",
+      "studentName": "Gurnoor Singh",
+      "concessionType": "School Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 2280,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zlx02rxl204qdyd229d",
+      "admissionNumber": "10001639",
+      "studentName": "Alan Sharma",
+      "concessionType": "School Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8k9t01gul204mcggn0bz",
+      "admissionNumber": "10002347",
+      "studentName": "Moksh Sharma",
+      "concessionType": "School Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdt6m013sl204fpseolwp",
+      "admissionNumber": "10000965",
+      "studentName": "Aayush Vats",
+      "concessionType": "School Concession 25%/Annual Fund [25%]",
+      "customValueToRemove": 5000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdt6m013sl204fpseolwp",
+      "admissionNumber": "10000965",
+      "studentName": "Aayush Vats",
+      "concessionType": "School Concession 25%/Tuition Fees [25%]",
+      "customValueToRemove": 12685,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdjxt00e3l204w4sljkxj",
+      "admissionNumber": "10001452",
+      "studentName": "Sana Ansari",
+      "concessionType": "School Concession 25%/Tuition Fees [25%]",
+      "customValueToRemove": 12000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zu402tll204t66qycsx",
+      "admissionNumber": "10001790",
+      "studentName": "Mohammad Ishan",
+      "concessionType": "School Concession 25%/Tuition Fees [25%]",
+      "customValueToRemove": 11400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdvai016zl204i4id6857",
+      "admissionNumber": "10000842",
+      "studentName": "Palak Sharma",
+      "concessionType": "School Concession 30%/Tuition Fees [30%]",
+      "customValueToRemove": 15480,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdkej00gbl2040dhpsc1h",
+      "admissionNumber": "10001191",
+      "studentName": "Harman Singh",
+      "concessionType": "School Concession 30%/Tuition Fees [30%]",
+      "customValueToRemove": 14400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rwt0223l2044pmixw3z",
+      "admissionNumber": "10002173",
+      "studentName": "Aisha Malhotra",
+      "concessionType": "School Concession 40%/Tuition Fees [40%]",
+      "customValueToRemove": 16800,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdv5d016al204rwfpna1i",
+      "admissionNumber": "10000818",
+      "studentName": "Jashanpreet Singh",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 25800,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdx0x01dsl204n3vzed74",
+      "admissionNumber": "10000907",
+      "studentName": "Shrey Bansal",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 27000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdeib002kl204zgblijic",
+      "admissionNumber": "10001314",
+      "studentName": "Abhinav Pal",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 24000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk963u03epl204sa32zx2z",
+      "admissionNumber": "10001476",
+      "studentName": "Jyotsana Kashyap",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 22800,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vec02c8l204r4mlwfhi",
+      "admissionNumber": "10002151",
+      "studentName": "Prateek Verma",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 22800,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8i3q01bpl204epcy0t5d",
+      "admissionNumber": "10003250",
+      "studentName": "Suryansh Bhardwaj",
+      "concessionType": "School Concession 50%/Tuition Fees [50%]",
+      "customValueToRemove": 21000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y9n02ovl204au4efhia",
+      "admissionNumber": "10002038",
+      "studentName": "Harjap Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdh7a0070l204jsalul1d",
+      "admissionNumber": "10001464",
+      "studentName": "Abhijay Singh Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdhzb00awl204gegznoc3",
+      "admissionNumber": "10001512",
+      "studentName": "Pallavi Kumari",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdi0h00b1l204ydhk8v38",
+      "admissionNumber": "10001536",
+      "studentName": "Shree Nidhi Garg",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zom02shl2043r1awufn",
+      "admissionNumber": "10001584",
+      "studentName": "Divya Choudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk961p03eal204jpvcm2go",
+      "admissionNumber": "10001622",
+      "studentName": "Aryan Bhardwaj",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91ae02wdl2045kyxg179",
+      "admissionNumber": "10001623",
+      "studentName": "Abhilaksh Kapoor",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zww02u5l204f7rrnuz4",
+      "admissionNumber": "10001638",
+      "studentName": "Ritika Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdi6d00bvl204j1ibvmck",
+      "admissionNumber": "10001698",
+      "studentName": "Anmol Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk904802vel204hc9hiu8m",
+      "admissionNumber": "10001736",
+      "studentName": "Arnav Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y2l02nml2042njch8ld",
+      "admissionNumber": "10001789",
+      "studentName": "Advik Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xx702mnl2043ghuzyby",
+      "admissionNumber": "10001899",
+      "studentName": "Aaliya Maniktala",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk9295032rl2040e8juavn",
+      "admissionNumber": "10001967",
+      "studentName": "Ritika Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8w9a02i2l204oek804ij",
+      "admissionNumber": "10001991",
+      "studentName": "Vihan Chappa",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8s12022xl204dvx4tnej",
+      "admissionNumber": "10002010",
+      "studentName": "Jaskirat Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8s7z024bl204bu1n0iok",
+      "admissionNumber": "10002011",
+      "studentName": "Sarthak Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ry7022dl204x9v3konz",
+      "admissionNumber": "10002012",
+      "studentName": "Bhaavya Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rnl020fl204pau86d0o",
+      "admissionNumber": "10002028",
+      "studentName": "Manmeet Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xfr02jll204ij7d4b80",
+      "admissionNumber": "10002031",
+      "studentName": "Ashita Gupta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8u6002azl204hrrgipjp",
+      "admissionNumber": "10002037",
+      "studentName": "Danbeer Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vct02byl204f3ddaht5",
+      "admissionNumber": "10002044",
+      "studentName": "Parth Gupta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rdq01yrl2049lyugw3c",
+      "admissionNumber": "10002045",
+      "studentName": "Prabhpreet Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8roj020kl204h6241imr",
+      "admissionNumber": "10002046",
+      "studentName": "Paarth Chugh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rem01ywl20432d8hl66",
+      "admissionNumber": "10002052",
+      "studentName": "Pritesh Satapathy",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rm30205l20431sscoby",
+      "admissionNumber": "10002055",
+      "studentName": "Ayushman Singh Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vle02dhl204qgb6lk7b",
+      "admissionNumber": "10002061",
+      "studentName": "Aastha Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y1102ncl204rc2zv66r",
+      "admissionNumber": "10002069",
+      "studentName": "Aaryansh Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xwg02mil204s7mtwily",
+      "admissionNumber": "10002091",
+      "studentName": "Teghveer Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zzv02upl204pyodjewq",
+      "admissionNumber": "10002099",
+      "studentName": "Tanishka TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk97si03ill204xgfvpnji",
+      "admissionNumber": "10002105",
+      "studentName": "Anushka Mehta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk93uh036nl204dpwsa5gh",
+      "admissionNumber": "10002107",
+      "studentName": "Krishna Tomar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y0c02n7l2044xe0o3qt",
+      "admissionNumber": "10002117",
+      "studentName": "Ridvik Mittal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rle0200l204n2wx7wwg",
+      "admissionNumber": "10002121",
+      "studentName": "Arnav Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91tk02zul20443d8t8en",
+      "admissionNumber": "10002124",
+      "studentName": "Tista Aggarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdkii00gvl204a646g8lj",
+      "admissionNumber": "10002128",
+      "studentName": "Kanak TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zi502r8l204usi3o3ab",
+      "admissionNumber": "10002144",
+      "studentName": "Sanath Keshav Garg",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8txy029gl2043q2g1ukb",
+      "admissionNumber": "10002156",
+      "studentName": "Samarjeet Singh Gill",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8oxq01sxl204gasq2zn3",
+      "admissionNumber": "10002212",
+      "studentName": "Ashvika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xcd02iwl204q2jalpk2",
+      "admissionNumber": "10002213",
+      "studentName": "Aarohi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8m4v01kll2044duujduh",
+      "admissionNumber": "10002225",
+      "studentName": "Avika Dafraik",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8n5m01qal204xrr3ggw2",
+      "admissionNumber": "10002226",
+      "studentName": "Uddeesha TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mxt01p1l204w5ycmik7",
+      "admissionNumber": "10002229",
+      "studentName": "Avantika TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8pk801vzl204ha70llly",
+      "admissionNumber": "10002232",
+      "studentName": "Sai Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kcq01h9l2047nqnkvup",
+      "admissionNumber": "10002237",
+      "studentName": "Palakdeep Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mdb01lul204i4z65f7g",
+      "admissionNumber": "10002238",
+      "studentName": "Ramanjot Singh Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rfr01z1l204x9g05is6",
+      "admissionNumber": "10002241",
+      "studentName": "Shreysi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kke01idl204gz5tk8hi",
+      "admissionNumber": "10002245",
+      "studentName": "Vartika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hlh0183l204xqnhllgk",
+      "admissionNumber": "10002251",
+      "studentName": "Zyan Khan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk919p02w8l204g2i005of",
+      "admissionNumber": "10002256",
+      "studentName": "Aarohi Sansarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8k8t01gpl204hf9005d1",
+      "admissionNumber": "10002275",
+      "studentName": "Japneet Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91me02yll204sus3t9bz",
+      "admissionNumber": "10002277",
+      "studentName": "Mannat Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91ch02wsl204822adqd1",
+      "admissionNumber": "10002283",
+      "studentName": "Arshnoor Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8pad01uql204668cmg02",
+      "admissionNumber": "10002289",
+      "studentName": "Shikhar Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xec02jbl204th3x5lde",
+      "admissionNumber": "10002292",
+      "studentName": "Anvi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zgq02qyl2040b2v4k4l",
+      "admissionNumber": "10002297",
+      "studentName": "Navika Negi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk964j03eul204z0cmfbyi",
+      "admissionNumber": "10002298",
+      "studentName": "Kavyanjali Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91n802yql2043e5cstm2",
+      "admissionNumber": "10002303",
+      "studentName": "Raghav Mittal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mhw01mjl2040ocebf8d",
+      "admissionNumber": "10002310",
+      "studentName": "Tejas Aggarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8pef01v5l2043ebzfz7t",
+      "admissionNumber": "10002328",
+      "studentName": "Vedansh Bansal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8oqu01s3l204oemg2ddc",
+      "admissionNumber": "10002329",
+      "studentName": "Aarohi Bansal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mrk01o2l204hp23y2v5",
+      "admissionNumber": "10002348",
+      "studentName": "Aadvik Tomar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kds01hel20482i230cv",
+      "admissionNumber": "10002350",
+      "studentName": "Raghav Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8pl701w4l2046v0525wt",
+      "admissionNumber": "10002353",
+      "studentName": "Shlok Ujwal Padole",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8m0w01k1l204r7aoonbj",
+      "admissionNumber": "10002365",
+      "studentName": "Advitya Choudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8k2601fvl204gpqno0d2",
+      "admissionNumber": "10002380",
+      "studentName": "Avraj Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kn201isl204bkw6y1j7",
+      "admissionNumber": "10002384",
+      "studentName": "Vritant Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8m9d01lal2047ogbxaju",
+      "admissionNumber": "10002390",
+      "studentName": "Keshav Choudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kld01iil204ky7b3fiv",
+      "admissionNumber": "10002396",
+      "studentName": "Vedika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8dsd00ydl204wn4r6te5",
+      "admissionNumber": "10002400",
+      "studentName": "Aarav Jassal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8m5r01kql204eggmgtys",
+      "admissionNumber": "10002412",
+      "studentName": "Evan Rana",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mv401oml204nssbsepu",
+      "admissionNumber": "10002417",
+      "studentName": "Aradhya Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f1x00yxl2044o9p21e7",
+      "admissionNumber": "10002424",
+      "studentName": "Abhinav Singh Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fsb0147l204vhp7e2i2",
+      "admissionNumber": "10002426",
+      "studentName": "Somya TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ftt014hl204ttr3jszj",
+      "admissionNumber": "10002427",
+      "studentName": "Supreet TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8khl01hyl204tp82pthj",
+      "admissionNumber": "10002429",
+      "studentName": "Snufi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mjs01mtl2040m8x8gj4",
+      "admissionNumber": "10002434",
+      "studentName": "Vedanshi Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ozs01t7l204j5n2poui",
+      "admissionNumber": "10002451",
+      "studentName": "Ekansh TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk940i037rl204vq4knedb",
+      "admissionNumber": "10002459",
+      "studentName": "Vivin TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ta40250l204m0pa4fn9",
+      "admissionNumber": "10002463",
+      "studentName": "Kirpanjot Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rve021tl2045lk4fh1c",
+      "admissionNumber": "10002465",
+      "studentName": "Aarya Tegwan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fno0138l204x7msk6jx",
+      "admissionNumber": "10002480",
+      "studentName": "Mihul TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jg601col204uta0ay62",
+      "admissionNumber": "10002481",
+      "studentName": "Aradhana TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8i4f01bul204uj7l67ql",
+      "admissionNumber": "10002482",
+      "studentName": "Aaradhya TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xj902kal204ebaxlufe",
+      "admissionNumber": "10002507",
+      "studentName": "Hardik Bhalla",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8yac02p0l204m0dokwd6",
+      "admissionNumber": "10002512",
+      "studentName": "Lakshya Bhardwaj",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xf102jgl204yvg63uzo",
+      "admissionNumber": "10002554",
+      "studentName": "Aradhya Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8d0a00u2l204k2zqugqw",
+      "admissionNumber": "10002580",
+      "studentName": "Ekampreet Singh Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f2m00z2l204d9987qn5",
+      "admissionNumber": "10002583",
+      "studentName": "Abhishaan Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fx90156l2044gtkadlp",
+      "admissionNumber": "10002587",
+      "studentName": "Aarav TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fbz010vl2040kt5ykmk",
+      "admissionNumber": "10002588",
+      "studentName": "Shivansh Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f7600zwl2045opi3jmk",
+      "admissionNumber": "10002596",
+      "studentName": "Kanishk Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jjq01d8l204f8rmgpls",
+      "admissionNumber": "10002608",
+      "studentName": "Emandi Nasya Joyal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8me801lzl204ce7bnkhi",
+      "admissionNumber": "10002610",
+      "studentName": "Roop Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8db100vql2042zdy1p2f",
+      "admissionNumber": "10002638",
+      "studentName": "Raghav TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8tme0278l204ebjcoxya",
+      "admissionNumber": "10002657",
+      "studentName": "Aryan Aggarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f8l0106l204hpuhz319",
+      "admissionNumber": "10002691",
+      "studentName": "Manheer Kaur Arora",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8tt1028hl204wy2v6ocj",
+      "admissionNumber": "10002693",
+      "studentName": "Tananjay Bhardwaj",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8axs00q6l204c3ccovdy",
+      "admissionNumber": "10002704",
+      "studentName": "Arav Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vbz02btl2047lbqrnaj",
+      "admissionNumber": "10002705",
+      "studentName": "Kushagra Mamgain",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8t9f024vl204a7kdbuko",
+      "admissionNumber": "10002710",
+      "studentName": "Karanbir Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f9y010gl204zk3iickb",
+      "admissionNumber": "10002730",
+      "studentName": "Prabhsimran Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ary00pml204h5jefdm8",
+      "admissionNumber": "10002736",
+      "studentName": "Thakur Saurav Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8aqi00phl204m7fotiz6",
+      "admissionNumber": "10002752",
+      "studentName": "Sanvi Rana",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87b800fml2046bjtjupm",
+      "admissionNumber": "10002756",
+      "studentName": "Aadil Khan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87h300gbl2044r1j7ma9",
+      "admissionNumber": "10002757",
+      "studentName": "Darsh Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8k7x01gkl2043rvvv7hg",
+      "admissionNumber": "10002762",
+      "studentName": "Jaishikha TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91r702zfl204llnm0dhh",
+      "admissionNumber": "10002773",
+      "studentName": "Vandit Bhatnagar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8miu01mol204rj75s8xe",
+      "admissionNumber": "10002779",
+      "studentName": "Vedanshi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8bal00rpl2046qlallli",
+      "admissionNumber": "10002787",
+      "studentName": "Archit Srivastava",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ala00p2l20404moi9zn",
+      "admissionNumber": "10002789",
+      "studentName": "Saanvi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hcj016fl204kwbdnl4m",
+      "admissionNumber": "10002794",
+      "studentName": "Ridhaan Tomar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk93e0033gl204apgatky1",
+      "admissionNumber": "10002801",
+      "studentName": "Vansh Goyal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87sm00hul204zi29ojq5",
+      "admissionNumber": "10002810",
+      "studentName": "Simon Malhotra",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8afy00oil204r8ygmvj4",
+      "admissionNumber": "10002811",
+      "studentName": "Mohd Ruhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fxy015bl204zz84ltri",
+      "admissionNumber": "10002813",
+      "studentName": "Aaradhya Gupta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jh601ctl204a77pdlbz",
+      "admissionNumber": "10002815",
+      "studentName": "Avani Arya",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk885t00jsl204arlvhxxw",
+      "admissionNumber": "10002818",
+      "studentName": "Avnoor Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk89s900l6l204crv5jxx6",
+      "admissionNumber": "10002819",
+      "studentName": "Sanskriti Aggarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rju01zql204r7ifyo25",
+      "admissionNumber": "10002823",
+      "studentName": "Vinish Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8a8900nel204qrb4y0z5",
+      "admissionNumber": "10002826",
+      "studentName": "Anvi Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ha90160l2040bwen17k",
+      "admissionNumber": "10002833",
+      "studentName": "Atharv Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8da600vll2046w6jmnfy",
+      "admissionNumber": "10002836",
+      "studentName": "Minal TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ofe01qpl204gm2j5yl0",
+      "admissionNumber": "10002839",
+      "studentName": "Vedant Mishra",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk882x00jdl204n1vkxbqg",
+      "admissionNumber": "10002847",
+      "studentName": "Adrisha Das",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87dr00fwl204vnf7d7va",
+      "admissionNumber": "10002848",
+      "studentName": "Amaira Malik",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8cw900til204jpzfrodk",
+      "admissionNumber": "10002849",
+      "studentName": "Thakur Vivansh Singh Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk884v00jnl204cbdmmo2e",
+      "admissionNumber": "10002852",
+      "studentName": "Anshuman Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk9418037wl204y4rase7y",
+      "admissionNumber": "10002859",
+      "studentName": "Adhya Prasad",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk887p00k2l2043a5oswq1",
+      "admissionNumber": "10002871",
+      "studentName": "Chirag TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk89wj00lql204egzvs6cx",
+      "admissionNumber": "10002875",
+      "studentName": "Vedant Bhatt",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk886o00jxl204fj0trtlb",
+      "admissionNumber": "10002877",
+      "studentName": "Bhuvika Kohali",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk89t700lbl2045p0m6gv7",
+      "admissionNumber": "10002889",
+      "studentName": "Sanvi Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk883v00jil204n32q6mue",
+      "admissionNumber": "10002892",
+      "studentName": "Akaya Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jrn01ecl2041vteja4s",
+      "admissionNumber": "10002923",
+      "studentName": "Patil Mitesh Chatur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84fz0089l204tdczivqn",
+      "admissionNumber": "10002943",
+      "studentName": "Samar Khan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84ht008jl204ftbnapit",
+      "admissionNumber": "10002948",
+      "studentName": "Swastika Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84z800b6l2046k8saq19",
+      "admissionNumber": "10002951",
+      "studentName": "Vidhan Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87p200hal204m49zs3e9",
+      "admissionNumber": "10002955",
+      "studentName": "Sahajdeep Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84q6009sl204c64qao5d",
+      "admissionNumber": "10002958",
+      "studentName": "Aditi Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jnl01dsl204p26l6pu6",
+      "admissionNumber": "10002964",
+      "studentName": "Kamakshi Kanwar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8pj501vul2042ol9ly2k",
+      "admissionNumber": "10002966",
+      "studentName": "Kavyansh TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hdz016pl204ye503e8u",
+      "admissionNumber": "10002975",
+      "studentName": "Saranya Meharwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk88cm00krl204e6f08fnf",
+      "admissionNumber": "10002981",
+      "studentName": "Nitya Titwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8b8h00rfl204yicv3gb9",
+      "admissionNumber": "10002990",
+      "studentName": "Ananya Anuj Kumar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8haw0165l2042qf006w1",
+      "admissionNumber": "10002994",
+      "studentName": "Harleen Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mmb01n8l204hql1wrfh",
+      "admissionNumber": "10003004",
+      "studentName": "Arshika Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8oiw01r4l204ezrca8do",
+      "admissionNumber": "10003010",
+      "studentName": "Anmol Passi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mo101nil204s2xywgl0",
+      "admissionNumber": "10003015",
+      "studentName": "Ishika Kashyap",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mn501ndl204jgan75tx",
+      "admissionNumber": "10003020",
+      "studentName": "Daksh Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ly901jml20431lp4cvf",
+      "admissionNumber": "10003022",
+      "studentName": "Shreyansh Rana",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8omf01rjl204u9jb4xls",
+      "admissionNumber": "10003024",
+      "studentName": "Mridini Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk857b00cfl204jq4029fd",
+      "admissionNumber": "10003026",
+      "studentName": "Anaisha Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk86yo00e3l204dkusd1yn",
+      "admissionNumber": "10003031",
+      "studentName": "Sneha Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk960803e0l204x3vwkbk7",
+      "admissionNumber": "10003036",
+      "studentName": "Ananya Yadav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8onh01rol204b8g7zuh1",
+      "admissionNumber": "10003042",
+      "studentName": "Shah Dwitee Bhavinkumar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8km801inl204a1tzz7yj",
+      "admissionNumber": "10003046",
+      "studentName": "Viraj Dhiman",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8b9k00rkl2048mxcgpu3",
+      "admissionNumber": "10003048",
+      "studentName": "Anirudh Vashisht",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84a9007fl204ugk9yw58",
+      "admissionNumber": "10003054",
+      "studentName": "Daivik Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk85hn00dtl2041vt46dgr",
+      "admissionNumber": "10003057",
+      "studentName": "Shanaya Baliyan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk95zk03dvl2046mkbqq72",
+      "admissionNumber": "10003066",
+      "studentName": "Anant Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84p8009nl2046r3hruf6",
+      "admissionNumber": "10003071",
+      "studentName": "Abhiraj Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8csh00syl204fvlgb3an",
+      "admissionNumber": "10003072",
+      "studentName": "Pari Yadav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdhff0084l2042fid6ths",
+      "admissionNumber": "10003092",
+      "studentName": "Banoth Lalith Menon",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 7200,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk849d007al2046j3suvus",
+      "admissionNumber": "10003093",
+      "studentName": "Ayra Khan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk85a700cul204x381u1iz",
+      "admissionNumber": "10003097",
+      "studentName": "Baanvi Vashishtha",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84ko008yl204gkwn4swc",
+      "admissionNumber": "10003099",
+      "studentName": "Veeraditya Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84io008ol204f7wofu0w",
+      "admissionNumber": "10003107",
+      "studentName": "Tanvi Nagar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwo72005wjs04keftbq1d",
+      "admissionNumber": "10003110",
+      "studentName": "Advika Rana",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84x700awl204mrh6qpu6",
+      "admissionNumber": "10003118",
+      "studentName": "Samiksha Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8cmq00s4l2041petgcc9",
+      "admissionNumber": "10003119",
+      "studentName": "Granth Gautam Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwocb006qjs04qiq434un",
+      "admissionNumber": "10003121",
+      "studentName": "Sai Sannidhi Garg",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk848h0075l204jx598gsl",
+      "admissionNumber": "10003128",
+      "studentName": "Avin Ramaul",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8d6n00v1l204aim4anxo",
+      "admissionNumber": "10003134",
+      "studentName": "Aadvik Guleria",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk85d900d9l204yk84ob5c",
+      "admissionNumber": "10003140",
+      "studentName": "Hardik Keshari",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwod9006vjs04s03ln2r7",
+      "admissionNumber": "10003142",
+      "studentName": "Shaurya Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4125,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82n90052l204p5w64l85",
+      "admissionNumber": "10003143",
+      "studentName": "Saksham Kashyap",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84gy008el2040r8ysnq5",
+      "admissionNumber": "10003144",
+      "studentName": "Shubh Anuragi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rcz01yml204uae2uakx",
+      "admissionNumber": "10003147",
+      "studentName": "Masos Jasta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdn4900mal2046t63g6il",
+      "admissionNumber": "10003150",
+      "studentName": "Shorya Bhatnagar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 7200,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk856e00cal20464aat0hp",
+      "admissionNumber": "10003154",
+      "studentName": "Aarvi Negi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fp0013il204m9nwve4s",
+      "admissionNumber": "10003156",
+      "studentName": "Pratyush Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk93gr0340l20451spxp6x",
+      "admissionNumber": "10003159",
+      "studentName": "Armaan Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8t76024gl204vxmsiwst",
+      "admissionNumber": "10003162",
+      "studentName": "Satuti Pal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82tg005wl204vmrn8xuq",
+      "admissionNumber": "10003165",
+      "studentName": "Harshika Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8clx00rzl204p8pg8o0f",
+      "admissionNumber": "10003173",
+      "studentName": "Ekaansh Narayan Srivastav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hr30197l2044uy4un7y",
+      "admissionNumber": "10003177",
+      "studentName": "Devesh Rathi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8auw00pwl204sdzo80zo",
+      "admissionNumber": "10003190",
+      "studentName": "Angel Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ho9018nl2049llxufuk",
+      "admissionNumber": "10003191",
+      "studentName": "Ananya Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81rg000cl2040843foqc",
+      "admissionNumber": "10003193",
+      "studentName": "Yashika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8cl000rul204bla77ul1",
+      "admissionNumber": "10003194",
+      "studentName": "Ayansh Singh Pilkhwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk825e002fl204acs7b8r9",
+      "admissionNumber": "10003200",
+      "studentName": "Pranaya Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81po0002l204b6glvn9a",
+      "admissionNumber": "10003205",
+      "studentName": "Shivay Dabral",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6000,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f5n00zml204jca2brnn",
+      "admissionNumber": "10003207",
+      "studentName": "Gurleen Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82me004xl204wyea7q4l",
+      "admissionNumber": "10003208",
+      "studentName": "Rudransh Bhatt",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4620,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk95xl03dgl204xtpb4hmr",
+      "admissionNumber": "10003214",
+      "studentName": "Aaron Pal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8f3a00z7l204ves02ixd",
+      "admissionNumber": "10003220",
+      "studentName": "Abhishree Tiwari",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8aav00ntl204uw2iwwev",
+      "admissionNumber": "10003222",
+      "studentName": "Bhavya Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82r4005ml204g6ptk06d",
+      "admissionNumber": "10003224",
+      "studentName": "Devansh Yadav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82km004nl204e5qa5uxt",
+      "admissionNumber": "10003228",
+      "studentName": "Parmeet Navet",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hox018sl204gd039cma",
+      "admissionNumber": "10003233",
+      "studentName": "Anaya TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwobh006ljs040qs73fhp",
+      "admissionNumber": "10003235",
+      "studentName": "Rudransh Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk89ye00m0l204jbglnxe2",
+      "admissionNumber": "10003237",
+      "studentName": "Yashdeep Saini",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk826d002kl2048glcjr2a",
+      "admissionNumber": "10003241",
+      "studentName": "Satvika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vqb02egl20492skx6cl",
+      "admissionNumber": "10003245",
+      "studentName": "Anirudh Raj Chandel",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jso01ehl2044mbc98fr",
+      "admissionNumber": "10003255",
+      "studentName": "Sashwat Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ti8026jl204d9eoje23",
+      "admissionNumber": "10003257",
+      "studentName": "Ankita Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8a4d00mul204f51c1193",
+      "admissionNumber": "10003258",
+      "studentName": "Aadarsh Ramoul",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82q2005hl20450tdcayu",
+      "admissionNumber": "10003259",
+      "studentName": "Arnav Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8aox00pcl204fpgnocwp",
+      "admissionNumber": "10003277",
+      "studentName": "Samiksha Mokhta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk925a0322l204kfv0ylad",
+      "admissionNumber": "10003293",
+      "studentName": "Nirvan Tanwar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwn0r0002js0480rfnwnh",
+      "admissionNumber": "10003299",
+      "studentName": "Prabhnimrat Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8u6q02b4l204wchztwp9",
+      "admissionNumber": "10003304",
+      "studentName": "Divit Rajesh Kalepatil",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82a30034l204iy72nimx",
+      "admissionNumber": "10003308",
+      "studentName": "Trishika Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwn7l000wjs04zyns0wkr",
+      "admissionNumber": "10003310",
+      "studentName": "Dhruvika Mishra",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwn6q000rjs04rsd7v79o",
+      "admissionNumber": "10003313",
+      "studentName": "Aadriti Puri",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82b60039l2046koyc213",
+      "admissionNumber": "10003315",
+      "studentName": "Iyanshi Rathour",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwn9h0016js046nm8c1lc",
+      "admissionNumber": "10003316",
+      "studentName": "Avisha Malik",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnsp003tjs04qdasop63",
+      "admissionNumber": "10003319",
+      "studentName": "Riddhi Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 375,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81td000ml204zifbw4af",
+      "admissionNumber": "10003325",
+      "studentName": "Medhansh Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4125,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnba001gjs04lmzsohvv",
+      "admissionNumber": "10003326",
+      "studentName": "Gurveer Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fe0011al204orkt8dio",
+      "admissionNumber": "10003327",
+      "studentName": "Mohd. Azeem",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnvu0048js048b2sqcgv",
+      "admissionNumber": "10003333",
+      "studentName": "Saransh TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82c1003el204u5v2lo4f",
+      "admissionNumber": "10003337",
+      "studentName": "Divyaansh TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84od009il2040knyqu2q",
+      "admissionNumber": "10003339",
+      "studentName": "Kushagr Aggarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5295,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk852q00bql2047zqeehj8",
+      "admissionNumber": "10003341",
+      "studentName": "Arpita Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnyf004njs04sx0mbca6",
+      "admissionNumber": "10003345",
+      "studentName": "Nitya TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4125,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82cz003jl2043crp9gbv",
+      "admissionNumber": "10003347",
+      "studentName": "Aavya Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81ua000rl2046us2748t",
+      "admissionNumber": "10003350",
+      "studentName": "Prince Pundir",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8td0025kl204n7uc2hwo",
+      "admissionNumber": "10003355",
+      "studentName": "Girisha TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81sh000hl204ebt0ahky",
+      "admissionNumber": "10003360",
+      "studentName": "Shivaay Chaudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwng20025js040l5yull9",
+      "admissionNumber": "10003366",
+      "studentName": "Hetvik Choudhary",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwn5q000mjs04wmq0ds2w",
+      "admissionNumber": "10003372",
+      "studentName": "Pratyaksha Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8lz401jrl20437ht9thx",
+      "admissionNumber": "10003375",
+      "studentName": "Aaradhya Tandon",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk91v20304l2043tm7b3g1",
+      "admissionNumber": "10003376",
+      "studentName": "Satyam Kumar",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81v5000wl2045ysit2d5",
+      "admissionNumber": "10003379",
+      "studentName": "Utkarsh Singh Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8dkw00x9l204662mzj1t",
+      "admissionNumber": "10003390",
+      "studentName": "Dhruv Mouriya",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8dls00xel204ko0ny0au",
+      "admissionNumber": "10003391",
+      "studentName": "Jiyakshi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 1500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82x7006bl204uxk1d3zv",
+      "admissionNumber": "10003393",
+      "studentName": "Prisha Vashistha",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4620,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8dnq00xol204wvvg0jcr",
+      "admissionNumber": "10003395",
+      "studentName": "Riyan Batta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk93iw034fl204adodwpj6",
+      "admissionNumber": "10003403",
+      "studentName": "Aditya Yadav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87yz00itl204yer16zoq",
+      "admissionNumber": "10003407",
+      "studentName": "Sanvi Tiwari",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81w20011l2046jiyobcs",
+      "admissionNumber": "10003411",
+      "studentName": "Navyashree TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8a1l00mfl2048v5y2u1s",
+      "admissionNumber": "10003415",
+      "studentName": "Diyazhini.P TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81wx0016l204k9zbl3vs",
+      "admissionNumber": "10003416",
+      "studentName": "Divyansha Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rsb0219l204ijr5jium",
+      "admissionNumber": "10003419",
+      "studentName": "Devansh Gupta",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk876r00f2l2040pl1kawz",
+      "admissionNumber": "10003420",
+      "studentName": "Kaarav Nangia",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 525,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82fq003yl204wpvunvnl",
+      "admissionNumber": "10003421",
+      "studentName": "Nandish Kundal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8m0101jwl204hgek9ir8",
+      "admissionNumber": "10003425",
+      "studentName": "Purvi Singh Yadav",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82gm0043l204k3xt7t37",
+      "admissionNumber": "10003426",
+      "studentName": "Shreyash Mohapatra",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwo5a005mjs04a29967a9",
+      "admissionNumber": "10003428",
+      "studentName": "Atef Amir",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnkf002pjs04o9l2lste",
+      "admissionNumber": "10003434",
+      "studentName": "Trisha TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8feo011fl204rwfvgqy2",
+      "admissionNumber": "10003436",
+      "studentName": "Anika TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk880a00iyl204e96s8loa",
+      "admissionNumber": "10003439",
+      "studentName": "Prabhleen Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mpr01nsl204v1te5dg8",
+      "admissionNumber": "10003444",
+      "studentName": "Ekman Kaur Kathuria",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8tzb029ql204v4jwxh9i",
+      "admissionNumber": "10003446",
+      "studentName": "Ananya Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8a2h00mkl204uo7eiviu",
+      "admissionNumber": "10003449",
+      "studentName": "Emandi Sreshta Shon",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8d5s00uwl204m6rrt5sz",
+      "admissionNumber": "10003455",
+      "studentName": "Hargunpreet Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk81yo001gl204uh0damnp",
+      "admissionNumber": "10003460",
+      "studentName": "Rushika Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ffc011kl204hpe3zy7u",
+      "admissionNumber": "10003464",
+      "studentName": "Yakshit Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdqqs00xol204bodkxxhc",
+      "admissionNumber": "10003474",
+      "studentName": "Yanshika TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 7095,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82ho0048l204r9jxxgzd",
+      "admissionNumber": "10003476",
+      "studentName": "Aarya Nanda Gussain",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3750,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmdixwze00013l104bdc7reix",
+      "admissionNumber": "10003477",
+      "studentName": "Khushi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4560,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8rqq020zl2043l7fq9bx",
+      "admissionNumber": "10002059",
+      "studentName": "Raghav Sareen",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8twm0296l204xgzha0c5",
+      "admissionNumber": "10002130",
+      "studentName": "Jaya Mishra",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8kgo01htl204i2ni2zxa",
+      "admissionNumber": "10002249",
+      "studentName": "Shuryansh TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8s34023cl2047jnqh2zs",
+      "admissionNumber": "10002253",
+      "studentName": "Manshika Rana",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8xkr02kkl2044x4ztjeh",
+      "admissionNumber": "10002305",
+      "studentName": "Jashanpreet Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8fli012tl204tu8hvskc",
+      "admissionNumber": "10002416",
+      "studentName": "Japneet Kaur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jlm01dil2044fm8uwp7",
+      "admissionNumber": "10002467",
+      "studentName": "Gurveer Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8jkp01ddl2042z5ca3hh",
+      "admissionNumber": "10002616",
+      "studentName": "Gurekas Singh Sukhija",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8abv00nyl204jpi4wu6s",
+      "admissionNumber": "10002754",
+      "studentName": "Devansh Joshi",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8az500qbl204j7czkxjp",
+      "admissionNumber": "10002817",
+      "studentName": "Inaaya TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk94b8039ul204kalkz23q",
+      "admissionNumber": "10002851",
+      "studentName": "Aryan Agarwal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6840,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8hk0017tl2049dxpochv",
+      "admissionNumber": "10002959",
+      "studentName": "Vivaan Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8ko401ixl2043xkqafln",
+      "admissionNumber": "10003021",
+      "studentName": "Atharv Goel",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8mkn01myl204ruo083vk",
+      "admissionNumber": "10003085",
+      "studentName": "Yug Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 6300,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk847l0070l204in81lrgu",
+      "admissionNumber": "10003129",
+      "studentName": "Avik Ramaul",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk85ep00del204fe91qs4e",
+      "admissionNumber": "10003175",
+      "studentName": "Jayesh Thakur",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk82s4005rl204xijb6i0l",
+      "admissionNumber": "10003217",
+      "studentName": "Evanshi TSH",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 3600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk88bj00kml2044knkotb6",
+      "admissionNumber": "10003263",
+      "studentName": "Krishna Sharma",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk84mf0098l204ipnk69dg",
+      "admissionNumber": "10003320",
+      "studentName": "Maanya Hazarika",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 5040,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnp00039js049nq8yu1x",
+      "admissionNumber": "10003369",
+      "studentName": "Anvi Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwo1n0052js04uayg4t79",
+      "admissionNumber": "10003409",
+      "studentName": "Riyanshi Bansal",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwo2l0057js04h2ytoxp2",
+      "admissionNumber": "10003410",
+      "studentName": "Shreeja Goswami",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhiwnls002ujs04aiwqw0y3",
+      "admissionNumber": "10003450",
+      "studentName": "Riona Chauhan",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 4500,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdkwg00itl204zo79nafu",
+      "admissionNumber": "10001290",
+      "studentName": "Tanvir Singh",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdea6001gl2048ijte34i",
+      "admissionNumber": "10001948",
+      "studentName": "Shorya Kundlas",
+      "concessionType": "Sibling Concession - 15% discount on applicable fee/Tuition Fees [15%]",
+      "customValueToRemove": 15,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdkjj00h0l2049a8g3csk",
+      "admissionNumber": "10001193",
+      "studentName": "Manoor Singh Kanwer",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdpvp00tdl204fyzo1092",
+      "admissionNumber": "10001257",
+      "studentName": "Sherlyn Kaur",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 10320,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk97p003hwl20432exmvww",
+      "admissionNumber": "10001473",
+      "studentName": "Aarth Purviya",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk95ne03bdl204ajd2v24v",
+      "admissionNumber": "10001515",
+      "studentName": "Piyush Kumar",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkde1t000cl204r7bpavhn",
+      "admissionNumber": "10001526",
+      "studentName": "Manvi Pal",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdfew006bl204hl4hvgtg",
+      "admissionNumber": "10001537",
+      "studentName": "Japman Singh",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdier00czl204g6dtey2o",
+      "admissionNumber": "10001563",
+      "studentName": "Itika Chauhan",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdhnk0098l204jzts1nlb",
+      "admissionNumber": "10001576",
+      "studentName": "Layba Khan",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk98jm03nbl204d3a5zutr",
+      "admissionNumber": "10001594",
+      "studentName": "Azmat Khan",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk98fh03mrl204kmklkabf",
+      "admissionNumber": "10001604",
+      "studentName": "Arnav Sharma",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 760,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk95kn03atl204kbjs9ito",
+      "admissionNumber": "10001606",
+      "studentName": "Gunraj Kaur",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk93lo034zl204q02n3hoo",
+      "admissionNumber": "10001612",
+      "studentName": "Aditya Choudhary",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zp902sml204pief3pet",
+      "admissionNumber": "10001628",
+      "studentName": "Gurnoor Singh",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 6800,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk901d02uul204k6brjwo9",
+      "admissionNumber": "10001641",
+      "studentName": "Vijaiveer Singh",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zz602ukl204c5yw1fiu",
+      "admissionNumber": "10001703",
+      "studentName": "Shristi Goyal",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk987i03lil20458ego4hl",
+      "admissionNumber": "10001720",
+      "studentName": "Vihaan Goel",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8znx02scl204206q8m6k",
+      "admissionNumber": "10001837",
+      "studentName": "Devansh Sharma",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y4502nwl204l00tizxu",
+      "admissionNumber": "10001872",
+      "studentName": "Aryan Kushwaha",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8y6s02obl204smgiy70i",
+      "admissionNumber": "10001929",
+      "studentName": "Dishan TSH",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8vhc02csl204yr96oe07",
+      "admissionNumber": "10002006",
+      "studentName": "Shiv Satyam Kumar",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8zen02qjl204nd5pg5vv",
+      "admissionNumber": "10002119",
+      "studentName": "Gur Rattan Singh",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdhbi007kl2048ikziwzm",
+      "admissionNumber": "10002340",
+      "studentName": "Akshita Negi",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk902402uzl204wmb1nlkw",
+      "admissionNumber": "10002341",
+      "studentName": "Aaradhya Negi",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9120,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8tf5025zl2046izd7nma",
+      "admissionNumber": "10002680",
+      "studentName": "Aarya Singh Negi",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk8com00sel2043swvoi2h",
+      "admissionNumber": "10002878",
+      "studentName": "Iqra Khan",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk87g400g6l204nhqgnmlu",
+      "admissionNumber": "10002957",
+      "studentName": "Avani TSH",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdequ003ol204zpcskc29",
+      "admissionNumber": "10001310",
+      "studentName": "Chinmay Verma",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhkdez7004nl2040o1w1o5h",
+      "admissionNumber": "10001453",
+      "studentName": "Muhammad Faizan Rawat",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 9600,
+      "status": "APPROVED"
+    },
+    {
+      "studentId": "cmbhk89xi00lvl204h0aus5ax",
+      "admissionNumber": "10002987",
+      "studentName": "Viraj Sharma",
+      "concessionType": "Sibling Concession 20%/Tuition Fees [20%]",
+      "customValueToRemove": 8400,
+      "status": "APPROVED"
+    }
+  ]
+}

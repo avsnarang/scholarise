@@ -57,7 +57,7 @@ interface ConcessionType {
 interface BulkConcessionFormData {
   selectedStudentIds: string[];
   concessionTypeId: string;
-  customValue?: number;
+
   reason: string;
   validFrom: Date;
   validUntil?: Date;
@@ -84,7 +84,7 @@ export function BulkConcessionAssignmentModal({
   const [formData, setFormData] = useState<BulkConcessionFormData>({
     selectedStudentIds: [],
     concessionTypeId: '',
-    customValue: undefined,
+
     reason: '',
     validFrom: new Date(),
     validUntil: undefined,
@@ -142,7 +142,7 @@ export function BulkConcessionAssignmentModal({
       setFormData({
         selectedStudentIds: [],
         concessionTypeId: '',
-        customValue: undefined,
+    
         reason: '',
         validFrom: new Date(),
         validUntil: undefined,
@@ -162,7 +162,7 @@ export function BulkConcessionAssignmentModal({
     setFormData(prev => ({
       ...prev,
       concessionTypeId,
-      customValue: undefined, // Reset custom value when changing type
+   // Reset custom value when changing type
     }));
   };
 
@@ -207,14 +207,7 @@ export function BulkConcessionAssignmentModal({
       newErrors.reason = 'Please provide a reason for the concession';
     }
 
-    if (selectedConcessionType && formData.customValue !== undefined) {
-      if (selectedConcessionType.type === 'PERCENTAGE' && formData.customValue > 100) {
-        newErrors.customValue = 'Percentage cannot exceed 100%';
-      }
-      if (selectedConcessionType.maxValue && formData.customValue > selectedConcessionType.maxValue) {
-        newErrors.customValue = `Value cannot exceed ${selectedConcessionType.maxValue}`;
-      }
-    }
+
 
     if (formData.validUntil && formData.validUntil <= formData.validFrom) {
       newErrors.validUntil = 'Valid until date must be after valid from date';
@@ -406,34 +399,7 @@ export function BulkConcessionAssignmentModal({
                     )}
                   </div>
 
-                  {/* Custom Value */}
-                  {selectedConcessionType && (
-                    <div className="space-y-2">
-                      <Label htmlFor="customValue">
-                        Custom Value (Optional)
-                        <span className="text-xs text-muted-foreground ml-1">
-                          Default: {selectedConcessionType.type === 'PERCENTAGE' 
-                            ? `${selectedConcessionType.value}%` 
-                            : `₹${selectedConcessionType.value}`}
-                        </span>
-                      </Label>
-                      <Input
-                        id="customValue"
-                        type="number"
-                        min="0"
-                        max={selectedConcessionType.type === 'PERCENTAGE' ? 100 : undefined}
-                        value={formData.customValue || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          customValue: e.target.value ? Number(e.target.value) : undefined
-                        }))}
-                        placeholder={`Enter custom ${selectedConcessionType.type.toLowerCase()} value`}
-                      />
-                      {errors.customValue && (
-                        <p className="text-sm text-destructive">{errors.customValue}</p>
-                      )}
-                    </div>
-                  )}
+
 
                   {/* Reason */}
                   <div className="space-y-2">

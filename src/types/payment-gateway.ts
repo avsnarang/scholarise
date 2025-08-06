@@ -58,9 +58,11 @@ export interface PaymentRequest {
 }
 
 export interface PaymentRequestFee {
-  feeHeadId: string;
+  feeHeadId?: string;
   feeHeadName: string;
   amount: number;
+  originalAmount?: number;
+  concessionAmount?: number;
 }
 
 export interface PaymentWebhookLog {
@@ -182,6 +184,10 @@ export interface PaymentHistoryItem {
   studentAdmissionNumber: string;
   branchId: string;
   branchName: string;
+  branchAddress?: string;
+  branchCity?: string;
+  branchState?: string;
+  branchLogoUrl?: string;
   sessionId: string;
   sessionName: string;
   feeTermId: string;

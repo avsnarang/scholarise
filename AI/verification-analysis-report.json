@@ -1,0 +1,90 @@
+{
+  "analysisDate": "2025-08-05T17:34:02.448Z",
+  "totalStudents": 1398,
+  "feeHeadAnalysis": {
+    "Security": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 775000,
+      "totalConcessions": 20000,
+      "totalPaid": 745000,
+      "totalDue": 10000,
+      "zeroFeeRecords": 1243,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "Tuition Fees": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 61058725,
+      "totalConcessions": 3933290,
+      "totalPaid": 23830405,
+      "totalDue": 33295030,
+      "zeroFeeRecords": 6,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "Term Charges": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 11479820,
+      "totalConcessions": 109950,
+      "totalPaid": 6168620,
+      "totalDue": 5201250,
+      "zeroFeeRecords": 7,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "Annual Fund": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 6945000,
+      "totalConcessions": 769160,
+      "totalPaid": 5990840,
+      "totalDue": 185000,
+      "zeroFeeRecords": 9,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "CAPS Workshop": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 952000,
+      "totalConcessions": 8000,
+      "totalPaid": 909001,
+      "totalDue": 34999,
+      "zeroFeeRecords": 922,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "Parent Orientation": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 1372000,
+      "totalConcessions": 93000,
+      "totalPaid": 1194000,
+      "totalDue": 85000,
+      "zeroFeeRecords": 26,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    },
+    "Admission Fee": {
+      "totalRecords": 1398,
+      "uniqueStudents": 1398,
+      "totalAssigned": 275000,
+      "totalConcessions": 6000,
+      "totalPaid": 257000,
+      "totalDue": 12000,
+      "zeroFeeRecords": 1124,
+      "discrepancyCount": 0,
+      "discrepancies": []
+    }
+  },
+  "missingStudentsByFeeHead": {},
+  "recommendations": [
+    "INFO: Security has 88.9% zero fee records. Verify if this is intentional.",
+    "INFO: CAPS Workshop has 66.0% zero fee records. Verify if this is intentional.",
+    "INFO: Admission Fee has 80.4% zero fee records. Verify if this is intentional.",
+    "URGENT: Admission Fee CSV has structural issues with duplicate columns. Needs data cleaning."
+  ]
+}

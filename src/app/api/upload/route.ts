@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 import { env } from '@/env';
+import { safeJWTValidation } from "@/utils/jwt-error-handler";
 // No additional imports needed for File API approach
 
 // Initialize Supabase configuration
@@ -78,20 +79,28 @@ export async function POST(request: NextRequest) {
       console.log('🔍 Upload API - Access token found:', !!accessToken, accessToken ? `(${accessToken.length} chars)` : '');
       
       if (accessToken) {
-        try {
-          const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(accessToken);
-          console.log('🔍 Upload API - getUser result:', { 
-            hasUser: !!tokenUser, 
-            error: tokenError?.message 
-          });
-          
-          if (tokenUser) {
-            user = tokenUser;
-            userId = tokenUser.id;
-            console.log('🔍 Success with access token:', { userId, email: tokenUser.email });
-          }
-        } catch (error: unknown) {
-          console.log('🔍 Upload API - Token validation error:', error);
+        // Use safe JWT validation that handles errors properly
+        const result = await safeJWTValidation(
+          async () => {
+            const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(accessToken);
+            console.log('🔍 Upload API - getUser result:', { 
+              hasUser: !!tokenUser, 
+              error: tokenError?.message 
+            });
+            
+            if (tokenUser) {
+              console.log('🔍 Success with access token:', { userId: tokenUser.id, email: tokenUser.email });
+              return tokenUser;
+            }
+            return null;
+          },
+          supabase,
+          { redirectToSignIn: false, logError: true }
+        );
+        
+        if (result) {
+          user = result;
+          userId = result.id;
         }
       }
     }
@@ -104,20 +113,28 @@ export async function POST(request: NextRequest) {
       console.log('🔍 Upload API - Auth header token found:', !!token);
       
       if (token) {
-        try {
-          const { data: { user: headerUser }, error: headerError } = await supabase.auth.getUser(token);
-          console.log('🔍 Upload API - Header user result:', { 
-            hasUser: !!headerUser, 
-            error: headerError?.message 
-          });
-          
-          if (headerUser) {
-            user = headerUser;
-            userId = headerUser.id;
-            console.log('🔍 Success with auth header:', { userId, email: headerUser.email });
-          }
-        } catch (error: unknown) {
-          console.log('🔍 Upload API - Header validation error:', error);
+        // Use safe JWT validation that handles errors properly
+        const result = await safeJWTValidation(
+          async () => {
+            const { data: { user: headerUser }, error: headerError } = await supabase.auth.getUser(token);
+            console.log('🔍 Upload API - Header user result:', { 
+              hasUser: !!headerUser, 
+              error: headerError?.message 
+            });
+            
+            if (headerUser) {
+              console.log('🔍 Success with auth header:', { userId: headerUser.id, email: headerUser.email });
+              return headerUser;
+            }
+            return null;
+          },
+          supabase,
+          { redirectToSignIn: false, logError: true }
+        );
+        
+        if (result) {
+          user = result;
+          userId = result.id;
         }
       }
     }
@@ -139,21 +156,29 @@ export async function POST(request: NextRequest) {
         console.log(`🔍 Upload API - Cookie ${cookieName}:`, token ? `PRESENT (${token.length} chars)` : 'MISSING');
         
         if (token) {
-          try {
-            const { data: { user: cookieUser }, error: cookieError } = await supabase.auth.getUser(token);
-            console.log(`🔍 Upload API - Cookie ${cookieName} getUser result:`, { 
-              hasUser: !!cookieUser, 
-              error: cookieError?.message 
-            });
-            
-            if (cookieUser) {
-              user = cookieUser;
-              userId = cookieUser.id;
-              console.log('🔍 Success with cookie approach 4:', { userId, email: cookieUser.email, cookieName });
-              break;
-            }
-          } catch (error: unknown) {
-            console.log(`🔍 Upload API - Cookie ${cookieName} validation error:`, error);
+          // Use safe JWT validation that handles errors properly
+          const result = await safeJWTValidation(
+            async () => {
+              const { data: { user: cookieUser }, error: cookieError } = await supabase.auth.getUser(token);
+              console.log(`🔍 Upload API - Cookie ${cookieName} getUser result:`, { 
+                hasUser: !!cookieUser, 
+                error: cookieError?.message 
+              });
+              
+              if (cookieUser) {
+                console.log('🔍 Success with cookie approach 4:', { userId: cookieUser.id, email: cookieUser.email, cookieName });
+                return cookieUser;
+              }
+              return null;
+            },
+            supabase,
+            { redirectToSignIn: false, logError: true }
+          );
+          
+          if (result) {
+            user = result;
+            userId = result.id;
+            break;
           }
         }
       }

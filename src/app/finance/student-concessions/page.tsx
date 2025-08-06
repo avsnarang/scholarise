@@ -39,11 +39,13 @@ import { ConcessionStatsCards } from "@/components/finance/concession-stats-card
 import { StudentConcessionFormModal } from "@/components/finance/student-concession-form-modal";
 import { BulkConcessionAssignmentModal } from "@/components/finance/bulk-concession-assignment-modal";
 import { ConcessionApprovalSettings } from "@/components/finance/concession-approval-settings";
+import { ConcessionAmountDisplay } from "@/components/finance/concession-amount-display";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { api } from "@/utils/api";
 import { useBranchContext } from "@/hooks/useBranchContext";
 import { useAcademicSessionContext } from "@/hooks/useAcademicSessionContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { formatIndianCurrency } from "@/lib/utils";
 import { format } from "date-fns";
@@ -53,7 +55,7 @@ interface StudentConcession {
   id: string;
   studentId: string;
   concessionTypeId: string;
-  customValue?: number | null;
+
   reason?: string | null;
   validFrom: Date;
   validUntil?: Date | null;
@@ -89,6 +91,9 @@ interface StudentConcession {
     name: string;
     type: 'PERCENTAGE' | 'FIXED';
     value: number;
+    appliedFeeHeads?: string[];
+    appliedFeeTerms?: string[];
+    feeTermAmounts?: Record<string, number>;
   };
 }
 
@@ -175,6 +180,7 @@ const formatValue = (type: 'PERCENTAGE' | 'FIXED', value: number) => {
 function StudentConcessionsPageContent() {
   const { currentBranchId } = useBranchContext();
   const { currentSessionId } = useAcademicSessionContext();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -208,6 +214,10 @@ function StudentConcessionsPageContent() {
     },
     {
       enabled: !!currentBranchId && !!currentSessionId,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     }
   );
 
@@ -247,37 +257,119 @@ function StudentConcessionsPageContent() {
     }
   );
 
+    const utils = api.useContext();
   const assignConcessionMutation = api.finance.assignConcession.useMutation({
+    onMutate: async (newConcession) => {
+      await utils.finance.getStudentConcessions.cancel({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      const previousConcessions = utils.finance.getStudentConcessions.getData({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      // Optimistically add the new concession to the list
+      // Note: This is a simplified version. A full implementation would create a
+      // complete StudentConcession object with all required fields.
+      // For now, we will just refetch on settlement.
+
+      return { previousConcessions };
+    },
+    onError: (err, newConcession, context) => {
+      if (context?.previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId ?? undefined,
+            sessionId: currentSessionId ?? undefined,
+            status: "APPROVED",
+          },
+          context.previousConcessions
+        );
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to assign concession",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "PENDING",
+      });
+       utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Student concession assigned successfully",
+        description: "Student concession assigned successfully. It may require approval.",
       });
       refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign concession",
-        variant: "destructive",
-      });
     },
   });
 
   const bulkAssignConcessionMutation = api.finance.bulkAssignConcession.useMutation({
+    onMutate: async (newBulkConcession) => {
+      await utils.finance.getStudentConcessions.cancel({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      const previousConcessions = utils.finance.getStudentConcessions.getData({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      return { previousConcessions };
+    },
+    onError: (err, newBulkConcession, context) => {
+      if (context?.previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId ?? undefined,
+            sessionId: currentSessionId ?? undefined,
+            status: "APPROVED",
+          },
+          context.previousConcessions
+        );
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to assign bulk concessions",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+      });
+       utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: (result) => {
       toast({
         title: "Success",
-        description: `Successfully assigned ${result.concessionType} to ${result.assignedCount} students`,
+        description: `Successfully assigned concession to ${result.assignedCount} students.`,
       });
       refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign bulk concessions",
-        variant: "destructive",
-      });
     },
   });
 
@@ -285,6 +377,59 @@ function StudentConcessionsPageContent() {
   // instead of a generic updateStudentConcession
 
   const deleteConcessionMutation = api.finance.deleteConcession.useMutation({
+    onMutate: async (deletedConcession) => {
+      await utils.finance.getStudentConcessions.cancel({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      const previousConcessions = utils.finance.getStudentConcessions.getData({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+        status: "APPROVED",
+      });
+
+      if (previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId ?? undefined,
+            sessionId: currentSessionId ?? undefined,
+            status: "APPROVED",
+          },
+          previousConcessions.filter((c) => c.id !== deletedConcession.id)
+        );
+      }
+
+      return { previousConcessions };
+    },
+    onError: (err, deletedConcession, context) => {
+      if (context?.previousConcessions) {
+        utils.finance.getStudentConcessions.setData(
+          {
+            branchId: currentBranchId ?? undefined,
+            sessionId: currentSessionId ?? undefined,
+            status: "APPROVED",
+          },
+          context.previousConcessions
+        );
+      }
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete concession",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      utils.finance.getStudentConcessions.invalidate({
+        branchId: currentBranchId ?? undefined,
+        sessionId: currentSessionId ?? undefined,
+      });
+      utils.finance.getConcessionStats.invalidate({
+        branchId: currentBranchId!,
+        sessionId: currentSessionId!,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
@@ -294,13 +439,6 @@ function StudentConcessionsPageContent() {
       setIsDeleteDialogOpen(false);
       setConcessionToDelete(null);
     },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete concession",
-        variant: "destructive",
-      });
-    },
   });
 
   const handleFormSubmit = async (data: any) => {
@@ -308,6 +446,7 @@ function StudentConcessionsPageContent() {
       ...data,
       branchId: currentBranchId!,
       sessionId: currentSessionId!,
+      createdBy: user?.id, // Use actual user ID from auth context
     };
 
     if (selectedConcession) {
@@ -328,13 +467,14 @@ function StudentConcessionsPageContent() {
     const bulkConcessionData = {
       studentIds: data.selectedStudentIds,
       concessionTypeId: data.concessionTypeId,
-      customValue: data.customValue,
+      
       reason: data.reason,
       validFrom: data.validFrom,
       validUntil: data.validUntil,
       notes: data.notes,
       branchId: currentBranchId!,
       sessionId: currentSessionId!,
+      createdBy: user?.id, // Use actual user ID from auth context
     };
 
     await bulkAssignConcessionMutation.mutateAsync(bulkConcessionData);
@@ -393,36 +533,31 @@ function StudentConcessionsPageContent() {
         header: "Concession Type",
         cell: ({ row }) => {
           const concessionType = row.original.concessionType;
-          const customValue = row.original.customValue;
-          const effectiveValue = customValue ?? concessionType.value;
           return (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="font-medium text-sm">{concessionType.name}</div>
               <div className="flex items-center gap-2">
                 {getConcessionTypeBadge(concessionType.type)}
-                <span className="text-sm font-mono font-semibold">
-                  {formatValue(concessionType.type, effectiveValue)}
-                </span>
               </div>
-              {customValue && (
-                <div className="text-xs text-blue-600 dark:text-blue-400">
-                  Custom value applied
-                </div>
-              )}
             </div>
           );
         },
       },
       {
         accessorKey: "value",
-        header: "Value",
+        header: "Concession Amount",
         cell: ({ row }) => {
           const concessionType = row.original.concessionType;
-          const customValue = row.original.customValue;
+          const studentId = row.original.studentId;
+          const sessionId = currentSessionId;
+          
           return (
-            <Badge variant="outline">
-              {formatValue(concessionType.type, customValue ?? concessionType.value)}
-            </Badge>
+            <ConcessionAmountDisplay
+              studentId={studentId}
+              concessionType={concessionType}
+              sessionId={sessionId ?? undefined}
+              compact={false}
+            />
           );
         },
       },
@@ -608,6 +743,8 @@ function StudentConcessionsPageContent() {
           ...ct,
           feeTermAmounts: ct.feeTermAmounts as Record<string, number> | null
         }))}
+        feeTerms={feeTerms}
+        feeHeads={feeHeads}
         isLoading={assignConcessionMutation.isPending}
         editingConcession={selectedConcession}
       />

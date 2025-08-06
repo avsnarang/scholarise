@@ -74,7 +74,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { printFeeReceiptDirectly } from '@/utils/receipt-print';
+import { ReceiptService } from '@/services/receipt-service';
 import { paymentToReceiptShareData, shareReceiptViaWhatsApp, copyReceiptToClipboard } from '@/utils/receipt-sharing';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/components/ui/use-toast";
@@ -485,18 +485,24 @@ function PaymentDetailsModal({
   isOpen, 
   onClose,
   onPaymentUpdated,
-  onPrint
+  onPrint,
+  openInEditMode = false,
+  onUpdatePayment,
+  onDeletePayment
 }: { 
   payment: PaymentHistoryItem | null; 
   isOpen: boolean; 
   onClose: () => void;
   onPaymentUpdated?: () => void;
   onPrint: (payment: PaymentHistoryItem) => void;
+  openInEditMode?: boolean;
+  onUpdatePayment: (data: any) => void;
+  onDeletePayment: (id: string) => void;
 }) {
-  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const form = useForm<z.infer<typeof editPaymentSchema>>({
     resolver: zodResolver(editPaymentSchema),
@@ -522,62 +528,42 @@ function PaymentDetailsModal({
     }
   }, [payment, form]);
 
-  // API mutations (placeholder - these would need to be implemented in the backend)
-  const updatePaymentMutation = {
-    mutate: (data: any) => {
-      // Placeholder for update mutation
-      console.log('Update payment:', data);
-      setTimeout(() => {
-        toast({
-          title: "Success",
-          description: "Payment updated successfully",
-          variant: "success",
-        });
-        setIsEditing(false);
-        onPaymentUpdated?.();
-      }, 1000);
-    },
-    isLoading: false
-  };
+  // Handle opening in edit mode
+  useEffect(() => {
+    if (isOpen && openInEditMode) {
+      setIsEditing(true);
+    } else if (!isOpen) {
+      // Reset edit mode when modal closes
+      setIsEditing(false);
+    }
+  }, [isOpen, openInEditMode]);
 
-  const deletePaymentMutation = {
-    mutate: (data: any) => {
-      // Placeholder for delete mutation
-      console.log('Delete payment:', data);
-      setTimeout(() => {
-        toast({
-          title: "Success",
-          description: "Payment deleted successfully",
-          variant: "success",
-        });
-        setShowDeleteDialog(false);
-        onClose();
-        onPaymentUpdated?.();
-      }, 1000);
-    },
-    isLoading: false
-  };
-
-  const handleEditSubmit = (data: z.infer<typeof editPaymentSchema>) => {
+  const handleEditSubmit = async (data: z.infer<typeof editPaymentSchema>) => {
     if (!payment) return;
 
-    updatePaymentMutation.mutate({
-      id: payment.id || payment.receiptNumber!, // Use receipt number as fallback ID
-      receiptNumber: data.receiptNumber,
-      transactionId: data.transactionId,
-      notes: data.notes,
-      paymentMode: data.paymentMode,
-      amount: data.amount,
-    });
+    setIsUpdating(true);
+    try {
+      await onUpdatePayment({
+        id: payment.id || payment.receiptNumber!, // Use receipt number as fallback ID
+        receiptNumber: data.receiptNumber,
+        transactionId: data.transactionId,
+        notes: data.notes,
+        paymentMode: data.paymentMode,
+        amount: data.amount,
+      });
+      setIsEditing(false);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleDelete = () => {
     if (!payment) return;
     
     setIsDeleting(true);
-    deletePaymentMutation.mutate({
-      id: payment.id || payment.receiptNumber!, // Use receipt number as fallback ID
-    });
+    onDeletePayment(payment.id || payment.receiptNumber!);
+    setShowDeleteDialog(false);
+    onClose();
   };
 
   const handleClose = () => {
@@ -772,10 +758,10 @@ function PaymentDetailsModal({
                 <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     type="submit"
-                    disabled={updatePaymentMutation.isLoading}
+                    disabled={isUpdating}
                     className="flex-1"
                   >
-                    {updatePaymentMutation.isLoading ? (
+                    {isUpdating ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
@@ -1004,6 +990,45 @@ function PaymentHistoryPageContent() {
     }
   );
 
+  // Get tRPC utils for mutations
+  const utils = api.useContext();
+
+  // Update payment mutation
+  const updatePaymentMutation = api.finance.updatePayment.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Payment updated successfully",
+      });
+      refetchHistory();
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update payment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete payment mutation
+  const deletePaymentMutation = api.finance.deletePayment.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Payment deleted successfully",
+      });
+      refetchHistory();
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete payment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate statistics from payment history data
   const statistics = useMemo(() => {
     if (!paymentHistory?.items) return null;
@@ -1142,117 +1167,119 @@ function PaymentHistoryPageContent() {
   // Handle edit payment
   const handleEditPayment = (payment: PaymentHistoryItem) => {
     setSelectedPayment(payment);
+    setOpenInEditMode(true); // Set flag to open in edit mode
     setIsDetailsOpen(true);
-    // The modal will handle switching to edit mode
-    setTimeout(() => {
-      // This would trigger edit mode in the modal
-    }, 100);
   };
 
   // Handle delete payment
   const handleDeletePayment = (payment: PaymentHistoryItem) => {
     setSelectedPayment(payment);
-    // Show delete confirmation directly
-    setTimeout(() => {
-      if (window.confirm(`Are you sure you want to delete the payment of ${formatIndianCurrency(payment.amount)} for ${payment.studentName}?`)) {
-        // Placeholder for delete logic
-        console.log('Delete payment:', payment);
-        toast({
-          title: "Success",
-          description: "Payment deleted successfully",
-          variant: "success",
-        });
-        handlePaymentUpdated();
-      }
-    }, 100);
+    setIsDetailsOpen(true);
+    // The delete dialog will be managed within the PaymentDetailsModal component
   };
 
-  // Get tRPC utils for imperative API calls
-  const utils = api.useContext();
+  // Handler functions for modal
+  const handleUpdatePayment = (data: any) => {
+    updatePaymentMutation.mutate(data);
+  };
+
+  const handleDeletePaymentConfirm = (id: string) => {
+    deletePaymentMutation.mutate({ id });
+  };
 
   // Handle print receipt
   const handlePrintReceipt = async (payment: PaymentHistoryItem) => {
     if (!payment.receiptNumber) {
-              toast({
-          title: "Print Error",
-          description: "No receipt number available for printing",
-          variant: "destructive",
-        });
+      toast({
+        title: "Print Error",
+        description: "No receipt number available for printing",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
-      // Fetch complete fee collection data using tRPC utils
-      const feeCollectionData = await utils.finance.getFeeCollectionByReceiptNumber.fetch({
-        receiptNumber: payment.receiptNumber,
-        branchId: currentBranchId!,
-        sessionId: currentSessionId!,
-      });
+      // Try to fetch complete student data for better receipt
+      let studentDetails = null;
+      try {
+        // Fetch complete student data by ID
+        const studentResponse = await utils.student.getById.fetch({ id: payment.studentId });
+        studentDetails = studentResponse;
+      } catch (error) {
+        console.warn('Could not fetch detailed student data, using basic info:', error);
+      }
 
-      // Prepare receipt data in the format expected by printFeeReceiptDirectly
-      const receiptData = {
-        receiptData: {
-          receiptNumber: feeCollectionData.receiptNumber,
-          paymentDate: new Date(feeCollectionData.paymentDate),
-          paymentMode: feeCollectionData.paymentMode,
-          transactionReference: feeCollectionData.transactionReference || undefined,
-          notes: feeCollectionData.notes || undefined,
-        },
+      // Convert PaymentHistoryItem to receipt data format
+      // Build fee items with proper amount calculations
+      const feeItems = payment.feesBreakdown?.length ? payment.feesBreakdown.map(fee => {
+        // For payment history, ensure we have proper amounts
+        const finalAmount = fee.amount;
+        const originalAmount = (fee as any).originalAmount || finalAmount;
+        const concessionAmount = (fee as any).concessionAmount || Math.max(0, originalAmount - finalAmount);
+        
+        return {
+          feeHead: { name: fee.feeHeadName },
+          feeTerm: { name: payment.feeTermName || 'Payment' },
+          amount: finalAmount,
+          originalAmount: originalAmount,
+          concessionAmount: concessionAmount
+        };
+      }) : [{
+        feeHead: { name: 'Payment' },
+        feeTerm: { name: payment.feeTermName || 'Payment' },
+        amount: payment.amount,
+        originalAmount: payment.amount,
+        concessionAmount: 0
+      }];
+
+      const receiptData = ReceiptService.createReceiptFromPaymentHistoryData({
+        receiptNumber: payment.receiptNumber,
+        paymentDate: payment.paymentDate,
+        paymentMode: payment.paymentMode || 'Unknown',
+        // Ensure paidAmount is the main amount - this is what shows on the receipt
+        paidAmount: payment.amount,
+        totalAmount: feeItems.reduce((sum, item) => sum + item.originalAmount, 0),
+        transactionReference: payment.transactionId || payment.receiptNumber,
         student: {
-          firstName: feeCollectionData.student?.firstName || '',
-          lastName: feeCollectionData.student?.lastName || '',
-          admissionNumber: feeCollectionData.student?.admissionNumber || '',
+          firstName: studentDetails?.firstName || payment.studentName.split(' ')[0] || '',
+          lastName: studentDetails?.lastName || payment.studentName.split(' ').slice(1).join(' ') || '',
+          admissionNumber: studentDetails?.admissionNumber || payment.studentAdmissionNumber,
           section: {
-            name: feeCollectionData.student?.section?.name,
+            name: studentDetails?.section?.name,
             class: {
-              name: feeCollectionData.student?.section?.class?.name || 'N/A',
-            },
+              name: studentDetails?.section?.class?.name || 'N/A'
+            }
           },
           parent: {
-            firstName: undefined, // Parent doesn't have firstName/lastName in this schema
-            lastName: undefined,
-            fatherName: feeCollectionData.student?.parent?.fatherName || undefined,
-            motherName: feeCollectionData.student?.parent?.motherName || undefined,
-          },
+            fatherName: studentDetails?.parent?.fatherName,
+            motherName: studentDetails?.parent?.motherName
+          }
         },
         branch: {
-          name: feeCollectionData.branch?.name || 'School Name',
-          address: feeCollectionData.branch?.address || undefined,
-          city: feeCollectionData.branch?.city || undefined,
-          state: feeCollectionData.branch?.state || undefined,
-          logoUrl: feeCollectionData.branch?.logoUrl || undefined,
+          name: payment.branchName,
+          address: (payment as any).branchAddress,
+          city: (payment as any).branchCity,
+          state: (payment as any).branchState,
+          logoUrl: (payment as any).branchLogoUrl || '/android-chrome-192x192.png'
         },
         session: {
-          name: feeCollectionData.session?.name || 'Academic Session',
+          name: payment.sessionName
         },
-        feeItems: feeCollectionData.items?.map((item: any) => ({
-          feeHeadName: item.feeHead?.name || 'Fee',
-          feeTermName: item.feeTerm?.name || 'Term',
-          originalAmount: item.amount || 0,
-          concessionAmount: 0, // Add concession logic if needed
-          finalAmount: item.amount || 0,
-          appliedConcessions: [], // Add concession logic if needed
-        })) || [],
-        totals: {
-          totalOriginalAmount: feeCollectionData.totalAmount || 0,
-          totalConcessionAmount: 0,
-          totalNetAmount: feeCollectionData.totalAmount || 0,
-          totalPaidAmount: feeCollectionData.paidAmount || feeCollectionData.totalAmount || 0,
-        },
-      };
+        items: feeItems
+      });
 
-      // Call the print function
-      printFeeReceiptDirectly(receiptData);
+      ReceiptService.printReceipt(receiptData);
+      
       toast({
         title: "Success",
         description: "Receipt sent to printer",
         variant: "success",
       });
     } catch (error) {
-      console.error('Failed to fetch receipt data:', error);
+      console.error('Failed to print receipt:', error);
       toast({
         title: "Print Error", 
-        description: "Failed to fetch receipt data for printing",
+        description: "Failed to print receipt",
         variant: "destructive",
       });
     }
@@ -1677,9 +1704,13 @@ function PaymentHistoryPageContent() {
         onClose={() => {
           setIsDetailsOpen(false);
           setSelectedPayment(null);
+          setOpenInEditMode(false); // Reset edit mode flag
         }}
         onPaymentUpdated={handlePaymentUpdated}
         onPrint={handlePrintReceipt}
+        openInEditMode={openInEditMode}
+        onUpdatePayment={handleUpdatePayment}
+        onDeletePayment={handleDeletePaymentConfirm}
       />
     </PageWrapper>
   );
