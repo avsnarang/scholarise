@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,9 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-// Table and separator components removed - using simplified card layout instead
 import { 
   Receipt, 
   Download, 
@@ -28,7 +26,20 @@ import {
   Gift,
   Plus,
   Settings,
-  Info
+  Info,
+  Calendar,
+  User,
+  ChevronRight,
+  Wallet,
+  Ban,
+  FileText,
+  IndianRupee,
+  Percent,
+  Clock,
+  CheckCircle2,
+  X,
+  Sparkles,
+  TrendingDown
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { formatIndianCurrency } from "@/lib/utils";
@@ -36,6 +47,8 @@ import { StudentConcessionFormModal } from "./student-concession-form-modal";
 import { PaymentGatewayButton } from './payment-gateway-button';
 import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
 import { ReceiptService } from '@/services/receipt-service';
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FeeItem {
   id: string;
@@ -132,24 +145,12 @@ interface StreamlinedFeeCollectionProps {
 }
 
 const paymentModes = [
-  { value: "Cash", label: "Cash" },
-  { value: "Card", label: "Card" },
-  { value: "Online", label: "Online Payment" },
-  { value: "Bank Transfer", label: "Bank Transfer" },
-  { value: "Cheque", label: "Cheque" },
-  { value: "DD", label: "Demand Draft" },
-];
-
-// Color palette for fee terms
-const termColors = [
-  "bg-blue-50 border-blue-200 text-blue-900",
-  "bg-green-50 border-green-200 text-green-900", 
-  "bg-purple-50 border-purple-200 text-purple-900",
-  "bg-orange-50 border-orange-200 text-orange-900",
-  "bg-pink-50 border-pink-200 text-pink-900",
-  "bg-indigo-50 border-indigo-200 text-indigo-900",
-  "bg-cyan-50 border-cyan-200 text-cyan-900",
-  "bg-emerald-50 border-emerald-200 text-emerald-900",
+  { value: "Cash", label: "Cash", icon: DollarSign },
+  { value: "Card", label: "Card", icon: CreditCard },
+  { value: "Online", label: "Online Payment", icon: Wallet },
+  { value: "Bank Transfer", label: "Bank Transfer", icon: FileText },
+  { value: "Cheque", label: "Cheque", icon: FileText },
+  { value: "DD", label: "Demand Draft", icon: FileText },
 ];
 
 export function StreamlinedFeeCollection({ 
@@ -166,19 +167,51 @@ export function StreamlinedFeeCollection({
   session = { name: '2024-25' }
 }: StreamlinedFeeCollectionProps) {
   const { toast } = useToast();
-
   
   // Monitor real-time payment updates for this student
   useStudentPaymentMonitor(student.id);
   
   const [selectedFeeIds, setSelectedFeeIds] = useState<Set<string>>(new Set());
-  const [paymentMode, setPaymentMode] = useState<string>('');
+  const [paymentMode, setPaymentMode] = useState<string>('Cash');
   const [transactionReference, setTransactionReference] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConcessionModal, setShowConcessionModal] = useState(false);
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
   const [adjustmentMode, setAdjustmentMode] = useState<'auto' | 'manual'>('auto');
+  const [showMobileFooter, setShowMobileFooter] = useState(true);
+
+  const [isAtPageEnd, setIsAtPageEnd] = useState(false);
+  const [hoveredFeeId, setHoveredFeeId] = useState<string | null>(null);
+  const [hoveredTermId, setHoveredTermId] = useState<string | null>(null);
+
+  // Scroll detection for mobile footer morphing
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Consider "approaching end" when within 200px of the bottom - this will hide footer
+      const approachingThreshold = 200;
+      const nearEnd = scrollTop + windowHeight >= documentHeight - approachingThreshold;
+      
+      // Consider "at end" when within 100px of the bottom - this will show the card
+      const endThreshold = 100;
+      const atEnd = scrollTop + windowHeight >= documentHeight - endThreshold;
+      
+      setIsAtPageEnd(atEnd);
+      
+      // Hide footer when approaching end to avoid blocking content
+      setShowMobileFooter(!nearEnd || selectedFeeIds.size === 0);
+      
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [selectedFeeIds.size]);
 
   // Group fee items by term
   const feesByTerm = useMemo(() => {
@@ -198,70 +231,91 @@ export function StreamlinedFeeCollection({
       .filter(item => selectedFeeIds.has(item.id))
       .reduce((sum, item) => {
         if (adjustmentMode === 'manual') {
-          const customAmount = parseFloat(customAmounts[item.id] || '0');
-          return sum + Math.min(customAmount, item.outstandingAmount);
+          const customAmount = customAmounts[item.id];
+          const amount = customAmount ? parseFloat(customAmount) : 0;
+          return sum + (isNaN(amount) ? 0 : amount);
         }
         return sum + item.outstandingAmount;
       }, 0);
-  }, [feeItems, selectedFeeIds, adjustmentMode, customAmounts]);
+  }, [selectedFeeIds, feeItems, adjustmentMode, customAmounts]);
 
-  const selectedFeesCount = selectedFeeIds.size;
+  // Calculate totals
+  const totals = useMemo(() => {
+    const totalDue = feeItems.reduce((sum, item) => sum + item.outstandingAmount, 0);
+    const totalPaid = feeItems.reduce((sum, item) => sum + item.paidAmount, 0);
+    const overdueFees = feeItems.filter(item => item.status === 'Overdue');
+    const overdueAmount = overdueFees.reduce((sum, item) => sum + item.outstandingAmount, 0);
+    const totalConcession = feeItems.reduce((sum, item) => sum + (item.concessionAmount || 0), 0);
+    
+    return {
+      totalDue,
+      totalPaid,
+      overdueAmount,
+      overdueCount: overdueFees.length,
+      totalConcession
+    };
+  }, [feeItems]);
 
   // Handle fee selection
-  const handleFeeSelection = (feeId: string, checked: boolean) => {
-    const newSelection = new Set(selectedFeeIds);
-    if (checked) {
-      newSelection.add(feeId);
-    } else {
-      newSelection.delete(feeId);
-      // Clear custom amount when deselected
-      setCustomAmounts(prev => {
-        const updated = { ...prev };
-        delete updated[feeId];
-        return updated;
-      });
-    }
-    setSelectedFeeIds(newSelection);
-  };
-
-  // Handle custom amount changes
-  const handleCustomAmountChange = (feeId: string, amount: string) => {
-    setCustomAmounts(prev => ({
-      ...prev,
-      [feeId]: amount
-    }));
-  };
-
-  // Handle select all for a term
-  const handleTermSelection = (termId: string, checked: boolean) => {
-    const termFees = feesByTerm[termId] || [];
-    const newSelection = new Set(selectedFeeIds);
+  const handleFeeSelection = (feeId: string) => {
+    const fee = feeItems.find(f => f.id === feeId);
+    if (!fee || fee.outstandingAmount <= 0) return;
     
-    termFees.forEach(fee => {
-      if (fee.outstandingAmount > 0) {
-        if (checked) {
-          newSelection.add(fee.id);
-        } else {
-          newSelection.delete(fee.id);
-        }
+    const newSelected = new Set(selectedFeeIds);
+    if (newSelected.has(feeId)) {
+      newSelected.delete(feeId);
+      // Clear custom amount when deselected
+      const newCustomAmounts = { ...customAmounts };
+      delete newCustomAmounts[feeId];
+      setCustomAmounts(newCustomAmounts);
+    } else {
+      newSelected.add(feeId);
+    }
+    setSelectedFeeIds(newSelected);
+  };
+
+  // Select all fees in a term
+  const handleSelectAllInTerm = (termId: string) => {
+    const termFees = feesByTerm[termId] || [];
+    const selectableFees = termFees.filter(fee => fee.outstandingAmount > 0);
+    if (selectableFees.length === 0) return;
+    
+    const newSelected = new Set(selectedFeeIds);
+    const isFullySelected = isTermFullySelected(termId);
+    
+    selectableFees.forEach(fee => {
+      if (isFullySelected) {
+        newSelected.delete(fee.id);
+      } else {
+        newSelected.add(fee.id);
       }
     });
     
-    setSelectedFeeIds(newSelection);
+    setSelectedFeeIds(newSelected);
   };
 
   // Check if all fees in a term are selected
   const isTermFullySelected = (termId: string) => {
     const termFees = feesByTerm[termId] || [];
-    const outstandingFees = termFees.filter(fee => fee.outstandingAmount > 0);
-    return outstandingFees.length > 0 && outstandingFees.every(fee => selectedFeeIds.has(fee.id));
+    const selectableFees = termFees.filter(fee => fee.outstandingAmount > 0);
+    if (selectableFees.length === 0) return false;
+    return selectableFees.every(fee => selectedFeeIds.has(fee.id));
   };
 
-  // Handle payment processing
-  const handleProcessPayment = async () => {
-    if (selectedFeesCount === 0) {
+  // Check if term is partially selected
+  const isTermPartiallySelected = (termId: string) => {
+    const termFees = feesByTerm[termId] || [];
+    const selectableFees = termFees.filter(fee => fee.outstandingAmount > 0);
+    if (selectableFees.length === 0) return false;
+    const selectedCount = selectableFees.filter(fee => selectedFeeIds.has(fee.id)).length;
+    return selectedCount > 0 && selectedCount < selectableFees.length;
+  };
+
+  // Handle payment collection
+  const handleCollectPayment = async () => {
+    if (selectedFeeIds.size === 0) {
       toast({
-        title: "No Fees Selected",
+        title: "No fees selected",
         description: "Please select at least one fee to collect payment.",
         variant: "destructive",
       });
@@ -270,659 +324,875 @@ export function StreamlinedFeeCollection({
 
     if (!paymentMode) {
       toast({
-        title: "Payment Mode Required",
+        title: "Payment mode required",
         description: "Please select a payment mode.",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate custom amounts if in manual mode
-    if (adjustmentMode === 'manual') {
-      const invalidAmounts = feeItems
-        .filter(item => selectedFeeIds.has(item.id))
-        .find(item => {
-          const customAmount = parseFloat(customAmounts[item.id] || '0');
-          return customAmount <= 0 || customAmount > item.outstandingAmount;
-        });
-
-      if (invalidAmounts) {
-        toast({
-          title: "Invalid Custom Amount",
-          description: "Please enter valid custom amounts between 0 and the outstanding amount for all selected fees.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setIsProcessing(true);
 
     try {
-      const selectedFees = feeItems
-        .filter(item => selectedFeeIds.has(item.id))
-        .map(item => {
-          let amount = item.outstandingAmount;
-          
-          if (adjustmentMode === 'manual') {
-            const customAmount = parseFloat(customAmounts[item.id] || '0');
-            amount = Math.min(customAmount, item.outstandingAmount);
-          }
-          
-                  return {
-          feeHeadId: item.feeHeadId,
-          feeTermId: item.feeTermId,
-          amount, // This is the final amount being paid (after concessions)
-          // Ensure originalAmount is ALWAYS the amount before concessions
-          originalAmount: item.originalAmount || item.totalAmount + (item.concessionAmount || 0),
-          // Ensure concessionAmount is properly passed
-          concessionAmount: item.concessionAmount || 0,
-        };
-        });
-
-
-
-      const result = await onCollectPayment({
-        studentId: student.id,
-        selectedFees,
-        paymentMode,
-        transactionReference: transactionReference || undefined,
-        notes: notes || undefined,
-        paymentDate: new Date(),
-      });
-
-      // Prepare receipt data using unified service
-      const selectedFeeItems = feeItems.filter(item => selectedFeeIds.has(item.id));
+      const selectedFees = feeItems.filter(item => selectedFeeIds.has(item.id));
       
-      const receiptFeeItems = selectedFeeItems.map(item => {
-        let amount = item.outstandingAmount;
-        
+      const paymentItems = selectedFees.map(fee => {
+        let amount = fee.outstandingAmount;
         if (adjustmentMode === 'manual') {
-          const customAmount = parseFloat(customAmounts[item.id] || '0');
-          amount = Math.min(customAmount, item.outstandingAmount);
+          const customAmount = customAmounts[fee.id];
+          amount = customAmount ? parseFloat(customAmount) : fee.outstandingAmount;
         }
         
         return {
-          feeHeadName: item.feeHeadName,
-          feeTermName: item.feeTermName,
-          // Ensure originalAmount is ALWAYS the amount before concessions
-          originalAmount: item.originalAmount || item.totalAmount + (item.concessionAmount || 0),
-          // Ensure concessionAmount is properly passed
-          concessionAmount: item.concessionAmount || 0,
-          finalAmount: amount,
+          feeHeadId: fee.feeHeadId,
+          feeTermId: fee.feeTermId,
+          amount: amount,
+          originalAmount: fee.originalAmount || fee.totalAmount,
+          concessionAmount: fee.concessionAmount || 0,
         };
       });
 
-      // Create receipt data using the same format as payment history page
-      const receiptData = ReceiptService.createReceiptFromPaymentHistoryData({
-        receiptNumber: result.receiptNumber,
+      const result = await onCollectPayment({
+        studentId: student.id,
+        selectedFees: paymentItems,
+        paymentMode,
+        transactionReference,
+        notes,
         paymentDate: new Date(),
-        paymentMode: paymentMode,
-        totalAmount: receiptFeeItems.reduce((sum, item) => sum + (item.originalAmount || 0), 0),
-        paidAmount: selectedFeesTotal,
-        transactionReference: transactionReference || result.receiptNumber,
-        notes: notes || undefined,
-        student: {
-          firstName: student.firstName,
-          lastName: student.lastName,
-          admissionNumber: student.admissionNumber,
-          section: {
-            name: student.section?.name || 'N/A',
-            class: {
-              name: student.section?.class?.name || 'N/A'
-            }
-          },
-          parent: {
-            fatherName: student.parent?.fatherName || undefined,
-            motherName: student.parent?.motherName || undefined
-          }
-        },
-        branch: {
-          name: branch?.name || 'School',
-          address: branch?.address,
-          city: branch?.city,
-          state: branch?.state,
-          logoUrl: branch?.logoUrl || '/android-chrome-192x192.png'
-        },
-        session: {
-          name: session?.name || 'Academic Session'
-        },
-        items: receiptFeeItems.map(item => ({
-          feeHead: { name: item.feeHeadName },
-          feeTerm: { name: item.feeTermName },
-          amount: item.finalAmount,
-          originalAmount: item.originalAmount,
-          concessionAmount: item.concessionAmount
-        }))
       });
 
-      ReceiptService.printReceipt(receiptData);
+      // Generate and download receipt
+      if (result?.receiptNumber) {
+        try {
+          const receiptData = {
+            receiptNumber: result.receiptNumber,
+            paymentDate: new Date(),
+            paymentMode: paymentMode,
+            transactionReference: transactionReference,
+            notes: notes,
+            student: student,
+            branch: branch,
+            session: session,
+            feeItems: paymentItems.map((item, index) => {
+              const fee = selectedFees[index];
+              return {
+                feeHeadName: fee?.feeHeadName || '',
+                feeTermName: fee?.feeTermName || '',
+                originalAmount: item.originalAmount,
+                concessionAmount: item.concessionAmount,
+                finalAmount: item.amount,
+              };
+            }),
+            totals: {
+              totalOriginalAmount: paymentItems.reduce((sum, item) => sum + item.originalAmount, 0),
+              totalConcessionAmount: paymentItems.reduce((sum, item) => sum + item.concessionAmount, 0),
+              totalNetAmount: result.totalAmount,
+              totalPaidAmount: result.totalAmount,
+            },
+          };
 
-      // Reset form
+          const receiptHTML = ReceiptService.generateReceiptHTML(receiptData);
+          const blob = new Blob([receiptHTML], { type: 'text/html' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Fee_Receipt_${result.receiptNumber}.html`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Error generating receipt:', error);
+          toast({
+            title: "Receipt generation failed",
+            description: "Payment was successful but receipt could not be generated.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Clear selection and reset form
       setSelectedFeeIds(new Set());
-      setPaymentMode('');
+      setPaymentMode('Cash');
       setTransactionReference('');
       setNotes('');
       setCustomAmounts({});
       setAdjustmentMode('auto');
-
-      toast({
-        title: "Payment Collected Successfully",
-        description: `Receipt ${result.receiptNumber} generated and sent to printer`,
-      });
+      
+      // Refresh fees
+      if (onRefreshFees) {
+        onRefreshFees();
+      }
     } catch (error) {
+      console.error('Payment collection error:', error);
       toast({
-        title: "Payment Failed",
-        description: "There was an error processing the payment. Please try again.",
+        title: "Payment failed",
+        description: "An error occurred while processing the payment.",
         variant: "destructive",
       });
-      console.error('Payment processing error:', error);
     } finally {
       setIsProcessing(false);
     }
   };
 
-
-
-  // Handle concession assignment
-  const handleAssignConcession = async (concessionData: any) => {
-    if (!onAssignConcession) return;
-    
-    try {
-      await onAssignConcession(concessionData);
-      setShowConcessionModal(false);
-      
-      toast({
-        title: "Concession Assigned",
-        description: "Student concession has been assigned successfully.",
-      });
-      
-      // Refresh fee data
-      if (onRefreshFees) {
-        onRefreshFees();
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to assign concession. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
   return (
-    <div className="space-y-4">
-      {/* Student Info Header - Minimal Design */}
-      <Card className="border-border dark:border-gray-700 bg-card dark:bg-gray-900">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground dark:text-white">
-                {student.firstName} {student.lastName}
-              </h2>
-              <div className="text-sm text-muted-foreground dark:text-gray-400">
-                {student.admissionNumber} • {student.section?.class?.name}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">
-                {formatIndianCurrency(feeItems.reduce((sum, item) => sum + item.outstandingAmount, 0))}
-              </div>
-              <div className="text-sm text-muted-foreground dark:text-gray-400">Outstanding</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main 2-Column Layout: 60/40 Split */}
-      <div className="grid grid-cols-5 gap-6">
-        
-        {/* Left Column - 60% (3/5) - Fee Head and Term Grouping */}
-        <div className="col-span-3 space-y-4">
-          <Card className="border-border dark:border-gray-700 bg-card dark:bg-gray-900">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-foreground dark:text-white">
-                    Fee Structure
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground dark:text-gray-400">
-                    All fees (paid and unpaid) - Select unpaid fees to collect payment
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={adjustmentMode} onValueChange={(value: 'auto' | 'manual') => setAdjustmentMode(value)}>
-                    <SelectTrigger className="w-32 h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto Amount</SelectItem>
-                      <SelectItem value="manual">Custom Amount</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {onAssignConcession && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowConcessionModal(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Gift className="h-4 w-4" />
-                      Add Concession
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(feesByTerm).map(([termId, termFees], index) => {
-                const termName = termFees[0]?.feeTermName || 'Unknown Term';
-                const termTotal = termFees.reduce((sum, fee) => sum + fee.totalAmount, 0);
-                const termOutstanding = termFees.reduce((sum, fee) => sum + fee.outstandingAmount, 0);
-                const hasOutstanding = termFees.some(fee => fee.outstandingAmount > 0);
-                const termDueDate = termFees[0]?.dueDate || '';
-
-                // Always show term, regardless of outstanding amount
-
-                return (
-                  <div 
-                    key={termId} 
-                    className="border border-border dark:border-gray-700 rounded-lg p-4 bg-muted/30 dark:bg-gray-800/30"
-                  >
-                    {/* Term Header */}
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-border dark:border-gray-700">
-                      <div className="flex items-center gap-3">
-                        {hasOutstanding && (
-                          <Checkbox
-                            checked={isTermFullySelected(termId)}
-                            onCheckedChange={(checked) => handleTermSelection(termId, checked as boolean)}
-                          />
-                        )}
-                        <div>
-                          <h4 className="font-semibold text-base text-foreground dark:text-white">
-                            {termName}
-                          </h4>
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">
-                            Due: {termDueDate ? new Date(termDueDate).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              year: 'numeric'
-                            }) : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="space-y-1">
-                          <div className="font-bold text-lg text-foreground dark:text-white">
-                            Total: {formatIndianCurrency(termTotal)}
-                          </div>
-                          {termOutstanding > 0 && (
-                            <div className="font-semibold text-base text-primary">
-                              Outstanding: {formatIndianCurrency(termOutstanding)}
-                            </div>
-                          )}
-                          {/* Show concession info if any fees have concessions */}
-                          {termFees.some(fee => fee.concessionAmount && fee.concessionAmount > 0) && (
-                            <div className="text-sm text-green-600 dark:text-green-400 font-medium">
-                              Concessions Applied: -{formatIndianCurrency(termFees.reduce((sum, fee) => sum + (fee.concessionAmount || 0), 0))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground dark:text-gray-400">
-                          {termFees.length} fee{termFees.length !== 1 ? 's' : ''} • {termFees.filter(f => f.outstandingAmount > 0).length} pending
-                          {termFees.some(fee => fee.concessionAmount && fee.concessionAmount > 0) && (
-                            <span className="ml-1 text-green-600 dark:text-green-400">• {termFees.filter(f => f.concessionAmount && f.concessionAmount > 0).length} with concessions</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fee Items */}
-                    <div className="space-y-2">
-                      {termFees.map((fee) => {
-                        const isPaid = fee.outstandingAmount <= 0;
-                        
-                        return (
-                          <div 
-                            key={fee.id} 
-                            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-                              isPaid
-                                ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-300 dark:border-gray-600 opacity-80'
-                                : selectedFeeIds.has(fee.id) 
-                                  ? 'bg-primary/10 dark:bg-primary/20 border-primary/30 dark:border-primary/40' 
-                                  : 'bg-background dark:bg-gray-800 border-border dark:border-gray-600 hover:bg-muted/50 dark:hover:bg-gray-700/50'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 flex-1">
-                              {!isPaid ? (
-                                <Checkbox
-                                  checked={selectedFeeIds.has(fee.id)}
-                                  onCheckedChange={(checked) => handleFeeSelection(fee.id, checked as boolean)}
-                                />
-                              ) : (
-                                <div className="w-4"></div>
-                              )}
-                              <div className="flex-1">
-                                <div className="font-medium text-sm text-foreground dark:text-white">
-                                  {fee.feeHeadName}
-                                </div>
-                                {/* Enhanced Concession Display */}
-                                {fee.originalAmount && fee.concessionAmount && fee.concessionAmount > 0 ? (
-                                  <div className="mt-2">
-                                    {/* Price breakdown with visual flow */}
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <span className="text-muted-foreground line-through">
-                                        {formatIndianCurrency(fee.originalAmount)}
-                                      </span>
-                                      <span className="text-green-600 dark:text-green-400 font-medium">
-                                        -{formatIndianCurrency(fee.concessionAmount)}
-                                      </span>
-                                      <span className="text-foreground dark:text-white font-semibold">
-                                        = {formatIndianCurrency(fee.totalAmount)}
-                                      </span>
-                                    </div>
-                                    
-                                    {/* Concession badges - simplified and cleaner */}
-                                    {fee.appliedConcessions && fee.appliedConcessions.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-1.5">
-                                        {fee.appliedConcessions.map((concession) => (
-                                          <div
-                                            key={concession.id}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 rounded-md text-xs border border-green-200 dark:border-green-800"
-                                            title={`${concession.name}\n${concession.reason || 'No reason provided'}\nAmount: ${formatIndianCurrency(concession.amount)}`}
-                                          >
-                                            <Gift className="h-3 w-3" />
-                                            <span className="font-medium">{concession.name}</span>
-                                            <span className="opacity-75">
-                                              {concession.type === 'PERCENTAGE' ? `${concession.value}%` : formatIndianCurrency(concession.amount)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Status indicator */}
-                                    <div className="mt-1.5">
-                                      <span className={`text-xs font-medium ${
-                                        isPaid 
-                                          ? 'text-blue-600 dark:text-blue-400' 
-                                          : 'text-primary'
-                                      }`}>
-                                        {isPaid ? 'Paid' : 'Outstanding'}: {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="mt-2">
-                                    <div className="text-sm">
-                                      <span className={`font-medium ${
-                                        isPaid 
-                                          ? 'text-blue-600 dark:text-blue-400' 
-                                          : 'text-foreground dark:text-white'
-                                      }`}>
-                                        {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
-                                      </span>
-                                      <span className="text-muted-foreground ml-1">
-                                        {isPaid ? 'paid' : 'due'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {adjustmentMode === 'manual' && selectedFeeIds.has(fee.id) && !isPaid ? (
-                                <div className="flex flex-col gap-1">
-                                  <Input
-                                    type="number"
-                                    value={customAmounts[fee.id] || ''}
-                                    onChange={(e) => handleCustomAmountChange(fee.id, e.target.value)}
-                                    placeholder={fee.outstandingAmount.toString()}
-                                    className="w-24 h-8 text-xs"
-                                    min="0"
-                                    max={fee.outstandingAmount}
-                                    step="0.01"
-                                  />
-                                  <div className="text-xs text-muted-foreground text-center">
-                                    Max: {formatIndianCurrency(fee.outstandingAmount)}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-right">
-                                  <div className={`font-bold text-lg ${
-                                    isPaid 
-                                      ? 'text-blue-600 dark:text-blue-400' 
-                                      : 'text-foreground dark:text-white'
-                                  }`}>
-                                    {formatIndianCurrency(isPaid ? fee.paidAmount : fee.outstandingAmount)}
-                                  </div>
-                                  {fee.concessionAmount && fee.concessionAmount > 0 && !isPaid && fee.originalAmount && (
-                                    <div className="text-xs text-muted-foreground">
-                                      Original: {formatIndianCurrency(fee.originalAmount)}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {isPaid && (
-                                <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800">
-                                  PAID
-                                </Badge>
-                              )}
-                              {fee.status === 'Overdue' && !isPaid && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Overdue
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - 40% (2/5) - Payment Form */}
-        <div className="col-span-2">
-          <Card className="border-border dark:border-gray-700 bg-card dark:bg-gray-900 sticky top-6">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground dark:text-white flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Selected Fees Summary */}
-              {selectedFeesCount > 0 && (
-                <div className="p-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20 dark:border-primary/30">
-                  <div className="text-sm font-medium text-foreground dark:text-white mb-1">
-                    Selected Fees {adjustmentMode === 'manual' && '(Custom Amounts)'}
-                  </div>
-                  <div className="text-xs text-muted-foreground dark:text-gray-400 mb-2">
-                    {selectedFeesCount} item{selectedFeesCount !== 1 ? 's' : ''} selected
-                  </div>
-                  <div className="text-xl font-bold text-primary">
-                    {formatIndianCurrency(selectedFeesTotal)}
-                  </div>
-                  {adjustmentMode === 'manual' && (
-                    <div className="mt-2 text-xs text-muted-foreground dark:text-gray-400">
-                      <Info className="h-3 w-3 inline mr-1" />
-                      Using custom payment amounts
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Payment Mode */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground dark:text-gray-300">
-                  Payment Mode *
-                </Label>
-                <Select value={paymentMode} onValueChange={setPaymentMode}>
-                  <SelectTrigger className="bg-background dark:bg-gray-800 border-border dark:border-gray-600 text-foreground dark:text-white">
-                    <SelectValue placeholder="Select payment mode" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background dark:bg-gray-800 border-border dark:border-gray-600">
-                    {paymentModes.map((mode) => (
-                      <SelectItem 
-                        key={mode.value} 
-                        value={mode.value}
-                        className="text-foreground dark:text-white hover:bg-muted dark:hover:bg-gray-700"
-                      >
-                        {mode.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Transaction Reference */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground dark:text-gray-300">
-                  Transaction Reference
-                </Label>
-                <Input
-                  placeholder="Enter reference number"
-                  value={transactionReference}
-                  onChange={(e) => setTransactionReference(e.target.value)}
-                  className="bg-background dark:bg-gray-800 border-border dark:border-gray-600 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-500"
-                />
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground dark:text-gray-300">
-                  Notes
-                </Label>
-                <Textarea
-                  placeholder="Add payment notes..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="bg-background dark:bg-gray-800 border-border dark:border-gray-600 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-500 resize-none"
-                />
-              </div>
-
-              {/* Payment Buttons */}
-              <div className="pt-4 space-y-3">
-                {/* Manual Payment Collection */}
-                <Button
-                  onClick={handleProcessPayment}
-                  disabled={isProcessing || selectedFeesCount === 0 || !paymentMode}
-                  className="w-full"
-                  size="lg"
-                  variant="default"
+    <>
+      <div className="space-y-6 pb-24 lg:pb-0">
+        {/* Student Information Card */}
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden bg-white dark:bg-[#303030] rounded-lg pt-0">
+          <CardHeader className="pb-4 bg-gray-50 dark:bg-[#404040] border-b border-gray-200 dark:border-gray-700 rounded-t-lg pt-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <motion.div 
+                  className="h-12 w-12 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 400 }}
                 >
-                  {isProcessing ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Processing Payment...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Collect Manual Payment
-                      {selectedFeesTotal > 0 && ` - ${formatIndianCurrency(selectedFeesTotal)}`}
-                    </>
-                  )}
-                </Button>
-
-                {/* Universal Payment Link Option - Always available when there are unpaid fees */}
-                {(() => {
-                  const hasUnpaidFees = feeItems.some(item => item.outstandingAmount > 0);
-                  return hasUnpaidFees && (
-                    <div className="border-t pt-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Send universal payment link
-                        </span>
-                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                          <CreditCard className="w-3 h-3 mr-1" />
-                          All Terms
-                        </Badge>
-                      </div>
-                      <PaymentGatewayButton
-                        studentId={student.id}
-                        selectedFees={[]} // No longer needed for universal payment links
-                        feeTermId={''} // No longer needed for universal payment links
-                        feeTermName={'Universal Payment Link'}
-                        totalAmount={0} // Will be calculated dynamically on payment page
-                        onPaymentInitiated={() => {
-                          toast({
-                            title: "Universal Payment Link Created",
-                            description: "Parent can now select which fee terms to pay from all available options.",
-                          });
-                        }}
-                        onPaymentSuccess={() => {
-                          // Refresh fee data when payment is successful
-                          if (onRefreshFees) {
-                            onRefreshFees();
-                          }
-                          toast({
-                            title: "Payment Successful!",
-                            description: "Gateway payment completed successfully.",
-                          });
-                        }}
-                        onPaymentFailure={(error) => {
-                          toast({
-                            title: "Payment Failed",
-                            description: error,
-                            variant: "destructive",
-                          });
-                        }}
-                        className="w-full"
-                      />
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* No Fees Selected Message */}
-              {selectedFeesCount === 0 && (
-                <div className="p-4 text-center text-muted-foreground dark:text-gray-400 border border-dashed border-border dark:border-gray-600 rounded-lg">
-                  <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm font-medium">Manual Fee Collection</p>
-                  <p className="text-xs mt-1">Select fees from the left panel to collect payment manually, or use the universal payment link above to let parents choose and pay online.</p>
+                  <User className="h-6 w-6 text-primary" />
+                </motion.div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{student.firstName} {student.lastName}</h3>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <span>{student.admissionNumber}</span>
+                    <span>•</span>
+                    <span>{student.section?.class?.name} {student.section?.name}</span>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-
-
-      {/* Loading State */}
-      {isLoading && (
-        <Card className="border-border dark:border-gray-700 bg-card dark:bg-gray-900">
-          <CardContent className="py-12">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground dark:text-gray-400 mb-4" />
-              <p className="text-muted-foreground dark:text-gray-400">Loading fee details...</p>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefreshFees}
+                  className="border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050]"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                {onAssignConcession && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowConcessionModal(true)}
+                    className="border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050]"
+                  >
+                    <Gift className="h-4 w-4 mr-2" />
+                    Concession
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-4 bg-white dark:bg-[#303030]">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <motion.div 
+                className="p-3 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Due</p>
+                <p className="text-lg font-semibold text-red-600 dark:text-red-400">
+                  {formatIndianCurrency(totals.totalDue)}
+                </p>
+              </motion.div>
+              <motion.div 
+                className="p-3 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Paid</p>
+                <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                  {formatIndianCurrency(totals.totalPaid)}
+                </p>
+              </motion.div>
+              <motion.div 
+                className="p-3 rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Overdue</p>
+                <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                  {formatIndianCurrency(totals.overdueAmount)}
+                </p>
+              </motion.div>
+              <motion.div 
+                className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Concession</p>
+                <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                  {formatIndianCurrency(totals.totalConcession)}
+                </p>
+              </motion.div>
+              <motion.div 
+                className="p-3 rounded-md bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Overdue Items</p>
+                <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                  {totals.overdueCount}
+                </p>
+              </motion.div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Concession Assignment Modal */}
+        {/* Fee Items by Term */}
+        <div className="space-y-4">
+          {Object.entries(feesByTerm).map(([termId, termFees]) => {
+            const termName = termFees[0]?.feeTermName || 'Unknown Term';
+            const termTotal = termFees.reduce((sum, fee) => sum + fee.outstandingAmount, 0);
+            const termPaid = termFees.reduce((sum, fee) => sum + fee.paidAmount, 0);
+            const hasOutstanding = termFees.some(fee => fee.outstandingAmount > 0);
+            const isFullySelected = isTermFullySelected(termId);
+            const isPartiallySelected = isTermPartiallySelected(termId);
+            
+            return (
+              <motion.div
+                key={termId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card 
+                  className={cn(
+                    "relative border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#252525] shadow-sm overflow-hidden transition-all duration-300 rounded-lg py-0 px-0",
+                    hoveredTermId === termId && hasOutstanding && !isFullySelected && "shadow-lg ring-2 ring-primary/20",
+                    isFullySelected && "shadow-lg ring-2 ring-primary/30"
+                  )}
+                  onMouseEnter={() => setHoveredTermId(termId)}
+                  onMouseLeave={() => setHoveredTermId(null)}
+                >
+                  {/* Selection indicator for entire term */}
+                  {isFullySelected && (
+                    <motion.div
+                      className="absolute left-0 top-0 bottom-0 w-2 bg-primary z-10"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      style={{ transformOrigin: 'left' }}
+                    />
+                  )}
+                  
+                  <motion.div
+                    className={cn(
+                      "relative pt-0 pb-4 pl-8 pr-4 cursor-pointer select-none rounded-t-lg",
+                      "bg-gray-50 dark:bg-[#404040]",
+                      hasOutstanding && "hover:bg-gray-100 dark:hover:bg-[#505050]",
+                      isFullySelected && "bg-primary/10 dark:bg-primary/20"
+                    )}
+                    onClick={() => hasOutstanding && handleSelectAllInTerm(termId)}
+                    whileTap={hasOutstanding ? { scale: 0.995 } : {}}
+                  >
+                    <div className="flex items-center justify-between pt-3">
+                      <div className="flex items-center gap-3">
+                        <AnimatePresence mode="wait">
+                          {hasOutstanding && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0, rotate: 180 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                              className={cn(
+                                "h-5 w-5 rounded-md border-2 flex items-center justify-center",
+                                isFullySelected ? "border-primary bg-primary" : "border-gray-400 dark:border-gray-600 bg-white dark:bg-[#505050]",
+                                isPartiallySelected && "border-primary bg-primary/20",
+                                hoveredTermId === termId && !isFullySelected && "border-primary/50 shadow-sm"
+                              )}
+                            >
+                              {(isFullySelected || isPartiallySelected) && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.1 }}
+                                >
+                                  <Check className="h-3 w-3 text-white" />
+                                </motion.div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            {termName}
+                            {hoveredTermId === termId && hasOutstanding && (
+                              <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-xs text-gray-500 dark:text-gray-400"
+                              >
+                                Click to select all
+                              </motion.span>
+                            )}
+                          </h4>
+                          <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            <span>Due: {formatIndianCurrency(termTotal)}</span>
+                            <span>Paid: {formatIndianCurrency(termPaid)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {termTotal === 0 && (
+                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Fully Paid
+                        </Badge>
+                      )}
+                    </div>
+                  </motion.div>
+                  
+                  <CardContent className=" bg-white dark:bg-[#303030] -mt-6 px-0">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {termFees.map((fee, index) => {
+                        const isSelected = selectedFeeIds.has(fee.id);
+                        const isSelectable = fee.outstandingAmount > 0;
+                        
+                        return (
+                          <motion.div
+                            key={fee.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className={cn(
+                              "relative transition-all duration-200 cursor-pointer select-none",
+                              isSelectable && hoveredFeeId === fee.id && !isSelected && "ring-1 ring-primary/20 ring-inset",
+                              !isSelectable && "opacity-60 cursor-not-allowed",
+                              index === termFees.length - 1 && "rounded-b-lg overflow-hidden"
+                            )}
+                            onClick={() => isSelectable && handleFeeSelection(fee.id)}
+                            onMouseEnter={() => setHoveredFeeId(fee.id)}
+                            onMouseLeave={() => setHoveredFeeId(null)}
+                          >
+                            {/* Selection indicator bar */}
+                            {isSelected && (
+                              <motion.div
+                                className="absolute left-0 top-0 bottom-0 w-2 bg-primary z-10"
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                style={{ transformOrigin: 'left' }}
+                              />
+                            )}
+                            
+                            <div className={cn(
+                              "pl-8 pr-4 py-4 transition-colors duration-200",
+                              isSelected && "bg-primary/5 dark:bg-primary/10",
+                              hoveredFeeId === fee.id && isSelectable && !isSelected && "bg-gray-50 dark:bg-[#404040]",
+                              !isSelectable && "bg-gray-50/50 dark:bg-[#404040]/50",
+                              index === termFees.length - 1 && "rounded-b-lg"
+                            )}>
+                            <div className="flex items-start gap-3">
+                              <AnimatePresence mode="wait">
+                                {isSelectable && (
+                                  <motion.div
+                                    initial={{ scale: 0, rotate: -180 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    exit={{ scale: 0, rotate: 180 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                    className={cn(
+                                      "mt-1 h-5 w-5 rounded-md border-2 flex items-center justify-center flex-shrink-0",
+                                      isSelected ? "border-primary bg-primary" : "border-gray-400 dark:border-gray-600 bg-white dark:bg-[#505050]",
+                                      hoveredFeeId === fee.id && !isSelected && "border-primary/50 shadow-sm"
+                                    )}
+                                  >
+                                    {isSelected && (
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.1 }}
+                                      >
+                                        <Check className="h-3 w-3 text-white" />
+                                      </motion.div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                              
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                      {fee.feeHeadName}
+                                      {hoveredFeeId === fee.id && isSelectable && (
+                                        <motion.span
+                                          initial={{ opacity: 0, scale: 0.8 }}
+                                          animate={{ opacity: 1, scale: 1 }}
+                                          className="text-xs text-primary"
+                                        >
+                                          <Sparkles className="h-3 w-3" />
+                                        </motion.span>
+                                      )}
+                                    </p>
+                                    
+                                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                                      <Badge 
+                                        variant={fee.status === 'Paid' ? 'secondary' : fee.status === 'Overdue' ? 'destructive' : 'outline'}
+                                        className={cn(
+                                          "text-xs",
+                                          fee.status === 'Paid' && "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
+                                          fee.status === 'Overdue' && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
+                                          fee.status === 'Pending' && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+                                          fee.status === 'Partially Paid' && "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800"
+                                        )}
+                                      >
+                                        {fee.status}
+                                      </Badge>
+                                      
+                                      {fee.appliedConcessions && fee.appliedConcessions.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {fee.appliedConcessions.map((concession, idx) => (
+                                            <Badge 
+                                              key={idx}
+                                              className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                                            >
+                                              <Gift className="h-3 w-3 mr-1" />
+                                              {concession.name}
+                                              {concession.type === 'PERCENTAGE' ? (
+                                                <span className="ml-1">({concession.value}%)</span>
+                                              ) : (
+                                                <span className="ml-1">({formatIndianCurrency(concession.value)})</span>
+                                              )}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                                        Due: {new Date(fee.dueDate).toLocaleDateString('en-IN')}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* Concession Details */}
+                                    {fee.appliedConcessions && fee.appliedConcessions.length > 0 && (
+                                      <motion.div 
+                                        className="mt-3 p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                      >
+                                        <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
+                                          Concession Applied:
+                                        </p>
+                                        <div className="space-y-1">
+                                          {fee.appliedConcessions.map((concession, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-xs">
+                                              <span className="text-blue-600 dark:text-blue-300">
+                                                {concession.name}
+                                                {concession.reason && (
+                                                  <span className="text-blue-500/70 dark:text-blue-400/70 ml-1">
+                                                    ({concession.reason})
+                                                  </span>
+                                                )}
+                                              </span>
+                                              <span className="font-medium text-blue-700 dark:text-blue-400">
+                                                -{formatIndianCurrency(concession.amount)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="text-right ml-4">
+                                    {fee.concessionAmount && fee.concessionAmount > 0 && (
+                                      <div className="mb-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-through">
+                                          {formatIndianCurrency(fee.originalAmount || 0)}
+                                        </p>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center justify-end gap-1">
+                                          <TrendingDown className="h-3 w-3" />
+                                          {formatIndianCurrency(fee.concessionAmount)}
+                                        </p>
+                                      </div>
+                                    )}
+                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{formatIndianCurrency(fee.totalAmount)}</p>
+                                    {fee.paidAmount > 0 && (
+                                      <p className="text-xs text-green-600 dark:text-green-400">
+                                        Paid: {formatIndianCurrency(fee.paidAmount)}
+                                      </p>
+                                    )}
+                                    {fee.outstandingAmount > 0 && (
+                                      <motion.p 
+                                        className="text-sm font-medium text-red-600 dark:text-red-400"
+                                        animate={isSelected ? { scale: [1, 1.05, 1] } : {}}
+                                        transition={{ duration: 0.3 }}
+                                      >
+                                        Due: {formatIndianCurrency(fee.outstandingAmount)}
+                                      </motion.p>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {selectedFeeIds.has(fee.id) && adjustmentMode === 'manual' && (
+                                  <motion.div 
+                                    className="mt-3"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                  >
+                                    <Label className="text-xs text-gray-700 dark:text-gray-300">Custom Amount</Label>
+                                    <Input
+                                      type="number"
+                                      value={customAmounts[fee.id] || ''}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        setCustomAmounts({
+                                          ...customAmounts,
+                                          [fee.id]: e.target.value
+                                        });
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      placeholder={fee.outstandingAmount.toString()}
+                                      className="mt-1 h-8 text-sm bg-white dark:bg-[#404040] border-gray-300 dark:border-gray-600"
+                                      max={fee.outstandingAmount}
+                                      min={0}
+                                    />
+                                  </motion.div>
+                                )}
+                              </div>
+                            </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Payment Details Card (Desktop Only) */}
+        <Card className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#303030] shadow-sm hidden lg:block rounded-lg overflow-hidden pt-0 pb-6">
+          <CardHeader className="bg-gray-50 dark:bg-[#404040] border-b border-gray-200 dark:border-gray-700 rounded-t-lg pt-7">
+            <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Payment Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 bg-white dark:bg-[#303030] pt-4">
+            {/* Payment Mode Selection */}
+            <div>
+              <Label className="text-sm mb-2 text-gray-700 dark:text-gray-300">Payment Mode</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {paymentModes.map((mode) => {
+                  const Icon = mode.icon;
+                  return (
+                    <motion.button
+                      key={mode.value}
+                      onClick={() => setPaymentMode(mode.value)}
+                      className={cn(
+                        "p-3 rounded-md border-2 transition-all flex items-center justify-center gap-2",
+                        paymentMode === mode.value
+                          ? "border-primary bg-primary/10 dark:bg-primary/20"
+                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050]"
+                      )}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{mode.label}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Transaction Reference */}
+            {paymentMode !== 'Cash' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <Label htmlFor="transactionRef" className="text-sm text-gray-700 dark:text-gray-300">
+                  Transaction Reference
+                </Label>
+                <Input
+                  id="transactionRef"
+                  value={transactionReference}
+                  onChange={(e) => setTransactionReference(e.target.value)}
+                  placeholder="Enter reference number"
+                  className="mt-1 bg-white dark:bg-[#404040] border-gray-300 dark:border-gray-600"
+                />
+              </motion.div>
+            )}
+
+            {/* Notes */}
+            <div>
+              <Label htmlFor="notes" className="text-sm text-gray-700 dark:text-gray-300">
+                Notes (Optional)
+              </Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any additional notes"
+                className="mt-1 bg-white dark:bg-[#404040] border-gray-300 dark:border-gray-600"
+                rows={3}
+              />
+            </div>
+
+            {/* Payment Summary */}
+            <motion.div 
+              className="p-4 rounded-md bg-gray-50 dark:bg-[#404040] border border-gray-200 dark:border-gray-600 space-y-2"
+              animate={selectedFeeIds.size > 0 ? { scale: [1, 1.02, 1] } : {}}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+                <span>Selected Items</span>
+                <span className="font-medium">{selectedFeeIds.size}</span>
+              </div>
+              <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <span>Total Amount</span>
+                <span className="text-primary">{formatIndianCurrency(selectedFeesTotal)}</span>
+              </div>
+            </motion.div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCollectPayment}
+                disabled={selectedFeeIds.size === 0 || isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="mr-2 h-4 w-4" />
+                    Collect Payment
+                  </>
+                )}
+              </Button>
+              
+              {selectedFeeIds.size > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedFeeIds(new Set());
+                    setCustomAmounts({});
+                  }}
+                  className="border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050]"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile Payment Summary Card (Document Flow) */}
+      <AnimatePresence>
+        {isAtPageEnd && selectedFeeIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="lg:hidden mt-6"
+          >
+            <Card className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#303030] shadow-lg overflow-hidden rounded-lg">
+              {/* Card Header */}
+              <div className="bg-gray-50 dark:bg-[#404040] px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Complete Payment
+                  </h3>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "40px" }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="h-1 bg-gradient-to-r from-primary to-primary/60 rounded-full"
+                  />
+                </div>
+              </div>
+              
+              {/* Card Content */}
+              <div className="p-6 space-y-6">
+                {/* Selected Fees Summary */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Items</h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto bg-gray-50 dark:bg-[#404040] p-3 rounded-md">
+                    {feeItems
+                      .filter(item => selectedFeeIds.has(item.id))
+                      .map(fee => (
+                        <div key={fee.id} className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">{fee.feeHeadName}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {formatIndianCurrency(
+                              adjustmentMode === 'manual' && customAmounts[fee.id]
+                                ? parseFloat(customAmounts[fee.id] || '0')
+                                : fee.outstandingAmount
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                  
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span className="text-gray-900 dark:text-gray-100">Total Amount</span>
+                      <span className="text-primary">{formatIndianCurrency(selectedFeesTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Mode Selection */}
+                <div>
+                  <Label className="text-sm mb-3 text-gray-700 dark:text-gray-300">Payment Mode</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {paymentModes.slice(0, 6).map((mode) => {
+                      const Icon = mode.icon;
+                      return (
+                        <motion.button
+                          key={mode.value}
+                          onClick={() => setPaymentMode(mode.value)}
+                          className={cn(
+                            "p-3 rounded-md border-2 transition-all flex items-center justify-center gap-2 text-sm",
+                            paymentMode === mode.value
+                              ? "border-primary bg-primary/10 dark:bg-primary/20 text-primary"
+                              : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050] text-gray-700 dark:text-gray-300"
+                          )}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="font-medium">{mode.label}</span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Transaction Reference */}
+                {paymentMode !== 'Cash' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <Label htmlFor="card-transactionRef" className="text-sm text-gray-700 dark:text-gray-300">
+                      Transaction Reference
+                    </Label>
+                    <Input
+                      id="card-transactionRef"
+                      value={transactionReference}
+                      onChange={(e) => setTransactionReference(e.target.value)}
+                      placeholder="Enter reference number"
+                      className="mt-2 bg-white dark:bg-[#404040] border-gray-300 dark:border-gray-600"
+                    />
+                  </motion.div>
+                )}
+
+                {/* Notes */}
+                <div>
+                  <Label htmlFor="card-notes" className="text-sm text-gray-700 dark:text-gray-300">
+                    Notes (Optional)
+                  </Label>
+                  <Textarea
+                    id="card-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any additional notes"
+                    className="mt-2 bg-white dark:bg-[#404040] border-gray-300 dark:border-gray-600"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <motion.div
+                    className="flex-1"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      onClick={handleCollectPayment}
+                      disabled={isProcessing}
+                      className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Receipt className="mr-2 h-4 w-4" />
+                          Complete Payment
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedFeeIds(new Set());
+                      setCustomAmounts({});
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="h-12 px-6 border-gray-300 dark:border-gray-600 bg-white dark:bg-[#404040] hover:bg-gray-50 dark:hover:bg-[#505050]"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Sticky Footer */}
+      <AnimatePresence>
+        {selectedFeeIds.size > 0 && showMobileFooter && (
+          <motion.div
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-[#303030] border-t border-gray-200 dark:border-gray-700 h-20"
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{selectedFeeIds.size} items selected</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatIndianCurrency(selectedFeesTotal)}</p>
+                </div>
+                <Button
+                  onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })}
+                  size="sm"
+                  className="shadow-lg"
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Pay Now
+                </Button>
+              </div>
+            </div>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modals */}
       {showConcessionModal && onAssignConcession && (
         <StudentConcessionFormModal
           isOpen={showConcessionModal}
           onClose={() => setShowConcessionModal(false)}
-          onSubmit={handleAssignConcession}
-          students={[student]}
-          concessionTypes={concessionTypes}
-          feeTerms={feeTerms}
-          feeHeads={feeHeads}
+          students={[student as any]}
           selectedStudentId={student.id}
-          isLoading={false}
+          concessionTypes={concessionTypes}
+          feeHeads={feeHeads}
+          feeTerms={feeTerms}
+          onSubmit={onAssignConcession}
         />
       )}
-    </div>
+    </>
   );
-} 
+}

@@ -10,10 +10,10 @@ export function mapLocationFromApi(apiLocation: any): AttendanceLocationAlias {
     longitude: apiLocation.longitude,
     radius: apiLocation.radius,
     isActive: apiLocation.isActive,
-    branchId: "", // Placeholder, adjust as needed
-    createdAt: new Date(), // Placeholder, adjust as needed
-    updatedAt: new Date(), // Placeholder, adjust as needed
-    locationTypeId: null, // Placeholder, adjust as needed
+    branchId: apiLocation.branchId,
+    createdAt: apiLocation.createdAt,
+    updatedAt: apiLocation.updatedAt,
+    locationTypeId: apiLocation.locationTypeId,
   };
 }
 
@@ -40,7 +40,10 @@ export function mapAttendanceFromApi(apiAttendance: any): AttendanceRecord {
 export function useAttendanceLocations(branchId?: string, includeInactive = false) {
   const { data, isLoading, error, refetch } = api.attendance.getLocations.useQuery(
     { branchId, includeInactive },
-    { staleTime: 5 * 60 * 1000 } // 5 minutes
+    { 
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      enabled: !!branchId, // Only fetch when branchId is available
+    }
   );
 
   return {

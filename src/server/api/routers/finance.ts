@@ -5608,4 +5608,117 @@ export const financeRouter = createTRPCRouter({
         where: { id: input.id },
       });
     }),
+
+  // Get fee collection stats for dashboard cards
+  getFeeCollectionStats: publicProcedure
+    .input(z.object({
+      branchId: z.string(),
+      sessionId: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const startOfYesterday = new Date(startOfToday);
+      startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+      // Get today's collection
+      const todaysCollections = await ctx.db.feeCollection.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          paymentDate: {
+            gte: startOfToday,
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      // Get yesterday's collection for comparison
+      const yesterdaysCollections = await ctx.db.feeCollection.findMany({
+        where: {
+          branchId: input.branchId,
+          sessionId: input.sessionId,
+          paymentDate: {
+            gte: startOfYesterday,
+            lt: startOfToday,
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      // Calculate today's total collection
+      const todaysCollection = todaysCollections.reduce((total, collection) => {
+        return total + collection.items.reduce((itemTotal, item) => itemTotal + item.amount, 0);
+      }, 0);
+
+      // Calculate yesterday's total collection
+      const yesterdaysCollection = yesterdaysCollections.reduce((total, collection) => {
+        return total + collection.items.reduce((itemTotal, item) => itemTotal + item.amount, 0);
+      }, 0);
+
+      // Calculate change percentage
+      const todaysCollectionChange = yesterdaysCollection > 0 
+        ? Math.round(((todaysCollection - yesterdaysCollection) / yesterdaysCollection) * 100)
+        : todaysCollection > 0 ? 100 : 0;
+
+      // Get receipts generated today
+      const receiptsGenerated = todaysCollections.length;
+      const yesterdaysReceipts = yesterdaysCollections.length;
+      const receiptsGeneratedChange = yesterdaysReceipts > 0
+        ? Math.round(((receiptsGenerated - yesterdaysReceipts) / yesterdaysReceipts) * 100)
+        : receiptsGenerated > 0 ? 100 : 0;
+
+      // Get unique students who paid today
+      const studentsPaidToday = new Set(todaysCollections.map(c => c.studentId)).size;
+      const studentsPaidYesterday = new Set(yesterdaysCollections.map(c => c.studentId)).size;
+      const studentsPaidChange = studentsPaidYesterday > 0
+        ? Math.round(((studentsPaidToday - studentsPaidYesterday) / studentsPaidYesterday) * 100)
+        : studentsPaidToday > 0 ? 100 : 0;
+
+      // Get pending dues - this is more complex, we need to calculate from current fee assignments
+      const [totalDue, totalPaid] = await Promise.all([
+        // Get total amount due from all fee assignments
+        ctx.db.classwiseFee.aggregate({
+          where: {
+            branchId: input.branchId,
+            sessionId: input.sessionId,
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+        // Get total amount paid
+        ctx.db.feeCollectionItem.aggregate({
+          where: {
+            feeCollection: {
+              branchId: input.branchId,
+              sessionId: input.sessionId,
+            },
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
+
+      const pendingDues = (totalDue._sum?.amount || 0) - (totalPaid._sum?.amount || 0);
+      
+      // For now, set pending dues change to 0 (we'd need historical data to calculate this properly)
+      const pendingDuesChange = 0;
+
+      return {
+        todaysCollection,
+        todaysCollectionChange,
+        receiptsGenerated,
+        receiptsGeneratedChange,
+        studentsPaid: studentsPaidToday,
+        studentsPaidChange,
+        pendingDues: Math.max(0, pendingDues), // Ensure non-negative
+        pendingDuesChange,
+      };
+    }),
 }); 

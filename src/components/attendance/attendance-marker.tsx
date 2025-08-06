@@ -22,7 +22,7 @@ export function AttendanceMarker() {
           <CardTitle>Mark Student Attendance</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-muted-foreground dark:text-gray-400 mb-4">
             This is a placeholder for the attendance marker functionality. 
             The actual implementation will be migrated from the Pages Router.
           </p>

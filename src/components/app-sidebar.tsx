@@ -33,6 +33,7 @@ import {
   CheckSquare,
   Activity,
   ListTodo,
+  HelpCircle,
 } from "lucide-react"
 import { type Prisma } from "@prisma/client"
 
@@ -1461,6 +1462,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <DropdownMenuItem>
                     <BadgeCheck className="mr-2 h-4 w-4" />
                     Staff Permissions
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem 
+                    onClick={() => window.open('mailto:support@scholarise.in?subject=Help%20Request%20-%20Scholarise%20ERP&body=Please%20describe%20your%20issue%20or%20question%20here.', '_blank')}
+                  >
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Help & Support
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

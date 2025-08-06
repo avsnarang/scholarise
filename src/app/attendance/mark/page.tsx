@@ -128,8 +128,9 @@ function MarkAttendancePageContent() {
   // Load locations using the custom hook
   const {
     locations,
-    isLoading: isLoadingLocations
-  } = useAttendanceLocations(currentBranchId || "");
+    isLoading: isLoadingLocations,
+    error: locationsError
+  } = useAttendanceLocations(currentBranchId || undefined);
 
   // Record attendance mutation
   const { recordAttendance, isLoading: isRecordingAttendance } = useRecordAttendance();
@@ -429,7 +430,7 @@ function MarkAttendancePageContent() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Mark Attendance</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Use your device's GPS to mark your attendance at your location.
             </p>
           </div>
@@ -451,15 +452,15 @@ function MarkAttendancePageContent() {
 
         {/* Identity Error */}
         {identityError && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-200 bg-red-50 dark:border-red-800/30 dark:bg-red-950/20">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-red-600">
+              <CardTitle className="flex items-center text-red-600 dark:text-red-400">
                 <ShieldAlert className="mr-2 h-4 w-4" />
                 Identity Verification Failed
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-red-700">{identityError}</p>
+              <p className="text-sm text-red-700 dark:text-red-300">{identityError}</p>
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="gap-2" onClick={() => router.push("/profile")}>
@@ -486,7 +487,7 @@ function MarkAttendancePageContent() {
             <CardContent className="space-y-4">
               {/* Attendance Type Selection */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Attendance Type</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Attendance Type</label>
                 {availableTypes.length > 0 ? (
                   <Select value={attendanceType} onValueChange={handleAttendanceTypeChange}>
                     <SelectTrigger className="w-full">
@@ -507,9 +508,9 @@ function MarkAttendancePageContent() {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <Info className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
-                    <span className="text-sm text-blue-700">
+                  <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-md dark:bg-blue-950/20 dark:border-blue-800/30">
+                    <Info className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 dark:text-blue-400" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
                       {(isSuperAdmin || canMarkAllStaffAttendance) && !effectiveTeacherId && !employeeId
                         ? "Please select a teacher below to view their available attendance options."
                         : "No attendance options available at this time."}
@@ -521,7 +522,7 @@ function MarkAttendancePageContent() {
               {/* Teacher Selection for SuperAdmin */}
               {(isSuperAdmin || canMarkAllStaffAttendance) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Select Teacher
                     {!effectiveTeacherId && !employeeId && (
                       <span className="text-red-500 ml-1">*</span>
@@ -550,7 +551,7 @@ function MarkAttendancePageContent() {
                     </Select>
                   )}
                   {!effectiveTeacherId && !employeeId && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       Required: You must select a teacher to mark attendance for them.
                     </p>
                   )}
@@ -563,56 +564,75 @@ function MarkAttendancePageContent() {
                   <div className="h-5 w-32 rounded bg-gray-200" />
                   <Skeleton className="h-10 w-full" />
                 </div>
+              ) : locationsError ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Location</label>
+                  <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-950/20 dark:border-red-800/30">
+                    <Info className="h-4 w-4 text-red-500 mr-2 flex-shrink-0 dark:text-red-400" />
+                    <span className="text-sm text-red-700 dark:text-red-300">
+                      Failed to load locations. Please try refreshing the page.
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Select Location</label>
-                  <Select value={selectedLocationId} onValueChange={handleSelectLocation}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a location..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((loc: Location) => (
-                        <SelectItem key={loc.id} value={loc.id}>
-                          <div className="flex items-center">
-                            <MapPin className="mr-2 h-3.5 w-3.5 text-gray-500" />
-                            <span>{loc.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Location</label>
+                  {locations.length === 0 ? (
+                    <div className="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-md dark:bg-yellow-950/20 dark:border-yellow-800/30">
+                      <Info className="h-4 w-4 text-yellow-500 mr-2 flex-shrink-0 dark:text-yellow-400" />
+                      <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                        No active locations found for this branch. Please contact administrator.
+                      </span>
+                    </div>
+                  ) : (
+                    <Select value={selectedLocationId} onValueChange={handleSelectLocation}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a location..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locations.map((loc: Location) => (
+                          <SelectItem key={loc.id} value={loc.id}>
+                            <div className="flex items-center">
+                              <MapPin className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                              <span>{loc.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
 
               {/* Location Check Results */}
               {selectedLocationId && (
-                <div className="mt-4 rounded-lg border border-gray-200 p-4">
+                <div className="mt-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700 dark:bg-gray-900/50">
                   {isCheckingLocation ? (
                     <div className="space-y-4">
                       <div className="flex justify-center">
                         <div
-                          className="h-16 w-16 animate-pulse rounded-full bg-blue-100"
+                          className="h-16 w-16 animate-pulse rounded-full bg-blue-100 dark:bg-blue-900/30"
                           style={{
                             display: "grid",
                             placeItems: "center",
                           }}
                         >
-                          <MapPin className="h-8 w-8 text-blue-500" />
+                          <MapPin className="h-8 w-8 text-blue-500 dark:text-blue-400" />
                         </div>
                       </div>
                       <Progress value={progress} className="mx-auto h-2 w-full" />
-                      <p className="text-center text-sm text-gray-500">
+                      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                         Checking your location...
                       </p>
                     </div>
                   ) : errorMessage ? (
                     <div className="space-y-4 text-center">
                       <div className="flex justify-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                          <Info className="h-8 w-8 text-red-500" />
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                          <Info className="h-8 w-8 text-red-500 dark:text-red-400" />
                         </div>
                       </div>
-                      <p className="text-sm text-red-500">{errorMessage}</p>
+                      <p className="text-sm text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                   ) : distance !== null ? (
                     <div className="space-y-4 text-center">
@@ -623,17 +643,17 @@ function MarkAttendancePageContent() {
                             (locations.find(
                               (loc: Location) => loc.id === selectedLocationId
                             )?.radius || 0)
-                              ? "bg-green-100"
-                              : "bg-yellow-100"
+                              ? "bg-green-100 dark:bg-green-900/30"
+                              : "bg-yellow-100 dark:bg-yellow-900/30"
                           }`}
                         >
                           {distance <=
                           (locations.find(
                             (loc: Location) => loc.id === selectedLocationId
                           )?.radius || 0) ? (
-                            <Check className="h-8 w-8 text-green-500" />
+                            <Check className="h-8 w-8 text-green-500 dark:text-green-400" />
                           ) : (
-                            <Info className="h-8 w-8 text-yellow-500" />
+                            <Info className="h-8 w-8 text-yellow-500 dark:text-yellow-400" />
                           )}
                         </div>
                       </div>
@@ -646,13 +666,13 @@ function MarkAttendancePageContent() {
                             ? "You are within the allowed area"
                             : "You are outside the allowed area"}
                         </p>
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           Distance: {convertToMilesOrKm(distance)}
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center py-4 text-center text-gray-500">
+                    <div className="flex items-center justify-center py-4 text-center text-gray-500 dark:text-gray-400">
                       <div className="flex flex-col items-center">
                         <HelpCircle className="mb-2 h-6 w-6" />
                         <p>Click "Check Location" to verify your position</p>
@@ -665,26 +685,26 @@ function MarkAttendancePageContent() {
               {/* Today's Attendance Records */}
               {todayAttendance && (
                 <div className="mt-4 space-y-2">
-                  <h3 className="text-sm font-medium text-gray-700">Today's Attendance Records</h3>
-                  <div className="rounded-md border">
-                    <div className="divide-y">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Today's Attendance Records</h3>
+                  <div className="rounded-md border dark:border-gray-700">
+                    <div className="divide-y dark:divide-gray-700">
                       <div className="flex items-center justify-between p-3">
                         <div className="flex items-center space-x-3">
                           <div className={cn(
                             "flex h-8 w-8 items-center justify-center rounded-full",
-                            todayAttendance.type === "IN" && "bg-green-100",
-                            todayAttendance.type === "OUT" && "bg-red-100",
-                            todayAttendance.type === "BRANCH_TRANSFER_OUT" && "bg-orange-100",
-                            todayAttendance.type === "BRANCH_TRANSFER_IN" && "bg-blue-100"
+                            todayAttendance.type === "IN" && "bg-green-100 dark:bg-green-900/30",
+                            todayAttendance.type === "OUT" && "bg-red-100 dark:bg-red-900/30",
+                            todayAttendance.type === "BRANCH_TRANSFER_OUT" && "bg-orange-100 dark:bg-orange-900/30",
+                            todayAttendance.type === "BRANCH_TRANSFER_IN" && "bg-blue-100 dark:bg-blue-900/30"
                           )}>
-                            {todayAttendance.type === "IN" && <LogIn className="h-4 w-4 text-green-600" />}
-                            {todayAttendance.type === "OUT" && <LogOut className="h-4 w-4 text-red-600" />}
-                            {todayAttendance.type === "BRANCH_TRANSFER_OUT" && <ArrowRight className="h-4 w-4 text-orange-600" />}
-                            {todayAttendance.type === "BRANCH_TRANSFER_IN" && <ArrowLeft className="h-4 w-4 text-blue-600" />}
+                            {todayAttendance.type === "IN" && <LogIn className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                            {todayAttendance.type === "OUT" && <LogOut className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                            {todayAttendance.type === "BRANCH_TRANSFER_OUT" && <ArrowRight className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
+                            {todayAttendance.type === "BRANCH_TRANSFER_IN" && <ArrowLeft className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{todayAttendance.type.replace(/_/g, " ")}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {format(new Date(todayAttendance.timestamp), "h:mm a")} at {todayAttendance.location.name}
                             </p>
                           </div>
@@ -755,7 +775,7 @@ function MarkAttendancePageContent() {
                 Need Help?
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-xs">
+            <CardContent className="text-xs text-gray-600 dark:text-gray-400">
               <ol className="list-inside list-decimal space-y-1">
                 <li>Select your location from the dropdown menu.</li>
                 <li>Click "Check Location" to verify your position.</li>
