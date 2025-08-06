@@ -832,67 +832,62 @@ export function StreamlinedFeeCollection({
                   )}
                 </Button>
 
-                {/* Gateway Payment Option */}
-                {selectedFeesCount > 0 && (
-                  <div className="border-t pt-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Or pay online securely
-                      </span>
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        <CreditCard className="w-3 h-3 mr-1" />
-                        Secure
-                      </Badge>
+                {/* Universal Payment Link Option - Always available when there are unpaid fees */}
+                {(() => {
+                  const hasUnpaidFees = feeItems.some(item => item.outstandingAmount > 0);
+                  return hasUnpaidFees && (
+                    <div className="border-t pt-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Send universal payment link
+                        </span>
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <CreditCard className="w-3 h-3 mr-1" />
+                          All Terms
+                        </Badge>
+                      </div>
+                      <PaymentGatewayButton
+                        studentId={student.id}
+                        selectedFees={[]} // No longer needed for universal payment links
+                        feeTermId={''} // No longer needed for universal payment links
+                        feeTermName={'Universal Payment Link'}
+                        totalAmount={0} // Will be calculated dynamically on payment page
+                        onPaymentInitiated={() => {
+                          toast({
+                            title: "Universal Payment Link Created",
+                            description: "Parent can now select which fee terms to pay from all available options.",
+                          });
+                        }}
+                        onPaymentSuccess={() => {
+                          // Refresh fee data when payment is successful
+                          if (onRefreshFees) {
+                            onRefreshFees();
+                          }
+                          toast({
+                            title: "Payment Successful!",
+                            description: "Gateway payment completed successfully.",
+                          });
+                        }}
+                        onPaymentFailure={(error) => {
+                          toast({
+                            title: "Payment Failed",
+                            description: error,
+                            variant: "destructive",
+                          });
+                        }}
+                        className="w-full"
+                      />
                     </div>
-                    <PaymentGatewayButton
-                      studentId={student.id}
-                      selectedFees={feeItems
-                        .filter(item => selectedFeeIds.has(item.id))
-                        .map(item => ({
-                          feeHeadId: item.feeHeadId,
-                          feeHeadName: item.feeHeadName,
-                          amount: adjustmentMode === 'manual' 
-                            ? Math.min(parseFloat(customAmounts[item.id] || '0'), item.outstandingAmount)
-                            : item.outstandingAmount,
-                        }))
-                      }
-                      feeTermId={feeItems[0]?.feeTermId || ''}
-                      feeTermName={feeItems[0]?.feeTermName || 'Fee Payment'}
-                      totalAmount={selectedFeesTotal}
-                      onPaymentInitiated={() => {
-                        toast({
-                          title: "Payment Link Created",
-                          description: "Student will receive payment link for online payment.",
-                        });
-                      }}
-                      onPaymentSuccess={() => {
-                        // Refresh fee data when payment is successful
-                        if (onRefreshFees) {
-                          onRefreshFees();
-                        }
-                        toast({
-                          title: "Payment Successful!",
-                          description: "Gateway payment completed successfully.",
-                        });
-                      }}
-                      onPaymentFailure={(error) => {
-                        toast({
-                          title: "Payment Failed",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
-                      className="w-full"
-                    />
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* No Fees Selected Message */}
               {selectedFeesCount === 0 && (
                 <div className="p-4 text-center text-muted-foreground dark:text-gray-400 border border-dashed border-border dark:border-gray-600 rounded-lg">
-                  <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Select fees from the left panel to process payment</p>
+                  <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm font-medium">Manual Fee Collection</p>
+                  <p className="text-xs mt-1">Select fees from the left panel to collect payment manually, or use the universal payment link above to let parents choose and pay online.</p>
                 </div>
               )}
             </CardContent>

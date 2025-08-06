@@ -106,6 +106,7 @@ interface FeeTerm {
   originalAmount?: number;
   concessionAmount?: number;
   paidAmount?: number;
+  isConfigured?: boolean;
   feeHeads: Array<{
     id: string;
     name: string;
@@ -196,23 +197,72 @@ export default function PublicPaymentPage() {
     return availableTerms;
   };
 
-  // Handle selecting all available consecutive terms
-  const handleSelectAllAvailable = () => {
-    const availableTerms = getAvailableConsecutiveTerms();
-    setSelectedFeeTerms(new Set(availableTerms));
+  // Get all unpaid terms regardless of sequential order
+  const getAllUnpaidTerms = () => {
+    if (!paymentLinkData?.feeTerms) return [];
+    
+    return paymentLinkData.feeTerms
+      .filter(term => !term.isPaid && term.totalAmount > 0)
+      .map(term => term.id);
   };
 
-  // Handle fee term selection toggle with order enforcement
+  // Handle selecting all available terms (ignores sequential order)
+  const handleSelectAllAvailable = () => {
+    const allUnpaidTerms = getAllUnpaidTerms();
+    setSelectedFeeTerms(new Set(allUnpaidTerms));
+  };
+
+  // Handle fee term selection toggle with order enforcement and cascade validation
   const handleFeeTermToggle = (feeTermId: string, isAvailable: boolean) => {
     if (!isAvailable) return; // Don't allow selection of unavailable terms
     
     setSelectedFeeTerms(prev => {
       const newSet = new Set(prev);
+      
       if (newSet.has(feeTermId)) {
+        // Deselecting a term - cascade deselect all subsequent terms to prevent cheating
         newSet.delete(feeTermId);
+        
+        // Get sorted terms to determine order
+        if (paymentLinkData?.feeTerms) {
+          const sortedTerms = [...paymentLinkData.feeTerms].sort((a, b) => {
+            if (a.order !== undefined && b.order !== undefined) {
+              return a.order - b.order;
+            }
+            // Fallback: try to extract number from name (e.g., "Term 1", "Term 2")
+            const aNum = parseInt(a.name.match(/\d+/)?.[0] || '0');
+            const bNum = parseInt(b.name.match(/\d+/)?.[0] || '0');
+            return aNum - bNum;
+          });
+          
+          const clickedTermIndex = sortedTerms.findIndex(term => term.id === feeTermId);
+          
+          // SECURITY FIX: Remove ALL terms that come after the deselected term
+          // This prevents the cheat where users can unlock later terms then deselect earlier ones
+          const subsequentTermsToRemove: string[] = [];
+          for (let i = clickedTermIndex + 1; i < sortedTerms.length; i++) {
+            const subsequentTerm = sortedTerms[i];
+            if (subsequentTerm && newSet.has(subsequentTerm.id)) {
+              subsequentTermsToRemove.push(subsequentTerm.name);
+              newSet.delete(subsequentTerm.id);
+            }
+          }
+          
+          // Show user feedback if subsequent terms were deselected
+          if (subsequentTermsToRemove.length > 0) {
+            const clickedTermName = sortedTerms[clickedTermIndex]?.name;
+            toast({
+              title: "Sequential Payment Required",
+              description: `Deselecting ${clickedTermName} also deselected: ${subsequentTermsToRemove.join(', ')}. Terms must be paid in order.`,
+              variant: "default",
+            });
+          }
+        }
       } else {
+        // Selecting a term - just add it (availability already checked)
         newSet.add(feeTermId);
       }
+      
       return newSet;
     });
   };
@@ -222,6 +272,15 @@ export default function PublicPaymentPage() {
     { token },
     { enabled: !!token }
   );
+
+  // Debug logging
+  React.useEffect(() => {
+    if (paymentLinkData) {
+      console.log('🔍 Payment Link Data received:', paymentLinkData);
+      console.log('📊 Fee Terms:', paymentLinkData.feeTerms);
+      console.log('📋 Fee Terms Count:', paymentLinkData.feeTerms?.length || 0);
+    }
+  }, [paymentLinkData]);
 
   // Create payment request mutation
   const createPaymentMutation = api.paymentGateway.createPaymentRequest.useMutation({
@@ -520,20 +579,13 @@ export default function PublicPaymentPage() {
               <CardContent className="space-y-4">
                 {/* Payment Order Info and Quick Actions */}
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-800 dark:text-blue-200">
-                      <p className="font-medium">Sequential Payment Policy</p>
-                      <p>Pay terms in order - you can select multiple consecutive terms at once. Grayed out terms will become available after earlier terms are selected.</p>
-                    </div>
-                  </div>
-                  
+        
                   {/* Quick Action Buttons */}
                   {(() => {
-                    const availableTerms = getAvailableConsecutiveTerms();
-                    return (availableTerms.length > 1 || selectedFeeTerms.size > 0) && (
+                    const allUnpaidTerms = getAllUnpaidTerms();
+                    return !!(allUnpaidTerms.length > 1 || selectedFeeTerms.size > 0) && (
                       <div className="flex justify-end gap-2">
-                        {selectedFeeTerms.size > 0 && (
+                        {!!(selectedFeeTerms.size > 0) && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -544,7 +596,7 @@ export default function PublicPaymentPage() {
                             Clear All
                           </Button>
                         )}
-                        {availableTerms.length > 1 && (
+                        {allUnpaidTerms.length > 1 && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -552,13 +604,27 @@ export default function PublicPaymentPage() {
                             className="flex items-center gap-2"
                           >
                             <CheckSquare className="h-4 w-4" />
-                            Select All Available ({availableTerms.length} terms)
+                            Select All ({allUnpaidTerms.length} terms)
                           </Button>
                         )}
                       </div>
                     );
                   })()}
                 </div>
+
+                {/* Show message if no fee terms */}
+                {sortedTerms.length === 0 && (
+                  <div className="text-center py-8 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      No Fee Terms Available
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                      There are currently no fee terms configured for this student, or all fees have been paid. 
+                      Please contact the school administration if you believe this is an error.
+                    </p>
+                  </div>
+                )}
 
                 {sortedTerms.map((feeTerm: any) => {
                   const isSelected = selectedFeeTerms.has(feeTerm.id);
@@ -629,54 +695,85 @@ export default function PublicPaymentPage() {
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold text-lg ${
-                            isPaid ? 'text-green-700 dark:text-green-300' :
-                            isSelected ? 'text-blue-700 dark:text-blue-300' :
-                            isAvailable ? 'text-gray-900 dark:text-gray-100' :
-                            'text-gray-500 dark:text-gray-400'
-                          }`}>
-                            {formatIndianCurrency(feeTerm.totalAmount)}
-                          </p>
-                          <div className="flex justify-end mt-1">
-                            {isPaid && (
-                              <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                                Paid
-                              </Badge>
-                            )}
-                            {isSelected && !isPaid && (
-                              <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">
-                                Selected
-                              </Badge>
-                            )}
-                            {!isAvailable && !isPaid && (
-                              <Badge variant="outline" className="text-gray-500 border-gray-300">
-                                Will unlock after previous term
-                              </Badge>
-                            )}
+                                                  <div className="text-right">
+                            <p className={`font-bold text-lg ${
+                              isPaid ? 'text-green-700 dark:text-green-300' :
+                              isSelected ? 'text-blue-700 dark:text-blue-300' :
+                              isAvailable ? 'text-gray-900 dark:text-gray-100' :
+                              'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              {feeTerm.isConfigured === false 
+                                ? 'Not configured' 
+                                : feeTerm.totalAmount === 0 && feeTerm.isConfigured
+                                  ? 'Fully paid or ₹0'
+                                  : formatIndianCurrency(feeTerm.totalAmount)
+                              }
+                            </p>
+                            <div className="flex justify-end mt-1">
+                              {feeTerm.isConfigured === false && (
+                                <Badge variant="outline" className="text-orange-500 border-orange-300">
+                                  No fees set
+                                </Badge>
+                              )}
+                              {feeTerm.isConfigured && feeTerm.totalAmount === 0 && (
+                                <Badge variant="outline" className="text-blue-500 border-blue-300">
+                                  Configured but no dues
+                                </Badge>
+                              )}
+                              {feeTerm.isConfigured !== false && feeTerm.totalAmount > 0 && isPaid && (
+                                <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                                  Paid
+                                </Badge>
+                              )}
+                              {feeTerm.isConfigured !== false && isSelected && !isPaid && feeTerm.totalAmount > 0 && (
+                                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">
+                                  Selected
+                                </Badge>
+                              )}
+                              {feeTerm.isConfigured !== false && !isAvailable && !isPaid && feeTerm.totalAmount > 0 && (
+                                <Badge variant="outline" className="text-gray-500 border-gray-300">
+                                  Will unlock after previous term
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
                       </div>
 
-                      {/* Show fee details for selected, paid, or when hovering available terms */}
-                      {(isSelected || isPaid) && (
+                      {/* Show fee details for selected, paid, configured terms, or when hovering available terms */}
+                      {(isSelected || isPaid || (feeTerm.isConfigured && feeTerm.totalAmount >= 0)) && (
                         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                           <p className="text-sm font-medium mb-2">Fee Details:</p>
                           <div className="space-y-2">
-                            {feeTerm.feeHeads.map((feeHead: any) => (
+                            {feeTerm.isConfigured === false ? (
+                              <div className="text-sm text-gray-600 dark:text-gray-400 italic">
+                                No fee heads have been configured for this term yet. Please contact the school administration.
+                              </div>
+                            ) : feeTerm.feeHeads.length === 0 ? (
+                              <div className="text-sm text-gray-600 dark:text-gray-400 italic">
+                                No fee heads found for this term.
+                              </div>
+                            ) : feeTerm.feeHeads.filter((feeHead: any) => feeHead.outstandingAmount >= 1).length === 0 ? (
+                              <div className="text-sm text-gray-600 dark:text-gray-400 italic">
+                                All fees for this term have been paid or waived.
+                              </div>
+                            ) : (
+                              feeTerm.feeHeads
+                                .filter((feeHead: any) => feeHead.outstandingAmount >= 1)
+                                .map((feeHead: any) => (
                               <div key={feeHead.id} className="space-y-1">
                                 <div className="flex justify-between items-center text-sm">
                                   <span className="font-medium">{feeHead.name}</span>
                                   <span className="font-semibold">{formatIndianCurrency(feeHead.outstandingAmount)}</span>
                                 </div>
-                                
                                 {/* Show concession details if any */}
-                                {feeHead.concessionAmount > 0 && (
+                                {!!(feeHead.concessionAmount > 0) && (
                                   <div className="ml-2 space-y-1">
-                                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                                      <span>Original Amount:</span>
-                                      <span>{formatIndianCurrency(feeHead.originalAmount)}</span>
-                                    </div>
+                                    {!!(feeHead.originalAmount && feeHead.originalAmount > 0) && (
+                                      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                                        <span>Original Amount:</span>
+                                        <span>{formatIndianCurrency(feeHead.originalAmount)}</span>
+                                      </div>
+                                    )}
                                     {feeHead.concessionDetails?.map((concession: any, idx: number) => (
                                       <div key={idx} className="flex justify-between text-xs text-green-600 dark:text-green-400">
                                         <span className="flex items-center gap-1">
@@ -696,10 +793,11 @@ export default function PublicPaymentPage() {
                                   </div>
                                 )}
                               </div>
-                            ))}
+                              ))
+                            )}
                             
                             {/* Show term-level concession summary if applicable */}
-                            {feeTerm.concessionAmount && feeTerm.concessionAmount > 0 && (
+                            {!!(feeTerm.concessionAmount && feeTerm.concessionAmount > 0) && (
                               <div className="mt-2 pt-2 border-t border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 p-2 rounded">
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium">
@@ -748,14 +846,15 @@ export default function PublicPaymentPage() {
                               <span className="font-medium">{term.name}</span>
                               <span className="font-semibold">{formatIndianCurrency(term.totalAmount)}</span>
                             </div>
-                            
                             {/* Show concession savings if any */}
-                            {term.concessionAmount && term.concessionAmount > 0 && (
+                            {!!(term.concessionAmount && term.concessionAmount > 0) && (
                               <div className="ml-2 text-xs space-y-1">
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                  <span>Original Amount:</span>
-                                  <span>{formatIndianCurrency(term.originalAmount || 0)}</span>
-                                </div>
+                                {!!(term.originalAmount && term.originalAmount > 0) && (
+                                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Original Amount:</span>
+                                    <span>{formatIndianCurrency(term.originalAmount)}</span>
+                                  </div>
+                                )}
                                 <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
                                   <span className="flex items-center gap-1">
                                     <Gift className="w-3 h-3" />
@@ -775,7 +874,7 @@ export default function PublicPaymentPage() {
                           sum + (term.concessionAmount || 0), 0
                         );
                         
-                        return totalConcessions > 0 && (
+                        return !!(totalConcessions > 0) && (
                           <>
                             <Separator />
                             <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg border border-green-200 dark:border-green-800">

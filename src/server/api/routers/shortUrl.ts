@@ -13,6 +13,14 @@ export const shortUrlRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (!baseUrl) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'NEXT_PUBLIC_APP_URL environment variable is not configured. Please set this to your production domain.',
+        });
+      }
+
       const shortId = nanoid();
       
       try {
@@ -23,7 +31,6 @@ export const shortUrlRouter = createTRPCRouter({
           },
         });
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         return {
           shortUrl: `${baseUrl}/r/${newShortUrl.shortId}`,
         };

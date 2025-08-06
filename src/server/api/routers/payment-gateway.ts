@@ -74,7 +74,13 @@ export const paymentGatewayRouter = createTRPCRouter({
         expiresAt.setHours(expiresAt.getHours() + 2); // 2 hours expiry for test
 
         // Create success and failure URLs
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!baseUrl) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'NEXT_PUBLIC_APP_URL environment variable is not configured. Please set this to your production domain.',
+          });
+        }
         const successUrl = `${baseUrl}/finance/payment-success`;
         const failureUrl = `${baseUrl}/finance/payment-failure`;
 
@@ -309,7 +315,13 @@ export const paymentGatewayRouter = createTRPCRouter({
         expiresAt.setHours(expiresAt.getHours() + input.expiryHours);
 
         // Create success and failure URLs
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!baseUrl) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'NEXT_PUBLIC_APP_URL environment variable is not configured. Please set this to your production domain.',
+          });
+        }
         const successUrl = `${baseUrl}/finance/payment-success`;
         const failureUrl = `${baseUrl}/finance/payment-failure`;
 
@@ -1141,7 +1153,13 @@ export const paymentGatewayRouter = createTRPCRouter({
         });
 
         // Generate payment link URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!baseUrl) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'NEXT_PUBLIC_APP_URL environment variable is not configured. Please set this to your production domain.',
+          });
+        }
         const originalPaymentUrl = `${baseUrl}/pay/${token}`;
 
         // Create short URL for WhatsApp sharing using the shortUrl service directly
@@ -1251,7 +1269,7 @@ export const paymentGatewayRouter = createTRPCRouter({
         }
 
         // Determine applicable student types based on student data
-        const applicableStudentTypes = ['ALL'];
+        const applicableStudentTypes = ['ALL', 'BOTH']; // Include 'BOTH' for fees that apply to all students
         // Check if student has transport assignment (will be fetched separately if needed)
         const transportAssignment = await ctx.db.transportAssignment.findFirst({
           where: { studentId: student.id }
@@ -1272,6 +1290,12 @@ export const paymentGatewayRouter = createTRPCRouter({
         });
 
         // Get classwise fees for the student's section
+        console.log(`🔍 Student section ID: ${student.section?.id}`);
+        console.log(`🔍 Payment link branch ID: ${paymentLink.branchId}`);
+        console.log(`🔍 Payment link session ID: ${paymentLink.sessionId}`);
+        console.log(`🔍 Applicable student types: ${applicableStudentTypes.join(', ')}`);
+        
+        // Get classwise fees for the student's section (with studentType filter)
         const classwiseFees = await ctx.db.classwiseFee.findMany({
           where: {
             sectionId: student.section?.id,
@@ -1289,6 +1313,13 @@ export const paymentGatewayRouter = createTRPCRouter({
             feeTerm: true,
           },
         });
+        
+        console.log(`🔍 Found ${classwiseFees.length} total classwise fees (after studentType filter)`);
+        if (classwiseFees.length > 0) {
+          console.log(`✅ Fee query successful - showing ${classwiseFees.length} fees`);
+        } else {
+          console.log(`❌ No fees found - check studentType configuration`);
+        }
 
         // Get student concessions
         const studentConcessions = await ctx.db.studentConcession.findMany({
@@ -1306,6 +1337,14 @@ export const paymentGatewayRouter = createTRPCRouter({
           include: {
             concessionType: true,
           },
+        });
+
+        // Debug concession information
+        console.log(`🎁 Found ${studentConcessions.length} approved student concessions`);
+        studentConcessions.forEach(concession => {
+          console.log(`  - ${concession.concessionType.name} (${concession.concessionType.value}${concession.concessionType.type === 'PERCENTAGE' ? '%' : ''})`);
+          console.log(`    Applied Fee Heads: [${concession.concessionType.appliedFeeHeads?.join(', ') || 'ALL'}]`);
+          console.log(`    Applied Fee Terms: [${concession.concessionType.appliedFeeTerms?.join(', ') || 'ALL'}]`);
         });
 
         // Get all fee collections for this student to determine what's been paid
@@ -1331,13 +1370,38 @@ export const paymentGatewayRouter = createTRPCRouter({
           // Get all fee heads for this term
           const termFeeHeads = classwiseFees.filter(cf => cf.feeTermId === feeTerm.id);
           
+          // Debug logging
+          console.log(`🔍 Processing fee term: ${feeTerm.name} (ID: ${feeTerm.id})`);
+          console.log(`📊 Found ${termFeeHeads.length} fee heads for this term`);
+          console.log(`📋 Total classwise fees available: ${classwiseFees.length}`);
+          
           const feeHeadsDetails = termFeeHeads.map(classwiseFee => {
             const originalAmount = classwiseFee.amount;
             
-            // Calculate concessions for this fee head
-            // For now, apply all student concessions to each fee head
-            // TODO: Implement proper fee head specific concession filtering
-            const applicableConcessions = studentConcessions;
+            // Calculate concessions for this specific fee head and term
+            const applicableConcessions = studentConcessions.filter((concession: any) => {
+              // Check if concession applies to this fee head (empty array means all fee heads)
+              if (concession.concessionType.appliedFeeHeads?.length > 0 && 
+                  !concession.concessionType.appliedFeeHeads.includes(classwiseFee.feeHeadId)) {
+                return false;
+              }
+              
+              // Check if concession applies to this fee term (empty array means all fee terms)
+              if (concession.concessionType.appliedFeeTerms?.length > 0 && 
+                  !concession.concessionType.appliedFeeTerms.includes(feeTerm.id)) {
+                return false;
+              }
+              
+              return true;
+            });
+
+            // Debug concession application
+            if (applicableConcessions.length > 0) {
+              console.log(`  🎁 ${classwiseFee.feeHead.name} (${feeTerm.name}): ${applicableConcessions.length} concession(s) applied`);
+              applicableConcessions.forEach(concession => {
+                console.log(`    - ${concession.concessionType.name}: ${concession.concessionType.value}${concession.concessionType.type === 'PERCENTAGE' ? '%' : ''}`);
+              });
+            }
 
             let concessionAmount = 0;
             let concessionDetails: any[] = [];
@@ -1347,7 +1411,18 @@ export const paymentGatewayRouter = createTRPCRouter({
               if (concession.concessionType.type === 'PERCENTAGE') {
                 concessionValue = (originalAmount * concession.concessionType.value) / 100;
               } else {
-                concessionValue = Math.min(concession.concessionType.value, originalAmount);
+                // For FIXED concessions, check if there are per-term amounts configured
+                const feeTermAmounts = concession.concessionType.feeTermAmounts as Record<string, number> | null;
+                const termSpecificAmount = feeTermAmounts?.[feeTerm.id];
+                if (feeTermAmounts && 
+                    typeof feeTermAmounts === 'object' &&
+                    termSpecificAmount !== undefined) {
+                  // Use the specific amount for this fee term
+                  concessionValue = termSpecificAmount;
+                } else {
+                  // Fallback to the base value (for backward compatibility)
+                  concessionValue = Math.min(concession.concessionType.value, originalAmount);
+                }
               }
               
               concessionAmount += concessionValue;
@@ -1392,19 +1467,55 @@ export const paymentGatewayRouter = createTRPCRouter({
 
           // Determine if this term is fully paid
           const isPaid = totalOutstandingAmount <= 0;
+          
+          // Filter fee heads with outstanding amounts
+          const unpaidFeeHeads = feeHeadsDetails.filter(fh => fh.outstandingAmount > 0);
+          
+          // Show different messages based on the situation
+          let finalFeeHeads;
+          let isConfigured = true;
+          
+          if (feeHeadsDetails.length === 0) {
+            // No fee heads configured for this term
+            finalFeeHeads = [{
+              id: `placeholder-${feeTerm.id}`,
+              name: 'No fees configured for this term',
+              originalAmount: 0,
+              concessionAmount: 0,
+              finalAmount: 0,
+              paidAmount: 0,
+              outstandingAmount: 0,
+              concessionDetails: []
+            }];
+            isConfigured = false;
+          } else if (unpaidFeeHeads.length === 0) {
+            // Fee heads exist but all are paid or zero amounts
+            finalFeeHeads = feeHeadsDetails.map(fh => ({
+              ...fh,
+              // Show the fee head even if outstanding is 0
+            }));
+            isConfigured = true;
+          } else {
+            // Normal case: show unpaid fee heads
+            finalFeeHeads = unpaidFeeHeads;
+            isConfigured = true;
+          }
+
+          console.log(`💰 Term ${feeTerm.name}: Outstanding = ${totalOutstandingAmount}, Fee Heads = ${feeHeadsDetails.length}, Unpaid = ${unpaidFeeHeads.length}`);
 
           return {
             id: feeTerm.id,
             name: feeTerm.name,
             order: feeTerm.order,
-            isPaid,
-            totalAmount: totalOutstandingAmount, // Only show outstanding amount
+            isPaid: isPaid || !isConfigured, // Mark as paid if no fees configured
+            totalAmount: totalOutstandingAmount, // Show outstanding amount
             originalAmount: totalOriginalAmount,
             concessionAmount: totalConcessionAmount,
             paidAmount: totalPaidAmount,
-            feeHeads: feeHeadsDetails.filter(fh => fh.outstandingAmount > 0) // Only show unpaid fee heads
+            feeHeads: finalFeeHeads,
+            isConfigured: isConfigured // Flag to indicate if fees are configured
           };
-        }).filter(term => term.totalAmount > 0); // Only include terms with outstanding amounts
+        }); // Show ALL terms, even those with no outstanding amounts
 
         return {
           id: paymentLink.id,
