@@ -1032,14 +1032,14 @@ export const paymentGatewayRouter = createTRPCRouter({
           }
   }),
 
-  // Generate payment link for WhatsApp sharing
+  // Generate payment link for WhatsApp sharing - Universal link showing all unpaid fee terms
   generatePaymentLink: protectedProcedure
     .input(z.object({
       studentId: z.string(),
       branchId: z.string(),
       sessionId: z.string(),
-      feeTermIds: z.array(z.string()).min(1, "At least one fee term is required"),
       expiryHours: z.number().min(1).max(72).default(24), // 1-72 hours
+      // Removed feeTermIds - we'll show ALL unpaid terms to the parent
     }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -1084,58 +1084,9 @@ export const paymentGatewayRouter = createTRPCRouter({
           });
         }
 
-        // Get fee terms and their outstanding amounts
-        const feeTermsData = await Promise.all(
-          input.feeTermIds.map(async (feeTermId) => {
-            // Get fee term details
-            const feeTerm = await ctx.db.feeTerm.findUnique({
-              where: { id: feeTermId }
-            });
-
-            if (!feeTerm) {
-              throw new TRPCError({
-                code: "NOT_FOUND",
-                message: `Fee term not found: ${feeTermId}`,
-              });
-            }
-
-            // Get fee structure for this class and fee term from ClasswiseFee
-            const classwiseFees = await ctx.db.classwiseFee.findMany({
-              where: {
-                classId: student.section?.classId,
-                feeTermId: feeTermId,
-                sessionId: input.sessionId
-              },
-              include: {
-                feeHead: true
-              }
-            });
-
-            const feeHeads = classwiseFees.map(fee => ({
-              id: fee.feeHead.id,
-              name: fee.feeHead.name,
-              amount: fee.amount
-            }));
-            const totalAmount = feeHeads.reduce((sum: number, head: typeof feeHeads[0]) => sum + head.amount, 0);
-
-            return {
-              id: feeTerm.id,
-              name: feeTerm.name,
-              totalAmount,
-              feeHeads
-            };
-          })
-        );
-
-        // Filter out fee terms with no outstanding amounts
-        const validFeeTerms = feeTermsData.filter(term => term.totalAmount > 0);
-
-        if (validFeeTerms.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "No outstanding fees found for the selected terms",
-          });
-        }
+        // Note: We're not fetching specific fee terms here anymore.
+        // All unpaid fee terms will be fetched dynamically when the payment link is accessed.
+        // This allows parents to see all their options and choose what to pay.
 
         // Generate secure token
         const crypto = await import('crypto');
@@ -1145,7 +1096,7 @@ export const paymentGatewayRouter = createTRPCRouter({
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + input.expiryHours);
 
-        // Create payment link record
+        // Create payment link record - store only basic info, fees will be fetched dynamically
         const paymentLink = await ctx.db.paymentLink.create({
           data: {
             token,
@@ -1180,8 +1131,8 @@ export const paymentGatewayRouter = createTRPCRouter({
               },
               session: {
                 name: session.name
-              },
-              feeTerms: validFeeTerms
+              }
+              // Removed feeTerms - they will be fetched dynamically
             }),
             expiresAt,
             isActive: true,
@@ -1225,7 +1176,7 @@ export const paymentGatewayRouter = createTRPCRouter({
           token,
           expiresAt,
           studentName: `${student.firstName} ${student.lastName}`,
-          totalTerms: validFeeTerms.length,
+          message: "Universal payment link created - parent can select which fee terms to pay",
           parentContacts: {
             fatherMobile: student.parent?.fatherMobile,
             motherMobile: student.parent?.motherMobile,
@@ -1246,7 +1197,7 @@ export const paymentGatewayRouter = createTRPCRouter({
       }
     }),
 
-  // Get payment link data (public endpoint)
+  // Get payment link data (public endpoint) - Now fetches ALL unpaid fee terms dynamically
   getPaymentLinkData: publicProcedure
     .input(z.object({
       token: z.string()
@@ -1276,16 +1227,192 @@ export const paymentGatewayRouter = createTRPCRouter({
           };
         }
 
-        // Parse and return the stored data from the database
-        const feeTermsData = JSON.parse(paymentLink.feeTermsData as string);
+        // Parse basic student/branch/session info from stored data
+        const basicData = JSON.parse(paymentLink.feeTermsData as string);
+
+        // Get student with updated data
+        const student = await ctx.db.student.findUnique({
+          where: { id: paymentLink.studentId },
+          include: {
+            parent: true,
+            section: {
+              include: {
+                class: true
+              }
+            }
+          }
+        });
+
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student not found",
+          });
+        }
+
+        // Determine applicable student types based on student data
+        const applicableStudentTypes = ['ALL'];
+        // Check if student has transport assignment (will be fetched separately if needed)
+        const transportAssignment = await ctx.db.transportAssignment.findFirst({
+          where: { studentId: student.id }
+        });
+        if (transportAssignment) {
+          applicableStudentTypes.push('TRANSPORT');
+        }
+
+        // Get all fee terms for this session
+        const allFeeTerms = await ctx.db.feeTerm.findMany({
+          where: {
+            sessionId: paymentLink.sessionId,
+            branchId: paymentLink.branchId,
+          },
+          orderBy: {
+            order: 'asc'
+          }
+        });
+
+        // Get classwise fees for the student's section
+        const classwiseFees = await ctx.db.classwiseFee.findMany({
+          where: {
+            sectionId: student.section?.id,
+            branchId: paymentLink.branchId,
+            sessionId: paymentLink.sessionId,
+            // Only include fee heads that apply to this student type
+            feeHead: {
+              studentType: {
+                in: applicableStudentTypes,
+              },
+            },
+          },
+          include: {
+            feeHead: true,
+            feeTerm: true,
+          },
+        });
+
+        // Get student concessions
+        const studentConcessions = await ctx.db.studentConcession.findMany({
+          where: {
+            studentId: paymentLink.studentId,
+            branchId: paymentLink.branchId,
+            sessionId: paymentLink.sessionId,
+            status: 'APPROVED',
+            validFrom: { lte: new Date() },
+            OR: [
+              { validUntil: null },
+              { validUntil: { gte: new Date() } },
+            ],
+          },
+          include: {
+            concessionType: true,
+          },
+        });
+
+        // Get all fee collections for this student to determine what's been paid
+        const feeCollections = await ctx.db.feeCollection.findMany({
+          where: {
+            studentId: paymentLink.studentId,
+            branchId: paymentLink.branchId,
+            sessionId: paymentLink.sessionId,
+            status: 'COMPLETED'
+          },
+          include: {
+            items: {
+              include: {
+                feeHead: true,
+                feeTerm: true,
+              }
+            }
+          }
+        });
+
+        // Calculate fee terms with their unpaid amounts and concessions
+        const feeTermsWithDetails = allFeeTerms.map(feeTerm => {
+          // Get all fee heads for this term
+          const termFeeHeads = classwiseFees.filter(cf => cf.feeTermId === feeTerm.id);
+          
+          const feeHeadsDetails = termFeeHeads.map(classwiseFee => {
+            const originalAmount = classwiseFee.amount;
+            
+            // Calculate concessions for this fee head
+            // For now, apply all student concessions to each fee head
+            // TODO: Implement proper fee head specific concession filtering
+            const applicableConcessions = studentConcessions;
+
+            let concessionAmount = 0;
+            let concessionDetails: any[] = [];
+
+            applicableConcessions.forEach(concession => {
+              let concessionValue = 0;
+              if (concession.concessionType.type === 'PERCENTAGE') {
+                concessionValue = (originalAmount * concession.concessionType.value) / 100;
+              } else {
+                concessionValue = Math.min(concession.concessionType.value, originalAmount);
+              }
+              
+              concessionAmount += concessionValue;
+              concessionDetails.push({
+                type: concession.concessionType.name,
+                value: concession.concessionType.value,
+                amount: concessionValue,
+                description: concession.concessionType.description
+              });
+            });
+
+            const finalAmount = Math.max(0, originalAmount - concessionAmount);
+
+            // Calculate paid amount for this fee head in this term
+            const paidAmount = feeCollections.reduce((total, collection) => {
+              const matchingItem = collection.items.find(item => 
+                item.feeHeadId === classwiseFee.feeHeadId && 
+                item.feeTermId === feeTerm.id
+              );
+              return total + (matchingItem?.amount || 0);
+            }, 0);
+
+            const outstandingAmount = Math.max(0, finalAmount - paidAmount);
+
+            return {
+              id: classwiseFee.feeHead.id,
+              name: classwiseFee.feeHead.name,
+              originalAmount,
+              concessionAmount,
+              finalAmount,
+              paidAmount,
+              outstandingAmount,
+              concessionDetails
+            };
+          });
+
+          const totalOriginalAmount = feeHeadsDetails.reduce((sum, fh) => sum + fh.originalAmount, 0);
+          const totalConcessionAmount = feeHeadsDetails.reduce((sum, fh) => sum + fh.concessionAmount, 0);
+          const totalFinalAmount = feeHeadsDetails.reduce((sum, fh) => sum + fh.finalAmount, 0);
+          const totalPaidAmount = feeHeadsDetails.reduce((sum, fh) => sum + fh.paidAmount, 0);
+          const totalOutstandingAmount = feeHeadsDetails.reduce((sum, fh) => sum + fh.outstandingAmount, 0);
+
+          // Determine if this term is fully paid
+          const isPaid = totalOutstandingAmount <= 0;
+
+          return {
+            id: feeTerm.id,
+            name: feeTerm.name,
+            order: feeTerm.order,
+            isPaid,
+            totalAmount: totalOutstandingAmount, // Only show outstanding amount
+            originalAmount: totalOriginalAmount,
+            concessionAmount: totalConcessionAmount,
+            paidAmount: totalPaidAmount,
+            feeHeads: feeHeadsDetails.filter(fh => fh.outstandingAmount > 0) // Only show unpaid fee heads
+          };
+        }).filter(term => term.totalAmount > 0); // Only include terms with outstanding amounts
 
         return {
           id: paymentLink.id,
           studentId: paymentLink.studentId,
-          student: feeTermsData.student,
-          branch: feeTermsData.branch,
-          session: feeTermsData.session,
-          feeTerms: feeTermsData.feeTerms,
+          student: basicData.student,
+          branch: basicData.branch,
+          session: basicData.session,
+          feeTerms: feeTermsWithDetails,
           expiresAt: paymentLink.expiresAt.toISOString(),
           isActive: paymentLink.isActive
         };
