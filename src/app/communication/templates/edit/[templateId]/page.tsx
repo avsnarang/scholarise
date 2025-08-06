@@ -62,6 +62,7 @@ function EditTemplatePageContent() {
       headerType: formData.headerType,
       headerContent: formData.headerContent,
       headerMediaUrl: formData.headerMediaUrl,
+      headerFilename: formData.headerFilename,
       footerText: formData.footerText,
       buttons: formData.buttons || [],
       interactiveType: formData.interactiveType,

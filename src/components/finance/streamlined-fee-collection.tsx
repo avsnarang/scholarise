@@ -48,6 +48,7 @@ import { PaymentGatewayButton } from './payment-gateway-button';
 import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
 import { ReceiptService } from '@/services/receipt-service';
 import { cn } from "@/lib/utils";
+import { api } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface FeeItem {
@@ -167,6 +168,21 @@ export function StreamlinedFeeCollection({
   session = { name: '2024-25' }
 }: StreamlinedFeeCollectionProps) {
   const { toast } = useToast();
+  
+  // WhatsApp receipt sending mutation
+  const sendWhatsAppReceiptMutation = api.finance.sendReceiptWhatsApp.useMutation({
+    onSuccess: (result) => {
+      toast({
+        title: "WhatsApp Receipt Sent",
+        description: `Receipt sent via WhatsApp to ${result.phoneNumber}`,
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      console.error('WhatsApp sending failed:', error);
+      // Don't show error toast for WhatsApp failure as it's optional
+    },
+  });
   
   // Monitor real-time payment updates for this student
   useStudentPaymentMonitor(student.id);
@@ -405,6 +421,14 @@ export function StreamlinedFeeCollection({
             title: "Receipt generation failed",
             description: "Payment was successful but receipt could not be generated.",
             variant: "destructive",
+          });
+        }
+
+        // Try to send WhatsApp receipt automatically
+        const parentPhoneNumber = student.parent?.fatherMobile || student.parent?.motherMobile;
+        if (parentPhoneNumber) {
+          sendWhatsAppReceiptMutation.mutate({
+            receiptNumber: result.receiptNumber,
           });
         }
       }

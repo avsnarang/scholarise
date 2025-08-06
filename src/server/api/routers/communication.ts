@@ -348,6 +348,26 @@ export const communicationRouter = createTRPCRouter({
           });
         }
 
+        // Validate DOCUMENT header requirements
+        if (template.headerType === 'DOCUMENT') {
+          if (!template.headerMediaUrl || template.headerMediaUrl.trim() === '') {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'DOCUMENT header type requires a valid document URL. Please provide a publicly accessible URL to a PDF document.',
+            });
+          }
+          
+          // Check if URL is likely accessible (basic validation)
+          try {
+            new URL(template.headerMediaUrl);
+          } catch {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid document URL format. Please provide a valid HTTP/HTTPS URL.',
+            });
+          }
+        }
+
         // Convert our template format to Meta API format
         const components = [];
         
@@ -382,11 +402,31 @@ export const communicationRouter = createTRPCRouter({
           if (template.headerType === "TEXT" && template.headerContent) {
             headerComponent.format = "TEXT";
             headerComponent.text = template.headerContent;
-          } else if (template.headerType !== "TEXT" && template.headerMediaUrl) {
+          } else if (template.headerType !== "TEXT") {
             headerComponent.format = template.headerType;
-            headerComponent.example = {
-              header_handle: [template.headerMediaUrl]
-            };
+            
+            // For DOCUMENT headers, Meta requires both filename and handle
+            if (template.headerType === "DOCUMENT") {
+              const filename = template.headerFilename || "sample-document.pdf";
+              // Ensure we have a valid document URL - if not, provide a sample PDF URL
+              const documentUrl = template.headerMediaUrl && template.headerMediaUrl.trim() !== '' 
+                ? template.headerMediaUrl 
+                : `${process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com'}/api/receipts/sample/pdf`;
+              
+              headerComponent.example = {
+                header_handle: [documentUrl],
+                header_text: [filename]
+              };
+            } else {
+              // For IMAGE, VIDEO, AUDIO headers
+              const mediaUrl = template.headerMediaUrl && template.headerMediaUrl.trim() !== '' 
+                ? template.headerMediaUrl 
+                : `${process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com'}/sample-media.jpg`;
+              
+              headerComponent.example = {
+                header_handle: [mediaUrl]
+              };
+            }
           }
           
           if (headerComponent.format) {
@@ -511,6 +551,12 @@ export const communicationRouter = createTRPCRouter({
             } else if (response.error.includes('2388074')) {
               errorMessage = 'Template variable error';
               errorDetails = 'There are issues with template variables. Check variable names and formatting.';
+            } else if (response.error.includes('2388273')) {
+              errorMessage = 'DOCUMENT header validation failed';
+              errorDetails = 'Templates with DOCUMENT header type require a valid example document URL and filename. Ensure your document URL is publicly accessible and points to a valid PDF file.';
+            } else if (response.error.includes('need an example/sample')) {
+              errorMessage = 'Missing required examples';
+              errorDetails = 'This template type requires valid examples for headers or other components. Please provide accessible URLs for media content.';
             } else if (response.error.includes('Invalid parameter')) {
               errorMessage = 'Template content validation failed';
               errorDetails = 'Please check your template content for invalid characters, formatting, or structure.';
@@ -1402,6 +1448,7 @@ export const communicationRouter = createTRPCRouter({
               headerType: template.headerType || undefined,
               headerContent: template.headerContent || undefined,
               headerMediaUrl: template.headerMediaUrl || undefined,
+              headerFilename: template.headerFilename || undefined,
               footerText: template.footerText || undefined,
               buttons: template.buttons as any[] || undefined,
             },
@@ -2111,6 +2158,7 @@ export const communicationRouter = createTRPCRouter({
       headerType: z.enum(["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]).optional(),
       headerContent: z.string().optional(),
       headerMediaUrl: z.string().optional(),
+      headerFilename: z.string().optional(),
       footerText: z.string().max(60, "Footer text cannot exceed 60 characters").optional(),
       buttons: z.array(z.object({
         id: z.string(),
@@ -2200,6 +2248,7 @@ export const communicationRouter = createTRPCRouter({
               headerType: input.headerType,
               headerContent: input.headerContent,
               headerMediaUrl: input.headerMediaUrl,
+              headerFilename: input.headerFilename,
               footerText: input.footerText,
               buttons: input.buttons ? JSON.parse(JSON.stringify(input.buttons)) : null,
               interactiveType: input.interactiveType,

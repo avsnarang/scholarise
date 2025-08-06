@@ -1,7 +1,6 @@
-"use client";
+// Server-side receipt service
 
-import { formatIndianNumber } from "@/lib/utils";
-import { api } from "@/utils/api";
+// Server-side receipt service - no client imports needed
 
 // Unified interface for all receipt data
 export interface UnifiedReceiptData {
@@ -254,7 +253,7 @@ export class ReceiptService {
     `).join('');
 
     return `
-      <div class="fee-receipt-container" style="width: 8.17in; height: 5.73in; max-width: 8.17in; max-height: 5.73in; padding: 0.2in; font-size: 10px; line-height: 1.1; position: relative; border: 1px solid #000; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: white; color: black; font-family: Arial, sans-serif;">
+      <div class="fee-receipt-container" style="width: 7.67in; height: 5.23in; max-width: 7.67in; max-height: 5.23in; padding: 0.15in; font-size: 9px; line-height: 1.1; position: relative; border: 1px solid #000; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: white; color: black; font-family: Arial, sans-serif;">
         <!-- Header -->
         <div style="position: relative; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px;">
           ${data.branch.logoUrl ? `
@@ -343,6 +342,12 @@ export class ReceiptService {
   }
 
   public static printReceipt(data: UnifiedReceiptData): void {
+    // This method is for client-side use only
+    if (typeof window === 'undefined') {
+      console.warn('printReceipt() called on server-side, skipping...');
+      return;
+    }
+    
     // Convert relative logo URL to absolute URL for the new window
     if (data.branch.logoUrl && data.branch.logoUrl.startsWith('/')) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
@@ -366,11 +371,15 @@ export class ReceiptService {
             @media print {
               body { margin: 0; padding: 0; }
               .fee-receipt-container { 
-                width: 8.17in !important; 
-                height: 5.73in !important; 
+                width: 7.67in !important; 
+                height: 5.23in !important; 
                 margin: 0 !important; 
                 border: none !important;
                 page-break-after: avoid;
+              }
+              @page {
+                size: 8.27in 5.83in;
+                margin: 0.3in;
               }
             }
             @media screen {

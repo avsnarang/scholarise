@@ -7,6 +7,7 @@ interface MessageJobPayload {
     headerType?: string
     headerContent?: string
     headerMediaUrl?: string
+    headerFilename?: string
     footerText?: string
     buttons?: any[]
   }

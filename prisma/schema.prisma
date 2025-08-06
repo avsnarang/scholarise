@@ -2595,6 +2595,7 @@ model WhatsAppTemplate {
   headerType           String?                // TEXT, IMAGE, VIDEO, DOCUMENT
   headerContent        String?                // Text content for header
   headerMediaUrl       String?                // URL for media header
+  headerFilename       String?                // Filename for document/media header attachments
   footerText           String?                // Footer text content
   buttons              Json?                  // JSON array of button objects
   mediaAttachments     Json?                  // JSON array of media attachments

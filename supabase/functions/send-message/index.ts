@@ -403,6 +403,7 @@ async function sendWhatsAppMessage(
     headerType?: string
     headerContent?: string
     headerMediaUrl?: string
+    headerFilename?: string
     footerText?: string
     buttons?: any[]
   }
@@ -441,15 +442,31 @@ async function sendWhatsAppMessage(
     if (templateData?.headerType && 
         templateData.headerType !== "TEXT" && 
         templateData.headerMediaUrl) {
-      components.push({
-        type: 'header',
-        parameters: [{
-          type: templateData.headerType.toLowerCase(),
-          [templateData.headerType.toLowerCase()]: {
-            link: templateData.headerMediaUrl
-          }
-        }]
-      })
+      
+      // Handle document headers according to WhatsApp Cloud API spec
+      if (templateData.headerType === "DOCUMENT") {
+        components.push({
+          type: 'header',
+          parameters: [{
+            type: 'document',
+            document: {
+              link: templateData.headerMediaUrl,
+              filename: templateData.headerFilename || templateData.headerContent || 'document.pdf'
+            }
+          }]
+        })
+      } else {
+        // Handle image and video headers
+        components.push({
+          type: 'header',
+          parameters: [{
+            type: templateData.headerType.toLowerCase(),
+            [templateData.headerType.toLowerCase()]: {
+              link: templateData.headerMediaUrl
+            }
+          }]
+        })
+      }
     }
     
     // Add body component with variables if present

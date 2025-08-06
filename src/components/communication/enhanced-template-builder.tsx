@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -67,6 +67,74 @@ import {
   type WhatsAppMediaType
 } from "@/utils/whatsapp-media";
 
+// Safe template preview component
+function SafeTemplatePreview({ 
+  templateContent, 
+  sampleVariables 
+}: { 
+  templateContent: string; 
+  sampleVariables: Record<string, string> 
+}) {
+  // Create a completely safe version that won't trigger React JSX evaluation
+  const createSafePreview = React.useMemo(() => {
+    console.log('SafeTemplatePreview v2.0 - Fixed version running', { templateContent: templateContent.substring(0, 50) + '...', sampleVariables });
+    try {
+      // First, ensure all sample variables are strings with hardcoded fallbacks
+      const safeSampleVariables: Record<string, string> = {
+        // Hardcoded fallbacks for common problematic variables
+        receipt_number: 'REC-2024-001',
+        student_name: 'John Doe',
+        payment_amount: '₹5,000',
+        payment_date: '15/01/2025',
+        parent_name: 'Mr. John Doe',
+        school_name: 'Sample School',
+        ...sampleVariables  // Override with actual sample variables if they exist
+      };
+      
+      // Ensure all values are strings
+      Object.entries(safeSampleVariables).forEach(([key, value]) => {
+        safeSampleVariables[key] = String(value || `[${key}]`);
+      });
+
+      // Replace variables manually and safely
+      let safeContent = templateContent;
+      
+      // Replace all template variables with their sample values
+      Object.entries(safeSampleVariables).forEach(([key, value]) => {
+        const variablePattern = new RegExp(`\\{\\{\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`, 'g');
+        safeContent = safeContent.replace(variablePattern, value);
+      });
+
+      // Replace any remaining {{...}} patterns with safe placeholders
+      safeContent = safeContent.replace(/\{\{([^}]+)\}\}/g, (match, variable) => {
+        console.warn(`Unreplaced template variable: ${variable.trim()}`);
+        return `[${variable.trim()}]`;
+      });
+
+      // Final safety checks to prevent any React JSX evaluation
+      const finalSafeContent = safeContent
+        .replace(/\{(?!\{)/g, '[BRACE]')  // Replace single { with safe text
+        .replace(/(?<!\})\}/g, '[/BRACE]') // Replace single } with safe text
+        .replace(/\$\{/g, '[DOLLAR_BRACE]') // Replace template literals
+        .replace(/javascript:/gi, '[BLOCKED_SCRIPT]') // Block any script attempts
+        .replace(/<script/gi, '[BLOCKED_SCRIPT_TAG]'); // Block script tags
+
+      console.log('Final safe content:', finalSafeContent.substring(0, 100) + '...');
+      return finalSafeContent;
+    } catch (error) {
+      console.error('Template preview error:', error);
+      return `Template preview error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
+  }, [templateContent, sampleVariables]);
+
+  // Render as plain text, never as HTML or JSX
+  return (
+    <span style={{ whiteSpace: 'pre-wrap' }}>
+      {createSafePreview}
+    </span>
+  );
+}
+
 // Enhanced schema for rich templates
 const enhancedTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required"),
@@ -81,6 +149,7 @@ const enhancedTemplateSchema = z.object({
   headerType: z.enum(["TEXT", "IMAGE", "VIDEO", "DOCUMENT"]).optional(),
   headerContent: z.string().optional(),
   headerMediaUrl: z.string().optional(),
+  headerFilename: z.string().optional(),
   
   // Footer (optional)
   footerText: z.string().max(60, "Footer text cannot exceed 60 characters").optional(),
@@ -108,7 +177,7 @@ const enhancedTemplateSchema = z.object({
     mimeType: z.string(),
     size: z.number(),
     supabasePath: z.string(),
-    bucket: z.string().default("whatsapp-media")
+    bucket: z.string().optional().default("whatsapp-media")
   })).optional(),
 });
 
@@ -156,6 +225,7 @@ export function EnhancedTemplateBuilder({
       headerType: initialData?.headerType,
       headerContent: initialData?.headerContent || "",
       headerMediaUrl: initialData?.headerMediaUrl || "",
+      headerFilename: initialData?.headerFilename || "",
       footerText: initialData?.footerText || "",
       buttons: initialData?.buttons || [],
       interactiveType: initialData?.interactiveType,
@@ -185,8 +255,36 @@ export function EnhancedTemplateBuilder({
     const newSampleVariables: Record<string, string> = {};
     variables.forEach(variable => {
       const variableInfo = getVariableByKey(variable);
-      newSampleVariables[variable] = variableInfo?.example || `[${variable}]`;
+      if (variableInfo) {
+        newSampleVariables[variable] = variableInfo.example;
+      } else {
+        // Provide specific fallbacks for common variables
+        switch (variable) {
+          case 'receipt_number':
+            newSampleVariables[variable] = 'REC-2024-001';
+            break;
+          case 'student_name':
+            newSampleVariables[variable] = 'John Doe';
+            break;
+          case 'payment_amount':
+            newSampleVariables[variable] = '₹5,000';
+            break;
+          case 'payment_date':
+            newSampleVariables[variable] = '15/01/2025';
+            break;
+          default:
+            newSampleVariables[variable] = `Sample ${variable.replace(/_/g, ' ')}`;
+        }
+        console.warn(`Variable "${variable}" not found in ERP_VARIABLES, using fallback`);
+      }
     });
+    
+    console.log('Template variables debug:', {
+      variables,
+      sampleVariables: newSampleVariables,
+      templateContent: templateContent.substring(0, 100) + '...'
+    });
+    
     setSampleVariables(newSampleVariables);
   }, [templateContent]);
 
@@ -243,13 +341,30 @@ export function EnhancedTemplateBuilder({
     form.setValue("templateMedia", updatedMedia);
   };
 
-  const validation = validateTemplateVariables(templateContent, sampleVariables);
+  // Only validate when both templateContent exists and sampleVariables are ready
+  const validation = useMemo(() => {
+    if (!templateContent) {
+      return { isValid: true, missingVariables: [], unknownVariables: [] };
+    }
+    
+    const variables = parseTemplateVariables(templateContent);
+    
+    // If we have variables but no sample variables yet, don't block submission
+    if (variables.length > 0 && Object.keys(sampleVariables).length === 0) {
+      return { isValid: true, missingVariables: [], unknownVariables: [] };
+    }
+    
+    return validateTemplateVariables(templateContent, sampleVariables);
+  }, [templateContent, sampleVariables]);
 
   const handleSubmit = (data: EnhancedTemplateFormData) => {
-    if (!validation.isValid) {
+    // Perform validation at submit time with fresh data
+    const submitValidation = validateTemplateVariables(data.templateBody, sampleVariables);
+    
+    if (!submitValidation.isValid && submitValidation.missingVariables.length > 0) {
       toast({
         title: "Template Validation Failed",
-        description: `Missing variables: ${validation.missingVariables.join(", ")}`,
+        description: `Missing variables: ${submitValidation.missingVariables.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -514,22 +629,58 @@ export function EnhancedTemplateBuilder({
                   )}
 
                   {headerType && headerType !== "TEXT" && (
-                    <FormField
-                      control={form.control}
-                      name="headerMediaUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Media URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter media URL" />
-                          </FormControl>
-                          <FormDescription>
-                            URL to the {headerType?.toLowerCase()} file for the header
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="headerMediaUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {headerType === "DOCUMENT" ? "Document URL" : "Media URL"}
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                placeholder={
+                                  headerType === "DOCUMENT" 
+                                    ? "https://your-domain.com/api/receipts/{{receipt_number}}/pdf"
+                                    : "Enter media URL"
+                                } 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {headerType === "DOCUMENT" 
+                                ? "URL to the PDF or document file. Use variables like {{receipt_number}} for dynamic documents."
+                                : `URL to the ${headerType?.toLowerCase()} file for the header`
+                              }
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {headerType === "DOCUMENT" && (
+                        <FormField
+                          control={form.control}
+                          name="headerFilename"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Document Filename</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  placeholder="Fee_Receipt_{{receipt_number}}.pdf" 
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Filename that will be shown in WhatsApp. Use variables like &#123;&#123;receipt_number&#125;&#125; for dynamic names.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    />
+                    </>
                   )}
                 </CardContent>
               )}
@@ -973,7 +1124,12 @@ export function EnhancedTemplateBuilder({
 
                   {/* Main Content Preview */}
                   <div className="whitespace-pre-wrap text-sm mb-3">
-                    {templateContent ? renderTemplate(templateContent, sampleVariables) : (
+                    {templateContent ? (
+                      <SafeTemplatePreview 
+                        templateContent={templateContent} 
+                        sampleVariables={sampleVariables} 
+                      />
+                    ) : (
                       <span className="text-gray-400 italic">Start typing your message...</span>
                     )}
                   </div>
@@ -1111,9 +1267,13 @@ export function EnhancedTemplateBuilder({
           </Button>
           <div className="flex items-center gap-3">
             <div className="text-sm text-muted-foreground">
-              {validation.isValid ? "✅ Template is ready" : "⚠️ Please fix validation errors"}
+              {validation.isValid ? "✅ Template is ready" : `⚠️ Validation errors: ${validation.missingVariables?.join(', ') || 'Unknown'}`}
             </div>
-            <Button type="submit" disabled={isLoading || !validation.isValid} size="lg">
+            <Button 
+              type="submit" 
+              disabled={isLoading || !validation.isValid} 
+              size="lg"
+            >
               <Save className="w-4 h-4 mr-2" />
               {isLoading ? "Saving..." : "Save Template"}
             </Button>

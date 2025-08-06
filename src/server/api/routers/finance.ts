@@ -5721,4 +5721,85 @@ export const financeRouter = createTRPCRouter({
         pendingDuesChange,
       };
     }),
+
+  // Send receipt via WhatsApp
+  sendReceiptWhatsApp: protectedProcedure
+    .input(z.object({
+      receiptNumber: z.string(),
+      parentPhoneNumber: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { receiptNumber, parentPhoneNumber } = input;
+
+      // Find the fee collection record
+      const feeCollection = await ctx.db.feeCollection.findFirst({
+        where: { receiptNumber },
+        include: {
+          student: {
+            include: {
+              parent: true,
+              section: {
+                include: {
+                  class: true
+                }
+              }
+            }
+          },
+          branch: true,
+        }
+      });
+
+      if (!feeCollection) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Receipt not found",
+        });
+      }
+
+      // Get parent phone number
+      const phoneNumber = parentPhoneNumber || 
+        feeCollection.student.parent?.fatherMobile || 
+        feeCollection.student.parent?.motherMobile;
+
+      if (!phoneNumber) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No phone number available for sending WhatsApp message",
+        });
+      }
+
+      // Import WhatsApp service dynamically to avoid build issues
+      const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
+
+      // Prepare receipt data
+      const receiptData = {
+        receiptNumber: feeCollection.receiptNumber,
+        studentName: `${feeCollection.student.firstName} ${feeCollection.student.lastName}`,
+        amount: feeCollection.totalAmount,
+        paymentDate: feeCollection.paymentDate,
+        parentPhoneNumber: phoneNumber,
+        branchName: feeCollection.branch.name,
+      };
+
+      // Try to send with document template first, fallback to text template
+      let result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
+      
+      if (!result.success) {
+        // Fallback to text-only template
+        result = await WhatsAppReceiptService.sendReceiptTextTemplate(receiptData);
+      }
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result.error || "Failed to send WhatsApp message",
+        });
+      }
+
+      return {
+        success: true,
+        messageId: result.messageId,
+        phoneNumber: phoneNumber,
+      };
+    }),
 }); 

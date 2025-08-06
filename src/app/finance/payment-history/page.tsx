@@ -993,6 +993,24 @@ function PaymentHistoryPageContent() {
   // Get tRPC utils for mutations
   const utils = api.useContext();
 
+  // WhatsApp receipt sending mutation
+  const sendWhatsAppReceiptMutation = api.finance.sendReceiptWhatsApp.useMutation({
+    onSuccess: (result) => {
+      toast({
+        title: "WhatsApp Receipt Sent",
+        description: `Receipt sent successfully to ${result.phoneNumber}`,
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "WhatsApp Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update payment mutation
   const updatePaymentMutation = api.finance.updatePayment.useMutation({
     onSuccess: () => {
@@ -1296,35 +1314,38 @@ function PaymentHistoryPageContent() {
       return;
     }
 
-    try {
-      // Convert payment to receipt share data
-      const receiptData = paymentToReceiptShareData(payment);
-      
-      // For now, open WhatsApp with a generic message
-      // In a real implementation, you might want to:
-      // 1. Get the parent/guardian's phone number from the student data
-      // 2. Use the WhatsApp API to send automatically
-      // 3. Show a dialog to enter phone number
-      
-      // Prompt user for phone number
-      const phoneNumber = prompt("Enter phone number to share receipt via WhatsApp:");
-      
-      if (phoneNumber) {
-        shareReceiptViaWhatsApp(phoneNumber, receiptData);
-        toast({
-          title: "Success",
-          description: "Receipt sharing opened in WhatsApp",
-          variant: "success",
-        });
+    // Try to send automatically using API
+    sendWhatsAppReceiptMutation.mutate(
+      {
+        receiptNumber: payment.receiptNumber,
+      },
+      {
+        onError: (error) => {
+          console.error('Failed to send WhatsApp receipt:', error);
+          
+          // Fallback to manual sharing if API fails
+          try {
+            const receiptData = paymentToReceiptShareData(payment);
+            const phoneNumber = prompt("Enter phone number to share receipt via WhatsApp:");
+            
+            if (phoneNumber) {
+              shareReceiptViaWhatsApp(phoneNumber, receiptData);
+              toast({
+                title: "Manual Share Opened",
+                description: "Receipt sharing opened in WhatsApp",
+                variant: "success",
+              });
+            }
+          } catch (fallbackError) {
+            toast({
+              title: "Share Error",
+              description: error?.message || "Failed to share receipt via WhatsApp",
+              variant: "destructive",
+            });
+          }
+        }
       }
-    } catch (error) {
-      console.error('Failed to share receipt:', error);
-      toast({
-        title: "Share Error",
-        description: "Failed to share receipt",
-        variant: "destructive",
-      });
-    }
+    );
   };
 
   // Get unique filter options
