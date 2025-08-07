@@ -85,7 +85,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="Fee_Receipt_${receiptNumber}.pdf"`,
+        'Content-Disposition': `inline; filename="${receiptNumber}.pdf"`,
         'Content-Length': pdfContent.length.toString(),
         'Cache-Control': 'public, max-age=3600, s-maxage=3600',
         'X-Receipt-Number': receiptNumber,
@@ -160,7 +160,9 @@ function generateSimplePDF(receiptData: any, receiptNumber: string): Buffer {
     `Total Amount Paid: Rs. ${formattedAmount}`,
     `Payment Mode: ${receiptData.paymentMode || 'N/A'}`,
     `Payment Date: ${formattedDate}`,
-    `${receiptData.transactionReference ? `Reference: ${receiptData.transactionReference}` : ''}`,
+    `${receiptData.transactionReference ?     `Reference: ${receiptData.transactionReference}` : ''}`,
+    ``,
+    `This is an E-Generated Receipt. Signature is not required.`,
     ``,
     `Fee once paid is non-refundable except for Security.`
   ].filter(line => line !== undefined);

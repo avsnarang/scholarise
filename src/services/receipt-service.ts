@@ -232,7 +232,7 @@ export class ReceiptService {
     }).format(amount);
   }
 
-  public static generateReceiptHTML(data: UnifiedReceiptData): string {
+  public static generateReceiptHTML(data: UnifiedReceiptData, isForPDF: boolean = false): string {
     const parentName = data.student.parent?.fatherName || 
                       data.student.parent?.motherName ||
                       (data.student.parent?.firstName && data.student.parent?.lastName 
@@ -241,6 +241,13 @@ export class ReceiptService {
 
     const feeTerms = [...new Set(data.feeItems.map(item => item.feeTermName))];
     const uniqueFeeTerms = feeTerms.join(', ');
+    
+    // Make logo URL absolute for PDF generation
+    let logoUrl = data.branch.logoUrl;
+    if (isForPDF && logoUrl && logoUrl.startsWith('/')) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://scholarise.vercel.app';
+      logoUrl = `${baseUrl}${logoUrl}`;
+    }
 
     const feeItemsHTML = data.feeItems.map((item, index) => `
       <tr>
@@ -256,12 +263,12 @@ export class ReceiptService {
       <div class="fee-receipt-container" style="width: 7.67in; height: 5.23in; max-width: 7.67in; max-height: 5.23in; padding: 0.15in; font-size: 9px; line-height: 1.1; position: relative; border: 1px solid #000; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: white; color: black; font-family: Arial, sans-serif;">
         <!-- Header -->
         <div style="position: relative; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px;">
-          ${data.branch.logoUrl ? `
+          ${logoUrl ? `
             <div style="position: absolute; top: 0; left: 0; width: 50px; height: 50px;">
-              <img src="${data.branch.logoUrl}" alt="${data.branch.name} Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+              <img src="${logoUrl}" alt="${data.branch.name} Logo" style="width: 100%; height: 100%; object-fit: contain;" />
             </div>
           ` : ''}
-          <div style="text-align: center; ${data.branch.logoUrl ? 'padding-left: 60px;' : ''}">
+          <div style="text-align: center; ${logoUrl ? 'padding-left: 60px;' : ''}">
             <div style="font-size: 15px; font-weight: bold; margin-bottom: 2px;">The Scholars' Home, ${data.branch.name}</div>
             ${data.branch.address ? `<div style="font-size: 9px; color: #333; margin-bottom: 2px;">${data.branch.address}${data.branch.city ? `, ${data.branch.city}` : ''}${data.branch.state ? `, ${data.branch.state}` : ''}</div>` : ''}
             <div style="font-size: 13px; font-weight: bold; margin-top: 4px; margin-bottom: 2px;">RECEIPT</div>
@@ -331,7 +338,11 @@ export class ReceiptService {
           </div>
           <div style="text-align: right;">
             <div style="margin-bottom: 8px;"><strong>Received By</strong></div>
-            <div style="margin-top: 15px;"><strong>Cashier's Signature</strong></div>
+            ${isForPDF ? `
+              <div style="margin-top: 15px; font-size: 8px; font-style: italic; color: #666;">This is an E-Generated Receipt.<br/>Signature is not required.</div>
+            ` : `
+              <div style="margin-top: 15px;"><strong>Cashier's Signature</strong></div>
+            `}
           </div>
         </div>
 

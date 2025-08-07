@@ -112,8 +112,8 @@ export async function GET(
     // Create receipt data from fee collection using the correct method
     const receiptData = ReceiptService.createReceiptFromPaymentHistoryData(feeCollection);
 
-    // Generate HTML
-    const receiptHTML = ReceiptService.generateReceiptHTML(receiptData);
+    // Generate HTML with PDF flag for logo and signature handling
+    const receiptHTML = ReceiptService.generateReceiptHTML(receiptData, true);
 
     // Generate PDF using Puppeteer with Vercel-compatible Chromium
     console.log('🚀 Starting PDF generation process...');
@@ -221,7 +221,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="Fee_Receipt_${receiptNumber}.pdf"`,
+        'Content-Disposition': `inline; filename="${receiptNumber}.pdf"`,
         'Content-Length': pdfBuffer.length.toString(),
         'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
         'X-Receipt-Number': receiptNumber,
@@ -259,7 +259,7 @@ export async function GET(
       status: 200, // Return 200 to avoid WhatsApp retry storms
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="Fee_Receipt_${receiptNumber}_error.pdf"`,
+        'Content-Disposition': `inline; filename="${receiptNumber}_error.pdf"`,
         'Content-Length': errorPdfContent.length.toString(),
         'X-PDF-Error': 'true',
         'X-Error-Message': error instanceof Error ? error.message : 'Unknown error',

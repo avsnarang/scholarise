@@ -365,56 +365,9 @@ export function StreamlinedFeeCollection({
         paymentDate: new Date(),
       });
 
-      // Generate and download receipt
-      if (result?.receiptNumber) {
-        try {
-          const receiptData = {
-            receiptNumber: result.receiptNumber,
-            paymentDate: new Date(),
-            paymentMode: paymentMode,
-            transactionReference: transactionReference,
-            notes: notes,
-            student: student,
-            branch: branch,
-            session: session,
-            feeItems: paymentItems.map((item, index) => {
-              const fee = selectedFees[index];
-              return {
-                feeHeadName: fee?.feeHeadName || '',
-                feeTermName: fee?.feeTermName || '',
-                originalAmount: item.originalAmount,
-                concessionAmount: item.concessionAmount,
-                finalAmount: item.amount,
-              };
-            }),
-            totals: {
-              totalOriginalAmount: paymentItems.reduce((sum, item) => sum + item.originalAmount, 0),
-              totalConcessionAmount: paymentItems.reduce((sum, item) => sum + item.concessionAmount, 0),
-              totalNetAmount: result.totalAmount,
-              totalPaidAmount: result.totalAmount,
-            },
-          };
-
-          const receiptHTML = ReceiptService.generateReceiptHTML(receiptData);
-          const blob = new Blob([receiptHTML], { type: 'text/html' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Fee_Receipt_${result.receiptNumber}.html`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        } catch (error) {
-          console.error('Error generating receipt:', error);
-          toast({
-            title: "Receipt generation failed",
-            description: "Payment was successful but receipt could not be generated.",
-            variant: "destructive",
-          });
-        }
-
-        // WhatsApp receipt is automatically handled by the payment collection API
-        // Receipt will be logged in Message History with [Automation] tag
-      }
+      // WhatsApp receipt is automatically handled by the payment collection API
+      // Receipt will be logged in Message History with [Automation] tag
+      // No manual download is needed as receipt is sent via WhatsApp automatically
 
       // Clear selection and reset form
       setSelectedFeeIds(new Set());
