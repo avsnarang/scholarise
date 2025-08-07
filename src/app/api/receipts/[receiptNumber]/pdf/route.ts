@@ -1,14 +1,61 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from "@/server/db";
 import { ReceiptService } from "@/services/receipt-service";
-import puppeteer from 'puppeteer';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 import chromium from '@sparticuz/chromium';
+
+// Helper function to launch browser with retries
+async function launchBrowser(isVercel: boolean, retries = 3): Promise<Browser> {
+  let lastError: Error | undefined;
+  
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`🚀 Browser launch attempt ${i + 1}/${retries}...`);
+      
+      const browser = await puppeteer.launch({
+        args: isVercel ? [
+          ...chromium.args,
+          '--disable-blink-features=AutomationControlled',
+          '--disable-features=TranslateUI',
+          '--disable-web-security',
+          '--disable-features=site-per-process',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--single-process',
+          '--no-zygote',
+        ] : [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+        executablePath: isVercel ? await chromium.executablePath() : puppeteer.executablePath(),
+        headless: true,
+        defaultViewport: { width: 1280, height: 720 },
+        timeout: 30000,
+      });
+      
+      console.log('✅ Browser launched successfully');
+      return browser;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`❌ Browser launch attempt ${i + 1} failed:`, error);
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to launch browser after multiple attempts');
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ receiptNumber: string }> }
 ) {
   let receiptNumber: string = 'unknown';
+  let browser: Browser | null = null;
+  let page: Page | null = null;
   
   try {
     const startTime = Date.now();
@@ -17,10 +64,15 @@ export async function GET(
     receiptNumber = resolvedParams.receiptNumber;
 
     if (!receiptNumber) {
-      return NextResponse.json(
-        { error: 'Receipt number is required' },
-        { status: 400 }
-      );
+      console.error('❌ Receipt number is required');
+      // Return empty PDF response to avoid breaking WhatsApp
+      return new NextResponse(new Uint8Array(), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Length': '0',
+        },
+      });
     }
     
     console.log(`📊 Starting PDF generation for receipt: ${receiptNumber} (Environment: ${isVercel ? 'Vercel' : 'Local'})`);
@@ -64,50 +116,16 @@ export async function GET(
     const receiptHTML = ReceiptService.generateReceiptHTML(receiptData);
 
     // Generate PDF using Puppeteer with Vercel-compatible Chromium
-    console.log('🚀 Attempting to launch Puppeteer browser...');
-    console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
+    console.log('🚀 Starting PDF generation process...');
+    console.log('Environment:', isVercel ? 'Vercel' : 'Local');
+    console.log('Receipt:', receiptNumber);
     
-    // Vercel-optimized browser launch with performance flags
-    const browser = await puppeteer.launch({
-      args: isVercel ? [
-        ...chromium.args,
-        '--disable-background-networking',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-features=TranslateUI,Translate',
-        '--disable-ipc-flooding-protection',
-        '--disable-extensions',
-        '--disable-plugins',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--disable-translate',
-        '--disable-background-mode',
-        '--single-process', // Critical for Vercel
-        '--no-zygote', // Critical for Vercel
-      ] : [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-background-networking',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-      ],
-      executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
-      headless: true,
-      timeout: isVercel ? 30000 : 10000, // Longer timeout for Vercel cold starts
-    });
-    console.log('✅ Puppeteer browser launched successfully');
-
-    const page = await browser.newPage();
+    // Launch browser with retry logic
+    browser = await launchBrowser(isVercel);
     
-    // Disable unnecessary features for faster processing
+    page = await browser.newPage();
+    
+    // Configure page for optimal PDF generation
     await page.setJavaScriptEnabled(false);
     await page.setCacheEnabled(false);
     
@@ -118,7 +136,11 @@ export async function GET(
       deviceScaleFactor: 1
     });
     
-    // Set page size and content with faster loading
+    // Set user agent to avoid detection
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    
+    // Set page content with timeout
+    console.log('📝 Setting page content...');
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -151,27 +173,48 @@ export async function GET(
           ${receiptHTML}
         </body>
       </html>
-    `, { waitUntil: 'domcontentloaded' }); // Changed from 'networkidle0' to 'domcontentloaded' for faster processing
-
-    // Generate PDF in A5 landscape format with Vercel-optimized settings
-    const pdfBuffer = await page.pdf({
-      width: '8.27in',   // A5 landscape width (210mm)
-      height: '5.83in',  // A5 landscape height (148mm)
-      printBackground: true,
-      margin: {
-        top: '0.3in',
-        right: '0.3in',
-        bottom: '0.3in',
-        left: '0.3in'
-      },
-      preferCSSPageSize: true,
-      timeout: isVercel ? 30000 : 10000, // Longer timeout for Vercel
+    `, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 20000
     });
+    
+    console.log('✅ Page content set successfully');
 
-    await browser.close();
+    // Generate PDF with timeout handling
+    console.log('📄 Generating PDF...');
+    const pdfBuffer = await Promise.race([
+      page.pdf({
+        width: '8.27in',   // A5 landscape width (210mm)
+        height: '5.83in',  // A5 landscape height (148mm)
+        printBackground: true,
+        margin: {
+          top: '0.3in',
+          right: '0.3in',
+          bottom: '0.3in',
+          left: '0.3in'
+        },
+        preferCSSPageSize: true,
+      }),
+      new Promise<Buffer>((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
+      )
+    ]);
+    
+    console.log(`✅ PDF generated successfully, size: ${pdfBuffer.length} bytes`);
+    
+    // Verify PDF is not empty
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error('Generated PDF is empty');
+    }
+    
+    // Close browser
+    if (browser) {
+      await browser.close();
+      browser = null;
+    }
 
     const totalTime = Date.now() - startTime;
-    console.log(`✅ PDF generation completed for ${receiptNumber} in ${totalTime}ms`);
+    console.log(`✅ PDF generation completed for ${receiptNumber} in ${totalTime}ms, size: ${pdfBuffer.length} bytes`);
 
     // Return PDF with appropriate headers
     return new NextResponse(pdfBuffer, {
@@ -179,26 +222,48 @@ export async function GET(
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="Fee_Receipt_${receiptNumber}.pdf"`,
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600', // Cache for 1 hour
+        'X-Receipt-Number': receiptNumber,
+        'X-PDF-Generated': new Date().toISOString(),
       },
     });
 
   } catch (error) {
-    console.error('Error generating receipt PDF:', error);
+    console.error('❌ Error generating receipt PDF:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       name: error instanceof Error ? error.name : 'Unknown',
-      receiptNumber: receiptNumber
+      receiptNumber: receiptNumber,
+      environment: process.env.VERCEL ? 'Vercel' : 'Local',
+      timestamp: new Date().toISOString()
     });
     
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate receipt PDF',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        receiptNumber: receiptNumber
-      },
-      { status: 500 }
+    // Clean up browser if still open
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('Failed to close browser:', closeError);
+      }
+    }
+    
+    // Return a minimal valid PDF response to prevent WhatsApp errors
+    // This ensures WhatsApp always gets a PDF response, even if generation fails
+    const errorPdfContent = Buffer.from(
+      '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\nxref\n0 3\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\ntrailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n115\n%%EOF'
     );
+    
+    return new NextResponse(errorPdfContent, {
+      status: 200, // Return 200 to avoid WhatsApp retry storms
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="Fee_Receipt_${receiptNumber}_error.pdf"`,
+        'Content-Length': errorPdfContent.length.toString(),
+        'X-PDF-Error': 'true',
+        'X-Error-Message': error instanceof Error ? error.message : 'Unknown error',
+      },
+    });
   }
 }

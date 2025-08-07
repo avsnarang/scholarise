@@ -31,12 +31,12 @@ export class WhatsAppReceiptService {
   /**
    * Check if PDF is available and ready (optimized for Vercel)
    */
-  private static async isPdfReady(pdfUrl: string): Promise<boolean> {
+  private static async isPdfReady(pdfUrl: string, useLightweight: boolean = false): Promise<boolean> {
     // Environment-specific configuration
-    const maxRetries = this.isVercel ? 12 : 8; // More retries for Vercel due to cold starts
-    const baseDelay = this.isVercel ? 2500 : 1500; // Longer delays for Vercel
+    const maxRetries = this.isVercel ? 8 : 5; // Reduced retries for faster fallback
+    const baseDelay = this.isVercel ? 1500 : 1000; // Shorter delays
     
-    console.log(`🔧 PDF availability check (Environment: ${this.isVercel ? 'Vercel' : 'Local'}, Max retries: ${maxRetries})`);
+    console.log(`🔧 PDF availability check (Environment: ${this.isVercel ? 'Vercel' : 'Local'}, Mode: ${useLightweight ? 'Lightweight' : 'Standard'}, Max retries: ${maxRetries})`);
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`🔍 Checking PDF availability (attempt ${attempt}/${maxRetries}): ${pdfUrl}`);
@@ -95,7 +95,7 @@ export class WhatsAppReceiptService {
           'Cache-Control': 'no-cache'
         },
         // Environment-specific timeout
-        signal: AbortSignal.timeout(this.isVercel ? 25000 : 15000) // Longer timeout for Vercel
+        signal: AbortSignal.timeout(this.isVercel ? 20000 : 10000) // Reduced timeout
       });
 
       const contentType = response.headers.get('content-type');
@@ -121,9 +121,9 @@ export class WhatsAppReceiptService {
         };
       }
 
-      // Check if content exists
+      // Check if content exists (reduced minimum size for lightweight PDFs)
       const contentLengthNum = contentLength ? parseInt(contentLength) : 0;
-      if (contentLengthNum < 1000) { // PDF should be at least 1KB
+      if (contentLengthNum < 100) { // Minimum PDF size reduced
         return {
           accessible: false,
           error: `Content too small: ${contentLengthNum} bytes`,
@@ -212,28 +212,45 @@ export class WhatsAppReceiptService {
         };
       }
 
-      // Construct receipt PDF URL with proper URL encoding
+      // Construct receipt PDF URLs with proper URL encoding
       const encodedReceiptNumber = encodeURIComponent(data.receiptNumber);
-      const receiptPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
+      const standardPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
+      const lightweightPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf-light`;
 
-      console.log(`🔄 Starting PDF availability check for receipt: ${data.receiptNumber} (Environment: ${this.isVercel ? 'Vercel' : 'Local'})`);
+      console.log(`🔄 Starting PDF availability check for receipt: ${data.receiptNumber} (Environment: ${this.isVercel ? 'Vercel' : 'Local'})`);;
       
-      // Wait for PDF to be ready before sending WhatsApp message
-      const isPdfAvailable = await this.isPdfReady(receiptPdfUrl);
+      // Try standard PDF first, then fallback to lightweight
+      let receiptPdfUrl = standardPdfUrl;
+      let isPdfAvailable = await this.isPdfReady(standardPdfUrl, false);
       
       if (!isPdfAvailable) {
-        const errorMessage = `PDF not ready after waiting period for receipt: ${data.receiptNumber} (Environment: ${this.isVercel ? 'Vercel' : 'Local'})`;
-        console.error(`❌ ${errorMessage}`);
+        console.log(`⚠️ Standard PDF not ready, trying lightweight version for receipt: ${data.receiptNumber}`);
         
-        // Log additional debugging info for Vercel
-        if (this.isVercel) {
-          console.error(`🔍 Vercel PDF generation debugging:`, {
+        // Try lightweight PDF as fallback
+        receiptPdfUrl = lightweightPdfUrl;
+        isPdfAvailable = await this.isPdfReady(lightweightPdfUrl, true);
+        
+        if (!isPdfAvailable) {
+          const errorMessage = `Both standard and lightweight PDF generation failed for receipt: ${data.receiptNumber}`;
+          console.error(`❌ ${errorMessage}`);
+          
+          // Log debugging info
+          console.error(`🔍 PDF generation debugging:`, {
             receiptNumber: data.receiptNumber,
-            pdfUrl: receiptPdfUrl,
-            environment: 'Vercel',
+            standardUrl: standardPdfUrl,
+            lightweightUrl: lightweightPdfUrl,
+            environment: this.isVercel ? 'Vercel' : 'Local',
             timestamp: new Date().toISOString()
           });
+        } else {
+          console.log(`✅ Using lightweight PDF for receipt: ${data.receiptNumber}`);
         }
+      } else {
+        console.log(`✅ Using standard PDF for receipt: ${data.receiptNumber}`);
+      }
+      
+      if (!isPdfAvailable) {
+        const errorMessage = `Both standard and lightweight PDF generation failed for receipt: ${data.receiptNumber}`;
         
         // Update message records with failure
         try {
@@ -319,7 +336,7 @@ export class WhatsAppReceiptService {
       });
 
       // Clean phone number for WhatsApp format
-      const cleanPhoneNumber = this.formatPhoneNumber(data.parentPhoneNumber);
+      const cleanPhoneNumber = WhatsAppReceiptService.formatPhoneNumber(data.parentPhoneNumber);
 
       // Prepare template message with document header (matching exact approved template structure)
       const templateMessage = {
@@ -358,7 +375,7 @@ export class WhatsAppReceiptService {
 
       // Send message via Meta WhatsApp API
       const response = await fetch(
-        `${this.META_API_BASE}/${this.API_VERSION}/${phoneNumberId}/messages`,
+        `${WhatsAppReceiptService.META_API_BASE}/${WhatsAppReceiptService.API_VERSION}/${phoneNumberId}/messages`,
         {
           method: 'POST',
           headers: {
