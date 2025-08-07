@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { db } from "@/server/db";
 import { ReceiptService } from "@/services/receipt-service";
 import puppeteer from 'puppeteer';
+import chromium from '@sparticuz/chromium';
 
 export async function GET(
   request: NextRequest,
@@ -55,11 +56,26 @@ export async function GET(
     // Generate HTML
     const receiptHTML = ReceiptService.generateReceiptHTML(receiptData);
 
-    // Generate PDF using Puppeteer
+    // Generate PDF using Puppeteer with Vercel-compatible Chromium
+    console.log('🚀 Attempting to launch Puppeteer browser...');
+    console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
+    
+    const isVercel = !!process.env.VERCEL;
+    
     const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      headless: true
+      args: isVercel ? chromium.args : [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor'
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
+      headless: isVercel ? chromium.headless : true,
     });
+    console.log('✅ Puppeteer browser launched successfully');
 
     const page = await browser.newPage();
     
@@ -132,8 +148,19 @@ export async function GET(
 
   } catch (error) {
     console.error('Error generating receipt PDF:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      receiptNumber
+    });
+    
     return NextResponse.json(
-      { error: 'Failed to generate receipt PDF' },
+      { 
+        error: 'Failed to generate receipt PDF',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        receiptNumber
+      },
       { status: 500 }
     );
   }

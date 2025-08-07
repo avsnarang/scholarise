@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/api/receipts/[receiptNumber]/pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "src/app/api/debug/puppeteer/route.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "regions": ["iad1"]
+}
