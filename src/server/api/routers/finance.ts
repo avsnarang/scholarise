@@ -5,6 +5,106 @@ import { withBranchFilter } from "@/utils/branch-filter";
 import { Permission } from "@/types/permissions";
 import { rbacService } from "@/services/rbac-service";
 
+// Helper function to send WhatsApp receipts (moved outside transaction)
+async function sendWhatsAppReceipt(feeCollection: {
+  receiptNumber: string;
+  totalAmount: number;
+  paymentDate: Date;
+  branchId: string;
+  studentId: string;
+  student: {
+    firstName: string;
+    lastName: string;
+    parent: {
+      id: string;
+      fatherMobile?: string | null;
+      motherMobile?: string | null;
+      fatherName?: string | null;
+      motherName?: string | null;
+    } | null;
+  };
+  branch: {
+    name: string;
+  };
+}) {
+  const receiptNumber = feeCollection.receiptNumber;
+  console.log(`🧾 Starting WhatsApp receipt process for: ${receiptNumber}`);
+  
+  try {
+    const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
+    console.log(`📱 WhatsApp service imported successfully for: ${receiptNumber}`);
+    
+    const parent = feeCollection.student.parent;
+    const parentPhoneNumber = parent?.fatherMobile || parent?.motherMobile;
+    
+    console.log(`👨‍👩‍👧‍👦 Parent info for ${receiptNumber}:`, {
+      hasParent: !!parent,
+      fatherMobile: parent?.fatherMobile,
+      motherMobile: parent?.motherMobile,
+      selectedPhone: parentPhoneNumber
+    });
+    
+    if (parentPhoneNumber && parent) {
+      // Determine parent name
+      let parentName = "Parent";
+      if (parentPhoneNumber === parent.fatherMobile && parent.fatherName) {
+        parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
+      } else if (parentPhoneNumber === parent.motherMobile && parent.motherName) {
+        parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
+      } else if (parent.fatherName) {
+        parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
+      } else if (parent.motherName) {
+        parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
+      }
+
+      const receiptData = {
+        receiptNumber: feeCollection.receiptNumber,
+        studentName: `${feeCollection.student.firstName} ${feeCollection.student.lastName}`,
+        amount: feeCollection.totalAmount,
+        paymentDate: feeCollection.paymentDate,
+        parentPhoneNumber: parentPhoneNumber,
+        branchName: feeCollection.branch.name,
+        parentName: parentName,
+        branchId: feeCollection.branchId,
+        studentId: feeCollection.studentId,
+        parentId: parent.id,
+      };
+
+      console.log(`📤 Initiating WhatsApp receipt for ${receiptNumber} (with PDF waiting):`, {
+        studentName: receiptData.studentName,
+        amount: receiptData.amount,
+        parentName: receiptData.parentName,
+        phone: receiptData.parentPhoneNumber,
+        branch: receiptData.branchName
+      });
+
+      const result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
+      
+      if (result.success) {
+        console.log(`✅ WhatsApp receipt sent successfully for ${receiptNumber}:`, {
+          messageId: result.messageId,
+          phone: parentPhoneNumber
+        });
+      } else {
+        console.error(`❌ WhatsApp receipt failed for ${receiptNumber}:`, result.error);
+      }
+    } else {
+      console.warn(`⚠️ No parent phone number available for WhatsApp receipt: ${receiptNumber}`, {
+        hasParent: !!parent,
+        fatherMobile: parent?.fatherMobile,
+        motherMobile: parent?.motherMobile
+      });
+    }
+  } catch (error) {
+    console.error(`💥 Exception in WhatsApp receipt sending for ${receiptNumber}:`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      receiptNumber
+    });
+    // Don't throw error as this shouldn't break the payment flow
+  }
+}
+
 export const financeRouter = createTRPCRouter({
   // Fee Head Management
   getFeeHeads: publicProcedure
@@ -1149,91 +1249,23 @@ export const financeRouter = createTRPCRouter({
           },
         });
 
-        // Enhanced WhatsApp receipt sending with Message History logging (enables webhook status updates)
-        if (completeFeeCollection) {
-          // Don't await this to avoid blocking the response, but add comprehensive logging
-          setImmediate(async () => {
-            const receiptNumber = completeFeeCollection.receiptNumber;
-            console.log(`🧾 Starting WhatsApp receipt process for: ${receiptNumber}`);
-            
-            try {
-              const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
-              console.log(`📱 WhatsApp service imported successfully for: ${receiptNumber}`);
-              
-              const parent = completeFeeCollection.student.parent;
-              const parentPhoneNumber = parent?.fatherMobile || parent?.motherMobile;
-              
-              console.log(`👨‍👩‍👧‍👦 Parent info for ${receiptNumber}:`, {
-                hasParent: !!parent,
-                fatherMobile: parent?.fatherMobile,
-                motherMobile: parent?.motherMobile,
-                selectedPhone: parentPhoneNumber
-              });
-              
-              if (parentPhoneNumber && parent) {
-                // Determine parent name
-                let parentName = "Parent";
-                if (parentPhoneNumber === parent.fatherMobile && parent.fatherName) {
-                  parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
-                } else if (parentPhoneNumber === parent.motherMobile && parent.motherName) {
-                  parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
-                } else if (parent.fatherName) {
-                  parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
-                } else if (parent.motherName) {
-                  parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
-                }
-
-                const receiptData = {
-                  receiptNumber: completeFeeCollection.receiptNumber,
-                  studentName: `${completeFeeCollection.student.firstName} ${completeFeeCollection.student.lastName}`,
-                  amount: completeFeeCollection.totalAmount,
-                  paymentDate: completeFeeCollection.paymentDate,
-                  parentPhoneNumber: parentPhoneNumber,
-                  branchName: completeFeeCollection.branch.name,
-                  parentName: parentName,
-                  branchId: completeFeeCollection.branchId,
-                  studentId: completeFeeCollection.studentId,
-                  parentId: parent.id,
-                };
-
-                console.log(`📤 Initiating WhatsApp receipt for ${receiptNumber} (with PDF waiting):`, {
-                  studentName: receiptData.studentName,
-                  amount: receiptData.amount,
-                  parentName: receiptData.parentName,
-                  phone: receiptData.parentPhoneNumber,
-                  branch: receiptData.branchName
-                });
-
-                const result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
-                
-                if (result.success) {
-                  console.log(`✅ WhatsApp receipt sent successfully for ${receiptNumber}:`, {
-                    messageId: result.messageId,
-                    phone: parentPhoneNumber
-                  });
-                } else {
-                  console.error(`❌ WhatsApp receipt failed for ${receiptNumber}:`, result.error);
-                }
-              } else {
-                console.warn(`⚠️ No parent phone number available for WhatsApp receipt: ${receiptNumber}`, {
-                  hasParent: !!parent,
-                  fatherMobile: parent?.fatherMobile,
-                  motherMobile: parent?.motherMobile
-                });
-              }
-            } catch (error) {
-              console.error(`💥 Exception in WhatsApp receipt sending for ${receiptNumber}:`, {
-                error: error instanceof Error ? error.message : 'Unknown error',
-                stack: error instanceof Error ? error.stack : 'No stack trace',
-                receiptNumber
-              });
-              // Don't throw error as this shouldn't break the payment flow
-            }
-          });
-        }
-
         return completeFeeCollection;
       });
+
+      // Send WhatsApp receipt AFTER transaction completes successfully
+      if (feeCollection) {
+        // Use process.nextTick to ensure this runs completely outside the transaction
+        process.nextTick(async () => {
+          try {
+            await sendWhatsAppReceipt(feeCollection);
+          } catch (error) {
+            console.error('WhatsApp receipt sending failed (non-blocking):', error);
+            // Don't throw - this is a background process
+          }
+        });
+      }
+
+      return feeCollection;
     }),
 
   // Bulk Fee Collection

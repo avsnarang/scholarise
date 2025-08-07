@@ -188,65 +188,67 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
 
     console.log(`Payment success processed for order ${orderId}, payment ${paymentId}`);
 
-    // Try to send WhatsApp receipt automatically
-    try {
-      const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
-      
-      // Get student data with parent info
-      const studentWithParent = await db.student.findUnique({
-        where: { id: transaction.studentId },
-        include: {
-          parent: true,
-        }
-      });
-
-      if (studentWithParent) {
-        const parentPhoneNumber = studentWithParent.parent?.fatherMobile || studentWithParent.parent?.motherMobile;
+    // Schedule WhatsApp receipt sending (separate from database operations)
+    process.nextTick(async () => {
+      try {
+        const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
         
-        if (parentPhoneNumber) {
-          // Determine parent name
-          let parentName = "Parent";
-          if (studentWithParent.parent) {
-            if (parentPhoneNumber === studentWithParent.parent.fatherMobile && studentWithParent.parent.fatherName) {
-              parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
-            } else if (parentPhoneNumber === studentWithParent.parent.motherMobile && studentWithParent.parent.motherName) {
-              parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
-            } else if (studentWithParent.parent.fatherName) {
-              parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
-            } else if (studentWithParent.parent.motherName) {
-              parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
-            }
+        // Get student data with parent info
+        const studentWithParent = await db.student.findUnique({
+          where: { id: transaction.studentId },
+          include: {
+            parent: true,
           }
+        });
 
-          const receiptData = {
-            receiptNumber: feeCollection.receiptNumber,
-            studentName: `${studentWithParent.firstName} ${studentWithParent.lastName}`,
-            amount: feeCollection.totalAmount,
-            paymentDate: feeCollection.paymentDate,
-            parentPhoneNumber: parentPhoneNumber,
-            branchName: transaction.branch?.name || 'School',
-            parentName: parentName,
-            branchId: transaction.branchId,
-            studentId: studentWithParent.id,
-            parentId: studentWithParent.parent?.id,
-          };
-
-          console.log(`📤 Initiating WhatsApp receipt for order ${orderId} with PDF waiting...`);
-          const whatsappResult = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
+        if (studentWithParent) {
+          const parentPhoneNumber = studentWithParent.parent?.fatherMobile || studentWithParent.parent?.motherMobile;
           
-          if (whatsappResult.success) {
-            console.log(`✅ WhatsApp receipt sent successfully for order ${orderId} to ${parentPhoneNumber}`);
+          if (parentPhoneNumber) {
+            // Determine parent name
+            let parentName = "Parent";
+            if (studentWithParent.parent) {
+              if (parentPhoneNumber === studentWithParent.parent.fatherMobile && studentWithParent.parent.fatherName) {
+                parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
+              } else if (parentPhoneNumber === studentWithParent.parent.motherMobile && studentWithParent.parent.motherName) {
+                parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
+              } else if (studentWithParent.parent.fatherName) {
+                parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
+              } else if (studentWithParent.parent.motherName) {
+                parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
+              }
+            }
+
+            const receiptData = {
+              receiptNumber: feeCollection.receiptNumber,
+              studentName: `${studentWithParent.firstName} ${studentWithParent.lastName}`,
+              amount: feeCollection.totalAmount,
+              paymentDate: feeCollection.paymentDate,
+              parentPhoneNumber: parentPhoneNumber,
+              branchName: transaction.branch?.name || 'School',
+              parentName: parentName,
+              branchId: transaction.branchId,
+              studentId: studentWithParent.id,
+              parentId: studentWithParent.parent?.id,
+            };
+
+            console.log(`📤 Initiating WhatsApp receipt for order ${orderId} with PDF waiting...`);
+            const whatsappResult = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
+            
+            if (whatsappResult.success) {
+              console.log(`✅ WhatsApp receipt sent successfully for order ${orderId} to ${parentPhoneNumber}`);
+            } else {
+              console.log(`❌ WhatsApp receipt failed for order ${orderId}: ${whatsappResult.error}`);
+            }
           } else {
-            console.log(`❌ WhatsApp receipt failed for order ${orderId}: ${whatsappResult.error}`);
+            console.log(`No phone number available for WhatsApp receipt for order ${orderId}`);
           }
-        } else {
-          console.log(`No phone number available for WhatsApp receipt for order ${orderId}`);
         }
+      } catch (whatsappError) {
+        console.error('WhatsApp sending failed for payment webhook:', whatsappError);
+        // Don't throw error as WhatsApp failure shouldn't break payment processing
       }
-    } catch (whatsappError) {
-      console.error('WhatsApp sending failed for payment webhook:', whatsappError);
-      // Don't throw error as WhatsApp failure shouldn't break payment processing
-    }
+    });
     
   } catch (error) {
     console.error('Error handling payment success:', error);
