@@ -36,7 +36,8 @@ export class WhatsAppReceiptService {
           method: 'HEAD',
           cache: 'no-cache',
           headers: {
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache',
+            'User-Agent': 'WhatsApp/2.0'
           }
         });
         
@@ -45,7 +46,7 @@ export class WhatsAppReceiptService {
           return true;
         }
         
-        console.log(`⏳ PDF not ready yet (attempt ${attempt}/${maxRetries}), status: ${response.status}`);
+        console.log(`⏳ PDF not ready yet (attempt ${attempt}/${maxRetries}), status: ${response.status}, content-type: ${response.headers.get('content-type')}`);
       } catch (error) {
         console.log(`⚠️ PDF check failed (attempt ${attempt}/${maxRetries}):`, error instanceof Error ? error.message : 'Unknown error');
       }
@@ -60,6 +61,82 @@ export class WhatsAppReceiptService {
     
     console.log(`❌ PDF not ready after ${maxRetries} attempts: ${pdfUrl}`);
     return false;
+  }
+
+  /**
+   * Test external accessibility of PDF URL (simulates WhatsApp's access)
+   */
+  private static async testExternalAccess(pdfUrl: string): Promise<{ accessible: boolean; error?: string; details?: any }> {
+    try {
+      console.log(`🌐 Testing external accessibility: ${pdfUrl}`);
+      
+      // Test with headers that WhatsApp might use
+      const response = await fetch(pdfUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'WhatsApp/2.0',
+          'Accept': 'application/pdf,*/*',
+          'Cache-Control': 'no-cache'
+        },
+        // Set a timeout to avoid hanging
+        signal: AbortSignal.timeout(10000) // 10 seconds timeout
+      });
+
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
+
+      if (!response.ok) {
+        return {
+          accessible: false,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          }
+        };
+      }
+
+      if (!contentType?.includes('application/pdf')) {
+        return {
+          accessible: false,
+          error: `Invalid content type: ${contentType}`,
+          details: { contentType, contentLength }
+        };
+      }
+
+      // Check if content exists
+      const contentLengthNum = contentLength ? parseInt(contentLength) : 0;
+      if (contentLengthNum < 1000) { // PDF should be at least 1KB
+        return {
+          accessible: false,
+          error: `Content too small: ${contentLengthNum} bytes`,
+          details: { contentLength: contentLengthNum }
+        };
+      }
+
+      console.log(`✅ External access successful: ${contentType}, ${contentLength} bytes`);
+      return { 
+        accessible: true, 
+        details: { 
+          contentType, 
+          contentLength: contentLengthNum,
+          status: response.status 
+        } 
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ External access test failed: ${errorMessage}`);
+      return {
+        accessible: false,
+        error: errorMessage,
+        details: { 
+          errorType: error?.constructor.name,
+          isTimeout: errorMessage.includes('timeout') || errorMessage.includes('aborted')
+        }
+      };
+    }
   }
 
   /**
@@ -163,7 +240,47 @@ export class WhatsAppReceiptService {
         };
       }
 
-      console.log(`✅ PDF is ready, proceeding with WhatsApp message for receipt: ${data.receiptNumber}`);
+      console.log(`✅ PDF is ready, testing external accessibility for receipt: ${data.receiptNumber}`);
+      
+      // Test external accessibility (simulates WhatsApp's access)
+      const externalAccess = await this.testExternalAccess(receiptPdfUrl);
+      
+      if (!externalAccess.accessible) {
+        const errorMessage = `PDF not externally accessible for WhatsApp: ${externalAccess.error}`;
+        console.error(`❌ ${errorMessage}`, externalAccess.details);
+        
+        // Update message records with failure
+        try {
+          if (messageId) {
+            await db.communicationMessage.update({
+              where: { id: messageId },
+              data: {
+                status: 'FAILED',
+                failed: 1
+              }
+            });
+          }
+          
+          if (messageRecipientId) {
+            await db.messageRecipient.update({
+              where: { id: messageRecipientId },
+              data: {
+                status: 'FAILED',
+                errorMessage: `${errorMessage} - Details: ${JSON.stringify(externalAccess.details)}`
+              }
+            });
+          }
+        } catch (updateError) {
+          console.error('Failed to update message history:', updateError);
+        }
+        
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+
+      console.log(`✅ PDF is externally accessible, proceeding with WhatsApp message for receipt: ${data.receiptNumber}`);
 
       // Format amount in Indian currency
       const formattedAmount = data.amount.toLocaleString('en-IN');
@@ -266,8 +383,22 @@ export class WhatsAppReceiptService {
       } else {
         console.error('WhatsApp API Error:', result);
         
+        // Check for specific media upload errors
+        let errorMessage = result.error?.message || 'Failed to send WhatsApp message';
+        let isMediaError = false;
+        
+        if (result.error?.code === 131047 || result.error?.message?.includes('media')) {
+          isMediaError = true;
+          errorMessage = `Media upload failed: ${result.error?.message || 'PDF document could not be uploaded'}`;
+          console.error(`📎 Media upload error detected for receipt ${data.receiptNumber}:`, {
+            errorCode: result.error?.code,
+            errorMessage: result.error?.message,
+            pdfUrl: receiptPdfUrl,
+            errorDetails: result.error
+          });
+        }
+        
         // Update message records with failure
-        const errorMessage = result.error?.message || 'Failed to send WhatsApp message';
         try {
           if (messageId) {
             await db.communicationMessage.update({
@@ -284,7 +415,7 @@ export class WhatsAppReceiptService {
               where: { id: messageRecipientId },
               data: {
                 status: 'FAILED',
-                errorMessage: errorMessage
+                errorMessage: `${errorMessage}${isMediaError ? ` (PDF URL: ${receiptPdfUrl})` : ''}`
               }
             });
           }
