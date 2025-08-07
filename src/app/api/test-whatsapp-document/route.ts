@@ -1,6 +1,83 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { env } from "@/env.js";
 
+// Direct WhatsApp API call for testing (without automation logging)
+async function testWhatsAppDirectly(data: any) {
+  const accessToken = env.META_WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = env.META_WHATSAPP_PHONE_NUMBER_ID;
+
+  if (!accessToken || !phoneNumberId) {
+    return {
+      success: false,
+      error: 'WhatsApp API credentials not configured'
+    };
+  }
+
+  const formattedAmount = data.amount.toLocaleString('en-IN');
+  const formattedDate = data.paymentDate.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit', 
+    year: 'numeric',
+  });
+
+  const cleanPhoneNumber = data.parentPhoneNumber.replace(/[^\d+]/g, '');
+
+  const templateMessage = {
+    messaging_product: "whatsapp",
+    to: cleanPhoneNumber,
+    type: "template",
+    template: {
+      name: "fee_receipt_automatic",
+      language: { code: "en" },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: data.parentName || "Parent" },
+            { type: "text", text: data.studentName },
+            { type: "text", text: data.receiptNumber },
+            { type: "text", text: formattedAmount },
+            { type: "text", text: formattedDate }
+          ]
+        }
+      ]
+    }
+  };
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v23.0/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(templateMessage)
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok && result.messages?.[0]?.id) {
+      return {
+        success: true,
+        messageId: result.messages[0].id
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error?.message || 'Failed to send WhatsApp message'
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -13,7 +90,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Test the document message structure according to WhatsApp Cloud API
+    // Test the template message structure (text-only, no document header)
     const testDocumentMessage = {
       messaging_product: "whatsapp",
       to: phoneNumber.replace(/[^\d+]/g, ''),
@@ -23,24 +100,12 @@ export async function GET(request: NextRequest) {
         language: { code: "en" },
         components: [
           {
-            type: "header",
-            parameters: [
-              {
-                type: "document",
-                document: {
-                  link: `${env.NEXT_PUBLIC_APP_URL}/api/receipts/TEST_RECEIPT_123/pdf`,
-                  filename: "Fee_Receipt_TEST_RECEIPT_123.pdf"
-                }
-              }
-            ]
-          },
-          {
             type: "body",
             parameters: [
               { type: "text", text: "Parent" }, // {{1}} - Parent greeting
               { type: "text", text: "Test Student" }, // {{2}} - Student name
               { type: "text", text: "TEST_RECEIPT_123" }, // {{3}} - Receipt number
-              { type: "text", text: "₹5,000" }, // {{4}} - Amount with currency symbol
+              { type: "text", text: "5,000" }, // {{4}} - Amount (no ₹ symbol)
               { type: "text", text: "15/01/2025" } // {{5}} - Date
             ]
           }
@@ -147,30 +212,58 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Use the actual WhatsApp receipt service
-    const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
-
-    const receiptData = {
+    // For testing, create a simplified WhatsApp call without automation logging
+    
+    // Test WhatsApp sending directly without automation logging
+    const testData = {
       receiptNumber,
       studentName,
       amount: amount || 5000,
       paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
       parentPhoneNumber: phoneNumber,
       branchName: 'Test Branch',
-      branchId: 'test-branch-id',
-      studentId: 'test-student-id',
       parentName: 'Test Parent'
     };
 
-    const result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
+    // For automation logging test, use the actual WhatsApp service with a real branch ID
+    // First try to get a real branch from the database
+    const { db } = await import("@/server/db");
+    const realBranch = await db.branch.findFirst();
+    
+    if (realBranch) {
+      // Use real WhatsApp service with automation logging
+      const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
+      const fullTestData = {
+        ...testData,
+        branchId: realBranch.id,
+        studentId: 'test-student-id',
+        parentId: 'test-parent-id',
+      };
+      
+      const result = await WhatsAppReceiptService.sendReceiptTemplate(fullTestData);
+      
+      return NextResponse.json({
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error,
+        receiptData: fullTestData,
+        usedService: 'WhatsAppReceiptService.sendReceiptTemplate (with automation logging)',
+        branchUsed: realBranch.name
+      });
+    } else {
+      // Fallback to direct API call if no branches exist
+      const result = await testWhatsAppDirectly(testData);
+      
+      return NextResponse.json({
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error,
+        receiptData: testData,
+        usedService: 'Direct WhatsApp API (no branches found in database)'
+      });
+    }
 
-    return NextResponse.json({
-      success: result.success,
-      messageId: result.messageId,
-      error: result.error,
-      receiptData,
-      usedService: 'WhatsAppReceiptService.sendReceiptTemplate'
-    });
+
 
   } catch (error) {
     console.error('WhatsApp receipt service test error:', error);

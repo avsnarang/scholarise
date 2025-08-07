@@ -1,6 +1,5 @@
 import { env } from "@/env.js";
 import { db } from "@/server/db";
-import { createAutomationLogger, type AutomationLogEntry } from "@/utils/automation-logger";
 
 export interface ReceiptWhatsAppData {
   receiptNumber: string;
@@ -29,33 +28,44 @@ export class WhatsAppReceiptService {
    * Send receipt via WhatsApp template with document header
    */
   static async sendReceiptTemplate(data: ReceiptWhatsAppData): Promise<WhatsAppTemplateResponse> {
-    const automationLogger = createAutomationLogger(db);
-    let logId: string | undefined;
+    let messageId: string | undefined;
+    let messageRecipientId: string | undefined;
     
     try {
-      // Create automation log entry
-      logId = await automationLogger.createLog({
-        automationType: 'FEE_RECEIPT',
-        automationTrigger: 'fee_payment_receipt',
-        messageTitle: `Fee Receipt - ${data.receiptNumber}`,
-        messageContent: `Fee receipt for ${data.studentName} - Amount: ₹${data.amount.toLocaleString('en-IN')}`,
-        templateName: 'fee_receipt_automatic',
-        recipientId: data.parentId || data.studentId || 'unknown',
-        recipientName: data.parentName || 'Parent',
-        recipientPhone: data.parentPhoneNumber,
-        recipientType: 'PARENT',
-        automationContext: {
-          receiptNumber: data.receiptNumber,
-          studentName: data.studentName,
-          amount: data.amount,
-          paymentDate: data.paymentDate.toISOString(),
-          branchName: data.branchName,
-        },
-        branchId: data.branchId,
-        platformUsed: 'WHATSAPP',
+      // Create communication message in Message History (instead of Automation Logs)
+      const communicationMessage = await db.communicationMessage.create({
+        data: {
+          title: `[Automation] Fee Receipt - ${data.receiptNumber}`,
+          templateId: 'cme0icwzq00017ir5s9lunxya', // fee_receipt_automatic template ID
+          messageType: 'WHATSAPP',
+          recipientType: 'PARENTS', 
+          status: 'PENDING',
+          totalRecipients: 1,
+          successfulSent: 0,
+          failed: 0,
+          branchId: data.branchId,
+          createdBy: 'system' // Mark as automation message
+        }
       });
+      
+      messageId = communicationMessage.id;
+
+      // Create message recipient record
+      const messageRecipient = await db.messageRecipient.create({
+        data: {
+          messageId: communicationMessage.id,
+          recipientType: 'PARENT',
+          recipientId: data.parentId || data.studentId || 'unknown',
+          recipientName: data.parentName || 'Parent',
+          recipientPhone: this.formatPhoneNumber(data.parentPhoneNumber),
+          status: 'PENDING'
+        }
+      });
+      
+      messageRecipientId = messageRecipient.id;
+      
     } catch (logError) {
-      console.error('Failed to create automation log:', logError);
+      console.error('Failed to create message history log:', logError);
       // Continue with WhatsApp sending even if logging fails
     }
 
@@ -71,8 +81,9 @@ export class WhatsAppReceiptService {
         };
       }
 
-      // Construct receipt PDF URL
-      const receiptPdfUrl = `${baseUrl}/api/receipts/${data.receiptNumber}/pdf`;
+      // Construct receipt PDF URL with proper URL encoding
+      const encodedReceiptNumber = encodeURIComponent(data.receiptNumber);
+      const receiptPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
 
       // Format amount in Indian currency
       const formattedAmount = data.amount.toLocaleString('en-IN');
@@ -87,13 +98,13 @@ export class WhatsAppReceiptService {
       // Clean phone number for WhatsApp format
       const cleanPhoneNumber = this.formatPhoneNumber(data.parentPhoneNumber);
 
-      // Prepare template message
+      // Prepare template message with document header (matching exact approved template structure)
       const templateMessage = {
         messaging_product: "whatsapp",
         to: cleanPhoneNumber,
         type: "template",
         template: {
-          name: "fee_receipt_automatic", // This template has been approved in Meta Business Manager
+          name: "fee_receipt_automatic", // This template has been approved with DOCUMENT header
           language: { code: "en" },
           components: [
             {
@@ -102,8 +113,8 @@ export class WhatsAppReceiptService {
                 {
                   type: "document",
                   document: {
-                    link: receiptPdfUrl,
-                    filename: `Fee_Receipt_${data.receiptNumber}.pdf`
+                    link: receiptPdfUrl
+                    // Note: filename might not be needed for the template
                   }
                 }
               ]
@@ -111,11 +122,11 @@ export class WhatsAppReceiptService {
             {
               type: "body",
               parameters: [
-                { type: "text", text: data.parentName || "Parent" }, // {{1}} - Parent greeting
-                { type: "text", text: data.studentName }, // {{2}} - Student name
-                { type: "text", text: data.receiptNumber }, // {{3}} - Receipt number
-                { type: "text", text: `₹${formattedAmount}` }, // {{4}} - Amount with currency symbol
-                { type: "text", text: formattedDate } // {{5}} - Date
+                { type: "text", text: data.parentName || "Parent" }, // {{1}} - Parent Name
+                { type: "text", text: data.studentName }, // {{2}} - Student Name
+                { type: "text", text: data.receiptNumber }, // {{3}} - Receipt Number
+                { type: "text", text: formattedAmount }, // {{4}} - Amount Paid (no ₹ symbol, template has it)
+                { type: "text", text: formattedDate } // {{5}} - Transaction Date/Payment Date
               ]
             }
           ]
@@ -138,71 +149,107 @@ export class WhatsAppReceiptService {
       const result = await response.json();
 
       if (response.ok && result.messages?.[0]?.id) {
-        // Update automation log with success
-        if (logId) {
-          try {
-            await automationLogger.updateDeliveryStatus({
-              logId,
-              status: 'SENT',
-              deliveryDetails: {
+        const metaMessageId = result.messages[0].id;
+        
+        // Update message records with success
+        try {
+          if (messageId) {
+            await db.communicationMessage.update({
+              where: { id: messageId },
+              data: {
+                status: 'SENT',
                 sentAt: new Date(),
-                externalMessageId: result.messages[0].id,
+                successfulSent: 1,
+                metaMessageId: metaMessageId
               }
             });
-          } catch (updateError) {
-            console.error('Failed to update automation log:', updateError);
           }
+          
+          if (messageRecipientId) {
+            await db.messageRecipient.update({
+              where: { id: messageRecipientId },
+              data: {
+                status: 'SENT',
+                sentAt: new Date(),
+                metaMessageId: metaMessageId
+              }
+            });
+          }
+        } catch (updateError) {
+          console.error('Failed to update message history:', updateError);
         }
 
         return {
           success: true,
-          messageId: result.messages[0].id
+          messageId: metaMessageId
         };
       } else {
         console.error('WhatsApp API Error:', result);
         
-        // Update automation log with failure
-        if (logId) {
-          try {
-            await automationLogger.updateDeliveryStatus({
-              logId,
-              status: 'FAILED',
-              deliveryDetails: {
-                errorMessage: result.error?.message || 'Failed to send WhatsApp message',
+        // Update message records with failure
+        const errorMessage = result.error?.message || 'Failed to send WhatsApp message';
+        try {
+          if (messageId) {
+            await db.communicationMessage.update({
+              where: { id: messageId },
+              data: {
+                status: 'FAILED',
+                failed: 1
               }
             });
-          } catch (updateError) {
-            console.error('Failed to update automation log:', updateError);
           }
+          
+          if (messageRecipientId) {
+            await db.messageRecipient.update({
+              where: { id: messageRecipientId },
+              data: {
+                status: 'FAILED',
+                errorMessage: errorMessage
+              }
+            });
+          }
+        } catch (updateError) {
+          console.error('Failed to update message history:', updateError);
         }
 
         return {
           success: false,
-          error: result.error?.message || 'Failed to send WhatsApp message'
+          error: errorMessage
         };
       }
 
     } catch (error) {
       console.error('Error sending WhatsApp receipt:', error);
       
-      // Update automation log with error
-      if (logId) {
-        try {
-          await automationLogger.updateDeliveryStatus({
-            logId,
-            status: 'FAILED',
-            deliveryDetails: {
-              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      // Update message records with error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      try {
+        if (messageId) {
+          await db.communicationMessage.update({
+            where: { id: messageId },
+            data: {
+              status: 'FAILED',
+              failed: 1
             }
           });
-        } catch (updateError) {
-          console.error('Failed to update automation log:', updateError);
         }
+        
+        if (messageRecipientId) {
+          await db.messageRecipient.update({
+            where: { id: messageRecipientId },
+            data: {
+              status: 'FAILED',
+              errorMessage: errorMessage
+            }
+          });
+        }
+      } catch (updateError) {
+        console.error('Failed to update message history:', updateError);
       }
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
@@ -246,6 +293,7 @@ export class WhatsAppReceiptService {
     const baseUrl = env.NEXT_PUBLIC_APP_URL;
     if (!baseUrl) return null;
     
-    return `${baseUrl}/api/receipts/${receiptNumber}/pdf`;
+    const encodedReceiptNumber = encodeURIComponent(receiptNumber);
+    return `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
   }
 }

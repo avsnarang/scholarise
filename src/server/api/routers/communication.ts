@@ -5,6 +5,7 @@ import { Permission } from "@/types/permissions";
 import { env } from "@/env.js";
 import { triggerMessageJob } from "@/utils/edge-function-client";
 import { sendMessageInBatches, shouldUseBatchProcessing } from "@/utils/batch-message-sender";
+import { processMetaTemplate, validateProcessedTemplate, logTemplateSyncDetails, createTemplateDataObject, detectSyncConflicts, createSyncErrorReport } from "@/utils/template-sync-processor";
 
 // Lazy import Twilio utilities to prevent client-side bundling
 const getWhatsAppUtils = async () => {
@@ -671,19 +672,27 @@ export const communicationRouter = createTRPCRouter({
         
         for (const whatsappTemplate of usableTemplates) {
           try {
-            // Meta WhatsApp API uses 'name' and components structure
             const templateName = whatsappTemplate.name || '';
             
-            // Extract template body from components (look for BODY component)
-            const bodyComponent = whatsappTemplate.components?.find((c: any) => c.type === 'BODY');
-            const templateBody = bodyComponent?.text || '';
+            // Process template using enhanced processor
+            const processedData = processMetaTemplate(whatsappTemplate);
             
-            // Extract variables from template body (look for {{1}}, {{2}}, etc.)
-            const variableMatches = templateBody.match(/\{\{\d+\}\}/g) || [];
-            const variables = variableMatches.map((match: string, index: number) => `variable_${index + 1}`);
+            // Validate processed template data
+            const validation = validateProcessedTemplate(processedData);
             
-            console.log(`Template ${templateName} body:`, templateBody);
-            console.log(`Template ${templateName} variables:`, variables);
+            // Log processing details
+            logTemplateSyncDetails(templateName, processedData, validation);
+            
+            // Skip templates with critical errors
+            if (!validation.isValid) {
+              console.error(`❌ Skipping template ${templateName} due to validation errors:`, validation.errors);
+              continue;
+            }
+            
+            // Log warnings but continue processing
+            if (validation.warnings.length > 0) {
+              console.warn(`⚠️ Template ${templateName} has warnings:`, validation.warnings);
+            }
             
             // Look for existing template using the compound unique constraint
             const existingTemplate = await ctx.db.whatsAppTemplate.findUnique({
@@ -692,66 +701,190 @@ export const communicationRouter = createTRPCRouter({
                   metaTemplateName: templateName,
                   metaTemplateLanguage: whatsappTemplate.language || 'en'
                 }
+              },
+              include: {
+                templateButtons: true,
+                templateMedia: true
               }
             });
             
             if (existingTemplate) {
+              // Detect potential sync conflicts
+              const conflictAnalysis = detectSyncConflicts(existingTemplate, whatsappTemplate, processedData);
+              
+              if (conflictAnalysis.hasConflicts) {
+                console.warn(`⚠️ Sync conflicts detected for template ${templateName}:`, {
+                  conflicts: conflictAnalysis.conflicts,
+                  recommendations: conflictAnalysis.recommendations
+                });
+              }
+              
               // Update existing template (keep original branch if it exists)
+              const updateData = createTemplateDataObject(whatsappTemplate, processedData, { 
+                isUpdate: true 
+              });
+              
               const updated = await ctx.db.whatsAppTemplate.update({
                 where: { id: existingTemplate.id },
-                data: {
-                  name: templateName,
-                  templateBody,
-                  templateVariables: variables,
-                  category: whatsappTemplate.category || 'UTILITY',
-                  language: whatsappTemplate.language || 'en',
-                  metaTemplateLanguage: whatsappTemplate.language || 'en',
-                  metaTemplateStatus: whatsappTemplate.status || 'APPROVED',
-                  metaTemplateId: whatsappTemplate.id,
-                  status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
-                  updatedAt: new Date(),
-                }
+                data: updateData
               });
+              
+              // Handle related data (buttons and media) in separate transactions for data integrity
+              if (processedData.buttons && processedData.buttons.length > 0) {
+                // Delete existing buttons and create new ones
+                await ctx.db.templateButton.deleteMany({
+                  where: { templateId: existingTemplate.id }
+                });
+                
+                await ctx.db.templateButton.createMany({
+                  data: processedData.buttons.map(button => ({
+                    templateId: existingTemplate.id,
+                    type: button.type,
+                    text: button.text,
+                    url: button.url,
+                    phoneNumber: button.phoneNumber,
+                    payload: button.payload,
+                    order: button.order
+                  }))
+                });
+              }
+              
+              if (processedData.mediaAttachments && processedData.mediaAttachments.length > 0) {
+                // Delete existing media and create new ones
+                await ctx.db.templateMedia.deleteMany({
+                  where: { templateId: existingTemplate.id }
+                });
+                
+                await ctx.db.templateMedia.createMany({
+                  data: processedData.mediaAttachments.map(media => ({
+                    templateId: existingTemplate.id,
+                    type: media.type,
+                    url: media.url,
+                    filename: media.filename,
+                    mimeType: media.mimeType,
+                    caption: media.caption
+                  }))
+                });
+              }
+              
               syncedTemplates.push(updated);
+              console.log(`✅ Updated template: ${templateName}`);
             } else {
               // Create new template - assign to origin branch if provided
+              const createData = createTemplateDataObject(whatsappTemplate, processedData, {
+                createdBy: ctx.userId,
+                branchId: input.originBranchId
+              });
+              
               const created = await ctx.db.whatsAppTemplate.create({
+                data: createData
+              });
+              
+              // Create related data (buttons and media)
+              if (processedData.buttons && processedData.buttons.length > 0) {
+                await ctx.db.templateButton.createMany({
+                  data: processedData.buttons.map(button => ({
+                    templateId: created.id,
+                    type: button.type,
+                    text: button.text,
+                    url: button.url,
+                    phoneNumber: button.phoneNumber,
+                    payload: button.payload,
+                    order: button.order
+                  }))
+                });
+              }
+              
+              if (processedData.mediaAttachments && processedData.mediaAttachments.length > 0) {
+                await ctx.db.templateMedia.createMany({
+                  data: processedData.mediaAttachments.map(media => ({
+                    templateId: created.id,
+                    type: media.type,
+                    url: media.url,
+                    filename: media.filename,
+                    mimeType: media.mimeType,
+                    caption: media.caption
+                  }))
+                });
+              }
+              
+              syncedTemplates.push(created);
+              console.log(`✅ Created new template: ${templateName}`);
+            }
+          } catch (templateError: any) {
+            const errorReport = createSyncErrorReport(
+              whatsappTemplate.name || 'unknown', 
+              templateError, 
+              whatsappTemplate
+            );
+            
+            console.error(`❌ Error syncing template ${whatsappTemplate.name || whatsappTemplate.id}:`, {
+              errorType: errorReport.errorType,
+              errorMessage: errorReport.errorMessage,
+              suggestedActions: errorReport.suggestedActions,
+              debugInfo: errorReport.debugInfo
+            });
+            
+            // Log error to database for tracking and analytics
+            try {
+              await ctx.db.communicationLog.create({
                 data: {
-                  name: templateName,
-                  metaTemplateId: whatsappTemplate.id,
-                  metaTemplateName: templateName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-                  metaTemplateLanguage: whatsappTemplate.language || 'en',
-                  metaTemplateStatus: whatsappTemplate.status || 'APPROVED',
-                  templateBody,
-                  templateVariables: variables,
-                  category: whatsappTemplate.category || 'UTILITY',
-                  language: whatsappTemplate.language || 'en',
-                  status: (whatsappTemplate.status === 'approved' || whatsappTemplate.status === 'APPROVED' || !whatsappTemplate.status) ? 'APPROVED' : 'PENDING',
-                  branchId: input.originBranchId, // Optional - templates are now global
-                  createdBy: ctx.userId,
+                  action: "template_sync_error",
+                  description: `Failed to sync template "${whatsappTemplate.name}": ${errorReport.errorMessage}`,
+                  metadata: JSON.parse(JSON.stringify({
+                    templateName: whatsappTemplate.name,
+                    errorType: errorReport.errorType,
+                    errorCode: templateError?.code || 'unknown',
+                    suggestedActions: errorReport.suggestedActions,
+                    originalError: templateError?.message || 'Unknown error',
+                    timestamp: new Date().toISOString()
+                  })),
+                  userId: ctx.userId,
                 }
               });
-              syncedTemplates.push(created);
+            } catch (logError) {
+              console.error('Failed to log sync error:', logError);
             }
-          } catch (templateError) {
-            console.error(`Error syncing template ${whatsappTemplate.id}:`, templateError);
+            
             // Continue with other templates
           }
         }
         
-        // Log the sync activity
+        // Enhanced sync activity logging with detailed metadata
+        const syncMetadata = {
+          totalWhatsappTemplates: whatsappTemplates.length,
+          usableTemplates: usableTemplates.length,
+          syncedCount: syncedTemplates.length,
+          originBranchId: input.originBranchId,
+          syncTimestamp: new Date().toISOString(),
+          templatesWithRichMedia: syncedTemplates.filter(t => 
+            t.headerType || t.footerText || t.buttons || t.mediaAttachments
+          ).length,
+          templatesWithButtons: syncedTemplates.filter(t => t.buttons).length,
+          templatesWithMedia: syncedTemplates.filter(t => t.mediaAttachments).length,
+          templatesByCategory: syncedTemplates.reduce((acc: any, t) => {
+            acc[t.category] = (acc[t.category] || 0) + 1;
+            return acc;
+          }, {}),
+          syncedTemplateNames: syncedTemplates.map(t => t.name)
+        };
+
         await ctx.db.communicationLog.create({
           data: {
             action: "template_sync",
-            description: `Synced ${syncedTemplates.length} templates from Meta WhatsApp API`,
-            metadata: JSON.parse(JSON.stringify({
-                          totalWhatsappTemplates: whatsappTemplates.length,
-            usableTemplates: usableTemplates.length,
-              syncedCount: syncedTemplates.length,
-              originBranchId: input.originBranchId
-            })),
+            description: `Enhanced sync completed: ${syncedTemplates.length}/${usableTemplates.length} templates processed successfully from Meta WhatsApp API`,
+            metadata: JSON.parse(JSON.stringify(syncMetadata)),
             userId: ctx.userId,
           }
+        });
+
+        console.log(`🎉 Template sync completed successfully:`, {
+          totalProcessed: usableTemplates.length,
+          successfullySynced: syncedTemplates.length,
+          withRichMedia: syncMetadata.templatesWithRichMedia,
+          withButtons: syncMetadata.templatesWithButtons,
+          withMedia: syncMetadata.templatesWithMedia,
+          categories: syncMetadata.templatesByCategory
         });
         
         return {

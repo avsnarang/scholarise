@@ -170,7 +170,7 @@ export function StreamlinedFeeCollection({
   const { toast } = useToast();
   
   // WhatsApp receipt sending is now handled automatically by the payment collection API
-  // and logged in Automation Logs instead of Message History
+  // and logged in Message History (marked as [Automation] for filtering)
   
   // Monitor real-time payment updates for this student
   useStudentPaymentMonitor(student.id);
@@ -413,7 +413,7 @@ export function StreamlinedFeeCollection({
         }
 
         // WhatsApp receipt is automatically handled by the payment collection API
-        // Receipt will be logged in Automation Logs, not Message History
+        // Receipt will be logged in Message History with [Automation] tag
       }
 
       // Clear selection and reset form

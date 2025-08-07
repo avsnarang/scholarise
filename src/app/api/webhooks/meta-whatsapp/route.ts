@@ -444,13 +444,23 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
   const updateId = `update_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   
   try {
+    // Enhanced validation of incoming webhook data
+    const requiredFields = ['event', 'message_template_name'];
+    const missingFields = requiredFields.filter(field => !value[field]);
+    
+    if (missingFields.length > 0) {
+      console.error(`❌ Missing required fields in status update [${updateId}]:`, missingFields);
+      return;
+    }
+
     console.log(`📄 Processing template status update [${updateId}]:`, {
       event: value.event,
       templateName: value.message_template_name,
       templateId: value.message_template_id,
       language: value.message_template_language,
       reason: value.reason,
-      businessAccountId
+      businessAccountId,
+      timestamp: new Date().toISOString()
     });
     
     const {
@@ -461,9 +471,10 @@ async function processTemplateStatusUpdate(value: any, businessAccountId: string
       reason
     } = value;
 
-    if (!message_template_name) {
-      console.error(`❌ Missing template name in status update [${updateId}]`);
-      return;
+    // Validate event type
+    const validEvents = ['APPROVED', 'REJECTED', 'PENDING', 'FLAGGED', 'PAUSED', 'DISABLED'];
+    if (!validEvents.includes(event)) {
+      console.warn(`⚠️ Unknown event type: ${event} for template ${message_template_name} [${updateId}]`);
     }
 
     // Enhanced template lookup with detailed logging
