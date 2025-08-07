@@ -204,6 +204,20 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
         const parentPhoneNumber = studentWithParent.parent?.fatherMobile || studentWithParent.parent?.motherMobile;
         
         if (parentPhoneNumber) {
+          // Determine parent name
+          let parentName = "Parent";
+          if (studentWithParent.parent) {
+            if (parentPhoneNumber === studentWithParent.parent.fatherMobile && studentWithParent.parent.fatherName) {
+              parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
+            } else if (parentPhoneNumber === studentWithParent.parent.motherMobile && studentWithParent.parent.motherName) {
+              parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
+            } else if (studentWithParent.parent.fatherName) {
+              parentName = studentWithParent.parent.fatherName.toLowerCase().includes('mr.') ? studentWithParent.parent.fatherName : `Mr. ${studentWithParent.parent.fatherName}`;
+            } else if (studentWithParent.parent.motherName) {
+              parentName = studentWithParent.parent.motherName.toLowerCase().includes('mrs.') ? studentWithParent.parent.motherName : `Mrs. ${studentWithParent.parent.motherName}`;
+            }
+          }
+
           const receiptData = {
             receiptNumber: feeCollection.receiptNumber,
             studentName: `${studentWithParent.firstName} ${studentWithParent.lastName}`,
@@ -211,6 +225,10 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
             paymentDate: feeCollection.paymentDate,
             parentPhoneNumber: parentPhoneNumber,
             branchName: transaction.branch?.name || 'School',
+            parentName: parentName,
+            branchId: transaction.branchId,
+            studentId: studentWithParent.id,
+            parentId: studentWithParent.parent?.id,
           };
 
           const whatsappResult = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);

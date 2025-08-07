@@ -5771,6 +5771,22 @@ export const financeRouter = createTRPCRouter({
       // Import WhatsApp service dynamically to avoid build issues
       const { WhatsAppReceiptService } = await import("@/services/whatsapp-receipt-service");
 
+      // Determine parent name based on which phone number is being used
+      const parent = feeCollection.student.parent;
+      let parentName = "Parent";
+      
+      if (parent) {
+        if (phoneNumber === parent.fatherMobile && parent.fatherName) {
+          parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
+        } else if (phoneNumber === parent.motherMobile && parent.motherName) {
+          parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
+        } else if (parent.fatherName) {
+          parentName = parent.fatherName.toLowerCase().includes('mr.') ? parent.fatherName : `Mr. ${parent.fatherName}`;
+        } else if (parent.motherName) {
+          parentName = parent.motherName.toLowerCase().includes('mrs.') ? parent.motherName : `Mrs. ${parent.motherName}`;
+        }
+      }
+
       // Prepare receipt data
       const receiptData = {
         receiptNumber: feeCollection.receiptNumber,
@@ -5779,15 +5795,14 @@ export const financeRouter = createTRPCRouter({
         paymentDate: feeCollection.paymentDate,
         parentPhoneNumber: phoneNumber,
         branchName: feeCollection.branch.name,
+        parentName: parentName,
+        branchId: feeCollection.branchId,
+        studentId: feeCollection.studentId,
+        parentId: feeCollection.student.parent?.id,
       };
 
-      // Try to send with document template first, fallback to text template
+      // Send using the approved template
       let result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
-      
-      if (!result.success) {
-        // Fallback to text-only template
-        result = await WhatsAppReceiptService.sendReceiptTextTemplate(receiptData);
-      }
 
       if (!result.success) {
         throw new TRPCError({

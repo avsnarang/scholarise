@@ -1,4 +1,6 @@
 import { env } from "@/env.js";
+import { db } from "@/server/db";
+import { createAutomationLogger, type AutomationLogEntry } from "@/utils/automation-logger";
 
 export interface ReceiptWhatsAppData {
   receiptNumber: string;
@@ -7,6 +9,10 @@ export interface ReceiptWhatsAppData {
   paymentDate: Date;
   parentPhoneNumber: string;
   branchName?: string;
+  parentName?: string;
+  branchId: string;
+  studentId?: string;
+  parentId?: string;
 }
 
 export interface WhatsAppTemplateResponse {
@@ -23,6 +29,36 @@ export class WhatsAppReceiptService {
    * Send receipt via WhatsApp template with document header
    */
   static async sendReceiptTemplate(data: ReceiptWhatsAppData): Promise<WhatsAppTemplateResponse> {
+    const automationLogger = createAutomationLogger(db);
+    let logId: string | undefined;
+    
+    try {
+      // Create automation log entry
+      logId = await automationLogger.createLog({
+        automationType: 'FEE_RECEIPT',
+        automationTrigger: 'fee_payment_receipt',
+        messageTitle: `Fee Receipt - ${data.receiptNumber}`,
+        messageContent: `Fee receipt for ${data.studentName} - Amount: ₹${data.amount.toLocaleString('en-IN')}`,
+        templateName: 'fee_receipt_automatic',
+        recipientId: data.parentId || data.studentId || 'unknown',
+        recipientName: data.parentName || 'Parent',
+        recipientPhone: data.parentPhoneNumber,
+        recipientType: 'PARENT',
+        automationContext: {
+          receiptNumber: data.receiptNumber,
+          studentName: data.studentName,
+          amount: data.amount,
+          paymentDate: data.paymentDate.toISOString(),
+          branchName: data.branchName,
+        },
+        branchId: data.branchId,
+        platformUsed: 'WHATSAPP',
+      });
+    } catch (logError) {
+      console.error('Failed to create automation log:', logError);
+      // Continue with WhatsApp sending even if logging fails
+    }
+
     try {
       const accessToken = env.META_WHATSAPP_ACCESS_TOKEN;
       const phoneNumberId = env.META_WHATSAPP_PHONE_NUMBER_ID;
@@ -57,7 +93,7 @@ export class WhatsAppReceiptService {
         to: cleanPhoneNumber,
         type: "template",
         template: {
-          name: "fee_receipt_with_pdf", // This template needs to be created in Meta Business Manager
+          name: "fee_receipt_automatic", // This template has been approved in Meta Business Manager
           language: { code: "en" },
           components: [
             {
@@ -75,10 +111,11 @@ export class WhatsAppReceiptService {
             {
               type: "body",
               parameters: [
-                { type: "text", text: data.studentName },
-                { type: "text", text: data.receiptNumber },
-                { type: "text", text: formattedAmount },
-                { type: "text", text: formattedDate }
+                { type: "text", text: data.parentName || "Parent" }, // {{1}} - Parent greeting
+                { type: "text", text: data.studentName }, // {{2}} - Student name
+                { type: "text", text: data.receiptNumber }, // {{3}} - Receipt number
+                { type: "text", text: `₹${formattedAmount}` }, // {{4}} - Amount with currency symbol
+                { type: "text", text: formattedDate } // {{5}} - Date
               ]
             }
           ]
@@ -101,12 +138,44 @@ export class WhatsAppReceiptService {
       const result = await response.json();
 
       if (response.ok && result.messages?.[0]?.id) {
+        // Update automation log with success
+        if (logId) {
+          try {
+            await automationLogger.updateDeliveryStatus({
+              logId,
+              status: 'SENT',
+              deliveryDetails: {
+                sentAt: new Date(),
+                externalMessageId: result.messages[0].id,
+              }
+            });
+          } catch (updateError) {
+            console.error('Failed to update automation log:', updateError);
+          }
+        }
+
         return {
           success: true,
           messageId: result.messages[0].id
         };
       } else {
         console.error('WhatsApp API Error:', result);
+        
+        // Update automation log with failure
+        if (logId) {
+          try {
+            await automationLogger.updateDeliveryStatus({
+              logId,
+              status: 'FAILED',
+              deliveryDetails: {
+                errorMessage: result.error?.message || 'Failed to send WhatsApp message',
+              }
+            });
+          } catch (updateError) {
+            console.error('Failed to update automation log:', updateError);
+          }
+        }
+
         return {
           success: false,
           error: result.error?.message || 'Failed to send WhatsApp message'
@@ -115,99 +184,30 @@ export class WhatsAppReceiptService {
 
     } catch (error) {
       console.error('Error sending WhatsApp receipt:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }
-
-  /**
-   * Send receipt via alternative template (text-only fallback)
-   */
-  static async sendReceiptTextTemplate(data: ReceiptWhatsAppData): Promise<WhatsAppTemplateResponse> {
-    try {
-      const accessToken = env.META_WHATSAPP_ACCESS_TOKEN;
-      const phoneNumberId = env.META_WHATSAPP_PHONE_NUMBER_ID;
-      const baseUrl = env.NEXT_PUBLIC_APP_URL;
-
-      if (!accessToken || !phoneNumberId || !baseUrl) {
-        return {
-          success: false,
-          error: 'WhatsApp API credentials not configured'
-        };
-      }
-
-      // Construct receipt PDF URL
-      const receiptPdfUrl = `${baseUrl}/api/receipts/${data.receiptNumber}/pdf`;
-
-      // Format amount and date
-      const formattedAmount = data.amount.toLocaleString('en-IN');
-      const formattedDate = data.paymentDate.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-
-      const cleanPhoneNumber = this.formatPhoneNumber(data.parentPhoneNumber);
-
-      // Text-only template with receipt URL
-      const templateMessage = {
-        messaging_product: "whatsapp",
-        to: cleanPhoneNumber,
-        type: "template",
-        template: {
-          name: "fee_receipt_text", // Alternative text template
-          language: { code: "en" },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                { type: "text", text: data.studentName },
-                { type: "text", text: data.receiptNumber },
-                { type: "text", text: formattedAmount },
-                { type: "text", text: formattedDate },
-                { type: "text", text: receiptPdfUrl }
-              ]
+      
+      // Update automation log with error
+      if (logId) {
+        try {
+          await automationLogger.updateDeliveryStatus({
+            logId,
+            status: 'FAILED',
+            deliveryDetails: {
+              errorMessage: error instanceof Error ? error.message : 'Unknown error',
             }
-          ]
+          });
+        } catch (updateError) {
+          console.error('Failed to update automation log:', updateError);
         }
-      };
-
-      const response = await fetch(
-        `${this.META_API_BASE}/${this.API_VERSION}/${phoneNumberId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify(templateMessage)
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok && result.messages?.[0]?.id) {
-        return {
-          success: true,
-          messageId: result.messages[0].id
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error?.message || 'Failed to send WhatsApp message'
-        };
       }
 
-    } catch (error) {
-      console.error('Error sending WhatsApp text receipt:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
+
+
 
   /**
    * Format phone number for WhatsApp API

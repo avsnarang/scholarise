@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       to: phoneNumber.replace(/[^\d+]/g, ''),
       type: "template",
       template: {
-        name: "fee_receipt_with_pdf", // This template should exist in Meta Business Manager
+        name: "fee_receipt_automatic", // This template has been approved in Meta Business Manager
         language: { code: "en" },
         components: [
           {
@@ -37,10 +37,11 @@ export async function GET(request: NextRequest) {
           {
             type: "body",
             parameters: [
-              { type: "text", text: "Test Student" },
-              { type: "text", text: "TEST_RECEIPT_123" },
-              { type: "text", text: "5,000" },
-              { type: "text", text: "15/01/2025" }
+              { type: "text", text: "Parent" }, // {{1}} - Parent greeting
+              { type: "text", text: "Test Student" }, // {{2}} - Student name
+              { type: "text", text: "TEST_RECEIPT_123" }, // {{3}} - Receipt number
+              { type: "text", text: "₹5,000" }, // {{4}} - Amount with currency symbol
+              { type: "text", text: "15/01/2025" } // {{5}} - Date
             ]
           }
         ]
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
         phoneNumber: phoneNumber,
         templatePayload: testDocumentMessage,
         requirements: {
-          metaTemplate: 'Template "fee_receipt_with_pdf" must be created and approved in Meta Business Manager',
+          metaTemplate: 'Template "fee_receipt_automatic" has been approved in Meta Business Manager',
           environment: {
             accessToken: !!env.META_WHATSAPP_ACCESS_TOKEN,
             phoneNumberId: !!env.META_WHATSAPP_PHONE_NUMBER_ID,
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
         phoneNumber: phoneNumber,
         message: 'Document template message sent successfully!',
         whatsappResponse: result,
-        templateUsed: 'fee_receipt_with_pdf',
+        templateUsed: 'fee_receipt_automatic',
         documentUrl: `${env.NEXT_PUBLIC_APP_URL}/api/receipts/TEST_RECEIPT_123/pdf`
       });
     } else {
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
         whatsappResponse: result,
         troubleshooting: {
           commonIssues: [
-            'Template "fee_receipt_with_pdf" not approved in Meta Business Manager',
+            'Template "fee_receipt_automatic" not approved in Meta Business Manager',
             'Invalid phone number format',
             'Meta API credentials incorrect',
             'Document URL not accessible'
@@ -155,7 +156,10 @@ export async function POST(request: NextRequest) {
       amount: amount || 5000,
       paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
       parentPhoneNumber: phoneNumber,
-      branchName: 'Test Branch'
+      branchName: 'Test Branch',
+      branchId: 'test-branch-id',
+      studentId: 'test-student-id',
+      parentName: 'Test Parent'
     };
 
     const result = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);

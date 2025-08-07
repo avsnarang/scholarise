@@ -169,20 +169,8 @@ export function StreamlinedFeeCollection({
 }: StreamlinedFeeCollectionProps) {
   const { toast } = useToast();
   
-  // WhatsApp receipt sending mutation
-  const sendWhatsAppReceiptMutation = api.finance.sendReceiptWhatsApp.useMutation({
-    onSuccess: (result) => {
-      toast({
-        title: "WhatsApp Receipt Sent",
-        description: `Receipt sent via WhatsApp to ${result.phoneNumber}`,
-        variant: "success",
-      });
-    },
-    onError: (error) => {
-      console.error('WhatsApp sending failed:', error);
-      // Don't show error toast for WhatsApp failure as it's optional
-    },
-  });
+  // WhatsApp receipt sending is now handled automatically by the payment collection API
+  // and logged in Automation Logs instead of Message History
   
   // Monitor real-time payment updates for this student
   useStudentPaymentMonitor(student.id);
@@ -424,13 +412,8 @@ export function StreamlinedFeeCollection({
           });
         }
 
-        // Try to send WhatsApp receipt automatically
-        const parentPhoneNumber = student.parent?.fatherMobile || student.parent?.motherMobile;
-        if (parentPhoneNumber) {
-          sendWhatsAppReceiptMutation.mutate({
-            receiptNumber: result.receiptNumber,
-          });
-        }
+        // WhatsApp receipt is automatically handled by the payment collection API
+        // Receipt will be logged in Automation Logs, not Message History
       }
 
       // Clear selection and reset form

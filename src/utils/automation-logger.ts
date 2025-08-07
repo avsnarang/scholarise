@@ -4,6 +4,7 @@ export interface AutomationLogEntry {
   automationType: 
     | 'ADMISSION_REGISTRATION'
     | 'FEE_REMINDER'
+    | 'FEE_RECEIPT'
     | 'ATTENDANCE_ALERT'
     | 'EXAM_REMINDER'
     | 'TRANSPORT_NOTIFICATION'
