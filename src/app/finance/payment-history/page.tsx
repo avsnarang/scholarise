@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -59,7 +60,8 @@ import {
   X,
   IndianRupee,
   MessageSquare,
-  Share
+  Share,
+  AlertTriangle
 } from 'lucide-react';
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { api } from '@/utils/api';
@@ -160,7 +162,10 @@ function PaymentCard({
   onEdit, 
   onDelete, 
   onPrint,
-  onShare 
+  onShare,
+  isSelected = false,
+  onToggleSelect,
+  isOptimisticallyDeleted = false
 }: { 
   payment: PaymentHistoryItem; 
   onViewDetails: (payment: PaymentHistoryItem) => void;
@@ -168,6 +173,9 @@ function PaymentCard({
   onDelete: (payment: PaymentHistoryItem) => void;
   onPrint: (payment: PaymentHistoryItem) => void;
   onShare: (payment: PaymentHistoryItem) => void;
+  isSelected?: boolean;
+  onToggleSelect?: (paymentId: string) => void;
+  isOptimisticallyDeleted?: boolean;
 }) {
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -196,11 +204,23 @@ function PaymentCard({
     }
   };
 
+  const paymentId = payment.id || payment.receiptNumber || '';
+
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 border border-border/50 hover:border-border">
+    <Card className={`group transition-all duration-200 border border-border/50 hover:border-border ${
+      isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
+    } ${isOptimisticallyDeleted ? 'opacity-50 grayscale' : 'hover:shadow-md'}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
+            {onToggleSelect && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelect(paymentId)}
+                className="border-2"
+                disabled={isOptimisticallyDeleted}
+              />
+            )}
             {getPaymentIcon(payment.paymentMode || 'ONLINE')}
             <Badge variant={payment.type === 'gateway' ? 'default' : 'secondary'} className="text-xs">
               {payment.type === 'gateway' ? 'Gateway' : 'Manual'}
@@ -243,6 +263,7 @@ function PaymentCard({
                   variant="outline"
                   size="sm"
                   onClick={() => onEdit(payment)}
+                  disabled={isOptimisticallyDeleted}
                   className="h-7 px-2 text-xs hover:bg-primary/5"
                 >
                   <Edit3 className="h-3 w-3 mr-1" />
@@ -252,10 +273,11 @@ function PaymentCard({
                   variant="outline"
                   size="sm"
                   onClick={() => onDelete(payment)}
+                  disabled={isOptimisticallyDeleted}
                   className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/5"
                 >
                   <Trash2 className="h-3 w-3 mr-1" />
-                  Delete
+                  {isOptimisticallyDeleted ? "Deleting..." : "Delete"}
                 </Button>
               </div>
               <div className="flex gap-1">
@@ -263,7 +285,7 @@ function PaymentCard({
                   variant="outline"
                   size="sm"
                   onClick={() => onShare(payment)}
-                  disabled={!payment.receiptNumber}
+                  disabled={!payment.receiptNumber || isOptimisticallyDeleted}
                   className="h-7 px-2 text-xs text-green-600 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
                   title="Share receipt via WhatsApp"
                 >
@@ -274,7 +296,7 @@ function PaymentCard({
                   variant="outline"
                   size="sm"
                   onClick={() => onPrint(payment)}
-                  disabled={!payment.receiptNumber}
+                  disabled={!payment.receiptNumber || isOptimisticallyDeleted}
                   className="h-7 px-2 text-xs"
                 >
                   <Printer className="h-3 w-3 mr-1" />
@@ -284,6 +306,7 @@ function PaymentCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onViewDetails(payment)}
+                  disabled={isOptimisticallyDeleted}
                   className="h-7 px-2 text-xs"
                 >
                   <Eye className="h-3 w-3 mr-1" />
@@ -919,10 +942,50 @@ function PaymentDetailsModal({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this payment record for {payment.studentName}? 
-              This action cannot be undone and will permanently remove the payment of {formatIndianCurrency(payment.amount)}.
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Payment Record
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  You are about to permanently delete this payment record:
+                </p>
+                
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Student:</span>
+                    <span>{payment.studentName}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Receipt:</span>
+                    <span>{payment.receiptNumber}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Amount:</span>
+                    <span className="font-semibold">{formatIndianCurrency(payment.amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Date:</span>
+                    <span>{payment.paymentDate.toLocaleDateString('en-IN')}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border-l-4 border-l-destructive bg-destructive/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-destructive mb-1">Warning: This action cannot be undone</p>
+                      <ul className="text-muted-foreground space-y-1 text-xs">
+                        <li>• The payment record will be permanently removed</li>
+                        <li>• This action will be logged for audit purposes</li>
+                        <li>• Related fee collection items will also be deleted</li>
+                        <li>• Financial reports may be affected</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -937,7 +1000,7 @@ function PaymentDetailsModal({
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
-              Delete Payment
+              {isDeleting ? "Deleting..." : "Delete Payment"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -963,6 +1026,15 @@ function PaymentHistoryPageContent() {
   const [selectedPayment, setSelectedPayment] = useState<PaymentHistoryItem | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openInEditMode, setOpenInEditMode] = useState(false);
+  
+  // Bulk selection state
+  const [selectedPayments, setSelectedPayments] = useState<Set<string>>(new Set());
+  const [isDirectDeleteOpen, setIsDirectDeleteOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<PaymentHistoryItem | null>(null);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  
+  // Optimistic update state
+  const [optimisticDeletes, setOptimisticDeletes] = useState<Set<string>>(new Set());
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -1029,21 +1101,114 @@ function PaymentHistoryPageContent() {
     },
   });
 
-  // Delete payment mutation
+  // Delete payment mutation with enhanced error handling and optimistic updates
   const deletePaymentMutation = api.finance.deletePayment.useMutation({
-    onSuccess: () => {
+    onMutate: async (variables) => {
+      // Add to optimistic deletes for immediate UI feedback
+      setOptimisticDeletes(prev => new Set([...prev, variables.id]));
+    },
+    onSuccess: (data, variables) => {
       toast({
-        title: "Success",
-        description: "Payment deleted successfully",
+        title: "Payment Deleted",
+        description: data?.message || "Payment record has been successfully deleted",
+      });
+      // Remove from optimistic deletes since it's actually deleted
+      setOptimisticDeletes(prev => {
+        const next = new Set(prev);
+        next.delete(variables.id);
+        return next;
       });
       refetchHistory();
     },
-    onError: () => {
+    onError: (error, variables) => {
+      // Remove from optimistic deletes on error
+      setOptimisticDeletes(prev => {
+        const next = new Set(prev);
+        next.delete(variables.id);
+        return next;
+      });
+
+      let errorMessage = "Failed to delete payment. Please try again.";
+      let errorTitle = "Delete Failed";
+
+      // Handle specific error types based on error code and message
+      if (error.data?.code === "FORBIDDEN") {
+        errorTitle = "Permission Denied";
+        errorMessage = "You don't have permission to delete payment records. Contact your administrator.";
+      } else if (error.data?.code === "NOT_FOUND") {
+        errorTitle = "Payment Not Found";
+        errorMessage = "The payment record could not be found. It may have been already deleted.";
+      } else if (error.data?.code === "BAD_REQUEST") {
+        errorTitle = "Cannot Delete Payment";
+        if (error.message?.includes("gateway transaction")) {
+          errorMessage = "Cannot delete payment with active gateway transaction. Contact administrator for assistance.";
+        } else {
+          errorMessage = error.message || "This payment cannot be deleted due to system constraints.";
+        }
+      } else if (error.data?.code === "INTERNAL_SERVER_ERROR") {
+        errorTitle = "System Error";
+        errorMessage = "A system error occurred while deleting the payment. Please contact support if this persists.";
+      } else if (error.message) {
+        // Use the specific error message if available
+        errorMessage = error.message;
+      }
+
       toast({
-        title: "Delete Failed",
-        description: "Failed to delete payment. Please try again.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
+
+      // Log error for debugging (optional)
+      console.error("Payment deletion error:", error);
+    },
+  });
+
+  // Bulk delete payments mutation with optimistic updates
+  const bulkDeletePaymentsMutation = api.finance.bulkDeletePayments.useMutation({
+    onMutate: async (variables) => {
+      // Add all IDs to optimistic deletes for immediate UI feedback
+      setOptimisticDeletes(prev => new Set([...prev, ...variables.ids]));
+      // Clear selections
+      setSelectedPayments(new Set());
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Payments Deleted",
+        description: data?.message || `Successfully deleted ${data?.deletedCount || 0} payment records`,
+      });
+      // Clear optimistic deletes since they're actually deleted
+      setOptimisticDeletes(new Set());
+      refetchHistory();
+    },
+    onError: (error, variables) => {
+      // Remove from optimistic deletes on error
+      setOptimisticDeletes(prev => {
+        const next = new Set(prev);
+        variables.ids.forEach(id => next.delete(id));
+        return next;
+      });
+
+      let errorMessage = "Failed to delete payments. Please try again.";
+      let errorTitle = "Bulk Delete Failed";
+
+      if (error.data?.code === "FORBIDDEN") {
+        errorTitle = "Permission Denied";
+        errorMessage = "You don't have permission to delete payment records. Contact your administrator.";
+      } else if (error.data?.code === "BAD_REQUEST") {
+        errorTitle = "Cannot Delete Payments";
+        errorMessage = error.message || "Some payments cannot be deleted due to system constraints.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      console.error("Bulk payment deletion error:", error);
     },
   });
 
@@ -1089,12 +1254,93 @@ function PaymentHistoryPageContent() {
     ]);
   };
 
-  // Filter and process data with pagination
+  // Selection management functions
+  const togglePaymentSelection = (paymentId: string) => {
+    setSelectedPayments(prev => {
+      const next = new Set(prev);
+      if (next.has(paymentId)) {
+        next.delete(paymentId);
+      } else {
+        next.add(paymentId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllCurrentPage = (payments: PaymentHistoryItem[]) => {
+    const currentPageIds = payments.map(p => p.id || p.receiptNumber || '').filter(Boolean);
+    setSelectedPayments(prev => new Set([...prev, ...currentPageIds]));
+  };
+
+  const deselectAllCurrentPage = (payments: PaymentHistoryItem[]) => {
+    const currentPageIds = new Set(payments.map(p => p.id || p.receiptNumber || '').filter(Boolean));
+    setSelectedPayments(prev => new Set([...prev].filter(id => !currentPageIds.has(id))));
+  };
+
+  const clearAllSelections = () => {
+    setSelectedPayments(new Set());
+  };
+
+  // Direct delete handlers
+  const handleDirectDelete = (payment: PaymentHistoryItem) => {
+    setPaymentToDelete(payment);
+    setIsDirectDeleteOpen(true);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedPayments.size === 0) return;
+    setIsBulkDeleteOpen(true);
+  };
+
+  const confirmDirectDelete = () => {
+    if (!paymentToDelete) {
+      console.error('❌ No payment to delete');
+      return;
+    }
+    
+    const paymentId = paymentToDelete.id || paymentToDelete.receiptNumber || '';
+    console.log('🗑️ Frontend: Attempting to delete payment:', {
+      paymentId,
+      hasId: !!paymentToDelete.id,
+      hasReceiptNumber: !!paymentToDelete.receiptNumber,
+      studentName: paymentToDelete.studentName
+    });
+    
+    if (!paymentId) {
+      console.error('❌ No valid payment ID found');
+      toast({
+        title: "Delete Failed",
+        description: "Invalid payment ID. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    deletePaymentMutation.mutate({ id: paymentId });
+    setIsDirectDeleteOpen(false);
+    setPaymentToDelete(null);
+  };
+
+  const confirmBulkDelete = () => {
+    const ids = Array.from(selectedPayments);
+    if (ids.length === 0) return;
+    bulkDeletePaymentsMutation.mutate({ ids });
+    setIsBulkDeleteOpen(false);
+  };
+
+  // Filter and process data with pagination (excluding optimistically deleted items)
   const { filteredPayments, totalPages, totalFilteredItems } = useMemo(() => {
     const items = paymentHistory?.items || [];
     
-    // Apply all filters first
+    // Apply all filters first, including excluding optimistically deleted items
     const filtered = items.filter(payment => {
+      const paymentId = payment.id || payment.receiptNumber || '';
+      
+      // Exclude optimistically deleted items
+      if (optimisticDeletes.has(paymentId)) {
+        return false;
+      }
+
       const matchesSearch = !searchTerm || 
         payment.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.studentAdmissionNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1120,7 +1366,7 @@ function PaymentHistoryPageContent() {
       totalPages,
       totalFilteredItems
     };
-  }, [paymentHistory, searchTerm, statusFilter, paymentModeFilter, typeFilter, gatewayFilter, currentPage, pageSize]);
+  }, [paymentHistory, searchTerm, statusFilter, paymentModeFilter, typeFilter, gatewayFilter, currentPage, pageSize, optimisticDeletes]);
 
   // Export CSV function (exports all filtered data, not just current page)
   const handleExport = () => {
@@ -1189,11 +1435,9 @@ function PaymentHistoryPageContent() {
     setIsDetailsOpen(true);
   };
 
-  // Handle delete payment
+  // Handle delete payment - direct delete without view modal
   const handleDeletePayment = (payment: PaymentHistoryItem) => {
-    setSelectedPayment(payment);
-    setIsDetailsOpen(true);
-    // The delete dialog will be managed within the PaymentDetailsModal component
+    handleDirectDelete(payment);
   };
 
   // Handler functions for modal
@@ -1613,20 +1857,79 @@ function PaymentHistoryPageContent() {
         </Card>
       ) : (
         <div className="space-y-6">
+          {/* Bulk Action Toolbar */}
+          {selectedPayments.size > 0 && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">
+                      {selectedPayments.size} payment{selectedPayments.size !== 1 ? 's' : ''} selected
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => selectAllCurrentPage(filteredPayments)}
+                        className="h-8 text-xs"
+                      >
+                        Select All Page
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deselectAllCurrentPage(filteredPayments)}
+                        className="h-8 text-xs"
+                      >
+                        Deselect Page
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={clearAllSelections}
+                        className="h-8 text-xs"
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeletePaymentsMutation.isPending}
+                      className="h-8 text-xs"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      {bulkDeletePaymentsMutation.isPending ? "Deleting..." : `Delete ${selectedPayments.size}`}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Payment List */}
           {viewMode === 'cards' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPayments.map((payment, index) => (
-                <PaymentCard
-                  key={`${payment.studentAdmissionNumber}-${payment.paymentDate.getTime()}-${payment.receiptNumber || payment.transactionId || index}`}
-                  payment={payment}
-                  onViewDetails={handleViewDetails}
-                  onEdit={handleEditPayment}
-                  onDelete={handleDeletePayment}
-                  onPrint={handlePrintReceipt}
-                  onShare={handleShareReceipt}
-                />
-              ))}
+              {filteredPayments.map((payment, index) => {
+                const paymentId = payment.id || payment.receiptNumber || '';
+                return (
+                  <PaymentCard
+                    key={`${payment.studentAdmissionNumber}-${payment.paymentDate.getTime()}-${payment.receiptNumber || payment.transactionId || index}`}
+                    payment={payment}
+                    onViewDetails={handleViewDetails}
+                    onEdit={handleEditPayment}
+                    onDelete={handleDeletePayment}
+                    onPrint={handlePrintReceipt}
+                    onShare={handleShareReceipt}
+                    isSelected={selectedPayments.has(paymentId)}
+                    onToggleSelect={togglePaymentSelection}
+                    isOptimisticallyDeleted={optimisticDeletes.has(paymentId)}
+                  />
+                );
+              })}
             </div>
           ) : (
             <PaymentTable
@@ -1733,6 +2036,119 @@ function PaymentHistoryPageContent() {
         onUpdatePayment={handleUpdatePayment}
         onDeletePayment={handleDeletePaymentConfirm}
       />
+
+      {/* Direct Delete Confirmation Modal */}
+      <AlertDialog open={isDirectDeleteOpen} onOpenChange={setIsDirectDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Payment Record
+            </AlertDialogTitle>
+            {paymentToDelete && (
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to permanently delete this payment record?
+                  </p>
+                  
+                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Student:</span>
+                      <span>{paymentToDelete.studentName}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Receipt:</span>
+                      <span>{paymentToDelete.receiptNumber}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Amount:</span>
+                      <span className="font-semibold">{formatIndianCurrency(paymentToDelete.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">Date:</span>
+                      <span>{paymentToDelete.paymentDate.toLocaleDateString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border-l-4 border-l-destructive bg-destructive/5 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-destructive">This action cannot be undone</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePaymentMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDirectDelete}
+              disabled={deletePaymentMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePaymentMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              {deletePaymentMutation.isPending ? "Deleting..." : "Delete Payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Bulk Delete Payment Records
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to permanently delete <span className="font-semibold">{selectedPayments.size}</span> payment record{selectedPayments.size !== 1 ? 's' : ''}?
+                </p>
+
+                <div className="rounded-lg border-l-4 border-l-destructive bg-destructive/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-destructive mb-1">This action cannot be undone</p>
+                      <ul className="text-muted-foreground space-y-1 text-xs">
+                        <li>• All selected payment records will be permanently removed</li>
+                        <li>• This operation will be logged for audit purposes</li>
+                        <li>• Related fee collection items will also be deleted</li>
+                        <li>• Financial reports may be affected</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeletePaymentsMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              disabled={bulkDeletePaymentsMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeletePaymentsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              {bulkDeletePaymentsMutation.isPending ? "Deleting..." : `Delete ${selectedPayments.size} Records`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageWrapper>
   );
 }

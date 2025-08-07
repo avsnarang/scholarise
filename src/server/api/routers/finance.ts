@@ -2,6 +2,8 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { withBranchFilter } from "@/utils/branch-filter";
+import { Permission } from "@/types/permissions";
+import { rbacService } from "@/services/rbac-service";
 
 export const financeRouter = createTRPCRouter({
   // Fee Head Management
@@ -5686,13 +5688,320 @@ export const financeRouter = createTRPCRouter({
   deletePayment: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.feeCollectionItem.deleteMany({
-        where: { feeCollectionId: input.id },
-      });
+      console.log('🗑️ Delete payment request for ID:', input.id);
+      
+      try {
+        // Validate input
+        if (!input.id || typeof input.id !== 'string') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid payment ID provided',
+          });
+        }
 
-      return ctx.db.feeCollection.delete({
-        where: { id: input.id },
-      });
+        console.log('✅ Checking permissions for user:', ctx.userId);
+        
+        // Check if user is super admin first
+        let isSuperAdmin = false;
+        let canDeletePayment = false;
+        
+        try {
+          const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+          isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId, userMetadata);
+          console.log('🔐 Is super admin:', isSuperAdmin);
+
+          if (!isSuperAdmin) {
+            // Check permission for non-super admins
+            canDeletePayment = await rbacService.hasPermission(
+              ctx.userId,
+              Permission.DELETE_PAYMENT
+            );
+            console.log('🔐 Can delete payment:', canDeletePayment);
+
+            if (!canDeletePayment) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You don't have permission to delete payment records",
+              });
+            }
+          }
+        } catch (permissionError) {
+          console.error('❌ Permission check failed:', permissionError);
+          // If RBAC service fails, check if user is at least authenticated
+          if (!ctx.userId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Authentication required",
+            });
+          }
+          // Allow the operation to continue for authenticated users if RBAC fails
+          console.log('⚠️ RBAC service unavailable, allowing authenticated user to proceed');
+        }
+
+        console.log('🔍 Fetching payment details...');
+        
+        // First, check if the payment exists and get its details for audit logging
+        const existingPayment = await ctx.db.feeCollection.findUnique({
+          where: { id: input.id },
+          include: {
+            items: {
+              include: {
+                feeHead: { select: { name: true } },
+                feeTerm: { select: { name: true } }
+              }
+            },
+            student: { select: { id: true, firstName: true, lastName: true } },
+            branch: { select: { name: true } },
+            session: { select: { name: true } },
+            gatewayTransaction: { select: { id: true, gatewayTransactionId: true } },
+            paymentRequest: { select: { id: true } }
+          }
+        });
+
+        if (!existingPayment) {
+          console.log('❌ Payment not found:', input.id);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Payment record not found',
+          });
+        }
+
+        console.log('✅ Payment found:', existingPayment.receiptNumber);
+
+        // Check if this payment has related gateway transactions that shouldn't be deleted
+        if (existingPayment.gatewayTransaction?.gatewayTransactionId) {
+          console.log('❌ Payment has gateway transaction:', existingPayment.gatewayTransaction.gatewayTransactionId);
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot delete payment with active gateway transaction. Please contact administrator.',
+          });
+        }
+
+        console.log('🔄 Starting database transaction...');
+
+        // Perform deletion in a transaction to ensure atomicity
+        const result = await ctx.db.$transaction(async (tx) => {
+          console.log('🗑️ Deleting fee collection items...');
+          
+          // Delete fee collection items first (due to foreign key constraints)
+          const deletedItems = await tx.feeCollectionItem.deleteMany({
+            where: { feeCollectionId: input.id },
+          });
+
+          console.log(`✅ Deleted ${deletedItems.count} fee collection items`);
+
+          console.log('🗑️ Deleting fee collection...');
+          
+          // Delete the main fee collection record
+          const deletedPayment = await tx.feeCollection.delete({
+            where: { id: input.id },
+          });
+
+          console.log('✅ Fee collection deleted');
+
+          return {
+            deletedPayment,
+            deletedItemsCount: deletedItems.count
+          };
+        });
+
+        console.log('📝 Creating audit log...');
+
+        // Create audit log entry after successful deletion
+        try {
+          await ctx.db.communicationLog.create({
+            data: {
+              action: "payment_deleted",
+              description: `Payment ${existingPayment.receiptNumber} deleted for student ${existingPayment.student.firstName} ${existingPayment.student.lastName} (Amount: ₹${existingPayment.totalAmount})`,
+              metadata: JSON.parse(JSON.stringify({
+                paymentId: input.id,
+                receiptNumber: existingPayment.receiptNumber,
+                studentId: existingPayment.studentId,
+                studentName: `${existingPayment.student.firstName} ${existingPayment.student.lastName}`,
+                amount: existingPayment.totalAmount,
+                paymentMode: existingPayment.paymentMode,
+                paymentDate: existingPayment.paymentDate.toISOString(),
+                branchName: existingPayment.branch.name,
+                sessionName: existingPayment.session.name,
+                deletedItemsCount: result.deletedItemsCount,
+                items: existingPayment.items.map(item => ({
+                  feeHead: item.feeHead.name,
+                  feeTerm: item.feeTerm.name,
+                  amount: item.amount
+                }))
+              })),
+              userId: ctx.user?.id || ctx.userId,
+            }
+          });
+          console.log('✅ Audit log created');
+        } catch (auditError) {
+          console.error('⚠️ Audit log creation failed (non-critical):', auditError);
+          // Don't fail the operation if audit logging fails
+        }
+
+        console.log('✅ Payment deletion completed successfully');
+
+        return {
+          success: true,
+          message: `Payment ${existingPayment.receiptNumber} deleted successfully`,
+          deletedItemsCount: result.deletedItemsCount,
+          paymentId: input.id
+        };
+
+      } catch (error) {
+        // Enhanced error logging
+        console.error('❌ Payment deletion error details:', {
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
+          paymentId: input.id,
+          userId: ctx.userId,
+          errorType: error?.constructor?.name,
+          ...(error instanceof TRPCError && { tRPCCode: error.code })
+        });
+        
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        
+        // Provide more specific error message based on error type
+        let errorMessage = 'Failed to delete payment. Please try again or contact support.';
+        
+        if (error instanceof Error) {
+          if (error.message.includes('Foreign key constraint')) {
+            errorMessage = 'Cannot delete payment due to related records. Please contact administrator.';
+          } else if (error.message.includes('Record to delete does not exist')) {
+            errorMessage = 'Payment record no longer exists. It may have been already deleted.';
+          } else if (error.message.includes('Database connection')) {
+            errorMessage = 'Database connection error. Please try again in a moment.';
+          }
+        }
+        
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: errorMessage,
+        });
+      }
+    }),
+
+  // Bulk delete payments
+  bulkDeletePayments: protectedProcedure
+    .input(z.object({ 
+      ids: z.array(z.string()).min(1, "At least one payment ID is required").max(100, "Cannot delete more than 100 payments at once")
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Check permissions
+        const userMetadata = ctx.user ? { role: ctx.user.role, roles: ctx.user.roles } : undefined;
+        const isSuperAdmin = await rbacService.isSuperAdmin(ctx.userId, userMetadata);
+
+        if (!isSuperAdmin) {
+          const canDeletePayment = await rbacService.hasPermission(
+            ctx.userId,
+            Permission.DELETE_PAYMENT
+          );
+
+          if (!canDeletePayment) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You don't have permission to delete payment records",
+            });
+          }
+        }
+
+        // Get existing payments for validation and audit logging
+        const existingPayments = await ctx.db.feeCollection.findMany({
+          where: { id: { in: input.ids } },
+          include: {
+            items: {
+              include: {
+                feeHead: { select: { name: true } },
+                feeTerm: { select: { name: true } }
+              }
+            },
+            student: { select: { id: true, firstName: true, lastName: true } },
+            branch: { select: { name: true } },
+            session: { select: { name: true } },
+            gatewayTransaction: { select: { id: true, gatewayTransactionId: true } }
+          }
+        });
+
+        if (existingPayments.length === 0) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No payment records found to delete',
+          });
+        }
+
+        // Check for gateway transactions
+        const paymentsWithGateway = existingPayments.filter(p => p.gatewayTransaction?.gatewayTransactionId);
+        if (paymentsWithGateway.length > 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Cannot delete ${paymentsWithGateway.length} payment(s) with active gateway transactions`,
+          });
+        }
+
+        // Perform bulk deletion in optimized transaction
+        const result = await ctx.db.$transaction(async (tx) => {
+          // Batch delete fee collection items
+          const deletedItems = await tx.feeCollectionItem.deleteMany({
+            where: { feeCollectionId: { in: input.ids } },
+          });
+
+          // Batch delete fee collections
+          const deletedPayments = await tx.feeCollection.deleteMany({
+            where: { id: { in: input.ids } },
+          });
+
+          return {
+            deletedPayments: deletedPayments.count,
+            deletedItems: deletedItems.count
+          };
+        });
+
+        // Bulk create audit log entries
+        const auditLogs = existingPayments.map(payment => ({
+          action: "payment_bulk_deleted",
+          description: `Payment ${payment.receiptNumber} bulk deleted for student ${payment.student.firstName} ${payment.student.lastName} (Amount: ₹${payment.totalAmount})`,
+          metadata: JSON.parse(JSON.stringify({
+            paymentId: payment.id,
+            receiptNumber: payment.receiptNumber,
+            studentId: payment.studentId,
+            studentName: `${payment.student.firstName} ${payment.student.lastName}`,
+            amount: payment.totalAmount,
+            paymentMode: payment.paymentMode,
+            paymentDate: payment.paymentDate.toISOString(),
+            branchName: payment.branch.name,
+            sessionName: payment.session.name,
+            operationType: 'BULK_DELETE',
+            batchSize: input.ids.length
+          })),
+          userId: ctx.user?.id || ctx.userId,
+        }));
+
+        await ctx.db.communicationLog.createMany({
+          data: auditLogs
+        });
+
+        return {
+          success: true,
+          deletedCount: result.deletedPayments,
+          deletedItemsCount: result.deletedItems,
+          message: `Successfully deleted ${result.deletedPayments} payment record(s)`
+        };
+
+      } catch (error) {
+        console.error('Bulk payment deletion error:', error);
+        
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete payments. Please try again or contact support.',
+        });
+      }
     }),
 
   // Get fee collection stats for dashboard cards

@@ -131,6 +131,7 @@ export enum Permission {
   MANAGE_FEE_TERMS = "manage_fee_terms",
   MANAGE_CLASSWISE_FEES = "manage_classwise_fees",
   COLLECT_FEES = "collect_fees",
+  DELETE_PAYMENT = "delete_payment",
   VIEW_FINANCE_REPORTS = "view_finance_reports",
   
   // System permissions
