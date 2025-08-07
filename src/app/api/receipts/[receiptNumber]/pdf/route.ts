@@ -12,6 +12,7 @@ export async function GET(
   
   try {
     const startTime = Date.now();
+    const isVercel = !!process.env.VERCEL;
     const resolvedParams = await params;
     receiptNumber = resolvedParams.receiptNumber;
 
@@ -22,7 +23,7 @@ export async function GET(
       );
     }
     
-    console.log(`📊 Starting PDF generation for receipt: ${receiptNumber}`);
+    console.log(`📊 Starting PDF generation for receipt: ${receiptNumber} (Environment: ${isVercel ? 'Vercel' : 'Local'})`);
 
     // Find the fee collection record by receipt number
     const feeCollection = await db.feeCollection.findFirst({
@@ -66,9 +67,7 @@ export async function GET(
     console.log('🚀 Attempting to launch Puppeteer browser...');
     console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
     
-    const isVercel = !!process.env.VERCEL;
-    
-    // Optimized browser launch with performance flags
+    // Vercel-optimized browser launch with performance flags
     const browser = await puppeteer.launch({
       args: isVercel ? [
         ...chromium.args,
@@ -76,8 +75,16 @@ export async function GET(
         '--disable-background-timer-throttling',
         '--disable-renderer-backgrounding',
         '--disable-backgrounding-occluded-windows',
-        '--disable-features=TranslateUI',
+        '--disable-features=TranslateUI,Translate',
         '--disable-ipc-flooding-protection',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--disable-background-mode',
+        '--single-process', // Critical for Vercel
+        '--no-zygote', // Critical for Vercel
       ] : [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -94,6 +101,7 @@ export async function GET(
       ],
       executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
       headless: true,
+      timeout: isVercel ? 30000 : 10000, // Longer timeout for Vercel cold starts
     });
     console.log('✅ Puppeteer browser launched successfully');
 
@@ -145,7 +153,7 @@ export async function GET(
       </html>
     `, { waitUntil: 'domcontentloaded' }); // Changed from 'networkidle0' to 'domcontentloaded' for faster processing
 
-    // Generate PDF in A5 landscape format with optimized settings
+    // Generate PDF in A5 landscape format with Vercel-optimized settings
     const pdfBuffer = await page.pdf({
       width: '8.27in',   // A5 landscape width (210mm)
       height: '5.83in',  // A5 landscape height (148mm)
@@ -156,7 +164,8 @@ export async function GET(
         bottom: '0.3in',
         left: '0.3in'
       },
-      preferCSSPageSize: true, // Use CSS page size for better performance
+      preferCSSPageSize: true,
+      timeout: isVercel ? 30000 : 10000, // Longer timeout for Vercel
     });
 
     await browser.close();

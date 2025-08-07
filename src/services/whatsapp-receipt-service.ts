@@ -23,11 +23,20 @@ export interface WhatsAppTemplateResponse {
 export class WhatsAppReceiptService {
   private static readonly META_API_BASE = 'https://graph.facebook.com';
   private static readonly API_VERSION = 'v23.0';
+  
+  // Environment-specific configuration
+  private static readonly isVercel = !!process.env.VERCEL;
+  private static readonly isProduction = process.env.NODE_ENV === 'production';
 
   /**
-   * Check if PDF is available and ready
+   * Check if PDF is available and ready (optimized for Vercel)
    */
-  private static async isPdfReady(pdfUrl: string, maxRetries: number = 12, retryDelay: number = 2500): Promise<boolean> {
+  private static async isPdfReady(pdfUrl: string): Promise<boolean> {
+    // Environment-specific configuration
+    const maxRetries = this.isVercel ? 12 : 8; // More retries for Vercel due to cold starts
+    const baseDelay = this.isVercel ? 2500 : 1500; // Longer delays for Vercel
+    
+    console.log(`🔧 PDF availability check (Environment: ${this.isVercel ? 'Vercel' : 'Local'}, Max retries: ${maxRetries})`);
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`🔍 Checking PDF availability (attempt ${attempt}/${maxRetries}): ${pdfUrl}`);
@@ -52,9 +61,16 @@ export class WhatsAppReceiptService {
       }
       
       if (attempt < maxRetries) {
-        // Exponential backoff: 2.5s, 3.75s, 5.6s, 8.4s, 12.6s, 18.9s, etc.
-        const delayMs = retryDelay * Math.pow(1.5, attempt - 1);
-        console.log(`⏱️ Waiting ${delayMs}ms before next attempt...`);
+        // Environment-optimized delays
+        let delayMs;
+        if (this.isVercel) {
+          // Vercel: 2.5s, 3s, 4s, 5s, 6s, 7s, 8s, 9s, 10s, 12s, 14s, 16s
+          delayMs = attempt <= 3 ? baseDelay + (attempt - 1) * 500 : baseDelay + 1000 * attempt;
+        } else {
+          // Local: 1.5s, 2s, 2.5s, 3s, 3.5s, 4s, 4.5s, 5s
+          delayMs = baseDelay + (attempt - 1) * 500;
+        }
+        console.log(`⏱️ Waiting ${delayMs}ms before next attempt (${this.isVercel ? 'Vercel' : 'Local'} mode)...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
@@ -78,8 +94,8 @@ export class WhatsAppReceiptService {
           'Accept': 'application/pdf,*/*',
           'Cache-Control': 'no-cache'
         },
-        // Set a timeout to avoid hanging
-        signal: AbortSignal.timeout(10000) // 10 seconds timeout
+        // Environment-specific timeout
+        signal: AbortSignal.timeout(this.isVercel ? 25000 : 15000) // Longer timeout for Vercel
       });
 
       const contentType = response.headers.get('content-type');
@@ -200,14 +216,24 @@ export class WhatsAppReceiptService {
       const encodedReceiptNumber = encodeURIComponent(data.receiptNumber);
       const receiptPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
 
-      console.log(`🔄 Starting PDF availability check for receipt: ${data.receiptNumber}`);
+      console.log(`🔄 Starting PDF availability check for receipt: ${data.receiptNumber} (Environment: ${this.isVercel ? 'Vercel' : 'Local'})`);
       
       // Wait for PDF to be ready before sending WhatsApp message
       const isPdfAvailable = await this.isPdfReady(receiptPdfUrl);
       
       if (!isPdfAvailable) {
-        const errorMessage = `PDF not ready after waiting period for receipt: ${data.receiptNumber}`;
+        const errorMessage = `PDF not ready after waiting period for receipt: ${data.receiptNumber} (Environment: ${this.isVercel ? 'Vercel' : 'Local'})`;
         console.error(`❌ ${errorMessage}`);
+        
+        // Log additional debugging info for Vercel
+        if (this.isVercel) {
+          console.error(`🔍 Vercel PDF generation debugging:`, {
+            receiptNumber: data.receiptNumber,
+            pdfUrl: receiptPdfUrl,
+            environment: 'Vercel',
+            timestamp: new Date().toISOString()
+          });
+        }
         
         // Update message records with failure
         try {

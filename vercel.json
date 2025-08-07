@@ -1,13 +1,12 @@
 {
   "functions": {
     "src/app/api/receipts/[receiptNumber]/pdf/route.ts": {
-      "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 60
     },
-    "src/app/api/debug/puppeteer/route.ts": {
-      "memory": 1024,
+    "src/app/api/**/*.ts": {
       "maxDuration": 30
     }
   },
-  "regions": ["iad1"]
+  "crons": [],
+  "rewrites": []
 }
