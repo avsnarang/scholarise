@@ -25,6 +25,44 @@ export class WhatsAppReceiptService {
   private static readonly API_VERSION = 'v23.0';
 
   /**
+   * Check if PDF is available and ready
+   */
+  private static async isPdfReady(pdfUrl: string, maxRetries: number = 12, retryDelay: number = 2500): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔍 Checking PDF availability (attempt ${attempt}/${maxRetries}): ${pdfUrl}`);
+        
+        const response = await fetch(pdfUrl, { 
+          method: 'HEAD',
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (response.ok && response.headers.get('content-type')?.includes('application/pdf')) {
+          console.log(`✅ PDF is ready (attempt ${attempt}): ${pdfUrl}`);
+          return true;
+        }
+        
+        console.log(`⏳ PDF not ready yet (attempt ${attempt}/${maxRetries}), status: ${response.status}`);
+      } catch (error) {
+        console.log(`⚠️ PDF check failed (attempt ${attempt}/${maxRetries}):`, error instanceof Error ? error.message : 'Unknown error');
+      }
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff: 2.5s, 3.75s, 5.6s, 8.4s, 12.6s, 18.9s, etc.
+        const delayMs = retryDelay * Math.pow(1.5, attempt - 1);
+        console.log(`⏱️ Waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    
+    console.log(`❌ PDF not ready after ${maxRetries} attempts: ${pdfUrl}`);
+    return false;
+  }
+
+  /**
    * Send receipt via WhatsApp template with document header
    */
   static async sendReceiptTemplate(data: ReceiptWhatsAppData): Promise<WhatsAppTemplateResponse> {
@@ -84,6 +122,48 @@ export class WhatsAppReceiptService {
       // Construct receipt PDF URL with proper URL encoding
       const encodedReceiptNumber = encodeURIComponent(data.receiptNumber);
       const receiptPdfUrl = `${baseUrl}/api/receipts/${encodedReceiptNumber}/pdf`;
+
+      console.log(`🔄 Starting PDF availability check for receipt: ${data.receiptNumber}`);
+      
+      // Wait for PDF to be ready before sending WhatsApp message
+      const isPdfAvailable = await this.isPdfReady(receiptPdfUrl);
+      
+      if (!isPdfAvailable) {
+        const errorMessage = `PDF not ready after waiting period for receipt: ${data.receiptNumber}`;
+        console.error(`❌ ${errorMessage}`);
+        
+        // Update message records with failure
+        try {
+          if (messageId) {
+            await db.communicationMessage.update({
+              where: { id: messageId },
+              data: {
+                status: 'FAILED',
+                failed: 1
+              }
+            });
+          }
+          
+          if (messageRecipientId) {
+            await db.messageRecipient.update({
+              where: { id: messageRecipientId },
+              data: {
+                status: 'FAILED',
+                errorMessage: errorMessage
+              }
+            });
+          }
+        } catch (updateError) {
+          console.error('Failed to update message history:', updateError);
+        }
+        
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+
+      console.log(`✅ PDF is ready, proceeding with WhatsApp message for receipt: ${data.receiptNumber}`);
 
       // Format amount in Indian currency
       const formattedAmount = data.amount.toLocaleString('en-IN');

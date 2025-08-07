@@ -11,6 +11,7 @@ export async function GET(
   let receiptNumber: string = 'unknown';
   
   try {
+    const startTime = Date.now();
     const resolvedParams = await params;
     receiptNumber = resolvedParams.receiptNumber;
 
@@ -20,6 +21,8 @@ export async function GET(
         { status: 400 }
       );
     }
+    
+    console.log(`📊 Starting PDF generation for receipt: ${receiptNumber}`);
 
     // Find the fee collection record by receipt number
     const feeCollection = await db.feeCollection.findFirst({
@@ -65,14 +68,29 @@ export async function GET(
     
     const isVercel = !!process.env.VERCEL;
     
+    // Optimized browser launch with performance flags
     const browser = await puppeteer.launch({
-      args: isVercel ? chromium.args : [
+      args: isVercel ? [
+        ...chromium.args,
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+      ] : [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
       ],
       executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
       headless: true,
@@ -81,6 +99,10 @@ export async function GET(
 
     const page = await browser.newPage();
     
+    // Disable unnecessary features for faster processing
+    await page.setJavaScriptEnabled(false);
+    await page.setCacheEnabled(false);
+    
     // Set viewport to A5 landscape dimensions
     await page.setViewport({
       width: 794,   // 8.27 inches * 96 DPI
@@ -88,7 +110,7 @@ export async function GET(
       deviceScaleFactor: 1
     });
     
-    // Set page size and content
+    // Set page size and content with faster loading
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -121,9 +143,9 @@ export async function GET(
           ${receiptHTML}
         </body>
       </html>
-    `, { waitUntil: 'networkidle0' });
+    `, { waitUntil: 'domcontentloaded' }); // Changed from 'networkidle0' to 'domcontentloaded' for faster processing
 
-    // Generate PDF in A5 landscape format with explicit dimensions
+    // Generate PDF in A5 landscape format with optimized settings
     const pdfBuffer = await page.pdf({
       width: '8.27in',   // A5 landscape width (210mm)
       height: '5.83in',  // A5 landscape height (148mm)
@@ -133,10 +155,14 @@ export async function GET(
         right: '0.3in',
         bottom: '0.3in',
         left: '0.3in'
-      }
+      },
+      preferCSSPageSize: true, // Use CSS page size for better performance
     });
 
     await browser.close();
+
+    const totalTime = Date.now() - startTime;
+    console.log(`✅ PDF generation completed for ${receiptNumber} in ${totalTime}ms`);
 
     // Return PDF with appropriate headers
     return new NextResponse(pdfBuffer, {

@@ -1196,7 +1196,7 @@ export const financeRouter = createTRPCRouter({
                   parentId: parent.id,
                 };
 
-                console.log(`📤 Sending WhatsApp receipt for ${receiptNumber}:`, {
+                console.log(`📤 Initiating WhatsApp receipt for ${receiptNumber} (with PDF waiting):`, {
                   studentName: receiptData.studentName,
                   amount: receiptData.amount,
                   parentName: receiptData.parentName,

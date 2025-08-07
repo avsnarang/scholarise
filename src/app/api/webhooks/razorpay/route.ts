@@ -231,12 +231,13 @@ async function handlePaymentSuccess(event: RazorpayWebhookEvent) {
             parentId: studentWithParent.parent?.id,
           };
 
+          console.log(`📤 Initiating WhatsApp receipt for order ${orderId} with PDF waiting...`);
           const whatsappResult = await WhatsAppReceiptService.sendReceiptTemplate(receiptData);
           
           if (whatsappResult.success) {
-            console.log(`WhatsApp receipt sent successfully for order ${orderId} to ${parentPhoneNumber}`);
+            console.log(`✅ WhatsApp receipt sent successfully for order ${orderId} to ${parentPhoneNumber}`);
           } else {
-            console.log(`WhatsApp receipt failed for order ${orderId}: ${whatsappResult.error}`);
+            console.log(`❌ WhatsApp receipt failed for order ${orderId}: ${whatsappResult.error}`);
           }
         } else {
           console.log(`No phone number available for WhatsApp receipt for order ${orderId}`);
