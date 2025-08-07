@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { Permission } from "@/types/permissions";
 import { env } from "@/env.js";
 import { triggerMessageJob } from "@/utils/edge-function-client";
+import { sendMessageInBatches, shouldUseBatchProcessing } from "@/utils/batch-message-sender";
 
 // Lazy import Twilio utilities to prevent client-side bundling
 const getWhatsAppUtils = async () => {
@@ -1465,8 +1466,28 @@ export const communicationRouter = createTRPCRouter({
 
           // Trigger edge function asynchronously with error handling
           try {
-            await triggerMessageJob(edgeFunctionPayload);
-            console.log('✅ Edge function triggered successfully');
+            // Check if batch processing is needed for large recipient lists
+            if (shouldUseBatchProcessing(messageRecipients.length)) {
+              console.log(`📦 Using batch processing for ${messageRecipients.length} recipients`);
+              
+              const batchResult = await sendMessageInBatches(
+                edgeFunctionPayload,
+                {
+                  maxRecipientsPerBatch: 800,
+                  delayBetweenBatches: 2000,
+                  onBatchProgress: (batchIndex, totalBatches, processedRecipients) => {
+                    console.log(`📊 Batch progress: ${batchIndex}/${totalBatches}, ${processedRecipients} recipients queued`);
+                  }
+                }
+              );
+              
+              console.log(`✅ Successfully triggered ${batchResult.batchesTriggered} batches for ${batchResult.totalRecipients} recipients`);
+              console.log(`⏱️ Estimated completion time: ${batchResult.estimatedTime}`);
+            } else {
+              // Use standard single invocation for smaller recipient lists
+              await triggerMessageJob(edgeFunctionPayload);
+              console.log('✅ Edge function triggered successfully');
+            }
           } catch (edgeError) {
             console.error('❌ Failed to trigger edge function:', edgeError);
             

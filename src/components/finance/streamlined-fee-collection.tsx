@@ -44,7 +44,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { formatIndianCurrency } from "@/lib/utils";
 import { StudentConcessionFormModal } from "./student-concession-form-modal";
-import { PaymentGatewayButton } from './payment-gateway-button';
+import { EnhancedPaymentGatewayButton } from './enhanced-payment-gateway-button';
 import { useStudentPaymentMonitor } from '@/hooks/usePaymentRealtime';
 import { ReceiptService } from '@/services/receipt-service';
 import { cn } from "@/lib/utils";
@@ -502,6 +502,23 @@ export function StreamlinedFeeCollection({
                     <Gift className="h-4 w-4 mr-2" />
                     Concession
                   </Button>
+                )}
+                {/* WhatsApp Payment Link Button */}
+                {student.parent && (student.parent.fatherMobile || student.parent.motherMobile) && (
+                  <EnhancedPaymentGatewayButton
+                    studentId={student.id}
+                    selectedFees={[]} // Always empty to generate universal payment link
+                    feeTermId="" // Universal payment link doesn't need specific term
+                    feeTermName="All Outstanding Fees"
+                    totalAmount={totals.totalDue}
+                    onPaymentInitiated={(paymentLinkId: string) => {
+                      toast({
+                        title: "Payment Link Created",
+                        description: "Payment link sent to selected parent(s) via WhatsApp",
+                      });
+                    }}
+                    disabled={false}
+                  />
                 )}
               </div>
             </div>

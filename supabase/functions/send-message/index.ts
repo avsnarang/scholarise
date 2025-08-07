@@ -28,6 +28,12 @@ interface JobPayload {
     apiVersion?: string
   }
   dryRun?: boolean
+  batchInfo?: {
+    batchIndex: number
+    totalBatches: number
+    parentJobId: string
+    recipientRange: string
+  }
 }
 
 serve(async (req: Request) => {
@@ -88,196 +94,291 @@ serve(async (req: Request) => {
       throw new Error('Invalid WhatsApp configuration - missing accessToken or phoneNumberId')
     }
 
-    const { jobId, messageId, templateData, recipients, templateParameters, templateDataMappings, whatsappConfig, dryRun }: JobPayload = requestBody
+    const { jobId, messageId, templateData, recipients, templateParameters, templateDataMappings, whatsappConfig, dryRun, batchInfo }: JobPayload = requestBody
 
+    // Log batch information if present
+    if (batchInfo) {
+      console.log(`📦 Batch ${batchInfo.batchIndex}/${batchInfo.totalBatches} - Recipients ${batchInfo.recipientRange}`)
+      console.log(`🔗 Parent Job ID: ${batchInfo.parentJobId}`)
+    }
+    
     console.log(`🚀 Starting message job ${jobId} for message ${messageId}`)
     console.log(`📊 Processing ${recipients.length} recipients`)
     console.log(`🔑 WhatsApp config: phoneNumberId=${whatsappConfig.phoneNumberId}, hasToken=${!!whatsappConfig.accessToken}`)
     console.log(`🧪 Dry run mode: ${dryRun ? 'ENABLED' : 'DISABLED'}`)
 
-    // Update job status to PROCESSING
-    await supabase
+    // Check if job exists, create if it's a batch job
+    const { data: existingJob } = await supabase
       .from('MessageJob')
-      .update({
-        status: 'PROCESSING',
-        startedAt: new Date().toISOString(),
-        totalRecipients: recipients.length,
-        progress: 0
-      })
+      .select('id')
       .eq('id', jobId)
+      .single()
+    
+    if (!existingJob) {
+      // This is a batch job, create the job record
+      console.log(`📝 Creating batch job record: ${jobId}`)
+      
+      const { error: createError } = await supabase
+        .from('MessageJob')
+        .insert({
+          id: jobId,
+          messageId: messageId,
+          status: 'PROCESSING',
+          startedAt: new Date().toISOString(),
+          totalRecipients: recipients.length,
+          processedRecipients: 0,
+          successfulSent: 0,
+          failed: 0,
+          progress: 0,
+          parentJobId: batchInfo?.parentJobId || null,
+          batchIndex: batchInfo?.batchIndex || null,
+          totalBatches: batchInfo?.totalBatches || null,
+          recipientRange: batchInfo?.recipientRange || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      
+      if (createError) {
+        console.error('❌ Failed to create batch job record:', createError)
+        // Continue anyway, the job will process but without proper tracking
+      }
+    } else {
+      // Update existing job status to PROCESSING
+      await supabase
+        .from('MessageJob')
+        .update({
+          status: 'PROCESSING',
+          startedAt: new Date().toISOString(),
+          totalRecipients: recipients.length,
+          progress: 0
+        })
+        .eq('id', jobId)
+    }
 
-    // Process each recipient with progress tracking
+        // Process recipients with parallel batch processing
     let successfulSent = 0
     let failed = 0
     const totalRecipients = recipients.length
+    
+    // WhatsApp rate limit: 20 messages per second
+    // We'll process 10 in parallel, then wait to ensure we don't exceed rate limit
+    const PARALLEL_BATCH_SIZE = 10 // Process 10 messages in parallel
+    const WHATSAPP_RATE_LIMIT = 20 // Messages per second
+    const MIN_DELAY_BETWEEN_BATCHES = (PARALLEL_BATCH_SIZE / WHATSAPP_RATE_LIMIT) * 1000 // 500ms for 10 messages
+    
+    const startTime = Date.now()
+    let lastBatchTime = Date.now()
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i]
-      if (!recipient) {
-        console.error(`❌ Recipient at index ${i} is undefined`)
-        failed++
-        continue
+    console.log(`🚀 Starting parallel processing with batch size: ${PARALLEL_BATCH_SIZE}`)
+    console.log(`⚠️ WhatsApp rate limit: ${WHATSAPP_RATE_LIMIT} messages/second`)
+    console.log(`⏱️ Minimum delay between batches: ${MIN_DELAY_BETWEEN_BATCHES}ms`)
+    console.log(`⏱️ Maximum time available: 150 seconds`)
+
+    // Process recipients in parallel batches
+    for (let batchStart = 0; batchStart < recipients.length; batchStart += PARALLEL_BATCH_SIZE) {
+      // Check if we're approaching the timeout (leave 10 seconds buffer)
+      const elapsedTime = (Date.now() - startTime) / 1000
+      if (elapsedTime > 140) {
+        console.error(`⚠️ Approaching edge function timeout (${elapsedTime}s elapsed). Stopping processing.`)
+        break
       }
+
+      const batchEnd = Math.min(batchStart + PARALLEL_BATCH_SIZE, recipients.length)
+      const batch = recipients.slice(batchStart, batchEnd)
+      const batchNumber = Math.floor(batchStart / PARALLEL_BATCH_SIZE) + 1
+      const totalBatches = Math.ceil(recipients.length / PARALLEL_BATCH_SIZE)
       
-      const progress = Math.round(((i + 1) / totalRecipients) * 100)
+      console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (recipients ${batchStart + 1}-${batchEnd})`)
+      
+      // Track batch start time for rate limiting
+      lastBatchTime = Date.now()
 
-      try {
-        console.log(`📤 Sending to recipient:`, {
-          index: i + 1,
-          total: totalRecipients,
-          recipientId: recipient.id,
-          recipientName: recipient.name,
-          recipientPhone: recipient.phone,
-          recipientType: recipient.type
-        })
-
-        // Build template parameters for this recipient
-        let recipientVariables: Record<string, string> = { ...(templateParameters || {}) }
+      // Process all recipients in this batch in parallel
+      const batchPromises = batch.map(async (recipient, indexInBatch) => {
+        const recipientIndex = batchStart + indexInBatch
         
-        if (templateDataMappings && Object.keys(templateDataMappings).length > 0) {
-          // Apply template data mappings
-          for (const [variableName, mapping] of Object.entries(templateDataMappings)) {
-            const typedMapping = mapping as { dataField: string; fallbackValue: string }
-            recipientVariables[variableName] = extractRecipientData(recipient, typedMapping.dataField, typedMapping.fallbackValue)
-          }
+        if (!recipient) {
+          console.error(`❌ Recipient at index ${recipientIndex} is undefined`)
+          return { success: false, error: 'Recipient undefined' }
         }
 
-        let messageResult: { success: boolean; messageId?: string; error?: string }
+        try {
+          // Build template parameters for this recipient
+          let recipientVariables: Record<string, string> = { ...(templateParameters || {}) }
+          
+          if (templateDataMappings && Object.keys(templateDataMappings).length > 0) {
+            // Apply template data mappings
+            for (const [variableName, mapping] of Object.entries(templateDataMappings)) {
+              const typedMapping = mapping as { dataField: string; fallbackValue: string }
+              recipientVariables[variableName] = extractRecipientData(recipient, typedMapping.dataField, typedMapping.fallbackValue)
+            }
+          }
 
-        if (dryRun) {
-          // Simulate message sending in dry-run mode
-          console.log(`🧪 DRY RUN: Would send to ${recipient.phone} with template ${templateData.metaTemplateName}`)
-          
-          // Simulate a 90% success rate for testing
-          const simulateSuccess = Math.random() > 0.1
-          
-          if (simulateSuccess) {
-            messageResult = {
-              success: true,
-              messageId: `dry_run_${Date.now()}_${Math.random().toString(36).substring(7)}`
+          let messageResult: { success: boolean; messageId?: string; error?: string }
+
+          if (dryRun) {
+            // Simulate message sending in dry-run mode
+            console.log(`🧪 DRY RUN: Would send to ${recipient.phone} with template ${templateData.metaTemplateName}`)
+            
+            // Simulate a 90% success rate for testing
+            const simulateSuccess = Math.random() > 0.1
+            
+            if (simulateSuccess) {
+              messageResult = {
+                success: true,
+                messageId: `dry_run_${Date.now()}_${Math.random().toString(36).substring(7)}`
+              }
+            } else {
+              messageResult = {
+                success: false,
+                error: 'Simulated failure for testing'
+              }
+            }
+            
+            // Add a small delay to simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 50))
+          } else {
+            // Ensure phone number is properly formatted
+            let formattedPhone = recipient.phone
+            // Remove any non-numeric characters
+            formattedPhone = formattedPhone.replace(/\D/g, '')
+            // Ensure it doesn't start with a plus
+            if (formattedPhone.startsWith('+')) {
+              formattedPhone = formattedPhone.substring(1)
+            }
+            
+            // Send actual WhatsApp message using Meta API
+            messageResult = await sendWhatsAppMessage(
+              formattedPhone,
+              templateData.metaTemplateName,
+              templateData.metaTemplateLanguage || 'en',
+              recipientVariables,
+              whatsappConfig,
+              {
+                headerType: templateData.headerType,
+                headerContent: templateData.headerContent,
+                headerMediaUrl: templateData.headerMediaUrl,
+                footerText: templateData.footerText,
+                buttons: templateData.buttons
+              }
+            )
+          }
+
+          // Update recipient status in database
+          if (messageResult.success) {
+            const { error: updateError } = await supabase
+              .from('MessageRecipient')
+              .update({
+                status: 'SENT',
+                sentAt: new Date().toISOString(),
+                metaMessageId: messageResult.messageId
+              })
+              .eq('id', recipient.messageRecipientId)
+
+            if (updateError) {
+              console.error(`❌ Failed to update recipient ${recipient.messageRecipientId}:`, updateError)
             }
           } else {
-            messageResult = {
-              success: false,
-              error: 'Simulated failure for testing'
+            const { error: updateError } = await supabase
+              .from('MessageRecipient')
+              .update({
+                status: 'FAILED',
+                errorMessage: messageResult.error
+              })
+              .eq('id', recipient.messageRecipientId)
+
+            if (updateError) {
+              console.error(`❌ Failed to update failed recipient ${recipient.messageRecipientId}:`, updateError)
             }
           }
-          
-          // Add a small delay to simulate processing time
-          await new Promise(resolve => setTimeout(resolve, 100))
-        } else {
-          // Ensure phone number is properly formatted
-          let formattedPhone = recipient.phone
-          // Remove any non-numeric characters
-          formattedPhone = formattedPhone.replace(/\D/g, '')
-          // Ensure it doesn't start with a plus
-          if (formattedPhone.startsWith('+')) {
-            formattedPhone = formattedPhone.substring(1)
-          }
-          
-          console.log(`📱 Formatted phone number: ${recipient.phone} -> ${formattedPhone}`)
-          
-          // Send actual WhatsApp message using Meta API
-          messageResult = await sendWhatsAppMessage(
-            formattedPhone,
-            templateData.metaTemplateName,
-            templateData.metaTemplateLanguage || 'en',
-            recipientVariables,
-            whatsappConfig,
-            {
-              headerType: templateData.headerType,
-              headerContent: templateData.headerContent,
-              headerMediaUrl: templateData.headerMediaUrl,
-              footerText: templateData.footerText,
-              buttons: templateData.buttons
-            }
-          )
-          
-          console.log(`📬 WhatsApp API response:`, messageResult)
-        }
 
-        if (messageResult.success) {
-          successfulSent++
-          
-          // Update recipient status with better error handling
-          console.log(`📝 Updating recipient ${recipient.messageRecipientId} with metaMessageId: ${messageResult.messageId}`)
-          
-          const { data: updateData, error: updateError } = await supabase
-            .from('MessageRecipient')
-            .update({
-              status: 'SENT',
-              sentAt: new Date().toISOString(),
-              metaMessageId: messageResult.messageId
-            })
-            .eq('id', recipient.messageRecipientId)
-            .select()
+          return messageResult
 
-          if (updateError) {
-            console.error(`❌ Failed to update recipient ${recipient.messageRecipientId} with metaMessageId:`, updateError)
-            console.error('Update params:', { messageRecipientId: recipient.messageRecipientId, metaMessageId: messageResult.messageId })
-                      } else {
-              console.log(`✅ Successfully updated recipient ${recipient.messageRecipientId} with metaMessageId:`, updateData)
-            }
-
-        } else {
-          failed++
+        } catch (error) {
+          console.error(`❌ Error processing recipient ${recipient?.phone || 'unknown'}:`, error)
           
-          // Update recipient with error
-          const { error: updateError } = await supabase
+          // Try to update recipient status even if error occurred
+          await supabase
             .from('MessageRecipient')
             .update({
               status: 'FAILED',
-              errorMessage: messageResult.error
+              errorMessage: error instanceof Error ? error.message : String(error)
             })
-            .eq('id', recipient.messageRecipientId)
+            .eq('id', recipient?.messageRecipientId || '')
+            .catch(console.error)
 
-          if (updateError) {
-            console.error(`❌ Failed to update failed recipient ${recipient.messageRecipientId}:`, updateError)
+          return { 
+            success: false, 
+            error: error instanceof Error ? error.message : String(error) 
           }
         }
+      })
 
-        // Update job progress (real-time)
-        await supabase
-          .from('MessageJob')
-          .update({
-            progress,
-            processedRecipients: i + 1,
-            successfulSent,
-            failed,
-            updatedAt: new Date().toISOString()
-          })
-          .eq('id', jobId)
+      // Wait for all messages in this batch to complete
+      const batchResults = await Promise.all(batchPromises)
+      
+      // Count successes and failures in this batch
+      const batchSuccesses = batchResults.filter(r => r.success).length
+      const batchFailures = batchResults.filter(r => !r.success).length
+      
+      successfulSent += batchSuccesses
+      failed += batchFailures
+      
+      // Calculate overall progress
+      const processedSoFar = Math.min(batchEnd, recipients.length)
+      const progress = Math.round((processedSoFar / totalRecipients) * 100)
+      
+      console.log(`✅ Batch ${batchNumber} complete: ${batchSuccesses} sent, ${batchFailures} failed`)
+      console.log(`📊 Overall progress: ${progress}% (${successfulSent}/${processedSoFar} sent)`)
+      
+      // Update job progress after each batch
+      await supabase
+        .from('MessageJob')
+        .update({
+          progress,
+          processedRecipients: processedSoFar,
+          successfulSent,
+          failed,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', jobId)
 
-        console.log(`✅ Progress: ${progress}% (${successfulSent} sent, ${failed} failed)`)
-
-        // Rate limiting - 50 messages per second as per Meta API limits
-        await new Promise(resolve => setTimeout(resolve, 20))
-
-      } catch (error) {
-        console.error(`❌ Error sending to ${recipient?.phone || 'unknown'}:`, error)
-        failed++
-
-        // Update recipient with error
-        await supabase
-          .from('MessageRecipient')
-          .update({
-            status: 'FAILED',
-            errorMessage: error instanceof Error ? error.message : String(error)
-          })
-          .eq('id', recipient?.messageRecipientId || '')
+      // Calculate and apply rate limiting delay
+      // WhatsApp allows 20 messages/second, we sent PARALLEL_BATCH_SIZE messages
+      // We need to ensure we don't exceed the rate limit
+      if (batchEnd < recipients.length) {
+        const batchProcessingTime = Date.now() - lastBatchTime
+        const requiredDelay = MIN_DELAY_BETWEEN_BATCHES - batchProcessingTime
+        
+        if (requiredDelay > 0) {
+          console.log(`⏸️ Rate limiting: waiting ${requiredDelay}ms before next batch`)
+          await new Promise(resolve => setTimeout(resolve, requiredDelay))
+        }
+        
+        lastBatchTime = Date.now()
       }
     }
 
-    // Mark job as completed
-    console.log(`📊 Marking job ${jobId} as completed with ${successfulSent} sent, ${failed} failed`)
+    // Check if job was fully or partially completed
+    const processedCount = successfulSent + failed
+    const isPartiallyCompleted = processedCount < totalRecipients
+    const jobStatus = isPartiallyCompleted ? 'PARTIALLY_COMPLETED' : 'COMPLETED'
+    const finalProgress = Math.round((processedCount / totalRecipients) * 100)
+    
+    console.log(`📊 Marking job ${jobId} as ${jobStatus} with ${successfulSent} sent, ${failed} failed`)
+    
+    if (isPartiallyCompleted) {
+      const elapsedTime = (Date.now() - startTime) / 1000
+      console.warn(`⚠️ Job partially completed due to timeout. Processed ${processedCount}/${totalRecipients} recipients in ${elapsedTime}s`)
+    }
     
     const { error: jobUpdateError } = await supabase
       .from('MessageJob')
       .update({
-        status: 'COMPLETED',
+        status: jobStatus,
         completedAt: new Date().toISOString(),
-        progress: 100,
-        processedRecipients: totalRecipients,
+        progress: finalProgress,
+        processedRecipients: processedCount,
         successfulSent,
         failed,
         updatedAt: new Date().toISOString()
@@ -288,27 +389,106 @@ serve(async (req: Request) => {
       console.error('❌ Failed to update job status:', jobUpdateError)
     }
 
+    // If this is a batch job, update parent job statistics
+    if (batchInfo?.parentJobId) {
+      console.log(`📊 Updating parent job ${batchInfo.parentJobId} statistics`)
+      
+      // Get current parent job stats
+      const { data: parentJob } = await supabase
+        .from('MessageJob')
+        .select('totalBatchesCompleted, totalBatchRecipients, totalBatchSuccessful, totalBatchFailed')
+        .eq('id', batchInfo.parentJobId)
+        .single()
+      
+      if (parentJob) {
+        const newBatchesCompleted = (parentJob.totalBatchesCompleted || 0) + 1
+        const newTotalRecipients = (parentJob.totalBatchRecipients || 0) + processedCount
+        const newTotalSuccessful = (parentJob.totalBatchSuccessful || 0) + successfulSent
+        const newTotalFailed = (parentJob.totalBatchFailed || 0) + failed
+        
+        // Update parent job with aggregate statistics
+        const { error: parentUpdateError } = await supabase
+          .from('MessageJob')
+          .update({
+            totalBatchesCompleted: newBatchesCompleted,
+            totalBatchRecipients: newTotalRecipients,
+            totalBatchSuccessful: newTotalSuccessful,
+            totalBatchFailed: newTotalFailed,
+            // Update parent status if all batches are complete
+            status: newBatchesCompleted === batchInfo.totalBatches ? 'COMPLETED' : 'PROCESSING',
+            completedAt: newBatchesCompleted === batchInfo.totalBatches ? new Date().toISOString() : null,
+            updatedAt: new Date().toISOString()
+          })
+          .eq('id', batchInfo.parentJobId)
+        
+        if (parentUpdateError) {
+          console.error('❌ Failed to update parent job:', parentUpdateError)
+        } else {
+          console.log(`✅ Updated parent job: ${newBatchesCompleted}/${batchInfo.totalBatches} batches complete`)
+        }
+      }
+    }
+
     // Update main message status
     console.log(`📊 Updating main message ${messageId} status`)
     
-    const messageStatus = failed === 0 ? 'SENT' : (successfulSent === 0 ? 'FAILED' : 'SENT')
-    
-    const { error: messageUpdateError } = await supabase
-      .from('CommunicationMessage')
-      .update({
-        status: messageStatus,
-        sentAt: successfulSent > 0 ? new Date().toISOString() : null,
-        successfulSent,
-        failed,
-        totalRecipients,
-        updatedAt: new Date().toISOString()
-      })
-      .eq('id', messageId)
-
-    if (messageUpdateError) {
-      console.error('❌ Failed to update message status:', messageUpdateError)
+    // For batch jobs, only update message when all batches are complete
+    if (batchInfo?.parentJobId) {
+      // Check if all batches are complete
+      const { data: parentJobFinal } = await supabase
+        .from('MessageJob')
+        .select('totalBatchesCompleted, totalBatches, totalBatchSuccessful, totalBatchFailed, totalBatchRecipients')
+        .eq('id', batchInfo.parentJobId)
+        .single()
+      
+      if (parentJobFinal && parentJobFinal.totalBatchesCompleted === parentJobFinal.totalBatches) {
+        // All batches complete, update message with aggregate stats
+        const totalSuccessful = parentJobFinal.totalBatchSuccessful || 0
+        const totalFailed = parentJobFinal.totalBatchFailed || 0
+        const totalProcessed = parentJobFinal.totalBatchRecipients || 0
+        const messageStatus = totalFailed === 0 ? 'SENT' : (totalSuccessful === 0 ? 'FAILED' : 'SENT')
+        
+        const { error: messageUpdateError } = await supabase
+          .from('CommunicationMessage')
+          .update({
+            status: messageStatus,
+            sentAt: totalSuccessful > 0 ? new Date().toISOString() : null,
+            successfulSent: totalSuccessful,
+            failed: totalFailed,
+            totalRecipients: totalProcessed,
+            updatedAt: new Date().toISOString()
+          })
+          .eq('id', messageId)
+        
+        if (messageUpdateError) {
+          console.error('❌ Failed to update message status:', messageUpdateError)
+        } else {
+          console.log(`✅ All batches complete! Updated message ${messageId} with totals: ${totalSuccessful} sent, ${totalFailed} failed`)
+        }
+      } else {
+        console.log(`⏳ Batch ${batchInfo.batchIndex}/${batchInfo.totalBatches} complete, waiting for other batches...`)
+      }
     } else {
-      console.log(`✅ Updated message ${messageId} status to ${messageStatus}`)
+      // Single job (no batches), update message directly
+      const messageStatus = failed === 0 ? 'SENT' : (successfulSent === 0 ? 'FAILED' : 'SENT')
+      
+      const { error: messageUpdateError } = await supabase
+        .from('CommunicationMessage')
+        .update({
+          status: messageStatus,
+          sentAt: successfulSent > 0 ? new Date().toISOString() : null,
+          successfulSent,
+          failed,
+          totalRecipients,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', messageId)
+
+      if (messageUpdateError) {
+        console.error('❌ Failed to update message status:', messageUpdateError)
+      } else {
+        console.log(`✅ Updated message ${messageId} status to ${messageStatus}`)
+      }
     }
 
     console.log(`🎉 Job ${jobId} completed: ${successfulSent} sent, ${failed} failed`)

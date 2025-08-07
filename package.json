@@ -43,7 +43,10 @@
     "fix:teacher-profile-links": "tsx scripts/fix-teacher-profile-links.ts",
     "debug:teacher-links": "tsx scripts/debug-teacher-links.ts",
     "diagnose:teacher-error": "tsx scripts/diagnose-specific-teacher-error.ts",
-    "setup:storage": "tsx scripts/setup-supabase-buckets.ts"
+    "setup:storage": "tsx scripts/setup-supabase-buckets.ts",
+    "create:whatsapp-template": "tsx scripts/create-fee-receipt-template.ts",
+    "add:document-header": "tsx scripts/add-document-header-to-template.ts",
+    "check:whatsapp-templates": "tsx scripts/check-whatsapp-template-status.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",

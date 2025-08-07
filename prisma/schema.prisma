@@ -2748,12 +2748,26 @@ model MessageJob {
   createdBy           String
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  
+  // Batch processing fields
+  parentJobId              String?     // Reference to parent job for batch processing
+  batchIndex               Int?        // Index of this batch (1-based) within the parent job
+  totalBatches             Int?        // Total number of batches for this job
+  recipientRange           String?     // Human-readable range of recipients in this batch
+  totalBatchesCompleted    Int         @default(0) // Number of batches completed (for parent jobs)
+  totalBatchRecipients     Int         @default(0) // Total recipients across all batches (for parent jobs)
+  totalBatchSuccessful     Int         @default(0) // Total successful sends across all batches (for parent jobs)
+  totalBatchFailed         Int         @default(0) // Total failed sends across all batches (for parent jobs)
+
   message             CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  parentJob           MessageJob?          @relation("BatchHierarchy", fields: [parentJobId], references: [id], onDelete: SetNull)
+  childJobs           MessageJob[]         @relation("BatchHierarchy")
 
   @@index([status])
   @@index([priority, scheduledAt])
   @@index([createdAt])
   @@index([createdBy])
+  @@index([parentJobId])
 }
 
 model CommunicationSettings {
@@ -3021,6 +3035,7 @@ enum JobStatus {
   FAILED
   CANCELLED
   RETRYING
+  PARTIALLY_COMPLETED
 }
 
 enum ChatMessageDirection {
