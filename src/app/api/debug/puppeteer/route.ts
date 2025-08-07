@@ -22,9 +22,8 @@ export async function GET(request: NextRequest) {
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor'
       ],
-      defaultViewport: chromium.defaultViewport,
       executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
-      headless: isVercel ? chromium.headless : true,
+      headless: true,
     });
     
     console.log('✅ Browser launched successfully');

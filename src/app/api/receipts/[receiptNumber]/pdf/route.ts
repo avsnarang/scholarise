@@ -8,8 +8,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ receiptNumber: string }> }
 ) {
+  let receiptNumber: string = 'unknown';
+  
   try {
-    const { receiptNumber } = await params;
+    const resolvedParams = await params;
+    receiptNumber = resolvedParams.receiptNumber;
 
     if (!receiptNumber) {
       return NextResponse.json(
@@ -71,9 +74,8 @@ export async function GET(
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor'
       ],
-      defaultViewport: chromium.defaultViewport,
       executablePath: isVercel ? await chromium.executablePath() : process.env.PUPPETEER_EXECUTABLE_PATH,
-      headless: isVercel ? chromium.headless : true,
+      headless: true,
     });
     console.log('✅ Puppeteer browser launched successfully');
 
@@ -152,14 +154,14 @@ export async function GET(
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       name: error instanceof Error ? error.name : 'Unknown',
-      receiptNumber
+      receiptNumber: receiptNumber
     });
     
     return NextResponse.json(
       { 
         error: 'Failed to generate receipt PDF',
         details: error instanceof Error ? error.message : 'Unknown error',
-        receiptNumber
+        receiptNumber: receiptNumber
       },
       { status: 500 }
     );
