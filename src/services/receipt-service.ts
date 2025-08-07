@@ -28,6 +28,7 @@ export interface UnifiedReceiptData {
   };
   branch: {
     name: string;
+    code?: string;
     address?: string;
     city?: string;
     state?: string;
@@ -242,11 +243,38 @@ export class ReceiptService {
     const feeTerms = [...new Set(data.feeItems.map(item => item.feeTermName))];
     const uniqueFeeTerms = feeTerms.join(', ');
     
-    // Make logo URL absolute for PDF generation
-    let logoUrl = data.branch.logoUrl;
-    if (isForPDF && logoUrl && logoUrl.startsWith('/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://scholarise.vercel.app';
-      logoUrl = `${baseUrl}${logoUrl}`;
+    // Determine branch code from branch data or receipt number
+    let branchCode = '';
+    
+    // First try to use explicit branch code if available
+    if (data.branch?.code) {
+      branchCode = data.branch.code;
+    } 
+    // Otherwise extract from receipt number
+    else if (data.receiptNumber && data.receiptNumber.includes('/')) {
+      // Extract branch code from receipt number (e.g., TSHPS/FIN/2025-26/000001)
+      branchCode = data.receiptNumber.split('/')[0] || '';
+    }
+    
+    // Use branch-specific logo or fallback to default
+    let logoPath = branchCode ? `/logos/${branchCode}/logo.png` : '/logos/default/logo.png';
+    
+    // Make logo URL absolute for PDFs and external access
+    let logoUrl = '';
+    if (logoPath.startsWith('/')) {
+      // Try multiple base URLs in order of preference
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
+                     (typeof window !== 'undefined' ? window.location.origin : '') ||
+                     'https://scholarise.vercel.app';
+      
+      logoUrl = `${baseUrl}${logoPath}`;
+      console.log(`🎯 Logo Resolution:`);
+      console.log(`  Branch: ${branchCode || 'default'}`);
+      console.log(`  Path: ${logoPath}`);
+      console.log(`  Full URL: ${logoUrl}`);
+      console.log(`  Base URL: ${baseUrl}`);
+      console.log(`  Is PDF: ${isForPDF}`);
     }
 
     const feeItemsHTML = data.feeItems.map((item, index) => `
@@ -265,7 +293,7 @@ export class ReceiptService {
         <div style="position: relative; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 6px;">
           ${logoUrl ? `
             <div style="position: absolute; top: 0; left: 0; width: 50px; height: 50px;">
-              <img src="${logoUrl}" alt="${data.branch.name} Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+              <img src="${logoUrl}" alt="${data.branch.name} Logo" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.style.display='none'" />
             </div>
           ` : ''}
           <div style="text-align: center; ${logoUrl ? 'padding-left: 60px;' : ''}">
@@ -339,7 +367,8 @@ export class ReceiptService {
           <div style="text-align: right;">
             <div style="margin-bottom: 8px;"><strong>Received By</strong></div>
             ${isForPDF ? `
-              <div style="margin-top: 15px; font-size: 8px; font-style: italic; color: #666;">This is an E-Generated Receipt.<br/>Signature is not required.</div>
+              <div style="margin-top: 10px; margin-bottom: 5px;"><strong>Cashier's Signature</strong></div>
+              <div style="font-size: 8px; font-style: italic; color: #666; line-height: 1.2;">This is an E-Generated Receipt.<br/>Signature is not required.</div>
             ` : `
               <div style="margin-top: 15px;"><strong>Cashier's Signature</strong></div>
             `}
@@ -501,6 +530,7 @@ export class ReceiptService {
         address: feeCollectionData.branch?.address || undefined,
         city: feeCollectionData.branch?.city || undefined,
         state: feeCollectionData.branch?.state || undefined,
+        code: feeCollectionData.branch?.code || undefined,
         logoUrl: feeCollectionData.branch?.logoUrl || '/android-chrome-192x192.png',
       },
       session: {

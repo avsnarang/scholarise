@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from "@/server/db";
 import { ReceiptService } from "@/services/receipt-service";
+import { getLogoAsDataUri } from '@/utils/logo-helper';
 
 // Lightweight PDF generation without Puppeteer for better Vercel compatibility
 export async function GET(
@@ -73,6 +74,17 @@ export async function GET(
 
     // Create receipt data
     const receiptData = ReceiptService.createReceiptFromPaymentHistoryData(feeCollection);
+    
+    // Get logo as base64 data URI for embedding
+    const branchCode = receiptData.branch.code || (receiptNumber.includes('/') ? receiptNumber.split('/')[0] : '');
+    const logoDataUri = getLogoAsDataUri(branchCode);
+    
+    if (logoDataUri) {
+      receiptData.branch.logoUrl = logoDataUri;
+      console.log(`📄 Using embedded logo for lightweight PDF, branch: ${branchCode || 'default'}`);
+    } else {
+      console.log(`📄 No logo found for lightweight PDF, branch: ${branchCode || 'default'}`);
+    }
 
     // Generate simplified PDF content
     const pdfContent = generateSimplePDF(receiptData, receiptNumber);

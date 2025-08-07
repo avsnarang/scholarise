@@ -353,8 +353,8 @@ export class WhatsAppReceiptService {
                 {
                   type: "document",
                   document: {
-                    link: receiptPdfUrl
-                    // Note: filename might not be needed for the template
+                    link: receiptPdfUrl,
+                    filename: `${data.receiptNumber}.pdf`
                   }
                 }
               ]

@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { ReceiptService } from "@/services/receipt-service";
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 import chromium from '@sparticuz/chromium';
+import { getLogoAsDataUri } from '@/utils/logo-helper';
 
 // Helper function to launch browser with retries
 async function launchBrowser(isVercel: boolean, retries = 3): Promise<Browser> {
@@ -111,6 +112,21 @@ export async function GET(
 
     // Create receipt data from fee collection using the correct method
     const receiptData = ReceiptService.createReceiptFromPaymentHistoryData(feeCollection);
+    
+    // Get logo as base64 data URI for embedding directly in HTML
+    // This is more reliable than external URLs for PDF generation
+    const branchCode = receiptData.branch.code || (receiptNumber.includes('/') ? receiptNumber.split('/')[0] : '');
+    const logoDataUri = getLogoAsDataUri(branchCode);
+    
+    if (logoDataUri) {
+      // Override the logo URL with base64 data URI
+      receiptData.branch.logoUrl = logoDataUri;
+      console.log(`🎯 Using embedded logo for branch: ${branchCode || 'default'}`);
+    } else {
+      console.log(`⚠️ No logo found for branch: ${branchCode || 'default'}`);
+    }
+    
+    console.log(`📷 Generating PDF for receipt: ${receiptNumber}, Branch: ${receiptData.branch.name} (${branchCode || 'no code'})`);
 
     // Generate HTML with PDF flag for logo and signature handling
     const receiptHTML = ReceiptService.generateReceiptHTML(receiptData, true);
@@ -141,6 +157,8 @@ export async function GET(
     
     // Set page content with timeout
     console.log('📝 Setting page content...');
+    
+    // Set the HTML content
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -173,10 +191,54 @@ export async function GET(
           ${receiptHTML}
         </body>
       </html>
-    `, { 
-      waitUntil: 'domcontentloaded',
-      timeout: 20000
+    `);
+    
+    // Wait for all images to load if any exist
+    await page.waitForSelector('img', { timeout: 5000 }).catch(() => {
+      console.log('⚠️ No images found or timeout waiting for images');
     });
+    
+    // Wait for any network activity to settle
+    await page.evaluate(() => {
+      return new Promise((resolve) => {
+        // Wait for any pending image loads
+        const images = document.querySelectorAll('img');
+        if (images.length === 0) {
+          resolve(true);
+          return;
+        }
+        
+        let loadedCount = 0;
+        images.forEach((img) => {
+          if (img.complete) {
+            loadedCount++;
+          } else {
+            img.addEventListener('load', () => {
+              loadedCount++;
+              if (loadedCount === images.length) {
+                resolve(true);
+              }
+            });
+            img.addEventListener('error', () => {
+              loadedCount++;
+              if (loadedCount === images.length) {
+                resolve(true);
+              }
+            });
+          }
+        });
+        
+        if (loadedCount === images.length) {
+          resolve(true);
+        }
+        
+        // Timeout after 3 seconds
+        setTimeout(() => resolve(true), 3000);
+      });
+    });
+    
+    // Final wait for rendering
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     console.log('✅ Page content set successfully');
 

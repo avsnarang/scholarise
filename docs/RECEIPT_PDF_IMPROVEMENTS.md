@@ -94,3 +94,4 @@ if (isForPDF && logoUrl && logoUrl.startsWith('/')) {
 - Verify logo appears in both standard and lightweight PDFs
 - Confirm e-generated text appears in WhatsApp PDFs
 - Ensure browser printing still shows signature line
+

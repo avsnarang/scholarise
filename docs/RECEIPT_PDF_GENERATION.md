@@ -178,3 +178,4 @@ All PDF generation methods:
 3. **CDN**: Store generated PDFs in CDN
 4. **Templates**: Support multiple receipt templates
 5. **Batch Generation**: Support bulk PDF generation
+
