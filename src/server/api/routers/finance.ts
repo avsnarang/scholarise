@@ -1145,7 +1145,7 @@ export const financeRouter = createTRPCRouter({
 
       const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
-      return ctx.db.$transaction(async (prisma) => {
+      const completeFeeCollection = await ctx.db.$transaction(async (prisma) => {
         // Generate new format receipt number: TSH{Branch Code}/FIN/{Session Name}/000001
         const [branch, session] = await Promise.all([
           prisma.branch.findUnique({
@@ -1253,11 +1253,11 @@ export const financeRouter = createTRPCRouter({
       });
 
       // Send WhatsApp receipt AFTER transaction completes successfully
-      if (feeCollection) {
+      if (completeFeeCollection) {
         // Use process.nextTick to ensure this runs completely outside the transaction
         process.nextTick(async () => {
           try {
-            await sendWhatsAppReceipt(feeCollection);
+            await sendWhatsAppReceipt(completeFeeCollection);
           } catch (error) {
             console.error('WhatsApp receipt sending failed (non-blocking):', error);
             // Don't throw - this is a background process
@@ -1265,7 +1265,7 @@ export const financeRouter = createTRPCRouter({
         });
       }
 
-      return feeCollection;
+      return completeFeeCollection;
     }),
 
   // Bulk Fee Collection
