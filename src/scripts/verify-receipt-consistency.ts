@@ -16,7 +16,7 @@ async function verifyReceiptConsistency() {
     console.log("\n1. Finding sample fee collection...");
     const sampleFeeCollection = await db.feeCollection.findFirst({
       where: {
-        receiptNumber: { not: null }
+        receiptNumber: { not: "" }
       },
       include: {
         student: {
